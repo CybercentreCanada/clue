@@ -1,0 +1,135 @@
+{
+  "actions.execute": "Execute",
+  "actions.executing": "Executing",
+  "actions.json.hide": "Hide JSON",
+  "actions.json.show": "Show JSON",
+  "action.data": "Action Data",
+  "action.available": "Available Actions",
+
+  "adminmenu.config": "Configuration",
+  "adminmenu.users": "Users",
+  "adminmenu": "Admin menu",
+
+  "annotation.failed": "Failed",
+
+  "all": "All",
+
+  "app.language": "Language",
+  "app.list.empty": "No Results",
+  "app.search.fullscreen": "Activate fullscreen search",
+  "app.search.shortcut": "Perform search",
+  "app.search.starttyping": "Start typing and/or press ENTER",
+
+  "breadcrumb.404": "404",
+
+  "cancel": "Cancel",
+  "classification": "Classification",
+  "close": "Close",
+
+  "clipboard": "Copy value to clipboard",
+  "clipboard.failure": "could not be copied to clipboard",
+  "clipboard.success": "was copied to clipboard.",
+
+  "details.open": "Open Details",
+
+  "drawer.chat": "Chat",
+  "drawer.collapse": "Collapse Menu",
+  "drawer.dashboard": "Dashboard",
+  "drawer.expand": "Expand Menu",
+  "drawer.help": "Help",
+  "drawer.home": "Home",
+  "drawer.items.create": "Create",
+  "drawer.items.edit": "Edit",
+  "drawer.items.list": "List",
+  "drawer.items": "Items",
+  "drawer.mail.inbox.message": "Message",
+  "drawer.mail.inbox": "Inbox",
+  "drawer.mail.sent": "Sent",
+  "drawer.mail.trash": "Trash",
+  "drawer.mail": "Email",
+
+  "enrich": "Enrich",
+
+  "error": "Error",
+
+  "retry.enrich": "Retry Failed Enrichments",
+
+  "json.viewer.search.label": "Search JSON",
+
+  "notification.title": "Notifications",
+
+  "page.404.description": "The page you are looking for cannot be found...",
+  "page.404.title": "404: Not found",
+
+  "page.dashboard.title": "Dashboard",
+
+  "page.home.title": "Home",
+  "page.home.classification": "Classification",
+  "page.home.timeout": "Customize Timeout",
+  "page.home.includeraw": "Include Raw Data",
+  "page.home.cache": "Skip Plugins' Cache",
+  "page.home.types": "Types supported (one per line)",
+
+  "page.login.button": "Sign in",
+  "page.login.password": "Password",
+  "page.login.username": "Username",
+
+  "page.logout": "Logging out current user ... ",
+
+  "personalization.autohideappbar": "Auto Hide Topbar",
+  "personalization.dark": "Dark Mode",
+  "personalization.minimizebreadcrumbs": "Minimize Breadcrumbs",
+  "personalization.quicksearch": "Show Quick Search",
+  "personalization.reset_text": "Reset to site defaults",
+  "personalization.showbreadcrumbs": "Show Breadcrumbs",
+  "personalization.sticky": "Sticky Topbar",
+  "personalization": "Personalization",
+
+  "quicksearch.aria": "search",
+  "quicksearch.placeholder": "Search ...",
+
+  "refresh": "Refresh",
+
+  "route.examples": "Example Components",
+
+  "route.help.contributing": "Contributing",
+  "route.help.dashboard": "Plugin Dashboard",
+  "route.plugin": "Plugin",
+  "route.plugin.active": "Active",
+  "route.help": "Help",
+  "route.help.loading": "Loading Documentation",
+  "route.help.error": "An error occurred in loading the documentation",
+
+  "route.fetchers": "Fetchers",
+  "route.fetchers.fetcher": "Select Fetcher",
+  "route.fetchers.type": "Selector Type",
+  "route.fetchers.value": "Selector Value",
+  "route.fetchers.title": "No Fetchers",
+  "route.fetchers.description": "Add a new fetcher to render using the form above.",
+  "route.fetchers.submit": "Add Fetcher",
+  "route.fetchers.available": "Available Fetchers",
+
+  "route.home": "Enrich Data",
+
+  "route.login.button.oauth.azure": "Azure",
+  "route.login.button.oauth.keycloak": "Keycloak",
+
+  "sources": "Sources",
+  "sources.select.all": "Select All Sources",
+  "sources.select.none": "Deselect All Sources",
+
+  "summary.unfound": "Summary not found",
+
+  "tooltip.breadcrumbs.max": "Expand Breadcrumbs",
+  "tooltip.breadcrumbs.min": "Collapse Breadcrumbs",
+
+  "type": "Type",
+
+  "unknown": "Unknown",
+
+  "usermenu.logout": "Logout",
+  "usermenu": "User menu",
+  "usermenu.settings": "Settings",
+
+  "value": "Value"
+}

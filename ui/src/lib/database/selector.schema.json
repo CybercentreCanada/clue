@@ -1,0 +1,116 @@
+{
+  "keyCompression": true,
+  "version": 0,
+  "primaryKey": "id",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "source": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "value": {
+      "type": "string",
+      "maxLength": 2048
+    },
+    "classification": {
+      "type": "string"
+    },
+    "count": {
+      "type": "number"
+    },
+    "link": {
+      "type": "string"
+    },
+    "raw_data": {
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [{ "type": "string" }, { "type": "null" }]
+    },
+    "maintainer": {
+      "type": "string"
+    },
+    "datahub_link": {
+      "type": "string"
+    },
+    "documentation_link": {
+      "type": "string"
+    },
+    "latency": {
+      "type": "number"
+    },
+    "annotations": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "analytic": {
+            "type": "string"
+          },
+          "analytic_icon": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "type": {
+            "enum": ["opinion", "frequency", "assessment", "mitigation", "context"],
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }]
+          },
+          "confidence": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          "severity": {
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "type": "number"
+          },
+          "priority": {
+            "type": "number"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "details": {
+            "type": "string"
+          },
+          "link": {
+            "format": "uri",
+            "minLength": 1,
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "ubiquitous": {
+            "type": "boolean"
+          }
+        },
+        "required": ["type", "value", "confidence", "summary"],
+        "type": "object"
+      }
+    }
+  },
+  "required": ["latency", "id", "type", "value", "classification", "count", "annotations"],
+  "indexes": ["type", "value"]
+}

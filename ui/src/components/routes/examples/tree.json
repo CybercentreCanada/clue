@@ -1,0 +1,88 @@
+{
+  "id": "tree",
+  "metadata": {
+    "type": "nested"
+  },
+  "data": [
+    [{ "id": "Chaos", "edges": ["Gaea"] }],
+    [
+      { "id": "Gaea", "edges": ["Chaos"] },
+      { "id": "Uranus", "edges": ["Gaea"] }
+    ],
+    [
+      { "id": "Oceanus", "edges": ["Gaea", "Uranus"], "icons": ["bug"] },
+      { "id": "Thethys", "edges": ["Gaea", "Uranus"] },
+      { "id": "Pontus", "edges": ["Dionne"] },
+      { "id": "Rhea", "edges": ["Gaea", "Uranus"] },
+      { "id": "Cronus", "edges": ["Gaea", "Uranus"] },
+      { "id": "Coeus", "edges": ["Gaea", "Uranus"] },
+      { "id": "Phoebe", "edges": ["Gaea", "Uranus"] },
+      { "id": "Crius", "edges": ["Gaea", "Uranus"] },
+      { "id": "Hyperion", "edges": ["Gaea", "Uranus"] },
+      { "id": "Iapetus", "edges": ["Gaea", "Uranus"] },
+      { "id": "Thea", "edges": ["Gaea", "Uranus"] },
+      { "id": "Themis", "edges": ["Gaea", "Uranus"] },
+      { "id": "Mnemosyne", "edges": ["Gaea", "Uranus"] }
+    ],
+    [
+      { "id": "Doris", "edges": ["Oceanus", "Thethys"] },
+      { "id": "Neures", "edges": ["Pontus", "Gaea"] },
+      { "id": "Dionne" },
+      { "id": "Demeter", "edges": ["Rhea", "Cronus"] },
+      { "id": "Hades", "edges": ["Rhea", "Cronus"] },
+      { "id": "Hera", "edges": ["Rhea", "Cronus"] },
+      { "id": "Alcmene" },
+      { "id": "Zeus", "edges": ["Rhea", "Cronus"] },
+      { "id": "Eris" },
+      { "id": "Leto", "edges": ["Coeus", "Phoebe"] },
+      { "id": "Amphitrite" },
+      { "id": "Medusa" },
+      { "id": "Poseidon", "edges": ["Rhea", "Cronus"] },
+      { "id": "Hestia", "edges": ["Rhea", "Cronus"] }
+    ],
+    [
+      { "id": "Thetis", "edges": ["Zeus", "Doris", "Neures"] },
+      { "id": "Peleus" },
+      { "id": "Anchises" },
+      { "id": "Adonis" },
+      { "id": "Aphrodite", "edges": ["Zeus", "Dionne"] },
+      { "id": "Persephone", "edges": ["Zeus", "Demeter"] },
+      { "id": "Ares", "edges": ["Zeus", "Hera"] },
+      { "id": "Hephaestus", "edges": ["Zeus", "Hera"] },
+      { "id": "Hebe", "edges": ["Zeus", "Hera", "Hestia"] },
+      { "id": "Hercules", "edges": ["Zeus", "Alcmene"] },
+      { "id": "Megara" },
+      { "id": "Deianira" },
+      { "id": "Eileithya", "edges": ["Zeus", "Hera"] },
+      { "id": "Ate", "edges": ["Zeus", "Eris"] },
+      { "id": "Leda" },
+      { "id": "Athena", "edges": ["Zeus"] },
+      { "id": "Apollo", "edges": ["Zeus", "Leto"] },
+      { "id": "Artemis", "edges": ["Zeus", "Leto"] },
+      { "id": "Triton", "edges": ["Poseidon", "Amphitrite"] },
+      { "id": "Pegasus", "edges": ["Poseidon", "Medusa"] },
+      { "id": "Orion", "edges": ["Poseidon"] },
+      { "id": "Polyphemus", "edges": ["Poseidon"] }
+    ],
+    [
+      { "id": "Deidamia" },
+      { "id": "Achilles", "edges": ["Peleus", "Thetis"] },
+      { "id": "Creusa" },
+      { "id": "Aeneas", "edges": ["Anchises", "Aphrodite"] },
+      { "id": "Lavinia", "edges": ["Lavinia(2)"] },
+      { "id": "Lavinia(2)", "edges": ["Lavinia"] },
+      { "id": "Eros", "edges": ["Hephaestus", "Aphrodite"] },
+      { "id": "Helen", "edges": ["Leda", "Zeus"] },
+      { "id": "Menelaus", "edges": ["Lavinia"] },
+      { "id": "Polydueces", "edges": ["Leda", "Zeus"] }
+    ],
+    [
+      { "id": "Andromache" },
+      { "id": "Neoptolemus", "edges": ["Deidamia", "Achilles"] },
+      { "id": "Aeneas(2)", "edges": ["Creusa", "Aeneas"] },
+      { "id": "Pompilius", "edges": ["Creusa", "Aeneas"] },
+      { "id": "Iulus", "edges": ["Lavinia", "Aeneas"] },
+      { "id": "Hermione", "edges": ["Helen", "Menelaus"] }
+    ]
+  ]
+}

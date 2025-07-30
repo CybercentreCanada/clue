@@ -1,0 +1,49 @@
+{
+  "accept_empty": false,
+  "accept_multiple": true,
+  "action_icon": "codicon:terminal",
+  "classification": "TLP:CLEAR",
+  "extra_schema": {},
+  "id": "action",
+  "name": "Example Action",
+  "params": {
+    "$defs": {
+      "Selector": {
+        "properties": {
+          "classification": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "default": null,
+            "title": "Classification"
+          },
+          "type": { "title": "Type", "type": "string" },
+          "value": { "title": "Value", "type": "string" }
+        },
+        "required": ["type", "value"],
+        "title": "Selector",
+        "type": "object"
+      }
+    },
+    "properties": {
+      "selector": {
+        "anyOf": [{ "$ref": "#/$defs/Selector" }, { "type": "null" }],
+        "default": null,
+        "description": "The selector to execute the action on."
+      },
+      "selectors": {
+        "default": [],
+        "description": "The selectors to execute the action on.",
+        "items": { "$ref": "#/$defs/Selector" },
+        "title": "Selectors",
+        "type": "array"
+      },
+      "value": {
+        "type": "string"
+      }
+    },
+    "title": "ExecuteRequest",
+    "type": "object",
+    "required": ["value"]
+  },
+  "summary": "Execute a test action",
+  "supported_types": ["ip"]
+}

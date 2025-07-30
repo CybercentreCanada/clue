@@ -1,0 +1,2 @@
+# Mark pnpm lockfile as generated
+pnpm-lock.yaml linguist-generated=true

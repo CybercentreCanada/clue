@@ -1,0 +1,286 @@
+##################
+# Black settings #
+##################
+[tool.black]
+line-length = 120
+
+########################
+# coverage.py settings #
+########################
+[tool.coverage.run]
+omit = ["clue/gunicorn_config.py", "clue/patched.py", "test/utils/*"]
+branch = true
+sigterm = true
+data_file = ".coverage.server"
+
+[tool.coverage.report]
+exclude_also = [
+  "def __repr__",
+  "if DEBUG:",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if 0:",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "@(abc\\.)?abstractmethod]",
+  "if \"pytest\" in sys.modules:",
+  "logger.",
+]
+
+########################
+# isort settings #
+########################
+[tool.isort]
+profile = "black"
+
+#################
+# Mypy settings #
+#################
+[tool.mypy]
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+disable_error_code = "no-redef"
+exclude = "test"
+
+[[tool.mypy.overrides]]
+module = ["test", "test.*"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["clue.security", "clue.services.jwt_service"]
+disable_error_code = "attr-defined"
+
+[[tool.mypy.overrides]]
+module = "clue.common.classification"
+disable_error_code = ["assignment", "var-annotated", "return-value"]
+
+[[tool.mypy.overrides]]
+module = "clue.common.net"
+disable_error_code = ["return-value", "union-attr"]
+
+[[tool.mypy.overrides]]
+module = "clue.remote.datatypes.*"
+disable_error_code = ["type-arg", "arg-type", "assignment", "var-annotated"]
+
+[[tool.mypy.overrides]]
+module = "requests"
+ignore_missing_imports = true
+
+###################
+#  ruff settings  #
+###################
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.format]
+exclude = ["clue/patched.py"]
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "W",
+  "C901",
+  "I",
+  "N",
+  "D1",
+  "D2",
+  "ANN",
+  "S",
+  "T20",
+  "PIE",
+  "FLY",
+  "TRY",
+]
+ignore = [
+  "ANN003",
+  "ANN201",
+  "ANN401",
+  "D100",
+  "D104",
+  "D105",
+  "D107",
+  "D203",
+  "D213",
+  "N818",
+  "S603",
+  "TRY003",
+  "TRY300",
+]
+exclude = [
+  "clue/patched.py",
+  "plugins/assemblyline_lookup/app.py",
+  "plugins/**/test*.py",
+]
+
+[tool.ruff.lint.flake8-annotations]
+ignore-fully-untyped = true
+mypy-init-return = true
+suppress-dummy-args = true
+suppress-none-returning = true
+
+[tool.ruff.lint.per-file-ignores]
+"test/*" = ["C901", "D", "ANN", "S", "N818"]
+"build_scripts/*" = ["D", "ANN", "S", "N818", "T201"]
+"clue/api/v1/auth.py" = ["TRY301"]
+"clue/common/classification.py" = ["D", "ANN", "C901", "TRY301", "T203"]
+"clue/plugin/interactive.py" = ["T201"]
+"clue/remote/datatypes/*" = ["D", "ANN", "C901"]
+"clue/security/__init__.py" = ["TRY301"]
+"plugins/nw_retention/app.py" = ["D200", "D205"]
+"plugins/oracle/*" = [
+  "F403",
+  "D103",
+  "D205",
+  "F841",
+  "C901",
+  "ANN001",
+  "E501",
+  "T201",
+  "TRY301",
+  "TRY002",
+  "S113",
+  "F811",
+  "I001",
+  "N806",
+  "TRY004",
+]
+
+
+###################
+# pytest settings #
+###################
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+
+###################
+# Poetry settings #
+###################
+[tool.poetry]
+package-mode = true
+name = "clue-api"
+version = "1.0.0"
+description = "Clue distributed enrichment service"
+authors = ["Canadian Centre for Cyber Security <contact@cyber.gc.ca>"]
+license = "MIT"
+readme = "README.md"
+classifiers = [
+  'Development Status :: 5 - Production/Stable',
+  'Intended Audience :: Developers',
+  'Topic :: Software Development :: Libraries',
+  'License :: OSI Approved :: MIT License',
+  'Programming Language :: Python :: 3.12',
+]
+keywords = [
+  "clue",
+  "distributed",
+  "enrichment",
+  "gc",
+  "canada",
+  "cse-cst",
+  "cse",
+  "cst",
+  "cyber",
+  "cccs",
+]
+include = [{ path = "VERSION", format = ["sdist", "wheel"] }]
+packages = [{ include = "clue" }]
+documentation = "https://github.com/CybercentreCanada/clue"
+homepage = "https://github.com/CybercentreCanada/clue"
+repository = "https://github.com/CybercentreCanada/clue"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+elastic-apm = "^6.22.0"
+flask = "<3.0.0"
+flask-caching = "^2.1.0"
+gunicorn = ">=22,<24"
+gevent = "^24.2.1"
+pydantic = "^2.7.1"
+geventhttpclient = "^2.3.1"
+pydantic-settings = { extras = ["yaml"], version = "^2.3.4" }
+redis = { version = "^5.0.3" }
+beautifulsoup4 = "^4.13.3"
+imgkit = "^1.2.3"
+pillow = "^11.1.0"
+cart = "^1.2.3"
+setuptools = "<79.0.0"
+requests = "^2.32.5"
+
+# Dependencies required for the main server
+Werkzeug = { version = "^3.0.2", optional = true }
+bcrypt = { version = "^4.1.2", optional = true }
+PyYAML = { version = "^6.0.1", optional = true }
+python-baseconv = { version = "^1.2.2", optional = true }
+pyroute2 = { version = "^0.7.12", optional = true }
+pyjwt = { version = "^2.8.0", optional = true }
+prometheus-client = { version = "^0.20.0", optional = true }
+apscheduler = { version = "^3.10.4", optional = true }
+pytz = { version = "^2024.1", optional = true }
+passlib = { version = "^1.7.4", optional = true }
+authlib = { version = "<1.0.0", optional = true }
+flask-cors = { version = "^4.0.1", optional = true }
+flasgger = { version = "^0.9.7.1", optional = true }
+trino = "^0.336.0"
+
+[tool.poetry.extras]
+server = [
+  "Werkzeug",
+  "bcrypt",
+  "PyYAML",
+  "python-baseconv",
+  "pyroute2",
+  "pyjwt",
+  "prometheus-client",
+  "apscheduler",
+  "pytz",
+  "passlib",
+  "authlib",
+  "flask-cors",
+  "flasgger",
+]
+
+[[tool.poetry.source]]
+name = "pypi"
+priority = "supplemental"
+
+[tool.poetry.scripts]
+server = "clue.patched:main"
+test = "build_scripts.run_tests:main"
+last_success = "build_scripts.last_success:main"
+check_changes = "build_scripts.check_changes:main"
+type_check = "build_scripts.type_check:main"
+coverage_report = "build_scripts.coverage_reports:main"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.1.1"
+mypy = "^1.9.0"
+pytest-cov = "^5.0.0"
+coverage = { extras = ["toml"], version = "^7.4.4" }
+diff-cover = "^9.0.0"
+pytest-mock = "^3.14.0"
+ruff = "^0.8.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.7.0"
+autoflake = "^2.3.1"
+termcolor = "^3.0.0"
+markdownify = "^1.1.0"
+
+
+[tool.poetry.group.types.dependencies]
+types-pyyaml = "^6.0.12.20240311"
+types-pytz = "^2024.1.0.20240203"
+types-redis = "^4.6.0.20241004"
+types-dateparser = "^1.2.0.20250208"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
