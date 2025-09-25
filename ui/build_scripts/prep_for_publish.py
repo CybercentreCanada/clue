@@ -1,11 +1,11 @@
 import json
-import os
 import shutil
 from pathlib import Path
 
 print("Step 1: Copy Files")
 
 ui_path = Path(__file__).parent.parent
+lib_path = ui_path / "src" / "lib"
 
 if not (ui_path / "dist" / ".npmrc").exists():
     print("\tCopying .npmrc")
@@ -44,16 +44,11 @@ if "pnpm" in package_json:
     del package_json["pnpm"]
 
 exports: list[Path] = []
-for path in (ui_path / "src").rglob("**"):
-    if path == (ui_path / "src"):
+for path in lib_path.rglob("**"):
+    if path == lib_path:
         continue
 
-    if os.path.commonpath([ui_path / "src" / "lib", path]) != str(
-        ui_path / "src" / "lib"
-    ):
-        continue
-
-    exports.append(path.relative_to(ui_path / "src" / "lib"))
+    exports.append(path.relative_to(lib_path))
 
     if (
         index := next(
@@ -70,11 +65,16 @@ for path in (ui_path / "src").rglob("**"):
 
 print(f"\t Writing {len(exports)} entries to exports")
 
-package_json["exports"] = {"./index.css": "./index.css"}
+package_json["exports"] = {
+    ".": "./main.js",
+    "./index.css": "./index.css",
+    "./en/*.json": "./en/*.json",
+    "./fr/*.json": "./fr/*.json",
+}
 for path in exports:
     if "." in path.name:
-        package_json["exports"][f"./{path.parent.relative_to(ui_path / "src")}"] = (
-            f"./{path.parent.relative_to(ui_path / "src")}/index.js"
+        package_json["exports"][f"./{path.parent.relative_to(lib_path)}"] = (
+            f"./{path.parent.relative_to(lib_path)}/index.js"
         )
     elif str(path).startswith("locales"):
         package_json["exports"][f"./{path}/*.json"] = f"./{path}/*.json"
