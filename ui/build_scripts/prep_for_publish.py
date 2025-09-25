@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -47,6 +48,11 @@ for path in (ui_path / "src").rglob("**"):
     if path == (ui_path / "src"):
         continue
 
+    if os.path.commonpath([ui_path / "src" / "lib", path]) != str(
+        ui_path / "src" / "lib"
+    ):
+        continue
+
     exports.append(path.relative_to(ui_path / "src"))
 
     if (
@@ -64,7 +70,7 @@ for path in (ui_path / "src").rglob("**"):
 
 print(f"\t Writing {len(exports)} entries to exports")
 
-package_json["exports"] = {"./i18n": "./i18n.js", "./index.css": "./index.css"}
+package_json["exports"] = {"./index.css": "./index.css"}
 for path in exports:
     if "." in path.name:
         package_json["exports"][f"./{path.parent.relative_to(ui_path / "src")}"] = (
