@@ -1,10 +1,11 @@
 import buildDatabase from 'lib/database';
-import type { ClueDatabase } from 'lib/database/types';
+import type { ClueDatabase, DatabaseConfig } from 'lib/database/types';
 import type { FC, PropsWithChildren } from 'react';
 import { createContext, useEffect, useState } from 'react';
 
 export interface ClueDatabaseContextProps {
   database?: ClueDatabase;
+  databaseConfig?: DatabaseConfig;
 }
 
 export type ClueDatabaseContextType = ClueDatabase;
@@ -13,7 +14,8 @@ export const ClueDatabaseContext = createContext<ClueDatabaseContextType>(null);
 
 export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps>> = ({
   children,
-  database: _database
+  database: _database,
+  databaseConfig
 }) => {
   const [database, setDatabase] = useState<ClueDatabase>();
 
@@ -21,9 +23,9 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
     if (_database) {
       setDatabase(_database);
     } else {
-      buildDatabase().then(setDatabase);
+      buildDatabase(databaseConfig).then(setDatabase);
     }
-  }, [_database]);
+  }, [_database, databaseConfig]);
 
   return <ClueDatabaseContext.Provider value={database}>{children}</ClueDatabaseContext.Provider>;
 };

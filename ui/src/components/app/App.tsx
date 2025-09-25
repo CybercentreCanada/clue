@@ -37,6 +37,7 @@ import useClueEnrichSelector from 'lib/hooks/selectors';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
 import { StorageKey } from 'lib/utils/constants';
+import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
 import type { FC, PropsWithChildren } from 'react';
 import { useEffect } from 'react';
@@ -75,11 +76,7 @@ const MyApp: FC = () => {
       }
     };
 
-    window.addEventListener(SNACKBAR_EVENT_ID, handleMessage);
-
-    return () => {
-      window.removeEventListener(SNACKBAR_EVENT_ID, handleMessage);
-    };
+    return safeAddEventListener(SNACKBAR_EVENT_ID, handleMessage);
   }, [showErrorMessage, showInfoMessage, showSuccessMessage, showWarningMessage]);
 
   // Simulate app loading time...

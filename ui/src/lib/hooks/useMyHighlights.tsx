@@ -1,5 +1,6 @@
 import type { NestedDataset } from 'lib/types/graph';
 import { getSubGraphNodeSet } from 'lib/utils/graph';
+import { safeAddEventListener } from 'lib/utils/window';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const useMyHighlights = (graph: NestedDataset, onNodeSelectionChanged?: (nodeIds: string[]) => void) => {
@@ -19,19 +20,11 @@ const useMyHighlights = (graph: NestedDataset, onNodeSelectionChanged?: (nodeIds
   }, []);
 
   useEffect(() => {
-    window.addEventListener('keydown', onKeyPressed);
-
-    return () => {
-      window.removeEventListener('keydown', onKeyPressed);
-    };
+    return safeAddEventListener('keydown', onKeyPressed);
   }, [onKeyPressed]);
 
   useEffect(() => {
-    window.addEventListener('keyup', onKeyUnpressed);
-
-    return () => {
-      window.removeEventListener('keyup', onKeyUnpressed);
-    };
+    return safeAddEventListener('keyup', onKeyUnpressed);
   }, [onKeyUnpressed]);
 
   const onNodeHoveredChanged = useCallback((nodeId: string, isHovered: boolean) => {

@@ -24,7 +24,7 @@ const chainableFunctions = {
   reverse
 };
 
-export const chain = <T>(input: T) => {
+const chain = <T>(input: T) => {
   let value: any = input;
   const wrapper = {
     ...mapValues(chainableFunctions, (f: any) => (...args: any[]) => {
@@ -36,3 +36,5 @@ export const chain = <T>(input: T) => {
   };
   return wrapper;
 };
+
+export default chain;

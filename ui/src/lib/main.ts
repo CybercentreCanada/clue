@@ -48,6 +48,7 @@ import Group from './components/group/Group';
 import GroupControl from './components/group/GroupControl';
 import SourcePicker from './components/SourcePicker';
 import { SNACKBAR_EVENT_ID, type SnackbarEvents } from './data/event';
+import buildDatabase from './database';
 import { ClueComponentContext } from './hooks/ClueComponentContext';
 import type { ClueConfigContextProps } from './hooks/ClueConfigProvider';
 import { ClueDatabaseContext, type ClueDatabaseContextProps } from './hooks/ClueDatabaseContext';
@@ -69,6 +70,7 @@ export {
   AnnotationEntry,
   AnnotationPreview,
   AssessmentIcon,
+  buildDatabase,
   ClueComponentContext,
   ClueDatabaseContext,
   ClueEnrichContext,
@@ -95,63 +97,63 @@ export {
   useClueFetcherSelector
 };
 
-export {
-  ClueComponentContext as BorealisComponentContext,
-  ClueDatabaseContext as BorealisDatabaseContext,
-  ClueEnrichContext as BorealisEnrichContext,
-  CluePopupContext as BorealisPopupContext,
-  ClueProvider as BorealisProvider,
-  useClue as useBorealis,
-  useClueActions as useBorealisActions,
-  useClueActionsSelector as useBorealisActionsSelector,
-  useClueEnrichSelector as useBorealisEnrichSelector,
-  useClueFetcherSelector as useBorealisFetcherSelector
-};
+  export {
+    ClueComponentContext as BorealisComponentContext,
+    ClueDatabaseContext as BorealisDatabaseContext,
+    ClueEnrichContext as BorealisEnrichContext,
+    CluePopupContext as BorealisPopupContext,
+    ClueProvider as BorealisProvider,
+    useClue as useBorealis,
+    useClueActions as useBorealisActions,
+    useClueActionsSelector as useBorealisActionsSelector,
+    useClueEnrichSelector as useBorealisEnrichSelector,
+    useClueFetcherSelector as useBorealisFetcherSelector
+  };
 
-export type {
-  ActionDefinition,
-  ActionDefinitionsResponse,
-  ActionResult,
-  Annotation,
-  BulkEnrichRequest,
-  BulkEnrichResponses,
-  ClueConfigContextProps,
-  ClueDatabase,
-  ClueDatabaseCollections,
-  ClueDatabaseContextProps,
-  ClueResponse,
-  EnrichedCardProps,
-  EnrichedTypographyProps,
-  Enrichment,
-  EnrichmentProps,
-  EnrichResponse,
-  EnrichResponses,
-  FailedRequest,
-  FetcherDefinition,
-  FetcherDefinitionsResponse,
-  FetcherResult,
-  RunningActionData,
-  Selector,
-  SelectorCollection,
-  SelectorCollectionMethods,
-  SelectorDocMethods,
-  SelectorDocType,
-  SelectorDocument,
-  SnackbarEvents,
-  StatusCollection,
-  StatusCollectionMethods,
-  StatusDocMethods,
-  StatusDocType,
-  StatusDocument,
-  TypesDetectionResponse,
-  TypesResponse,
-  WithExtra
-};
+  export type {
+    ActionDefinition,
+    ActionDefinitionsResponse,
+    ActionResult,
+    Annotation,
+    BulkEnrichRequest,
+    BulkEnrichResponses,
+    ClueConfigContextProps,
+    ClueDatabase,
+    ClueDatabaseCollections,
+    ClueDatabaseContextProps,
+    ClueResponse,
+    EnrichedCardProps,
+    EnrichedTypographyProps,
+    Enrichment,
+    EnrichmentProps,
+    EnrichResponse,
+    EnrichResponses,
+    FailedRequest,
+    FetcherDefinition,
+    FetcherDefinitionsResponse,
+    FetcherResult,
+    RunningActionData,
+    Selector,
+    SelectorCollection,
+    SelectorCollectionMethods,
+    SelectorDocMethods,
+    SelectorDocType,
+    SelectorDocument,
+    SnackbarEvents,
+    StatusCollection,
+    StatusCollectionMethods,
+    StatusDocMethods,
+    StatusDocType,
+    StatusDocument,
+    TypesDetectionResponse,
+    TypesResponse,
+    WithExtra
+  };
 
-export type {
-  ClueConfigContextProps as BorealisConfigContextProps,
-  ClueDatabase as BorealisDatabase,
-  ClueDatabaseCollections as BorealisDatabaseCollections,
-  ClueDatabaseContextProps as BorealisDatabaseContextProps,
-  ClueResponse as BorealisResponse
-};
+  export type {
+    ClueConfigContextProps as BorealisConfigContextProps,
+    ClueDatabase as BorealisDatabase,
+    ClueDatabaseCollections as BorealisDatabaseCollections,
+    ClueDatabaseContextProps as BorealisDatabaseContextProps,
+    ClueResponse as BorealisResponse
+  };

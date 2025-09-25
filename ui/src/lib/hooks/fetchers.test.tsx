@@ -13,7 +13,7 @@ vi.mock('api', { spy: true });
 const getToken = vi.fn(() => 'example token');
 const onNetworkCall = vi.fn(conf => conf);
 
-const database = await buildDatabase(false, true);
+const database = await buildDatabase({ devMode: false, storageType: 'memory' });
 
 const Wrapper = ({ children }) => {
   return (

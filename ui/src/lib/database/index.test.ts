@@ -21,7 +21,7 @@ describe('Database', () => {
     vi.clearAllMocks();
 
     // Create a fresh database instance for each test
-    database = await buildDatabase(false, true);
+    database = await buildDatabase({ devMode: false, storageType: 'memory' });
   });
 
   afterAll(() => {

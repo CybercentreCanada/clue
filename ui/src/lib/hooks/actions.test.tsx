@@ -18,7 +18,7 @@ const getToken = vi.fn(() => 'example token');
 const onNetworkCall = vi.fn(conf => conf);
 
 // Initialize test database
-const database = await buildDatabase(false, true);
+const database = await buildDatabase({ devMode: false, storageType: 'memory' });
 
 // Test wrapper component that provides the action context
 const Wrapper = ({ children }) => {

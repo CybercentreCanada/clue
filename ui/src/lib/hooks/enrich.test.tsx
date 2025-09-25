@@ -24,7 +24,7 @@ const onNetworkCall = vi.fn(conf => conf);
 const pickSources: ClueEnrichProps['pickSources'] = vi.fn(sources => sources);
 
 // Initialize test database
-const database = await buildDatabase(false, true);
+const database = await buildDatabase({ devMode: false, storageType: 'memory' });
 
 // Test wrapper component that provides the enrichment context
 const Wrapper = ({ children }) => {

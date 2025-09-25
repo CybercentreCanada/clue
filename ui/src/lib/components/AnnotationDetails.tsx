@@ -22,6 +22,7 @@ import useAnnotations from 'lib/hooks/useAnnotations';
 import useErrors from 'lib/hooks/useErrors';
 import { ICON_MAP } from 'lib/icons/iconMap';
 import type { Selector } from 'lib/types/lookup';
+import { safeDispatchEvent } from 'lib/utils/window';
 import { groupBy, isNull, uniq } from 'lodash-es';
 import type { FC } from 'react';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -114,7 +115,7 @@ const AnnotationDetails: FC<{
                 sx={{ alignSelf: 'center', m: -1 }}
                 onClick={() => {
                   navigator.clipboard.writeText(enrichRequest.value);
-                  window.dispatchEvent(
+                  safeDispatchEvent(
                     new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
                       detail: {
                         message: `${enrichRequest.value} ${t('clipboard.success')}`,

@@ -5,6 +5,7 @@ import type { SnackbarEvents } from 'lib/data/event';
 import { SNACKBAR_EVENT_ID } from 'lib/data/event';
 import { ClueGroupContext } from 'lib/hooks/ClueGroupContext';
 import useClueEnrichSelector, { useClueComponentSelector } from 'lib/hooks/selectors';
+import { safeDispatchEvent } from 'lib/utils/window';
 import { capitalize } from 'lodash-es';
 import type { FC } from 'react';
 import { useCallback, useMemo, useState } from 'react';
@@ -42,8 +43,9 @@ const GroupControl: FC = () => {
         { force: true, sources: selectedSources }
       );
     } catch (e) {
+      // eslint-disable-next-line no-console
       console.error(e);
-      window.dispatchEvent(
+      safeDispatchEvent(
         new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
           detail: {
             message: e.toString(),

@@ -4,7 +4,7 @@ import { Chip, Divider, Grid, Stack, useTheme } from '@mui/material';
 import CountBadge from 'lib/components/CountBadge';
 import { CluePopupContext } from 'lib/hooks/CluePopupContext';
 import type { Annotation, Selector } from 'lib/types/lookup';
-import { chain } from 'lib/utils';
+import chain from 'lib/utils/chain';
 import { groupBy, sortBy, sumBy } from 'lodash-es';
 import type { FC } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';

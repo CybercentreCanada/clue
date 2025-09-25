@@ -1,6 +1,12 @@
 import type { Annotation, Selector, WithExtra } from 'lib/types/lookup';
 import type { RxCollection, RxDatabase, RxDocument } from 'rxdb';
 
+export interface DatabaseConfig {
+  storageType?: 'memory' | 'sessionStorage';
+  testing?: boolean;
+  devMode?: boolean;
+}
+
 export interface SelectorDocType {
   id: string;
   source: string;

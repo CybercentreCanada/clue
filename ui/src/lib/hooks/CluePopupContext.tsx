@@ -3,6 +3,7 @@ import AnnotationDetailPopover from 'lib/components/AnnotationDetailPopover';
 import AnnotationPreview from 'lib/components/AnnotationPreview';
 import { HIDE_EVENT_ID, SHOW_EVENT_ID } from 'lib/data/event';
 import type { Annotation, Selector } from 'lib/types/lookup';
+import { safeAddEventListener, safeDispatchEvent } from 'lib/utils/window';
 import { isNull } from 'lodash-es';
 import type { FC, PropsWithChildren } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -43,7 +44,7 @@ export const CluePopupProvider: FC<PropsWithChildren> = ({ children }) => {
   const externalOnClose = useRef<() => void>(null);
 
   const showInfo: CluePopupContextType['showInfo'] = useCallback((type, anchorEl, value, options) => {
-    window.dispatchEvent(
+    safeDispatchEvent(
       new CustomEvent(SHOW_EVENT_ID, {
         detail: {
           type,
@@ -57,7 +58,7 @@ export const CluePopupProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const closeInfo: CluePopupContextType['closeInfo'] = useCallback(
     (type, value) => {
-      window.dispatchEvent(
+      safeDispatchEvent(
         new CustomEvent(HIDE_EVENT_ID, {
           detail: {
             type,
@@ -114,12 +115,12 @@ export const CluePopupProvider: FC<PropsWithChildren> = ({ children }) => {
   );
 
   useEffect(() => {
-    window.addEventListener(SHOW_EVENT_ID, handleShowPopup);
-    window.addEventListener(HIDE_EVENT_ID, handleHidePopup);
+    const cleanupShow = safeAddEventListener(SHOW_EVENT_ID, handleShowPopup);
+    const cleanupHide = safeAddEventListener(HIDE_EVENT_ID, handleHidePopup);
 
     return () => {
-      window.removeEventListener(SHOW_EVENT_ID, handleShowPopup);
-      window.removeEventListener(HIDE_EVENT_ID, handleHidePopup);
+      cleanupShow();
+      cleanupHide();
     };
   }, [handleShowPopup, handleHidePopup]);
 

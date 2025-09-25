@@ -72,7 +72,7 @@ const config = ({ mode }) => {
 
           // We calculate the offset in ../ folder navigation from the proposed file path to the root of the dist directory.
           // This looks something like: ../../
-          const relativeOffset = path.relative(path.dirname(newFilePath), distPath) + sep;
+          const relativeOffset = (path.relative(path.dirname(newFilePath), distPath) || '.') + sep;
 
           // First, we check for any lib imports in the d.ts files - we strip the lib folder as seen above.
           if (content.includes('lib')) {

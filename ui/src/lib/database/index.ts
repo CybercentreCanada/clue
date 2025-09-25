@@ -1,6 +1,5 @@
 import throttle from 'lodash-es/throttle';
-import type { RxJsonSchema } from 'rxdb';
-import { addRxPlugin, createRxDatabase } from 'rxdb';
+import { addRxPlugin, createRxDatabase, type RxJsonSchema } from 'rxdb';
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { getRxStorageLocalstorage } from 'rxdb/plugins/storage-localstorage';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
@@ -11,6 +10,7 @@ import statusSchema from './status.schema.json';
 import type {
   ClueDatabase,
   ClueDatabaseCollections,
+  DatabaseConfig,
   SelectorDocMethods,
   SelectorDocType,
   SelectorDocument,
@@ -20,6 +20,15 @@ import type {
   StatusDocType,
   StatusDocument
 } from './types';
+
+const checkVitest = () => {
+  try {
+    return !!process?.env?.VITEST;
+  } catch {
+    return false;
+  }
+};
+const IS_VITEST = checkVitest();
 
 const selectorMethods: SelectorDocMethods = {
   getAnnotations: function (this: SelectorDocument) {
@@ -77,42 +86,44 @@ const statusStatics: StatusCollectionMethods = {
   }
 };
 
-let DATABASE: ClueDatabase = null;
-
-const buildDatabase = async (devMode: boolean = !import.meta.env.PROD, inMemory: boolean = !!process.env.VITEST) => {
-  if (DATABASE) {
-    return DATABASE;
-  }
+const buildDatabase = async (_config: DatabaseConfig = {}) => {
+  const config = {
+    storageType: 'sessionStorage',
+    testing: IS_VITEST,
+    devMode: !import.meta.env.PROD,
+    ..._config
+  };
 
   addRxPlugin(RxDBUpdatePlugin);
 
   /* v8 ignore next 10 -- @preserve */
-  if (devMode) {
+  if (config.devMode) {
     await import('rxdb/plugins/dev-mode').then(module => {
       addRxPlugin(module.RxDBDevModePlugin);
 
-      if (process.env.VITEST) {
+      if (config.testing) {
         module.disableWarnings();
       }
     });
   }
 
   const database: ClueDatabase = await createRxDatabase<ClueDatabaseCollections>({
-    name: 'clue',
+    name: 'Clue',
 
     /* v8 ignore next 7 -- @preserve */
-    storage: inMemory
-      ? wrappedValidateAjvStorage({ storage: getRxStorageMemory() })
-      : wrappedKeyCompressionStorage({
-          storage: wrappedValidateAjvStorage({
-            storage: getRxStorageLocalstorage({ localStorage: sessionStorage })
-          })
-        }),
+    storage:
+      config.storageType === 'memory'
+        ? wrappedValidateAjvStorage({ storage: getRxStorageMemory() })
+        : wrappedKeyCompressionStorage({
+            storage: wrappedValidateAjvStorage({
+              storage: getRxStorageLocalstorage({ localStorage: sessionStorage })
+            })
+          }),
     closeDuplicates: true,
-    allowSlowCount: !import.meta.env.PROD
+    allowSlowCount: config.devMode
   });
 
-  if (inMemory) {
+  if (config.storageType === 'memory') {
     selectorSchema.keyCompression = false;
     statusSchema.keyCompression = false;
   }
@@ -136,8 +147,6 @@ const buildDatabase = async (devMode: boolean = !import.meta.env.PROD, inMemory:
     // eslint-disable-next-line no-console
     console.warn('Error on status wipe:', e);
   }
-
-  DATABASE = database;
 
   return database;
 };

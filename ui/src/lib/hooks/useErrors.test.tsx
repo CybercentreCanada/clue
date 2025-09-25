@@ -42,7 +42,7 @@ const TestComponent = () => {
 // Main test for the useAnnotations hook
 // This test verifies the loading state, enrichment process, and annotation retrieval
 test('useAnnotations', async () => {
-  const database = await buildDatabase(false, true);
+  const database = await buildDatabase({ devMode: false, storageType: 'memory' });
 
   // Render the TestComponent within the required providers
   const result = render(

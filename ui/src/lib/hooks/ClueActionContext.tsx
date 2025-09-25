@@ -13,6 +13,7 @@ import type { ActionDefinitionsResponse, ActionResult } from 'lib/types/action';
 import type { Selector } from 'lib/types/lookup';
 import type RunningActionData from 'lib/types/RunningActionData';
 import type WithActionData from 'lib/types/WithActionData';
+import { safeDispatchEvent } from 'lib/utils/window';
 import type { FC, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createContext, useContextSelector } from 'use-context-selector';
@@ -216,7 +217,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
         if (runningActionData?.id === actionId) {
           console.error(`Form is not valid (${validator.errors.length} errors)`);
-          window.dispatchEvent(
+          safeDispatchEvent(
             new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
               detail: {
                 message: t('action.error.validation'),
@@ -268,7 +269,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           };
         });
 
-        window.dispatchEvent(
+        safeDispatchEvent(
           new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
             detail: {
               message: (
@@ -310,7 +311,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           }
         }
       } catch (e) {
-        window.dispatchEvent(
+        safeDispatchEvent(
           new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
             detail: {
               message: e.toString(),

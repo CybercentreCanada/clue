@@ -3,7 +3,7 @@ import React from 'react';
 import { renderComponent, verifyExistence, verifyText } from '../../tests/test-utils';
 import EnrichedTypography from './EnrichedTypography';
 
-const database = await buildDatabase(false, true);
+const database = await buildDatabase({ devMode: false, storageType: 'memory' });
 
 test('EnrichedTypography - with no children text, displays the provided value', async () => {
   const type = 'ip';
