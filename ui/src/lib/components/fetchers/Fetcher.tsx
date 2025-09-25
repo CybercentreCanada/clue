@@ -1,22 +1,7 @@
 /* eslint-disable no-console */
 import { Icon } from '@iconify/react';
-import type {
-  ChipProps,
-  ModalProps,
-  PaperProps,
-  SkeletonProps,
-  StackProps
-} from '@mui/material';
-import {
-  Box,
-  Chip,
-  IconButton,
-  Paper,
-  Skeleton,
-  Stack,
-  Tooltip,
-  useTheme
-} from '@mui/material';
+import type { ChipProps, ModalProps, PaperProps, SkeletonProps, StackProps } from '@mui/material';
+import { Box, Chip, IconButton, Paper, Skeleton, Stack, Tooltip, useTheme } from '@mui/material';
 import FlexOne from 'commons/addons/flexers/FlexOne';
 import Iconified from 'lib/components/display/icons/Iconified';
 import JSONViewer from 'lib/components/display/json';

@@ -366,12 +366,12 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     () =>
       debounce(
         async () => {
-           if (!database?.status) {
-             return;
-           } else if (database.status.closed) {
-             console.warn('Status database is closed, will not enrich');
-             return;
-           }
+          if (!database?.status) {
+            return;
+          } else if (database.status.closed) {
+            console.warn('Status database is closed, will not enrich');
+            return;
+          }
 
           // Get a list of requests to send
           const selectors = await database.status

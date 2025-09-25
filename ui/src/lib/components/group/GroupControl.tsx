@@ -4,7 +4,7 @@ import Iconified from 'lib/components/display/icons/Iconified';
 import type { SnackbarEvents } from 'lib/data/event';
 import { SNACKBAR_EVENT_ID } from 'lib/data/event';
 import { ClueGroupContext } from 'lib/hooks/ClueGroupContext';
-import useClueEnrichSelector, { useClueComponentSelector } from 'lib/hooks/selectors';
+import { useClueComponentSelector, useClueEnrichSelector } from 'lib/hooks/selectors';
 import { safeDispatchEvent } from 'lib/utils/window';
 import { capitalize } from 'lodash-es';
 import type { FC } from 'react';
