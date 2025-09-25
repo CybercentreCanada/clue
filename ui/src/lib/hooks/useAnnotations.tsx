@@ -2,7 +2,7 @@ import type { Annotation, WithExtra } from 'lib/types/lookup';
 import uniqBy from 'lodash-es/uniqBy';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { ClueDatabaseContext } from './ClueDatabaseContext';
-import useClueEnrichSelector from './selectors';
+import { useClueEnrichSelector } from './selectors';
 
 interface AnnotationOptions {
   skipEnrichment?: boolean;
