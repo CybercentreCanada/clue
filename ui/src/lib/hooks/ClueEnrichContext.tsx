@@ -98,7 +98,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     }
 
     let iconURL = customIconify ?? import.meta.env.VITE_ICONIFY_TARGET ?? baseURL?.replace(/^[^.]+/, 'icons');
-    if (!iconURL && !window.location.origin.includes('localhost')) {
+    // Ensuring window exists (may be missing in some test environments, in some circumstances)
+    if (!iconURL && typeof window !== 'undefined' && !!window && !window.location.origin.includes('localhost')) {
       iconURL = window.location.protocol + '//' + window.location.origin.replace(/^[^.]+/, 'icons');
     }
 
@@ -205,10 +206,10 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         classification: options.classification
       };
 
-      let statusRecord = await database.status.findOne({ selector: { ...selector } }).exec();
+      let statusRecord = await database.status?.findOne({ selector: { ...selector } }).exec();
 
       if (!statusRecord) {
-        statusRecord = await database.status.insert({
+        statusRecord = await database.status?.insert({
           id: uuid(),
           type: selector.type,
           value: selector.value,
@@ -224,7 +225,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
         const enrichData: EnrichResponses = Object.values(Object.values(enrichmentResult)[0])[0];
 
-        await statusRecord.incrementalPatch({ status: 'complete' });
+        await statusRecord?.incrementalPatch({ status: 'complete' });
 
         await _addEntries(Object.values(enrichData));
 
@@ -365,6 +366,13 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     () =>
       debounce(
         async () => {
+           if (!database?.status) {
+             return;
+           } else if (database.status.closed) {
+             console.warn('Status database is closed, will not enrich');
+             return;
+           }
+
           // Get a list of requests to send
           const selectors = await database.status
             .find({ selector: { status: 'pending' } })
@@ -459,7 +467,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   }, [database, debugLogging]);
 
   useEffect(() => {
-    if (!enabled || !isReady || !database) {
+    if (!enabled || !isReady || !database?.status) {
       return;
     }
 

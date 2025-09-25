@@ -53,14 +53,18 @@ const useAnnotations = (
   );
 
   useEffect(() => {
-    if (!ready) {
+    if (!ready || !database?.status) {
       return;
     }
 
     // Monitor the status database for in-progress requests
-    database.status
+    const observable = database.status
       .count({ selector: { type, value, classification, status: 'in-progress' } })
       .$.subscribe(_count => setLoading(_count > 0));
+
+    return () => {
+      observable?.unsubscribe();
+    };
   }, [classification, database, ready, type, value]);
 
   useEffect(() => {
