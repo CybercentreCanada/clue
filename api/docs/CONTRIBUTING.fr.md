@@ -5,16 +5,16 @@
 Clue vise à fonctionner comme une sorte de tissu de connexion entre les applications. Initialement envisagée comme une plateforme d'enrichissement, sa fonctionnalité s'est élargie pour permettre également l'exécution d'actions par le biais d'une interface unifiée, et
 comprendra éventuellement la récupération de représentations de données (c'est-à-dire des rendus d'e-mails, des arbres de processus pour un hôte, etc.)
 
-Pour ce faire, borealis s'appuie sur une architecture de plugins, où les services sont configurés de telle sorte que borealis
+Pour ce faire, clue s'appuie sur une architecture de plugins, où les services sont configurés de telle sorte que clue
 sache qu'il faut faire appel à un plugin donné dans diverses circonstances. Par exemple, une demande d'exécution de l'action
 `example_plugin.example_action` serait dirigée vers le plugin avec l'identifiant `example_plugin`. Pour l'enrichissement, le serveur central
 demande à tous les plugins concernés de fournir des annotations d'enrichissement pour un sélecteur donné.
 
-Ce document vous guidera dans le développement, la publication et le déploiement d'un nouveau plugin borealis.
+Ce document vous guidera dans le développement, la publication et le déploiement d'un nouveau plugin clue.
 
 ## Conception
 
-L'approche "par défaut" des plugins borealis consiste à exécuter un serveur flask dans un pod sur l'espace de noms dédié à borealis, et
+L'approche "par défaut" des plugins clue consiste à exécuter un serveur flask dans un pod sur l'espace de noms dédié à clue, et
 pour que la communication entre les plugins se fasse en interne dans le cluster. Cependant, les plugins peuvent être hébergés à n'importe quel endroit accessible par le serveur central à l'adresse. Le processus d'exécution d'une application ressemble à ceci:
 
 ### Initiation de la demande
@@ -33,7 +33,7 @@ Les réponses de chaque plugin sont ensuite fusionnées et renvoyées avec certa
 
 ### Enrichissement
 
-Les enrichissements sont la spécialité de borealis. Cela implique que l'utilisateur demande des informations d'enrichissement sur un sélecteur
+Les enrichissements sont la spécialité de clue. Cela implique que l'utilisateur demande des informations d'enrichissement sur un sélecteur
 donné en effectuant un appel réseau à l'API centrale, comme suit:
 
 ```python
@@ -258,7 +258,7 @@ et la deuxième clé est la valeur:
 }
 ```
 
-Cependant, ce formatage est en grande partie géré par l'API centrale et le plugin borealis.
+Cependant, ce formatage est en grande partie géré par l'API centrale et le plugin clue.
 
 ### Actions
 
@@ -283,7 +283,7 @@ Vous remarquerez le champ supplémentaire prévu. Nous l'expliquerons plus loin.
 #### Paramètres supplémentaires
 
 Les plugins Clue qui exposent une action peuvent demander des paramètres supplémentaires à l'utilisateur afin de fournir le contexte de
-la demande d'action au plugin. Ces paramètres peuvent être déclarés du côté du plugin, et la bibliothèque borealis UI se chargera
+la demande d'action au plugin. Ces paramètres peuvent être déclarés du côté du plugin, et la bibliothèque clue UI se chargera
 de rassembler les paramètres supplémentaires.
 
 Les paramètres supplémentaires sont spécifiés à l'aide de Python Generics et de l'héritage de classes. Voici un exemple correspondant à
@@ -387,12 +387,12 @@ plugin = CluePlugin(
 
 ## Intégration de votre plugin dans Clue - Responsabilités et attentes
 
-Étant donné que borealis est un projet relativement complexe qui comporte un grand nombre de pièces mobiles, il est important de définir les responsabilités des différentes parties prenantes sur le site :
+Étant donné que clue est un projet relativement complexe qui comporte un grand nombre de pièces mobiles, il est important de définir les responsabilités des différentes parties prenantes sur le site :
 
-1. APA2B est le principal propriétaire du code de borealis-api (c'est-à-dire tout le code contenu dans le dossier `borealis/`).
+1. APA2B est le principal propriétaire du code de clue-api (c'est-à-dire tout le code contenu dans le dossier `clue/`).
 2. Chaque équipe est responsable de la maintenance et de l'évolution de son plugin spécifique.
 3. Chaque équipe est responsable de la compatibilité entre son plugin et l'API centrale.
-   1. Il s'agit notamment de s'adapter aux ruptures introduites au cours du développement du service de base borealis.
+   1. Il s'agit notamment de s'adapter aux ruptures introduites au cours du développement du service de base clue.
    2. L'APA2B s'efforcera de limiter autant que possible ces changements radicaux et de les annoncer suffisamment à l'avance.
 4. L'APA2B est disponible pour apporter son soutien au développement (poser des questions, corriger des bogues dans le service central, etc.)
 5. L'APA2B est responsable du maintien de la stabilité du service dans son ensemble.
@@ -403,22 +403,22 @@ Lorsque vous créez un plugin, la première étape consiste à décider de l'end
 
 ### Inclure le plugin dans le repo
 
-Cette approche vous permet de développer le plugin, en l'incluant dans le processus de construction de borealis, en veillant à ce qu'il soit étroitement intégré à
-avec les changements de schéma et les mises à jour de fonctionnalités au sommet des paquets de base de borealis. Cela permet aux développeurs de borealis de tester
+Cette approche vous permet de développer le plugin, en l'incluant dans le processus de construction de clue, en veillant à ce qu'il soit étroitement intégré à
+avec les changements de schéma et les mises à jour de fonctionnalités au sommet des paquets de base de clue. Cela permet aux développeurs de clue de tester
 la compatibilité de votre plugin, et c'est actuellement l'approche recommandée.
 
 **Note : Seuls les plugins python sont actuellement pris en charge de cette manière!**
 
 La première étape consiste à créer un dossier pour votre application dans le répertoire
-[plugins directory](https://github.com/CybercentreCanada/borealis-api/tree/develop/plugins). Vous pouvez utiliser le
-[borealis example template](https://github.com/CybercentreCanada/borealis-plugin-template/) pour le faire, ou copier un plugin existant
+[plugins directory](https://github.com/CybercentreCanada/clue-api/tree/develop/plugins). Vous pouvez utiliser le
+[clue example template](https://github.com/CybercentreCanada/clue-plugin-template/) pour le faire, ou copier un plugin existant
 en fonction de vos préférences.
 
 Une fois que vous avez terminé le développement des fonctionnalités de base, il est **fortement recommandé** d'écrire au moins
 des tests unitaires de base pour votre plugin, la norme d'excellence en la matière étant un test d'intégration complet avec des données fictives. Pour vous inspirer de, consultez les plugins existants et leurs régimes de test.
 
 Vous devez également ajouter une entrée au
-[`azure-pipelines.yml`](https://github.com/CybercentreCanada/borealis-api/blob/develop/azure-pipelines.yml#L277)
+[`azure-pipelines.yml`](https://github.com/CybercentreCanada/clue-api/blob/develop/azure-pipelines.yml#L277)
 à la racine du projet de votre application.
 
 Pour des informations détaillées sur l'initialisation des tests, voir notre site principal [README](../README.md) de l'APA2B. Pour obtenir un soutien supplémentaire, adressez-vous à l'APA2B à l'adresse.
@@ -439,19 +439,19 @@ Une fois que vous êtes satisfait de votre plugin, créez une pull request pour 
 Certains contrôles de la qualité du code sont effectués sur la base de code - si des problèmes sont signalés, travaillez avec un membre de
 APA2B pour les résoudre. Seuls les contrôles de lisibilité et de compatibilité relèvent de la responsabilité de l'APA2B - nous n'avons aucun droit de regard sur
 la fonctionnalité de votre plugin et nous ne pouvons pas vous aider à développer votre plugin au-delà des questions relatives à la base de code
-borealis.
+clue.
 
 ### Repo autonome
 
 Si vous trouvez nos normes de code trop strictes ou insuffisantes, ou si vous voulez développer le plugin dans un langage autre que
 python, ou si vous ne voulez tout simplement pas être inclus dans le dépôt, vous êtes invité à héberger, tester et construire le plugin dans
-un dépôt autonome. Nous recommandons d'effectuer des tests d'intégration avec une copie de l'API borealis pour garantir la compatibilité avec celle-ci.
+un dépôt autonome. Nous recommandons d'effectuer des tests d'intégration avec une copie de l'API clue pour garantir la compatibilité avec celle-ci.
 
 ## Déployer le plugin
 
 Actuellement, le déploiement des plugins dans l'espace de noms d'enrichissement relève de la responsabilité de l'APA2B - il n'existe aucune ressource sur
 permettant aux développeurs de déployer et de supprimer manuellement leurs plugins. Cependant, le plugin peut exister partout où l'API centrale
-borealis peut être atteinte, il n'est donc pas nécessaire de le déployer dans cet espace de noms.
+clue peut être atteinte, il n'est donc pas nécessaire de le déployer dans cet espace de noms.
 
 Si votre code est hébergé dans ce repo, l'APA2B vous aidera à configurer et à déployer votre plugin lorsqu'il sera prêt pour la production sur.
 Il est prévu d'améliorer la gestion des plugins, y compris leur déploiement dans l'espace de noms d'enrichissement
@@ -462,7 +462,7 @@ sans l'intervention de l'APA2B, mais la mise en œuvre de cette mesure prendra u
 Si vous hébergez le code de votre plugin dans ce repo, la construction de l'image et son déploiement seront de la responsabilité de l'APA2B -
 sinon, c'est la responsabilité des développeurs du plugin.
 
-Actuellement, l'enregistrement des plugins auprès de l'API centrale de borealis est principalement géré par les fichiers de configuration
+Actuellement, l'enregistrement des plugins auprès de l'API centrale de clue est principalement géré par les fichiers de configuration
 dans les charts de Helm. Il existe un support pour l'enregistrement des plugins au moment de l'exécution, mais il est assez basique - contactez l'APA2B si
 vous êtes intéressé par l'enregistrement au moment de l'exécution.
 
@@ -472,7 +472,7 @@ vous êtes intéressé par l'enregistrement au moment de l'exécution.
 
 ```bash
 pip install poetry
-cd borealis-api
+cd clue-api
 poetry install --with dev,test --all-extras
 
 poetry run pre-commit install
@@ -487,7 +487,7 @@ Pour activer un venv, utilisez **`poetry shell`**.
 Pour ajouter une nouvelle dépendance, utilisez **`poetry add`** :
 
 ```bash
-➜  borealis-api git:(poetry) poetry add pyjwt
+➜  clue-api git:(poetry) poetry add pyjwt
 Using version ^2.8.0 for pyjwt
 
 Updating dependencies
@@ -507,10 +507,10 @@ Puis livrer les nouveaux `pyproject.toml` et `poetry.lock`.
 ```bash
 # Clue config.yml should be in this location, as well as classification.yml
 # For a starter config, use the test config.yml and classification.
-sudo mkdir -p /etc/borealis/conf
+sudo mkdir -p /etc/clue/conf
 # Log file directory, will write log files here if enabled
-sudo mkdir -p /var/log/borealis
+sudo mkdir -p /var/log/clue
 
-sudo chown -R $USER /etc/borealis
-sudo chown $USER /var/log/borealis
+sudo chown -R $USER /etc/clue
+sudo chown $USER /var/log/clue
 ```

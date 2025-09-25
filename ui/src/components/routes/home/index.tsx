@@ -68,7 +68,7 @@ const PluginResultCard: FC<{
         })}
       >
         <Typography variant="body1" noWrap sx={{ textTransform: 'capitalize', width: '100%' }}>
-          {source.replace('old-borealis-', '')}
+          {source}
         </Typography>
         <IconButton>{visible[type + value + source] ? <ExpandLess /> : <ExpandMore />}</IconButton>
       </Stack>
