@@ -142,7 +142,6 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=16384
       - name: Publish Built Package
         run: |
-          ls
           pnpm publish --access public
           # pnpm publish --provenance --access public
         working-directory: ./ui/dist

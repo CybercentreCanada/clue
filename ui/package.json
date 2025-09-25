@@ -124,9 +124,6 @@
       "react-app"
     ]
   },
-  "files": [
-    "dist"
-  ],
   "jest": {
     "transformIgnorePatterns": [
       "!node_modules/url-join"
@@ -137,7 +134,7 @@
       "prettier --write --config .prettierrc"
     ]
   },
-  "main": "dist/main.js",
+  "main": "main.js",
   "name": "@cccsaurora/clue-ui",
   "peerDependencies": {
     "@emotion/react": "^11.11.1",
@@ -163,6 +160,6 @@
     "test-ui": "vitest --ui --coverage"
   },
   "type": "module",
-  "types": "dist/main.d.ts",
+  "types": "main.d.ts",
   "version": "0.15.0"
 }
