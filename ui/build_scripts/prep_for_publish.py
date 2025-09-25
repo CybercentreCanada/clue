@@ -53,7 +53,7 @@ for path in (ui_path / "src").rglob("**"):
     ):
         continue
 
-    exports.append(path.relative_to(ui_path / "src"))
+    exports.append(path.relative_to(ui_path / "src" / "lib"))
 
     if (
         index := next(
