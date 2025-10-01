@@ -32,6 +32,7 @@ def temp_log_dir():
     with tempfile.TemporaryDirectory() as temp_dir:
         yield temp_dir
 
+
 @pytest.fixture(scope="module", autouse=True)
 def reset_logger():
     yield True
@@ -71,7 +72,7 @@ class TestJsonFormatter:
         """Test that JsonFormatter correctly handles exceptions with traceback."""
         formatter = JsonFormatter(CLUE_JSON_FORMAT)
         try:
-            raise ValueError("Test exception")
+            raise ValueError("Test exception")  # noqa: TRY301
         except ValueError:
             exc_info = logging.sys.exc_info()
 
@@ -92,7 +93,7 @@ class TestJsonFormatter:
         """Test that formatException returns formatted traceback."""
         formatter = JsonFormatter(CLUE_JSON_FORMAT)
         try:
-            raise ValueError("Test exception")
+            raise ValueError("Test exception")  # noqa: TRY301
         except ValueError:
             exc_info = logging.sys.exc_info()
 
