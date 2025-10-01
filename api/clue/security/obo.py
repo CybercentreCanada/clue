@@ -4,6 +4,7 @@ from typing import Optional
 from clue.common.exceptions import InvalidDataException
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
+from clue.extensions import get_extensions
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.utils import decode_jwt_payload
 
@@ -31,7 +32,34 @@ def _get_token_raw(service: str, user: str) -> Optional[str]:
     return None
 
 
-def get_obo_token(service: str, access_token: str, user: str, force_refresh: bool = False):
+def try_validate_expiry(obo_access_token: str):
+    """Validates the expiry of an OBO (On-Behalf-Of) access token.
+
+    Attempts to decode the JWT payload of the provided token and checks the 'exp' (expiry) field.
+    If the token has expired, logs a warning and returns None.
+    If the token is not a JWT or the 'exp' field is missing, logs a warning and skips expiry validation.
+
+    Args:
+        obo_access_token (str): The OBO access token to validate.
+
+    Returns:
+        str or None: The original token if valid or expiry cannot be determined, otherwise None if expired.
+    """
+    try:
+        expiry = datetime.fromtimestamp(decode_jwt_payload(obo_access_token)["exp"])
+
+        if expiry < datetime.now():
+            logger.warning("Cached token has expired")
+            return None
+    except IndexError:
+        logger.warning("Token is not a JWT, skipping expiry validation")
+    except KeyError:
+        logger.warning("'exp' field is missing, skipping expiry validation")
+
+    return obo_access_token
+
+
+def get_obo_token(service: str, access_token: str, user: str, force_refresh: bool = False):  # noqa: C901
     """Gets an On-Behalf-Of token from either the Redis cache or from the provided authentication plugin.
 
     Args:
@@ -60,17 +88,22 @@ def get_obo_token(service: str, access_token: str, user: str, force_refresh: boo
             obo_access_token = _get_token_raw(service, user)
 
         if obo_access_token is not None:
-            expiry = datetime.fromtimestamp(decode_jwt_payload(obo_access_token)["exp"])
-
-            if expiry < datetime.now():
-                logger.warning("Cached token has expired")
-                obo_access_token = None
+            obo_access_token = try_validate_expiry(obo_access_token)
 
         if obo_access_token is None:
             logger.info(f"Fetching OBO token for user {user} to service {service}")
 
-            # TODO: figure out plugin-based OBO system
-            obo_access_token = None
+            extension_get_obo_token = None
+            for extension in get_extensions():
+                if extension.modules.obo_module:
+                    extension_get_obo_token = extension.modules.obo_module
+                    break
+
+            if extension_get_obo_token is None:
+                logger.info("No OBO function provided, returning provided access token")
+                return access_token
+
+            obo_access_token = extension_get_obo_token(service, access_token, user)
 
             if obo_access_token:
                 service_token_store = _get_obo_token_store(service, user)

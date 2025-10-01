@@ -13,10 +13,10 @@ except Exception:  # noqa: S110
 
 APP_NAME: str = default_string_value(env_name="APP_NAME", default="clue")  # type: ignore[assignment]
 
-BRL_SYSLOG_FORMAT = f"HWL %(levelname)8s {hostname} %(process)5d %(name)40s | %(message)s"
-BRL_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s | %(message)s"
-BRL_DATE_FORMAT = "%y/%m/%d %H:%M:%S"
-BRL_JSON_FORMAT = (
+CLUE_SYSLOG_FORMAT = f"HWL %(levelname)8s {hostname} %(process)5d %(name)40s | %(message)s"
+CLUE_LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s | %(message)s"
+CLUE_DATE_FORMAT = "%y/%m/%d %H:%M:%S"
+CLUE_JSON_FORMAT = (
     f"{{"
     f'"@timestamp": "%(asctime)s", '
     f'"event": {{ "module": "{APP_NAME}", "dataset": "%(name)s" }}, '
@@ -25,8 +25,8 @@ BRL_JSON_FORMAT = (
     f'"process": {{ "pid": "%(process)d" }}, '
     f'"message": %(message)s}}'
 )
-BRL_ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-BRL_AUDIT_FORMAT = json.dumps(
+CLUE_ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
+CLUE_AUDIT_FORMAT = json.dumps(
     {
         "date": "%(asctime)s",
         "type": "audit",

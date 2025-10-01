@@ -1,6 +1,6 @@
-import os
 import re
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 from baseconv import BASE62_ALPHABET
@@ -19,8 +19,9 @@ from clue.common.uid import LONG, MEDIUM, SHORT, TINY, get_id_from_data, get_ran
 
 
 def test_classification():
-    yml_config = os.path.join(os.path.dirname(os.path.dirname(__file__)), "classification.yml")
-    cl_engine = forge.get_classification(yml_config=yml_config)
+    yml_config = Path(__file__).parent.parent.parent / "classification.yml"
+
+    cl_engine = forge.get_classification(yml_config=str(yml_config))
 
     u = "U//REL DEPTS"
     r = "R//GOD//G1"

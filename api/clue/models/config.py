@@ -4,6 +4,7 @@ import os
 from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
+from typing import Self
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -14,11 +15,10 @@ from pydantic_settings import (
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
-from typing_extensions import Self
 
 from clue.common import forge
 from clue.common.exceptions import ClueValueError
-from clue.common.logging.format import BRL_DATE_FORMAT, BRL_LOG_FORMAT
+from clue.common.logging.format import CLUE_DATE_FORMAT, CLUE_LOG_FORMAT
 from clue.common.str_utils import default_string_value
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
@@ -216,8 +216,13 @@ class Metrics(BaseModel):
 
 
 class Core(BaseModel):
+    extensions: set[str] = Field(description="A list of extensions to load", default=set())
+
     metrics: Metrics = Metrics()
+    "Configuration for Metrics Collection"
+
     redis: RedisServer = RedisServer()
+    "Configuration for Redis instances"
 
 
 class LogLevel(str, Enum):
@@ -394,7 +399,7 @@ if os.getenv("AZURE_TEST_CONFIG", None) is not None:
     logger.setLevel(logging.INFO)
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter(BRL_LOG_FORMAT, BRL_DATE_FORMAT))
+    console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
     logger.addHandler(console)
 
     logger.info("Azure build environment detected, adding additional config path")

@@ -1,13 +1,14 @@
 import logging
 import os
 import re
-from typing import Any
+from typing import Any, cast
 
 import elasticapm
 from authlib.integrations.flask_client import OAuth
 from elasticapm.contrib.flask import ElasticAPM
 from flasgger import Swagger
 from flask import Flask
+from flask.blueprints import Blueprint
 from flask.logging import default_handler
 from prometheus_client import make_wsgi_app
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -25,10 +26,11 @@ from clue.common.logging import get_logger
 from clue.config import DEBUG, SECRET_KEY, cache, config
 from clue.cronjobs import setup_jobs as setup_cron_jobs
 from clue.error import errors
+from clue.extensions import get_extensions
 from clue.healthz import healthz
 
-SESSION_COOKIE_SAMESITE = os.environ.get("BRL_SESSION_COOKIE_SAMESITE", None)
-HSTS_MAX_AGE = os.environ.get("BRL_HSTS_MAX_AGE", None)
+SESSION_COOKIE_SAMESITE = os.environ.get("CLUE_SESSION_COOKIE_SAMESITE", None)
+HSTS_MAX_AGE = os.environ.get("CLUE_HSTS_MAX_AGE", None)
 
 logger = get_logger(__file__)
 
@@ -94,6 +96,17 @@ app.register_blueprint(fetchers_api)
 app.register_blueprint(lookup_api)
 app.register_blueprint(registration_api)
 app.register_blueprint(static_api)
+
+
+logger.info("Checking plugins for additional routes")
+for plugin in get_extensions():
+    if not plugin.modules.routes:
+        continue
+
+    for route in cast(list[Blueprint], plugin.modules.routes):
+        logger.info("Enabling additional endpoint: %s", route.url_prefix)
+        app.register_blueprint(route)
+
 # Setup OAuth providers
 if config.auth.oauth.enabled:
     providers = []

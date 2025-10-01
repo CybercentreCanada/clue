@@ -84,7 +84,7 @@ def main():  # noqa: C901
             )
         else:
             pytest = subprocess.Popen(
-                prep_command("pytest --cov=clue --cov-branch --cov-config=.coveragerc.pytest -rP -vv test"),
+                prep_command("pytest --cov=clue --cov-branch --cov-config=.coveragerc.pytest -rfE -vv test"),
                 stdout=subprocess.PIPE,
             )
 

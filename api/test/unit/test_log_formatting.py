@@ -8,7 +8,7 @@ from queue import Queue
 import pytest
 
 from clue.common.logging import JsonFormatter
-from clue.common.logging.format import BRL_JSON_FORMAT
+from clue.common.logging.format import CLUE_JSON_FORMAT
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def json_logger():
 
     queue = Queue()
     logger.addHandler(logging.handlers.QueueHandler(queue))
-    logger.handlers[0].setFormatter(JsonFormatter(BRL_JSON_FORMAT))
+    logger.handlers[0].setFormatter(JsonFormatter(CLUE_JSON_FORMAT))
 
     yield logger, queue
 
@@ -29,7 +29,7 @@ def test_null_messages(json_logger):
     logger.info(None)
     record = queue.get()
     out_msg = json.loads(record.message)
-    assert out_msg["message"] == "None"
+    assert out_msg["message"] is None
 
 
 def test_empty_messages(json_logger):
@@ -56,7 +56,7 @@ def test_simple_obj_messages(json_logger):
     logger.info(msg)
     record = queue.get()
     out_msg = json.loads(record.message)
-    assert out_msg["message"] == str(msg)
+    assert out_msg["message"] == msg
 
 
 def test_simple_json_messages(json_logger):

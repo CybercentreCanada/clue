@@ -17,7 +17,7 @@ logger = get_logger(__file__)
 
 # Either cache for one second in debug mode, or five minutes in production
 CACHE_TIMEOUT: int = 1 if DEBUG else 5 * 60
-CACHE = RedisCache(prefix="brl_types", ttl=CACHE_TIMEOUT)
+CACHE = RedisCache(prefix="clue_types", ttl=CACHE_TIMEOUT)
 
 
 def get_types_regular_expressions(user: dict[str, Any]):

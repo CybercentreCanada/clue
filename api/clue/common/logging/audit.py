@@ -5,10 +5,10 @@ import sys
 from flask import request
 
 from clue.common.logging.format import (
-    BRL_AUDIT_FORMAT,
-    BRL_DATE_FORMAT,
-    BRL_ISO_DATE_FORMAT,
-    BRL_LOG_FORMAT,
+    CLUE_AUDIT_FORMAT,
+    CLUE_DATE_FORMAT,
+    CLUE_ISO_DATE_FORMAT,
+    CLUE_LOG_FORMAT,
 )
 from clue.config import DEBUG, config
 
@@ -63,12 +63,12 @@ if AUDIT:
 if not os.path.exists(config.logging.log_directory):
     os.makedirs(config.logging.log_directory)
 
-fh = logging.FileHandler(os.path.join(config.logging.log_directory, "brl_audit.log"))
+fh = logging.FileHandler(os.path.join(config.logging.log_directory, "clue_audit.log"))
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(
     logging.Formatter(
-        BRL_LOG_FORMAT if DEBUG else BRL_AUDIT_FORMAT,
-        BRL_DATE_FORMAT if DEBUG else BRL_ISO_DATE_FORMAT,
+        CLUE_LOG_FORMAT if DEBUG else CLUE_AUDIT_FORMAT,
+        CLUE_DATE_FORMAT if DEBUG else CLUE_ISO_DATE_FORMAT,
     )
 )
 AUDIT_LOG.addHandler(fh)
@@ -77,8 +77,8 @@ ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.INFO)
 ch.setFormatter(
     logging.Formatter(
-        BRL_LOG_FORMAT if DEBUG else BRL_AUDIT_FORMAT,
-        BRL_DATE_FORMAT if DEBUG else BRL_ISO_DATE_FORMAT,
+        CLUE_LOG_FORMAT if DEBUG else CLUE_AUDIT_FORMAT,
+        CLUE_DATE_FORMAT if DEBUG else CLUE_ISO_DATE_FORMAT,
     )
 )
 AUDIT_LOG.addHandler(ch)

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from flask_caching import Cache
 
 from clue.common.dict_utils import recursive_update
-from clue.common.logging.format import BRL_DATE_FORMAT, BRL_LOG_FORMAT
+from clue.common.logging.format import CLUE_DATE_FORMAT, CLUE_LOG_FORMAT
 from clue.common.str_utils import default_string_value
 
 APP_NAME: str = default_string_value(env_name="APP_NAME", default="clue")  # type: ignore[assignment]
@@ -27,7 +27,7 @@ logger = logging.getLogger(f"{APP_NAME}.common.forge")
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
-console.setFormatter(logging.Formatter(BRL_LOG_FORMAT, BRL_DATE_FORMAT))
+console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
 logger.addHandler(console)
 
 

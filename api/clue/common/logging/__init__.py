@@ -10,10 +10,10 @@ from typing import Optional, Self, Union
 from flask import request
 
 from clue.common.logging.format import (
-    BRL_DATE_FORMAT,
-    BRL_JSON_FORMAT,
-    BRL_LOG_FORMAT,
-    BRL_SYSLOG_FORMAT,
+    CLUE_DATE_FORMAT,
+    CLUE_JSON_FORMAT,
+    CLUE_LOG_FORMAT,
+    CLUE_SYSLOG_FORMAT,
 )
 from clue.common.str_utils import default_string_value
 
@@ -50,10 +50,15 @@ class JsonFormatter(logging.Formatter):
             record.exc_info = None
 
         if record.exc_text:
-            record.message += "\n" + record.exc_text
+            record.msg += "\n" + record.exc_text
             record.exc_text = None
 
-        record.message = json.dumps(record.message)
+        record.msg = json.dumps(record.msg)
+
+        record.asctime = self.formatTime(record, self.datefmt)
+
+        record.message = record.msg
+
         return self._style.format(record)
 
     def formatException(self, exc_info):  # noqa: N802
@@ -120,9 +125,9 @@ def init_logging(name: str, log_level: Optional[int] = None):  # noqa: C901
             )
             dbg_file_handler.setLevel(logging.DEBUG)
             if config.logging.log_as_json:
-                dbg_file_handler.setFormatter(JsonFormatter(BRL_JSON_FORMAT))
+                dbg_file_handler.setFormatter(JsonFormatter(CLUE_JSON_FORMAT))
             else:
-                dbg_file_handler.setFormatter(logging.Formatter(BRL_LOG_FORMAT, BRL_DATE_FORMAT))
+                dbg_file_handler.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
             logger.addHandler(dbg_file_handler)
 
         if log_level <= logging.INFO:
@@ -133,9 +138,9 @@ def init_logging(name: str, log_level: Optional[int] = None):  # noqa: C901
             )
             op_file_handler.setLevel(logging.INFO)
             if config.logging.log_as_json:
-                op_file_handler.setFormatter(JsonFormatter(BRL_JSON_FORMAT))
+                op_file_handler.setFormatter(JsonFormatter(CLUE_JSON_FORMAT))
             else:
-                op_file_handler.setFormatter(logging.Formatter(BRL_LOG_FORMAT, BRL_DATE_FORMAT))
+                op_file_handler.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
             logger.addHandler(op_file_handler)
 
         if log_level <= logging.ERROR:
@@ -146,24 +151,24 @@ def init_logging(name: str, log_level: Optional[int] = None):  # noqa: C901
             )
             err_file_handler.setLevel(logging.ERROR)
             if config.logging.log_as_json:
-                err_file_handler.setFormatter(JsonFormatter(BRL_JSON_FORMAT))
+                err_file_handler.setFormatter(JsonFormatter(CLUE_JSON_FORMAT))
             else:
-                err_file_handler.setFormatter(logging.Formatter(BRL_LOG_FORMAT, BRL_DATE_FORMAT))
+                err_file_handler.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
             logger.addHandler(err_file_handler)
 
     if config.logging.log_to_console:
         console = logging.StreamHandler()
         if config.logging.log_as_json:
-            console.setFormatter(JsonFormatter(BRL_JSON_FORMAT))
+            console.setFormatter(JsonFormatter(CLUE_JSON_FORMAT))
         else:
-            console.setFormatter(logging.Formatter(BRL_LOG_FORMAT, BRL_DATE_FORMAT))
+            console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
         logger.addHandler(console)
 
     if config.logging.log_to_syslog and config.logging.syslog_host and config.logging.syslog_port:
         syslog_handler = logging.handlers.SysLogHandler(
             address=(config.logging.syslog_host, config.logging.syslog_port)
         )
-        syslog_handler.formatter = logging.Formatter(BRL_SYSLOG_FORMAT)
+        syslog_handler.formatter = logging.Formatter(CLUE_SYSLOG_FORMAT)
         logger.addHandler(syslog_handler)
 
     return logger.getChild(name)
