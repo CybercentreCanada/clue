@@ -16,6 +16,7 @@ def get_extensions() -> list[BaseExtensionConfig]:
         if extension in EXTENSIONS:
             continue
 
+        logger.info("Initializing extension %s", extension)
         try:
             EXTENSIONS[extension] = importlib.import_module(f"{extension}.config").config
         except (ImportError, ModuleNotFoundError):
