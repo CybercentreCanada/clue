@@ -126,6 +126,7 @@ suppress-none-returning = true
 [tool.ruff.lint.per-file-ignores]
 "test/*" = ["C901", "D", "ANN", "S", "N818"]
 "build_scripts/*" = ["D", "ANN", "S", "N818", "T201"]
+"clue/app.py" = ["E402"]
 "clue/api/v1/auth.py" = ["TRY301"]
 "clue/common/classification.py" = ["D", "ANN", "C901", "TRY301", "T203"]
 "clue/plugin/interactive.py" = ["T201"]

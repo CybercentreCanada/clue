@@ -1,3 +1,23 @@
+import os
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# We append the plugin directory for howler to the python part
+PLUGIN_PATH = Path(os.environ.get("CLUE_PLUGIN_DIRECTORY", "/etc/clue/plugins"))
+sys.path.insert(0, str(PLUGIN_PATH))
+
+from clue.config import DEBUG, SECRET_KEY, cache, config
+
+if config.api.debug and PLUGIN_PATH.exists():
+    for _plugin in PLUGIN_PATH.iterdir():
+        sys.path.append(
+            str(Path(os.path.realpath(_plugin)) / f"../.venv/lib/python3.{sys.version_info.minor}/site-packages")
+        )
+
 import logging
 import os
 import re
@@ -23,7 +43,6 @@ from clue.api.v1.lookup import lookup_api
 from clue.api.v1.registration import registration_api
 from clue.api.v1.static import static_api
 from clue.common.logging import get_logger
-from clue.config import DEBUG, SECRET_KEY, cache, config
 from clue.cronjobs import setup_jobs as setup_cron_jobs
 from clue.error import errors
 from clue.extensions import get_extensions
