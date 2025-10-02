@@ -155,7 +155,7 @@ jobs:
       - name: Extract Clue UI version
         id: version
         run: |
-          python -c "import json;print('version='+json.load(open('package.json', 'r'))['version'])" >> $GITHUB_OUTPUT
+          python -c "import json;print('version='+json.load(open('package.json', 'r'))['version'].split('-')[0])" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v3
