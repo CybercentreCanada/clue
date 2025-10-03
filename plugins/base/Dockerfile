@@ -23,6 +23,8 @@ RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.4.8-r0
 
 RUN pip install --no-cache-dir --index=${index} --prefix=/install $clue_version
 
+ENV PIP_PRE=0
+
 FROM base as release
 
 # create local user
