@@ -1,3 +1,4 @@
+import inspect
 import ipaddress
 import json
 import logging
@@ -17,6 +18,7 @@ from clue.cache import Cache
 from clue.common.exceptions import (
     AuthenticationException,
     ClueException,
+    ClueValueError,
     InvalidDataException,
     NotFoundException,
     TimeoutException,
@@ -36,6 +38,17 @@ from clue.models.selector import Selector
 from clue.plugin.helpers.token import get_username
 from clue.plugin.models import BulkEntry
 from clue.plugin.utils import Params
+
+OVERRIDABLE_FUNCTIONS = [
+    "enrich",
+    "alternate_bulk_lookup",
+    "liveness",
+    "readyness",
+    "run_action",
+    "run_fetcher",
+    "setup_actions",
+    "validate_token",
+]
 
 
 def default_validate_token():
@@ -223,7 +236,7 @@ class CluePlugin:
         actions: list[Action] = [],
         alternate_bulk_lookup: Callable[[list[dict[str, str]], Params], dict[str, dict[str, BulkEntry]]] | None = None,
         cache_timeout: int = 5 * 60,  # five minute timeout
-        classification: str = os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
+        classification: str | None = os.environ.get("CLASSIFICATION", None),
         enable_apm: bool = False,
         enable_cache: Union[bool, Literal["redis"], Literal["local"]] = True,
         enrich: Callable[[str, str, Params, str | None], Union[list[QueryEntry], QueryEntry]] | None = None,
@@ -235,7 +248,7 @@ class CluePlugin:
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
-        supported_types: set[str] | None = None,
+        supported_types: set[str] | str | None = None,
         validate_token: Callable[[], tuple[str | None, str | None]] | None = None,
     ) -> None:
         """Helper class for creating clue plugins with proper server responses and behaviour.
@@ -302,10 +315,20 @@ class CluePlugin:
         self.alternate_bulk_lookup = alternate_bulk_lookup
         self.app = Flask(__name__.split(".")[0])
         self.app_name = app_name
+
+        if classification is None:
+            raise ClueValueError(
+                "classification must be specified, either via the CLASSIFICATION environment variable, or when "
+                "intializing the plugin."
+            )
+
         self.classification = classification
         self.liveness = liveness
         self.readyness = readyness
-        self.supported_types = supported_types
+        if isinstance(supported_types, str):
+            self.supported_types = set(supported_types.split(","))
+        else:
+            self.supported_types = supported_types
 
         self.actions = actions
         self.setup_actions = setup_actions
@@ -352,6 +375,13 @@ class CluePlugin:
         if self.logger.parent:  # pragma: no cover
             for h in self.logger.parent.handlers:
                 wlog.addHandler(h)
+
+        # Injects the "app" variable back into the calling module, for use with gunicorn/flask
+        current_frame = inspect.currentframe()
+        if current_frame:
+            caller_frame = current_frame.f_back
+            if caller_frame and "app" not in caller_frame.f_globals:
+                caller_frame.f_globals["app"] = self.app
 
         self.logger.debug("Initialization complete!")
 
@@ -1006,3 +1036,56 @@ class CluePlugin:
             self.logger.info("Error Message: %s", result.error)
 
         return self.make_api_response(result, status_code=status_code)
+
+    def use(self, func: Callable):
+        """Register a function to be used by the CluePlugin for specific operations.
+
+        This decorator allows you to register functions that will be called during various
+        plugin operations. The function name must match one of the supported overridable
+        functions defined in OVERRIDABLE_FUNCTIONS.
+
+        Supported function names and their purposes:
+        - `enrich`: Main enrichment function for processing selectors
+        - `alternate_bulk_lookup`: Alternative bulk enrichment implementation
+        - `liveness`: Kubernetes liveness probe endpoint
+        - `readyness`: Kubernetes readiness probe endpoint
+        - `run_action`: Function to execute plugin actions
+        - `run_fetcher`: Function to execute plugin fetchers
+        - `setup_actions`: Runtime action definition generation
+        - `validate_token`: Custom authentication token validation
+
+        Args:
+            func: The function to register. The function name determines which plugin
+                  operation it will be used for.
+
+        Returns:
+            The original function (allows use as a decorator).
+
+        Example:
+            ```python
+            plugin = CluePlugin("my_plugin")
+
+            @plugin.use
+            def enrich(type_name: str, value: str, params: Params, token: str | None):
+                # Your enrichment logic here
+                return QueryEntry(...)
+            ```
+
+        Note:
+            If a function with the same name is already registered, a warning will be logged
+            and the new function will replace the existing one.
+        """
+        function_name = func.__name__
+        if function_name not in OVERRIDABLE_FUNCTIONS:
+            self.logger.error(
+                "%s is not a valid function to use in a clue plugin. Supported list: %s",
+                function_name,
+                ", ".join(OVERRIDABLE_FUNCTIONS),
+            )
+
+        if getattr(self, function_name) is not None:
+            self.logger.warning("plugin.uses decorator is overwriting existing function: %s", function_name)
+
+        setattr(self, function_name, func)
+
+        return func

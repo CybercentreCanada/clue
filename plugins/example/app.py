@@ -10,7 +10,6 @@ Status: Development
 import os
 import textwrap
 
-from clue.common.exceptions import InvalidDataException
 from clue.common.logging import get_logger
 from clue.models.network import Annotation, QueryEntry
 from clue.plugin import CluePlugin
@@ -18,16 +17,20 @@ from clue.plugin.utils import Params
 from pydantic_core import Url
 
 CLASSIFICATION = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
-TYPES = {"ipv4", "ipv6", "domain", "url", "email_address"}
 
 logger = get_logger(__file__)
 
+plugin = CluePlugin(
+    app_name=os.environ.get("APP_NAME", "test-plugin"),
+    classification=CLASSIFICATION,
+    supported_types="ipv4,ipv6,domain,url,email_address",
+    logger=logger,
+)
 
+
+@plugin.use
 def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
     "Enrich a given indicator"
-    if type_name not in TYPES:
-        raise InvalidDataException(message=f"Type name `{type_name}` is invalid. Valid types are: {', '.join(TYPES)}")
-
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
     return QueryEntry(
@@ -56,30 +59,3 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
             )
         ],
     )
-
-
-plugin = CluePlugin(
-    app_name=os.environ.get("APP_NAME", "test-plugin"),
-    classification=CLASSIFICATION,
-    enable_apm=False,
-    enable_cache=True,
-    enrich=enrich,
-    supported_types=TYPES,
-    logger=logger,
-)
-
-
-app = plugin.app
-
-
-def main():
-    """Main application function"""
-    plugin.app.run(
-        host="0.0.0.0",  # noqa: S104
-        port=int(os.environ.get("PLUGIN_PORT", os.environ.get("PORT", 8000))),
-        debug=bool(os.environ.get("DEBUG", "False").capitalize()),
-    )
-
-
-if __name__ == "__main__":
-    main()

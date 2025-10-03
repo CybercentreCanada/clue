@@ -13,6 +13,9 @@ from termcolor import colored
 
 from clue.plugin import CluePlugin
 
+PLUGINS_PATH = Path(__file__).parent.parent.parent.parent / "plugins"
+sys.path.insert(0, str(PLUGINS_PATH))
+
 TESTABLE_FUNCTIONS = [
     ("get_actions", None),
     ("execute_action", "run_action"),
@@ -50,7 +53,7 @@ class CustomTestClient(FlaskClient):
     "Custom test client to inject authorization headers"
 
     def open(self, *args, buffered=False, follow_redirects=False, **kwargs):
-        "Overriden open funciton to inject auth header"
+        "Overriden open function to inject auth header"
         headers = kwargs.setdefault("headers", {})
 
         if "CLUE_ACCESS_TOKEN" in os.environ:
@@ -164,7 +167,7 @@ def main():  # noqa: C901
     if len(sys.argv) > 1:
         plugin_name = sys.argv[1]
 
-        if not (Path(__file__).parent.parent.parent / "plugins" / plugin_name).exists():
+        if not (PLUGINS_PATH / plugin_name).exists():
             error(f"Plugin {plugin_name} does not exist.")
             plugin_name = None
 
@@ -175,7 +178,7 @@ def main():  # noqa: C901
             plugin_name = None
 
     try:
-        _module = importlib.import_module(f"plugins.{plugin_name}.app")
+        _module = importlib.import_module(f"{plugin_name}.app")
         success(f"Initializing plugin {plugin_name} for interactivity")
     except Exception:
         error(f"Initializing plugin {plugin_name} for interactivity")

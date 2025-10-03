@@ -257,7 +257,7 @@ last_success = "build_scripts.last_success:main"
 check_changes = "build_scripts.check_changes:main"
 type_check = "build_scripts.type_check:main"
 coverage_report = "build_scripts.coverage_reports:main"
-
+plugin = "clue.plugin.interactive:main"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
