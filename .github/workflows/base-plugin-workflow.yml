@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   formatting:
-    name: Validate Clue API Code Quality
+    name: Validate Clue Base Plugin
 
     runs-on: ubuntu-latest
     defaults:
@@ -43,8 +43,9 @@ jobs:
       - name: Checkout current ref
         uses: actions/checkout@v4
       - name: Run docker formatting checks
-        run: |
-          docker run --rm -i hadolint/hadolint < Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: plugins/base/Dockerfile
 
   test_docker_build:
     if: github.event_name == 'pull_request'
