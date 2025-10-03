@@ -4,12 +4,9 @@ Team: CCCS
 
 Point of Contact: [Matthew Rafuse] <matthew.rafuse@cyber.gc.ca>
 
-Status: In Development
+Status: Development
 
-[If not in use, provide a reason here, e.g., "The functionality has been replaced by a newer module,"
-"The project it was part of has been deprecated," or "It is awaiting further development or review."]
 
-[Optional: Add any additional context or notes about the module's purpose or history.]
 """
 
 import json
@@ -51,7 +48,7 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
         f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})"
     )
 
-    result = QueryEntry(
+    return QueryEntry(
         classification=CLASSIFICATION,
         count=1,
         link=Url("https://example.com"),
@@ -77,8 +74,6 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
             )
         ],
     )
-
-    return result
 
 
 def run_action(
