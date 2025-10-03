@@ -30,10 +30,12 @@ permissions:
 
 jobs:
   check-example-plugin-formatting:
+    name: Lint Example Plugin
     uses: ./.github/workflows/lint-plugin.yml
     with:
       plugin-path: plugins/example
   build-example-plugin:
+    name: Build Example Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml
     with:
       plugin-path: plugins/example

@@ -13,7 +13,7 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    name: Build Clue Base Plugin Docker Image
+    name: Build Docker Image
 
     permissions:
       id-token: write
