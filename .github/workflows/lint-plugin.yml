@@ -22,8 +22,8 @@ jobs:
       - name: Install Ruff
         run: pip install ruff
 
-      - name: Run Ruff lint
-        run: ruff check ${{ inputs.plugin-path }}
-
       - name: Run Ruff format
-        run: ruff format ${{ inputs.plugin-path }}
+        run: ruff format ${{ inputs.plugin-path }} --diff
+
+      - name: Run Ruff lint
+        run: ruff check ${{ inputs.plugin-path }} --output-format=github
