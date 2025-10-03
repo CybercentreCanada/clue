@@ -6,9 +6,14 @@ authors = [{ name = "Matthew Rafuse", email = "Matthew.Rafuse@cyber.gc.ca" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-dependencies = ["clue-api (>=1.0.1.49,<2.0.0.0)"]
-
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+clue-api = {version = "1.0.1.dev53", allow-prereleases = true}
+
+[[tool.poetry.source]]
+name = "pypi"
+priority = "supplemental"
