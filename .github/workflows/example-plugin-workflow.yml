@@ -1,4 +1,4 @@
-name: Clue Base Plugin Image
+name: Clue Example Plugin
 
 on:
   push:
