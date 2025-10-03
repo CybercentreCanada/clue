@@ -29,6 +29,6 @@ permissions:
 
 jobs:
   check-example-plugin-formatting:
-    uses: ./.github/workflows/shared/lint-plugin.yml
+    uses: ./.github/workflows/lint-plugin.yml
     with:
       plugin-path: plugins/example
