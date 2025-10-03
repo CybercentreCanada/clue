@@ -1,13 +1,10 @@
 FROM python:3.12-alpine AS base
-# Upgrade packages
-RUN apk update && apk upgrade
-
-# Get required apk packages
-RUN apk add --no-cache libffi
 
 # Make sure root account is locked so 'su' commands fail all the time
 RUN passwd -l root
 
+# Upgrade packages and get required packages
+RUN apk update && apk upgrade && apk add --no-cache libffi=3.5.2-r0
 
 FROM base as builder
 # support mirrors
@@ -22,19 +19,19 @@ RUN mkdir /install
 WORKDIR /install
 
 # Get required apk packages
-RUN apk add --no-cache build-base libffi-dev
+RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.5.2-r0
 
 # Copy the pip.conf and expose its environment variable.
 # This will make pip install use our cccs-stratus feed.
-COPY pip.conf pip.conf
-ENV PIP_CONFIG_FILE pip.conf
+# COPY pip.conf pip.conf
+# ENV PIP_CONFIG_FILE pip.conf
 
-# Install dependencies
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install --prefix=/install -r /tmp/requirements.txt
+# # Install dependencies
+# COPY requirements.txt /tmp/requirements.txt
+# RUN pip install --prefix=/install -r /tmp/requirements.txt
 
-# clean up pip.conf file.
-RUN rm pip.conf
+# # clean up pip.conf file.
+# RUN rm pip.conf
 
 FROM base as release
 # create local user
@@ -54,4 +51,4 @@ ENV WORKER_CLASS=gevent
 ENV HOST=0.0.0.0
 ENV PORT=8000
 EXPOSE $PORT
-ENTRYPOINT gunicorn -c "$GUNICORN_CONF" -k "$WORKER_CLASS" --pythonpath /home/clue "$APP_MODULE"
+ENTRYPOINT ["gunicorn", "-c", "/home/clue/gunicorn_config.py", "-k", "gevent", "--pythonpath", "/home/clue", "patched:app"]
