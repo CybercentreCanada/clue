@@ -36,3 +36,7 @@ jobs:
     uses: ./.github/workflows/build-plugin.yml
     with:
       plugin-path: plugins/example
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
