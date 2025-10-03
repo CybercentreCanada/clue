@@ -1,0 +1,34 @@
+name: Clue Base Plugin Image
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/example/**
+      - .github/workflows/example-plugin-workflow.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/example/**
+      - .github/workflows/example-plugin-workflow.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-example-plugin-formatting:
+    uses: ./.github/workflows/shared/lint-plugin.yml
+    with:
+      plugin-path: plugins/example
