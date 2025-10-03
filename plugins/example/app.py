@@ -5,8 +5,6 @@ Team: CCCS
 Point of Contact: [Matthew Rafuse] <matthew.rafuse@cyber.gc.ca>
 
 Status: Development
-
-
 """
 
 import os
@@ -28,13 +26,9 @@ logger = get_logger(__file__)
 def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
     "Enrich a given indicator"
     if type_name not in TYPES:
-        raise InvalidDataException(
-            message=f"Type name `{type_name}` is invalid. Valid types are: {', '.join(TYPES)}"
-        )
+        raise InvalidDataException(message=f"Type name `{type_name}` is invalid. Valid types are: {', '.join(TYPES)}")
 
-    logger.info(
-        f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})"
-    )
+    logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
     return QueryEntry(
         classification=CLASSIFICATION,
@@ -61,8 +55,6 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
                 confidence=1.0,
             )
         ],
-
-
     )
 
 
