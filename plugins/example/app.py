@@ -81,10 +81,9 @@ app = plugin.app
 
 
 def main():
-    """
-    Main application function
-
-
+    """Main application function
+    
+    
     """
     plugin.app.run(
         host="0.0.0.0",  # noqa: S104
