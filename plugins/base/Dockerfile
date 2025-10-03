@@ -5,7 +5,7 @@ FROM python:3.12-alpine AS base
 RUN passwd -l root
 
 # Upgrade packages and get required packages
-# RUN apk update && apk upgrade && apk add --no-cache libffi=3.4.8-r0
+RUN apk update && apk upgrade && apk add --no-cache libffi=3.4.8-r0
 
 
 FROM base as builder
