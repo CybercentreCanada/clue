@@ -40,3 +40,4 @@ jobs:
       id-token: write
       contents: read
       attestations: write
+    secrets: inherit
