@@ -4,7 +4,7 @@ FROM python:3.12-alpine AS base
 RUN passwd -l root
 
 # Upgrade packages and get required packages
-RUN apk update && apk upgrade && apk add --no-cache libffi=3.5.2-r0
+RUN apk update && apk upgrade && apk add --no-cache libffi=3.4.8-r0
 
 FROM base as builder
 # support mirrors
@@ -19,7 +19,7 @@ RUN mkdir /install
 WORKDIR /install
 
 # Get required apk packages
-RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.5.2-r0
+RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.4.8-r0
 
 # Copy the pip.conf and expose its environment variable.
 # This will make pip install use our cccs-stratus feed.
