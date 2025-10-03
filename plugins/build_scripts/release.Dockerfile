@@ -1,4 +1,4 @@
-ARG base_plugin_version="0.0.8"
+ARG base_plugin_version
 
 FROM cccsaurora/clue-plugin-base:${base_plugin_version}
 
