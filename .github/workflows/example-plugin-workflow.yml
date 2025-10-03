@@ -10,6 +10,7 @@ on:
     paths:
       - plugins/example/**
       - .github/workflows/example-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
     tags:
       - v*
   pull_request:
