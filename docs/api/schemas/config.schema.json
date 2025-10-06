@@ -1,0 +1,860 @@
+{
+  "$defs": {
+    "API": {
+      "properties": {
+        "audit": {
+          "default": true,
+          "description": "Should API calls be audited and saved to a separate log file?",
+          "title": "Audit",
+          "type": "boolean"
+        },
+        "debug": {
+          "default": false,
+          "description": "Enable debugging?",
+          "title": "Debug",
+          "type": "boolean"
+        },
+        "discover_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Discover URL",
+          "title": "Discover Url"
+        },
+        "external_sources": {
+          "default": [],
+          "description": "List of external sources to query",
+          "items": {
+            "$ref": "#/$defs/ExternalSource"
+          },
+          "title": "External Sources",
+          "type": "array"
+        },
+        "obo_targets": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OBOService"
+          },
+          "default": {},
+          "description": "List of targets clue can OBO to",
+          "title": "Obo Targets",
+          "type": "object"
+        },
+        "secret_key": {
+          "description": "Flask secret key to store cookies, etc.",
+          "title": "Secret Key",
+          "type": "string"
+        },
+        "session_duration": {
+          "default": 3600,
+          "description": "Duration of the user session before the user has to login again",
+          "title": "Session Duration",
+          "type": "integer"
+        },
+        "validate_session_ip": {
+          "default": true,
+          "description": "Validate if the session IP matches the IP the session was created from",
+          "title": "Validate Session Ip",
+          "type": "boolean"
+        },
+        "validate_session_useragent": {
+          "default": true,
+          "description": "Validate if the session useragent matches the useragent the session was created with",
+          "title": "Validate Session Useragent",
+          "type": "boolean"
+        },
+        "validate_session_xsrf_token": {
+          "default": true,
+          "description": "Validate if the XSRF token matches the randomly generated token for the session",
+          "title": "Validate Session Xsrf Token",
+          "type": "boolean"
+        }
+      },
+      "title": "API",
+      "type": "object"
+    },
+    "APMServer": {
+      "properties": {
+        "server_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "URL to API server",
+          "title": "Server Url"
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Authentication token for server",
+          "title": "Token"
+        }
+      },
+      "title": "APMServer",
+      "type": "object"
+    },
+    "Auth": {
+      "properties": {
+        "allow_apikeys": {
+          "default": false,
+          "description": "Allow API keys?",
+          "title": "Allow Apikeys",
+          "type": "boolean"
+        },
+        "apikeys": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "API Keys available in the system",
+          "title": "Apikeys",
+          "type": "object"
+        },
+        "oauth": {
+          "$ref": "#/$defs/OAuth",
+          "default": {
+            "enabled": false,
+            "gravatar_enabled": false,
+            "other_audiences": null,
+            "providers": {}
+          }
+        },
+        "propagate_clue_key": {
+          "default": true,
+          "description": "Should clue include the root clue token in requests when OBO is used?",
+          "title": "Propagate Clue Key",
+          "type": "boolean"
+        },
+        "service_account": {
+          "$ref": "#/$defs/ServiceAccount",
+          "default": {
+            "accounts": [],
+            "enabled": false
+          }
+        }
+      },
+      "title": "Auth",
+      "type": "object"
+    },
+    "Core": {
+      "properties": {
+        "extensions": {
+          "default": [],
+          "description": "A list of extensions to load",
+          "items": {
+            "type": "string"
+          },
+          "title": "Extensions",
+          "type": "array",
+          "uniqueItems": true
+        },
+        "metrics": {
+          "$ref": "#/$defs/Metrics",
+          "default": {
+            "apm_server": {
+              "server_url": null,
+              "token": null
+            },
+            "export_interval": 5,
+            "redis": {
+              "host": "127.0.0.1",
+              "port": 6379
+            }
+          }
+        },
+        "redis": {
+          "$ref": "#/$defs/RedisServer",
+          "default": {
+            "host": "127.0.0.1",
+            "port": 6379
+          }
+        }
+      },
+      "title": "Core",
+      "type": "object"
+    },
+    "ExternalSource": {
+      "properties": {
+        "built_in": {
+          "default": true,
+          "description": "Is this a source included in the clue configuration files?",
+          "title": "Built In",
+          "type": "boolean"
+        },
+        "classification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "TLP:CLEAR",
+          "description": "Minimum classification applied to information from the source and required to know the existence of the source.",
+          "title": "Classification"
+        },
+        "datahub_link": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Link to datahub entry on this enrichment",
+          "title": "Datahub Link"
+        },
+        "default_timeout": {
+          "default": 30,
+          "description": "How long should clue wait by default for action execution?",
+          "title": "Default Timeout",
+          "type": "number"
+        },
+        "documentation_link": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Link to documentation on this enrichment",
+          "title": "Documentation Link"
+        },
+        "include_default": {
+          "default": true,
+          "description": "Should this source be included by default, or only when specifically requested?",
+          "title": "Include Default",
+          "type": "boolean"
+        },
+        "maintainer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Email contact in the RFC-5322 format 'Full Name <email_address>'.",
+          "title": "Maintainer"
+        },
+        "max_classification": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum classification of data that may be handled by the source",
+          "title": "Max Classification"
+        },
+        "name": {
+          "description": "Name of the source.",
+          "title": "Name",
+          "type": "string"
+        },
+        "obo_target": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The name of a target clue should OBO to before forwarding the token",
+          "title": "Obo Target"
+        },
+        "production": {
+          "default": false,
+          "description": "Is this source ready for production? This will disable model validation for increased speeds",
+          "title": "Production",
+          "type": "boolean"
+        },
+        "url": {
+          "description": "URL of the upstream source's lookup service.",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "url"
+      ],
+      "title": "ExternalSource",
+      "type": "object"
+    },
+    "LogLevel": {
+      "enum": [
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL",
+        "DISABLED"
+      ],
+      "title": "LogLevel",
+      "type": "string"
+    },
+    "Logging": {
+      "properties": {
+        "export_interval": {
+          "default": 5,
+          "description": "How often, in seconds, should counters log their values?",
+          "title": "Export Interval",
+          "type": "integer"
+        },
+        "heartbeat_file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Add a health check to core components.<br>If `true`, core components will touch this path regularly to tell the container environment it is healthy",
+          "title": "Heartbeat File"
+        },
+        "log_as_json": {
+          "default": false,
+          "description": "Log in JSON format?",
+          "title": "Log As Json",
+          "type": "boolean"
+        },
+        "log_directory": {
+          "default": "/var/log/clue/",
+          "description": "If `log_to_file: true`, what is the directory to store logs?",
+          "title": "Log Directory",
+          "type": "string"
+        },
+        "log_level": {
+          "$ref": "#/$defs/LogLevel",
+          "default": "DEBUG",
+          "description": "What level of logging should we have?"
+        },
+        "log_to_console": {
+          "default": true,
+          "description": "Should we log to console?",
+          "title": "Log To Console",
+          "type": "boolean"
+        },
+        "log_to_file": {
+          "default": false,
+          "description": "Should we log to files on the server?",
+          "title": "Log To File",
+          "type": "boolean"
+        },
+        "log_to_syslog": {
+          "default": false,
+          "description": "Should logs be sent to a syslog server?",
+          "title": "Log To Syslog",
+          "type": "boolean"
+        },
+        "syslog_host": {
+          "default": "localhost",
+          "description": "If `log_to_syslog: true`, provide hostname/IP of the syslog server?",
+          "title": "Syslog Host",
+          "type": "string"
+        },
+        "syslog_port": {
+          "default": 514,
+          "description": "If `log_to_syslog: true`, provide port of the syslog server?",
+          "title": "Syslog Port",
+          "type": "integer"
+        }
+      },
+      "title": "Logging",
+      "type": "object"
+    },
+    "Metrics": {
+      "properties": {
+        "apm_server": {
+          "$ref": "#/$defs/APMServer",
+          "default": {
+            "server_url": null,
+            "token": null
+          }
+        },
+        "export_interval": {
+          "default": 5,
+          "description": "How often should we be exporting metrics?",
+          "title": "Export Interval",
+          "type": "integer"
+        },
+        "redis": {
+          "$ref": "#/$defs/RedisServer",
+          "default": {
+            "host": "127.0.0.1",
+            "port": 6379
+          }
+        }
+      },
+      "title": "Metrics",
+      "type": "object"
+    },
+    "OAuth": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Enable use of OAuth?",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "gravatar_enabled": {
+          "default": false,
+          "description": "Enable gravatar?",
+          "title": "Gravatar Enabled",
+          "type": "boolean"
+        },
+        "other_audiences": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What other audiences in JWT tokens should Clue accept?",
+          "title": "Other Audiences"
+        },
+        "providers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OAuthProvider"
+          },
+          "default": {},
+          "description": "OAuth provider configuration",
+          "title": "Providers",
+          "type": "object"
+        }
+      },
+      "title": "OAuth",
+      "type": "object"
+    },
+    "OAuthProvider": {
+      "properties": {
+        "access_token_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "URL to get access token",
+          "title": "Access Token Url"
+        },
+        "api_base_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Base URL for downloading the user's and groups info",
+          "title": "Api Base Url"
+        },
+        "audience": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The audience to validate against. Only must be set if audience is different than the client id.",
+          "title": "Audience"
+        },
+        "authorize_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "URL used to authorize access to a resource",
+          "title": "Authorize Url"
+        },
+        "auto_create": {
+          "default": true,
+          "description": "Auto-create users if they are missing",
+          "title": "Auto Create",
+          "type": "boolean"
+        },
+        "auto_sync": {
+          "default": false,
+          "description": "Should we automatically sync with OAuth provider?",
+          "title": "Auto Sync",
+          "type": "boolean"
+        },
+        "classification_map": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "A mapping of OAuth groups to classification levels",
+          "title": "Classification Map",
+          "type": "object"
+        },
+        "client_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "ID of your application to authenticate to the OAuth provider",
+          "title": "Client Id"
+        },
+        "client_secret": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Password to your application to authenticate to the OAuth provider",
+          "title": "Client Secret"
+        },
+        "iss": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional issuer field for JWT validation",
+          "title": "Iss"
+        },
+        "jwks_uri": {
+          "description": "URL used to verify if a returned JWKS token is valid",
+          "title": "Jwks Uri",
+          "type": "string"
+        },
+        "required_groups": {
+          "default": [],
+          "description": "The groups the JWT must contain in order to allow access",
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Groups",
+          "type": "array"
+        },
+        "role_map": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "description": "A mapping of OAuth groups to clue roles",
+          "title": "Role Map",
+          "type": "object"
+        },
+        "scope": {
+          "description": "The scope to validate against",
+          "title": "Scope",
+          "type": "string"
+        },
+        "uid_format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Format of the user ID based on the captured parts from the regex",
+          "title": "Uid Format"
+        },
+        "uid_randomize": {
+          "default": false,
+          "description": "Should we generate a random username for the authenticated user?",
+          "title": "Uid Randomize",
+          "type": "boolean"
+        },
+        "uid_randomize_delimiter": {
+          "default": "-",
+          "description": "What is the delimiter used by the random name generator?",
+          "title": "Uid Randomize Delimiter",
+          "type": "string"
+        },
+        "uid_randomize_digits": {
+          "default": 0,
+          "description": "How many digits should we add at the end of the username?",
+          "title": "Uid Randomize Digits",
+          "type": "integer"
+        },
+        "uid_regex": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Regex used to parse an email address and capture parts to create a user ID out of it",
+          "title": "Uid Regex"
+        }
+      },
+      "required": [
+        "client_id",
+        "access_token_url",
+        "authorize_url",
+        "api_base_url",
+        "audience",
+        "scope",
+        "jwks_uri"
+      ],
+      "title": "OAuthProvider",
+      "type": "object"
+    },
+    "OBOService": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "description": "Is this service available?",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "quota": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional quota for the number of concurrent requests per user to this service",
+          "title": "Quota"
+        },
+        "scope": {
+          "description": "The scope to OBO to.",
+          "title": "Scope",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope"
+      ],
+      "title": "OBOService",
+      "type": "object"
+    },
+    "RedisServer": {
+      "properties": {
+        "host": {
+          "default": "127.0.0.1",
+          "description": "Hostname of Redis instance",
+          "title": "Host",
+          "type": "string"
+        },
+        "port": {
+          "default": 6379,
+          "description": "Port of Redis instance",
+          "title": "Port",
+          "type": "integer"
+        }
+      },
+      "title": "RedisServer",
+      "type": "object"
+    },
+    "ServiceAccount": {
+      "properties": {
+        "accounts": {
+          "default": [],
+          "description": "A list of service accounts on a per-provider basis",
+          "items": {
+            "$ref": "#/$defs/ServiceAccountCreds"
+          },
+          "title": "Accounts",
+          "type": "array"
+        },
+        "enabled": {
+          "default": false,
+          "description": "Enable use of a service account?",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "ServiceAccount",
+      "type": "object"
+    },
+    "ServiceAccountCreds": {
+      "properties": {
+        "password": {
+          "description": "Password of the service account",
+          "title": "Password",
+          "type": "string"
+        },
+        "provider": {
+          "description": "What OAuth provider does this service account connect to?",
+          "title": "Provider",
+          "type": "string"
+        },
+        "username": {
+          "description": "Username of the service account",
+          "title": "Username",
+          "type": "string"
+        }
+      },
+      "required": [
+        "username",
+        "password",
+        "provider"
+      ],
+      "title": "ServiceAccountCreds",
+      "type": "object"
+    },
+    "UI": {
+      "properties": {
+        "cors_origins": {
+          "default": [],
+          "description": "List of valid deployments",
+          "items": {
+            "type": "string"
+          },
+          "title": "Cors Origins",
+          "type": "array"
+        }
+      },
+      "title": "UI",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "api": {
+      "$ref": "#/$defs/API",
+      "default": {
+        "audit": true,
+        "debug": false,
+        "discover_url": null,
+        "external_sources": [],
+        "obo_targets": {},
+        "secret_key": "0593427f333642fe9f4311e20d472347",
+        "session_duration": 3600,
+        "validate_session_ip": true,
+        "validate_session_useragent": true,
+        "validate_session_xsrf_token": true
+      }
+    },
+    "auth": {
+      "$ref": "#/$defs/Auth",
+      "default": {
+        "allow_apikeys": false,
+        "apikeys": {},
+        "oauth": {
+          "enabled": false,
+          "gravatar_enabled": false,
+          "other_audiences": null,
+          "providers": {}
+        },
+        "propagate_clue_key": true,
+        "service_account": {
+          "accounts": [],
+          "enabled": false
+        }
+      }
+    },
+    "core": {
+      "$ref": "#/$defs/Core",
+      "default": {
+        "extensions": [],
+        "metrics": {
+          "apm_server": {
+            "server_url": null,
+            "token": null
+          },
+          "export_interval": 5,
+          "redis": {
+            "host": "127.0.0.1",
+            "port": 6379
+          }
+        },
+        "redis": {
+          "host": "127.0.0.1",
+          "port": 6379
+        }
+      }
+    },
+    "logging": {
+      "$ref": "#/$defs/Logging",
+      "default": {
+        "export_interval": 5,
+        "heartbeat_file": null,
+        "log_as_json": false,
+        "log_directory": "/var/log/clue/",
+        "log_level": "DEBUG",
+        "log_to_console": true,
+        "log_to_file": false,
+        "log_to_syslog": false,
+        "syslog_host": "localhost",
+        "syslog_port": 514
+      }
+    },
+    "ui": {
+      "$ref": "#/$defs/UI",
+      "default": {
+        "cors_origins": []
+      }
+    }
+  },
+  "title": "Config",
+  "type": "object"
+}

@@ -18,10 +18,6 @@ For plugin deployments, we use a simplified approach:
 - Update the container image tag in the `develop` branch
 - Changes are then deployed to the target cluster
 
-### Core API Releases
-
-Core API releases follow the standard release process using `chappie` (our internal release automation tool).
-
 ## Pre-deployment Verification
 
 Before deploying changes, it is recommended to verify that your local repository state matches the live cluster
@@ -150,8 +146,8 @@ enrichment, tree-viewer, Deployment (apps) has changed:
           null
         containers:
         - name: tree-viewer
--         image: "uchimera.azurecr.io/cccs/ap/enrichment-api/tree-viewer-plugin:develop"
-+         image: "uchimera.azurecr.io/cccs/ap/enrichment-api/tree-viewer-plugin:0.12.2_main"
+-         image: "tree-viewer-plugin:develop"
++         image: "tree-viewer-plugin:0.12.2_main"
           imagePullPolicy: "Always"
           ports:
           - containerPort: 5000

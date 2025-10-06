@@ -89,5 +89,17 @@
   "markdownlint.config": {
     "MD024": false,
     "MD033": false
-  }
+  },
+  "errorLens.alignMessage": {
+
+    "start": 120,
+    "end": 0,
+    "minimumMargin": 4,
+    "padding": [
+      0,
+      0
+    ],
+    "useFixedPosition": true
+  },
+  "errorLens.codeLensTemplate": "$source $severity $message"
 }

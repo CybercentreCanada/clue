@@ -455,6 +455,12 @@ class Config(BaseSettings):
 
 if __name__ == "__main__":
     # When executed, the config model will print the default values of the configuration
+    import json
+
     import yaml
 
+    print("Schema: ")  # noqa: T201
+    print(json.dumps(Config.model_json_schema(), indent=2))  # noqa: T201
+
+    print("\n\nConfig:")  # noqa: T201
     print(yaml.safe_dump(Config().model_dump(mode="json")))  # noqa: T201
