@@ -319,8 +319,6 @@ class CluePlugin:
         self.app = Flask(__name__.split(".")[0])
         self.app_name = app_name
 
-        print(os.environ)
-
         if classification is None:
             raise ClueValueError(
                 "classification must be specified, either via the CLASSIFICATION environment variable, or when "
