@@ -62,7 +62,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build and push Clue Base Plugin Docker image
+      - name: Build and Push Docker image
         id: push
         uses: docker/build-push-action@v3
         with:

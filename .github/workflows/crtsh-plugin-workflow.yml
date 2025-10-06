@@ -1,4 +1,4 @@
-name: Clue Example Plugin
+name: Clue crt.sh Plugin
 
 on:
   push:
