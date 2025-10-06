@@ -67,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{inputs.plugin-path}}
-          file: plugins/build_scripts/Dockerfile
+          file: plugins/build/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
