@@ -37,11 +37,12 @@ USER clue
 
 WORKDIR /home/clue
 COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
+COPY --chown=clue:clue --from=builder /install/.venv /home/clue/.venv
 RUN cp clue/plugins/files/* .
 
 ENV APP_MODULE=patched:app
-ENV PATH=/home/clue/.local/bin:/home/clue/clue/.venv/bin:$PATH
-ENV PYTHONPATH=$PYTHONPATH:/home/clue/clue/.venv/lib/python3.12/site-packages
+ENV PATH=/home/clue/.local/bin:/home/clue/.venv/bin:$PATH
+ENV PYTHONPATH=$PYTHONPATH:/home/clue/.venv/lib/python3.12/site-packages
 
 # run app
 ENV GUNICORN_CONF=/home/clue/gunicorn_config.py

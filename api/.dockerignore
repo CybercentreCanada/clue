@@ -25,4 +25,3 @@ coverage.xml
 *.log
 .flake8
 .gitignore
-README.md
