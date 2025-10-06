@@ -38,7 +38,8 @@ USER clue
 WORKDIR /home/clue
 COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
 COPY --chown=clue:clue --from=builder /install/.venv /home/clue/.venv
-RUN cp clue/plugins/files/* .
+RUN ls /home/clue/clue -a
+RUN cp /home/clue/clue/plugin/files/* .
 
 ENV APP_MODULE=patched:app
 ENV PATH=/home/clue/.local/bin:/home/clue/.venv/bin:$PATH
