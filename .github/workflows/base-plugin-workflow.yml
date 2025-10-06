@@ -139,7 +139,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v3
         with:
-          context: plugins/base
+          context: api
           file: plugins/base/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}

@@ -10,20 +10,23 @@ RUN apk update && apk upgrade && apk add --no-cache libffi=3.4.8-r0
 
 FROM base as builder
 
-ARG clue_version="clue-api"
-ARG use_prereleases=1
-ARG index="https://pypi.org/simple"
-
-ENV PIP_PRE=${use_prereleases}
-
 RUN mkdir /install
 WORKDIR /install
 
-RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.4.8-r0
+RUN apk update && apk add --no-cache build-base gcc musl-dev libffi-dev openssl-dev && rm -rf /var/cache/apk/*
 
-RUN pip install --no-cache-dir --index=${index} --prefix=/install $clue_version && pip show clue-api
+# Upgrade pip
+RUN pip install --no-cache-dir --no-warn-script-location --upgrade pip && rm -rf ~/.cache/pip
 
-ENV PIP_PRE=0
+# Install poetry
+RUN pip install --no-cache-dir --no-warn-script-location poetry && rm -rf ~/.cache/pip
+ENV PATH=/install/.local/bin:$PATH
+
+COPY clue clue
+
+WORKDIR /install/clue
+
+RUN poetry install --no-interaction
 
 FROM base as release
 
@@ -34,9 +37,9 @@ RUN adduser -D -s /bin/sh -u $UID clue
 # install app
 USER clue
 WORKDIR /home/clue
-COPY --from=builder /install /usr/local
+COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
 ENV APP_MODULE=patched:app
-COPY --chown=clue:clue patched.py gunicorn_config.py ./
+RUN cp clue/plugins/files/* .
 
 # run app
 ENV GUNICORN_CONF=/home/clue/gunicorn_config.py
