@@ -23,6 +23,11 @@ on:
       - plugins/example/**
       - .github/workflows/example-plugin-workflow.yml
   workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
 
 permissions:
   contents: read
