@@ -27,3 +27,47 @@ jobs:
 
       - name: Run Ruff lint
         run: ruff check ${{ inputs.plugin-path }} --output-format=github
+
+      - name: Install yq
+        run: sudo snap install yq
+
+      - name: Check for manifest file with correct properties
+        run: |
+          echo "Validating manifest.yml"
+
+          # Check if manifest.yml exists
+          if [ ! -f "${{ inputs.plugin-path }}/manifest.yml" ]; then
+            echo "❌ Error: manifest.yml not found in ${{ inputs.plugin-path }}"
+            exit 1
+          fi
+
+          echo "✅ manifest.yml found"
+
+          # Check required keys
+          MANIFEST_FILE="${{ inputs.plugin-path }}/manifest.yml"
+
+          # Check if 'name' key exists and is not empty
+          NAME=$(yq '.name' "$MANIFEST_FILE")
+          if [ "$NAME" = "null" ] || [ -z "$NAME" ]; then
+            echo "❌ Error: 'name' key is missing or empty in manifest.yml"
+            exit 1
+          fi
+          echo "✅ 'name' key found: $NAME"
+
+          # Check if 'base-plugin-tag' key exists and is not empty
+          BASE_TAG=$(yq '.base-plugin-tag' "$MANIFEST_FILE")
+          if [ "$BASE_TAG" = "null" ] || [ -z "$BASE_TAG" ]; then
+            echo "❌ Error: 'base-plugin-tag' key is missing or empty in manifest.yml"
+            exit 1
+          fi
+          echo "✅ 'base-plugin-tag' key found: $BASE_TAG"
+
+          # Check if 'version' key exists and is not empty
+          VERSION=$(yq '.version' "$MANIFEST_FILE")
+          if [ "$VERSION" = "null" ] || [ -z "$VERSION" ]; then
+            echo "❌ Error: 'version' key is missing or empty in manifest.yml"
+            exit 1
+          fi
+          echo "✅ 'version' key found: $VERSION"
+
+          echo "🎉 All required keys are present in manifest.yml"
