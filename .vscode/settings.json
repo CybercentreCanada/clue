@@ -91,7 +91,7 @@
   "python.analysis.extraPaths": ["./api/test"],
   "flake8.cwd": "${fileDirname}",
   "editor.formatOnSaveMode": "modificationsIfAvailable",
-  "mypy-type-checker.cwd": "${nearestConfig}",
+  "mypy-type-checker.cwd": "${fileDirname}",
   "python.analysis.typeEvaluation.strictListInference": true,
   "python.analysis.typeEvaluation.strictDictionaryInference": true,
   "eslint.workingDirectories": [{ "directory": "./ui", "changeProcessCWD": true }],
@@ -119,5 +119,9 @@
     ],
     "useFixedPosition": true
   },
-  "errorLens.codeLensTemplate": "$source $severity $message"
+  "errorLens.codeLensTemplate": "$source $severity $message",
+  "mypy-type-checker.args": [
+    "--disable-error-code=import-untyped",
+    "--check-untyped-defs"
+  ]
 }
