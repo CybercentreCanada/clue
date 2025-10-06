@@ -2,6 +2,8 @@ ARG base_plugin_version
 
 FROM cccsaurora/clue-plugin-base:${base_plugin_version} as builder
 
+USER root
+
 RUN mkdir /install
 WORKDIR /install
 
