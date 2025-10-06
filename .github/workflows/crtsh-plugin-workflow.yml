@@ -1,0 +1,46 @@
+name: Clue Example Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/crtsh/**
+      - .github/workflows/crtsh-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/crtsh/**
+      - .github/workflows/crtsh-plugin-workflow.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-crtsh-plugin-formatting:
+    name: Lint crt.sh Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/crtsh
+  build-crtsh-plugin:
+    name: Build crt.sh Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/crtsh
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

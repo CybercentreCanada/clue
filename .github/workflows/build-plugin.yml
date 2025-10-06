@@ -38,6 +38,10 @@ jobs:
           echo "base-plugin-tag=$BASE_PLUGIN_TAG" >> $GITHUB_OUTPUT
           echo "version=$PLUGIN_VERSION" >> $GITHUB_OUTPUT
           echo "name=$PLUGIN_NAME" >> $GITHUB_OUTPUT
+
+      - name: Add requirements.txt and pip.conf if it's missing
+        run: touch requirements.txt && touch pip.conf
+        working-directory: ${{inputs.plugin-path}}
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -63,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{inputs.plugin-path}}
-          file: plugins/build_scripts/release.Dockerfile
+          file: plugins/build_scripts/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
