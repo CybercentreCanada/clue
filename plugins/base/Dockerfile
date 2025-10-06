@@ -24,8 +24,6 @@ COPY . /install
 RUN ls -a
 RUN ls -a /install/clue
 
-WORKDIR /install/clue
-
 RUN poetry install --no-interaction
 
 FROM base as release
