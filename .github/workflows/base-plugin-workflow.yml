@@ -145,6 +145,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            use_prereleases=${{ github.ref == format('refs/heads/{0}', 'develop') }}
             version=${{ steps.meta.outputs.version }}
             branch=${{ github.ref }}
             commit=${{ github.sha }}
