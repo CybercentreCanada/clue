@@ -59,7 +59,6 @@
     "**/CVS": true,
     "**/.DS_Store": true,
     "**/Thumbs.db": true,
-    "**/build": true,
     "**/dist": true,
     "**/.pytest_cache": true,
     "**/.idea": true,
