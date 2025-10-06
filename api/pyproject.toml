@@ -132,25 +132,7 @@ suppress-none-returning = true
 "clue/plugin/interactive.py" = ["T201"]
 "clue/remote/datatypes/*" = ["D", "ANN", "C901"]
 "clue/security/__init__.py" = ["TRY301"]
-"plugins/nw_retention/app.py" = ["D200", "D205"]
-"plugins/oracle/*" = [
-  "F403",
-  "D103",
-  "D205",
-  "F841",
-  "C901",
-  "ANN001",
-  "E501",
-  "T201",
-  "TRY301",
-  "TRY002",
-  "S113",
-  "F811",
-  "I001",
-  "N806",
-  "TRY004",
-]
-
+"test/conftest.py" = ["E402"]
 
 ###################
 # pytest settings #

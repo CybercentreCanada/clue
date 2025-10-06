@@ -1,3 +1,16 @@
+import os
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# We append the plugin directory for howler to the python part
+PLUGIN_PATH = Path(os.environ.get("CLUE_PLUGIN_DIRECTORY", "/etc/clue/plugins"))
+sys.path.insert(0, str(PLUGIN_PATH))
+sys.path.append(str(PLUGIN_PATH / f".venv/lib/python3.{sys.version_info.minor}/site-packages"))
+
 import warnings
 from json import JSONDecodeError
 
