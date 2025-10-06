@@ -36,10 +36,14 @@ RUN adduser -D -s /bin/sh -u $UID clue
 
 # install app
 USER clue
+
 WORKDIR /home/clue
 COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
-ENV APP_MODULE=patched:app
 RUN cp clue/plugins/files/* .
+
+ENV APP_MODULE=patched:app
+ENV PATH=/home/clue/.local/bin:/home/clue/clue/.venv/bin:$PATH
+ENV PYTHONPATH=$PYTHONPATH:/home/clue/clue/.venv/lib/python3.12/site-packages
 
 # run app
 ENV GUNICORN_CONF=/home/clue/gunicorn_config.py
