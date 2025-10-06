@@ -38,7 +38,7 @@ USER clue
 WORKDIR /home/clue
 COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
 COPY --chown=clue:clue --from=builder /install/.venv /home/clue/.venv
-RUN ls /home/clue/clue -a
+
 RUN cp /home/clue/clue/plugin/files/* .
 
 ENV APP_MODULE=patched:app
@@ -51,4 +51,4 @@ ENV WORKER_CLASS=gevent
 ENV HOST=0.0.0.0
 ENV PORT=8000
 EXPOSE $PORT
-ENTRYPOINT ["gunicorn", "-c", "/home/clue/gunicorn_config.py", "-k", "gevent", "--pythonpath", "/home/clue", "patched:app"]
+ENTRYPOINT ["python", "-m", "gunicorn", "-c", "/home/clue/gunicorn_config.py", "-k", "gevent", "--pythonpath", "/home/clue", "patched:app"]
