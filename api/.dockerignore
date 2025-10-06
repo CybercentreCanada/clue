@@ -1,6 +1,10 @@
 Dockerfile
 .idea
 .git
+build_scripts
+dev
+test
+scripts
 
 pipelines
 venv
@@ -19,3 +23,6 @@ nosetests.xml
 coverage.xml
 *,cover
 *.log
+.flake8
+.gitignore
+README.md
