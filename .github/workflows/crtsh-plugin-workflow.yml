@@ -9,6 +9,7 @@ on:
       - patch/*
     paths:
       - plugins/crtsh/**
+      - plugins/build/**
       - .github/workflows/crtsh-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
     tags:
@@ -21,7 +22,9 @@ on:
       - patch/*
     paths:
       - plugins/crtsh/**
+      - plugins/build/**
       - .github/workflows/crtsh-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
   workflow_dispatch: {}
   workflow_run:
     workflows:
