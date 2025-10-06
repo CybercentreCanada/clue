@@ -2,6 +2,8 @@
 
 .env.*
 
+.mypy_cache
+
 # dependencies
 /node_modules
 /.pnp
