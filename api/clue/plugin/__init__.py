@@ -9,6 +9,7 @@ from urllib import parse as ul
 
 import gevent
 import gevent.pool
+from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, make_response, request
 from flask.globals import _cv_request
 from gevent import Greenlet
@@ -38,6 +39,8 @@ from clue.models.selector import Selector
 from clue.plugin.helpers.token import get_username
 from clue.plugin.models import BulkEntry
 from clue.plugin.utils import Params
+
+load_dotenv()
 
 OVERRIDABLE_FUNCTIONS = [
     "enrich",
@@ -315,6 +318,8 @@ class CluePlugin:
         self.alternate_bulk_lookup = alternate_bulk_lookup
         self.app = Flask(__name__.split(".")[0])
         self.app_name = app_name
+
+        print(os.environ)
 
         if classification is None:
             raise ClueValueError(
