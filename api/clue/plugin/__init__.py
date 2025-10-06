@@ -40,24 +40,40 @@ from clue.plugin.helpers.token import get_username
 from clue.plugin.models import BulkEntry
 from clue.plugin.utils import Params
 
+# Load environment variables from .env file if present
 load_dotenv()
 
+# List of function names that can be overridden using the @plugin.use decorator
+# These functions define the core plugin behavior and can be customized per plugin
 OVERRIDABLE_FUNCTIONS = [
-    "enrich",
-    "alternate_bulk_lookup",
-    "liveness",
-    "readyness",
-    "run_action",
-    "run_fetcher",
-    "setup_actions",
-    "validate_token",
+    "enrich",  # Main enrichment function for processing selectors
+    "alternate_bulk_lookup",  # Alternative bulk enrichment implementation
+    "liveness",  # Kubernetes liveness probe endpoint
+    "readyness",  # Kubernetes readiness probe endpoint
+    "run_action",  # Function to execute plugin actions
+    "run_fetcher",  # Function to execute plugin fetchers
+    "setup_actions",  # Runtime action definition generation
+    "validate_token",  # Custom authentication token validation
 ]
 
 
 def default_validate_token():
-    """A default validation function that pulls from the authorization header. Not used by default."""
+    """A default validation function that extracts Bearer tokens from the Authorization header.
+
+    This function is provided as a reference implementation but is not used by default.
+    Plugin developers can use this as a starting point for their own token validation.
+
+    Returns:
+        tuple[str | None, str | None]: A tuple containing (token, error_message).
+            - If successful: (extracted_token, None)
+            - If failed: (None, error_description)
+
+    Note:
+        Expects Authorization header format: "Bearer <token>"
+    """
     token = request.headers.get("Authorization", None, type=str)
     if token and " " in token:
+        # Split "Bearer <token>" and extract the token part
         token = token.split()[1]
 
         if token:
@@ -67,21 +83,46 @@ def default_validate_token():
 
 
 def liveness(**_):
-    "Default liveness probe"
+    """Default liveness probe for Kubernetes health checks.
+
+    This endpoint indicates whether the application is running and alive.
+    Returns a simple "OK" response with 200 status code.
+
+    Returns:
+        Response: Flask response with "OK" message
+    """
     return make_response("OK")
 
 
 def readyness(**_):
-    "Default readyness probe"
+    """Default readiness probe for Kubernetes health checks.
+
+    This endpoint indicates whether the application is ready to serve traffic.
+    Returns a simple "OK" response with 200 status code.
+
+    Returns:
+        Response: Flask response with "OK" message
+    """
     return make_response("OK")
 
 
 def build_default_logger() -> logging.Logger:
-    "Configure a default logger if one is not provided."
+    """Configure a default logger with standard Clue formatting when none is provided.
+
+    Creates a logger with INFO level that outputs to console using the standard
+    Clue log format and date format for consistency across all plugins.
+
+    Returns:
+        logging.Logger: Configured logger instance ready for use
+
+    Note:
+        Uses logger name "clue.plugin.default" to distinguish from user-provided loggers
+    """
     logger = logging.getLogger("clue.plugin.default")
     logger.setLevel(logging.INFO)
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
+    # Apply standard Clue log formatting for consistency
     console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
     logger.addHandler(console)
 
@@ -316,18 +357,22 @@ class CluePlugin:
                 A readyness probe for kubernetes implementations of Clue.
         """
         self.alternate_bulk_lookup = alternate_bulk_lookup
+        # Create Flask app using the module name (before first dot) as app name
         self.app = Flask(__name__.split(".")[0])
         self.app_name = app_name
 
+        # Classification is required for security - must be specified via env var or parameter
         if classification is None:
             raise ClueValueError(
-                "classification must be specified, either via the CLASSIFICATION environment variable, or when "
+                "Classification must be specified, either via the CLASSIFICATION environment variable, or when "
                 "intializing the plugin."
             )
 
         self.classification = classification
         self.liveness = liveness
         self.readyness = readyness
+
+        # Convert comma-separated string to set for easier membership testing
         if isinstance(supported_types, str):
             self.supported_types = set(supported_types.split(","))
         else:
@@ -336,6 +381,7 @@ class CluePlugin:
         self.actions = actions
         self.setup_actions = setup_actions
 
+        # Allow URLs with or without trailing slashes to match the same route
         self.app.url_map.strict_slashes = False
 
         self.logger = logger if logger else build_default_logger()
@@ -349,20 +395,25 @@ class CluePlugin:
 
         self.__init_routes()
 
+        # Initialize Application Performance Monitoring if enabled
         if enable_apm:
             self.__init_apm()
 
+        # Set up caching based on configuration
         if enable_cache:
-            # We support either using a boolean to use the redis default caching, or
+            # Support both boolean (use default cache type) and explicit cache type specification
             if isinstance(enable_cache, bool):
+                # Use environment variable or default to redis
+                cache_type = cast(Union[Literal["redis"], Literal["local"]], os.environ.get("CACHE_TYPE", "redis"))
                 self.cache = Cache(
                     self.app_name,
                     self.app,
-                    cast(Union[Literal["redis"], Literal["local"]], os.environ.get("CACHE_TYPE", "redis")),
+                    cache_type,
                     timeout=cache_timeout,
                     local_cache_options=local_cache_options,
                 )
             else:
+                # Use explicitly specified cache type
                 self.cache = Cache(
                     self.app_name,
                     self.app,
@@ -373,13 +424,27 @@ class CluePlugin:
         else:
             self.cache = None
 
+        # Configure werkzeug (Flask's WSGI server) logging to reduce noise
+        # Set to WARNING level to suppress INFO messages about HTTP requests
         wlog = logging.getLogger("werkzeug")
         wlog.setLevel(logging.WARNING)
+        # If our logger has a parent, inherit its handlers for consistency
         if self.logger.parent:  # pragma: no cover
             for h in self.logger.parent.handlers:
                 wlog.addHandler(h)
 
-        # Injects the "app" variable back into the calling module, for use with gunicorn/flask
+        # Automatically inject the Flask "app" variable into the calling module's global namespace
+        # for compatibility with WSGI servers like gunicorn.
+        #
+        # This mechanism allows plugin developers to simply instantiate a CluePlugin without
+        # needing to explicitly expose the underlying Flask app. WSGI servers typically expect
+        # to find an 'app' variable in the module's global scope when using module:variable
+        # syntax (e.g., "mymodule:app").
+        #
+        # Example usage in a plugin module:
+        #   plugin = CluePlugin("my-plugin", ...)
+        #   # The 'app' variable is now automatically available for gunicorn
+        #   # Command: gunicorn mymodule:app
         current_frame = inspect.currentframe()
         if current_frame:
             caller_frame = current_frame.f_back
@@ -389,60 +454,98 @@ class CluePlugin:
         self.logger.debug("Initialization complete!")
 
     def __check_actions(self) -> list[Action] | None:
+        """Validate token and retrieve dynamic actions if setup_actions is configured.
+
+        This method handles token validation when required and calls the setup_actions
+        function to get a potentially user-specific or dynamically generated list of actions.
+
+        Returns:
+            list[Action] | None: List of actions if setup_actions is configured, None otherwise
+
+        Raises:
+            AuthenticationException: If token validation fails
+        """
         if self.setup_actions:
+            # Validate token if token validation is configured
             if self.validate_token:
                 token, error = self.validate_token()
 
                 if error:
                     self.logger.error("Error on token validation: %s", error)
-
                     raise AuthenticationException(error)
             else:
                 token = None
 
+            # Call user-defined setup_actions with base actions and validated token
             return self.setup_actions(self.actions or [], token)
 
         return None
 
     def __init_apm(self):
-        "Initializes the APM connection if enabled"
-        # Setup APMs
+        """Initialize Application Performance Monitoring (APM) using Elastic APM.
 
+        Sets up ElasticAPM integration with Flask if APM_SERVER_URL environment
+        variable is configured. This enables automatic collection of performance
+        metrics, error tracking, and distributed tracing.
+
+        Environment Variables:
+            APM_SERVER_URL: URL of the Elastic APM server to send metrics to
+        """
+        # Check if APM server URL is configured via environment variable
         apm_server_url = os.environ.get("APM_SERVER_URL")
         if apm_server_url is None:
             return
 
-        self.logger.debug("Initializing apm")
+        self.logger.debug("Initializing APM")
 
+        # Import ElasticAPM components (lazy import to avoid dependency issues)
         import elasticapm
         from elasticapm.contrib.flask import ElasticAPM
 
         self.logger.info(f"Exporting application metrics to: {apm_server_url}")
 
+        # Initialize ElasticAPM with Flask app and configure client
         ElasticAPM(self.app, client=elasticapm.Client(server_url=apm_server_url, service_name=self.app_name))
 
     def __build_ctx(self):
-        "Returns a wrap_ctx function to push the flask context into the greenlets"
-        # Make a copy of the current context to pass it in the greenlets
+        """Create a context wrapper function for preserving Flask request context in greenlets.
+
+        Flask request context is thread-local and doesn't automatically propagate to
+        greenlets. This function captures the current request context and returns a
+        wrapper that pushes it into each greenlet before execution.
+
+        Returns:
+            Callable: A wrapper function that preserves Flask context and handles exceptions
+        """
+        # Capture the current Flask request context to propagate to greenlets
         current_req_ctx = _cv_request.get(None)
         reqctx = current_req_ctx.copy() if current_req_ctx else None
 
-        # Push the request context into the greenlet
         def wrap_ctx(func: Callable, *args: Any, **kwargs) -> tuple[Any, Exception | None]:
+            """Wrapper that pushes Flask context and handles enrichment function execution.
+
+            Args:
+                func: The enrichment function to execute
+                *args: Arguments to pass to the function
+                **kwargs: Keyword arguments to pass to the function
+
+            Returns:
+                tuple[Any, Exception | None]: (result, exception) tuple
+            """
+            # Push the request context into this greenlet's scope
             if reqctx:
                 reqctx.push()
 
             try:
                 self.logger.debug("Executing enrichment function")
-
                 return func(*args, **kwargs), None
             except NotFoundException:
+                # NotFoundException means no results found - return empty list, not an error
                 self.logger.warning("NotFoundException thrown in greenlet")
-
                 return [], None
             except ClueException as e:
+                # Other Clue exceptions should be propagated as errors
                 self.logger.exception("ClueException thrown in greenlet")
-
                 return None, e
 
         return wrap_ctx
@@ -454,58 +557,80 @@ class CluePlugin:
         params: Params,
         token: str | None,
     ):
-        "Default bulk lookup that harnesses greenlets to multithread the provided enrich function"
+        """Default bulk lookup implementation using greenlets for concurrent enrichment.
+
+        This method processes multiple enrichment requests concurrently by spawning
+        greenlets (lightweight threads) for each item. It uses the single-item enrich
+        function to process each request while maintaining Flask request context. Note
+        that this may lead to inefficient lookups (e.g. making ten requests to a database,
+        instead of a single bulk query)
+
+        Args:
+            bulk_result: Dictionary to populate with results, keyed by type then value
+            items: List of items to enrich, each containing 'type' and 'value' keys
+            params: Request parameters including timeouts and limits
+            token: Authentication token to pass to enrichment functions
+        """
         self.logger.debug("Using default bulk lookup")
 
-        # Submit the different requested items to the threadpool executor
+        # Create context wrapper to preserve Flask request context in greenlets
         wrap_ctx = self.__build_ctx()
+        # Limit pool size to prevent resource exhaustion: min(items, cpu_count * 5 + 4)
         thread_pool = gevent.pool.Pool(min(len(items), (os.cpu_count() or 0) * 5 + 4))
         greenlets: list[tuple[str, str, Greenlet]] = []
 
+        # Spawn a greenlet for each enrichment request
         for entry in items:
-            # Request results for the type/value tuple
+            # Store type, value, and greenlet for later result processing
             greenlets.append(
                 (
                     entry["type"],
                     entry["value"],
                     thread_pool.spawn(
-                        wrap_ctx,
-                        self.enrich,
-                        entry["type"],
-                        entry["value"],
-                        params,
-                        token,
+                        wrap_ctx,  # Context wrapper function
+                        self.enrich,  # User's enrichment function
+                        entry["type"],  # Selector type
+                        entry["value"],  # Selector value
+                        params,  # Request parameters
+                        token,  # Authentication token
                     ),
                 )
             )
 
+        # Calculate remaining time until deadline
         timeout = params.deadline + params.max_timeout - time.time()
         self.logger.debug("Joining threadpool (timeout=%s)", timeout)
 
+        # Wait for all greenlets to complete or timeout
         thread_pool.join(timeout=timeout)
 
+        # Process results from all completed greenlets
         for type_name, value, greenlet in greenlets:
             greenlet_result = greenlet.value
 
+            # Check if greenlet completed successfully with results
             if greenlet_result is not None and greenlet_result[0] is not None:
                 results: Union[list[QueryEntry], QueryEntry] = greenlet_result[0]
+                # Ensure results is always a list for consistent handling
                 if not isinstance(results, list):
                     results = [results]
 
                 bulk_result[type_name][value] = BulkEntry(items=results)
 
+                # Cache successful results if caching is enabled
                 if self.cache:
                     self.logger.info("Caching results for selector %s:%s", type_name, value)
-
                     try:
                         self.cache.set(type_name, value, params, results)
                     except KeyError:
                         self.logger.warning("Selector not present in bulk result, skipping cache step")
             else:
+                # Handle errors: timeout, exceptions, or other failures
                 error = "Request Timed Out"
                 if greenlet_result is not None and greenlet_result[1] is not None:
                     error = str(greenlet_result[1])
 
+                # Use greenlet exception if available, otherwise use our error message
                 bulk_result[type_name][value] = BulkEntry(
                     error=(error if not greenlet.exception else str(greenlet.exception))
                 )
@@ -516,7 +641,19 @@ class CluePlugin:
         )
 
     def __init_routes(self):
-        "Set up the routes for the flask server."
+        """Set up all Flask routes for the plugin API endpoints.
+
+        Registers the following endpoints:
+        - GET /actions/: List available actions
+        - POST /actions/<action_id>/: Execute a specific action
+        - GET /fetchers/: List available fetchers
+        - POST /fetchers/<fetcher_id>: Execute a specific fetcher
+        - GET /types/: List supported types
+        - GET /lookup/<type_name>/<value>/: Single enrichment lookup
+        - POST /lookup/: Bulk enrichment lookup
+        - GET /healthz/live: Liveness probe
+        - GET /healthz/ready: Readiness probe
+        """
         self.logger.debug("Initializing routes")
 
         self.app.add_url_rule("/actions/", self.get_actions.__name__, self.get_actions, methods=["GET"])
@@ -534,16 +671,38 @@ class CluePlugin:
         self.app.add_url_rule("/healthz/ready", self.readyness.__name__, self.readyness)
 
     def make_api_response(self: Self, data: Any, err: str = "", status_code: int = 200) -> Response:
-        "Create a standard response for this API."
+        """Create a standardized JSON response for all API endpoints.
+
+        This method ensures consistent response format across all plugin endpoints,
+        handles automatic error extraction from result objects, and logs all requests.
+
+        Args:
+            data: The response data (will be JSON serialized)
+            err: Error message (if any)
+            status_code: HTTP status code (default: 200)
+
+        Returns:
+            Response: Flask response with standardized JSON structure
+
+        Response Format:
+            {
+                "api_response": <data>,
+                "api_error_message": <error_string>,
+                "api_status_code": <status_code>
+            }
+        """
+        # Extract error messages from specialized result objects
         if isinstance(data, FetcherResult) and data.outcome == "failure" and not err:
             err = data.error or err
 
         if isinstance(data, ActionResult) and data.outcome == "failure" and not err:
             err = data.summary or err
 
+        # Convert Pydantic models to dict for JSON serialization
         if isinstance(data, BaseModel):
             data = data.model_dump(mode="json", exclude_none=True)
 
+        # Log all API requests with method, path, status, and error (if any)
         self.logger.info("%s %s - %s%s", request.method, request.path, status_code, f": {err}" if err else "")
 
         return make_response(
@@ -558,7 +717,18 @@ class CluePlugin:
         )
 
     def get_type_names(self: Self) -> Response:
-        "Return supported type names."
+        """Return the list of supported selector types with their classifications.
+
+        Returns:
+            Response: JSON response mapping each supported type to its classification level
+
+        Response Format:
+            {
+                "type1": "classification_level",
+                "type2": "classification_level",
+                ...
+            }
+        """
         return self.make_api_response({tname: self.classification for tname in sorted(self.supported_types or [])})
 
     def lookup(self: Self, type_name: str, value: str) -> Response:  # noqa: C901
@@ -591,6 +761,7 @@ class CluePlugin:
         if not self.enrich or not self.supported_types:
             return self.make_api_response({}, err="Enrichment is not supported by this plugin.", status_code=400)
 
+        # Normalize generic "ip" type to specific "ipv4" or "ipv6" based on address format
         if type_name == "ip":
             is_ipv4 = isinstance(ipaddress.ip_address(value), ipaddress.IPv4Address)
             type_name = "ipv4" if is_ipv4 else "ipv6"
@@ -602,8 +773,9 @@ class CluePlugin:
 
             return self.make_api_response(None, str(e), 504)
 
+        # Double URL decode the value (required by API specification)
         value = ul.unquote(ul.unquote(value))
-        # Invalid types must either be ignored, or return a 422
+        # Validate that the requested type is supported by this plugin
         if type_name not in self.supported_types:
             return self.make_api_response(
                 None,
@@ -799,6 +971,7 @@ class CluePlugin:
         else:
             self.__default_bulk_lookup(bulk_result, remaining_items, params, token)
 
+        # Calculate how close we came to the deadline (positive = time remaining, negative = overrun)
         variance = params.deadline - time.time()
 
         if self.logger:
@@ -842,11 +1015,14 @@ class CluePlugin:
 
         results: dict[str, dict[str, Any]] = {}
         for action in actions:
+            # Extract base action fields (id, name, description, etc.)
             schema = action.model_dump(mode="json", include=set(ActionBase.model_fields.keys()), exclude_none=True)
+            # Generate JSON schema for the action's parameter type
             schema["params"] = cast(
                 BaseModel, cast(type[Any], action.model_fields["params"].annotation).__args__[0]
             ).model_json_schema()
 
+            # Convert to ActionSpec format and add to results
             results[action.id] = ActionSpec.model_validate(schema).model_dump(mode="json", exclude_none=True)
 
         return self.make_api_response(results)
@@ -890,6 +1066,7 @@ class CluePlugin:
         else:
             self.logger.warning("No token validation provided. The access token will not be provided to the action.")
 
+        # Extract the parameter type from the action definition for validation
         param_type: Any = action_to_run.model_fields["params"].annotation or Any
 
         try:
@@ -899,6 +1076,7 @@ class CluePlugin:
 
                 return self.make_api_response(ActionResult(outcome="failure", summary="No request body specified."))
 
+            # Validate request body against the action's parameter schema
             action_request: ExecuteRequest = TypeAdapter(param_type.__args__[0]).validate_python(
                 raw_request, context={"action": action_to_run}
             )
@@ -937,26 +1115,34 @@ class CluePlugin:
         return self.make_api_response(result)
 
     def get_fetchers(self: Self) -> Response:
-        """Gets all the fetchers for this plugin.
+        """Get all available fetchers for this plugin.
 
-        Variables:
-        None
+        Returns a dictionary of fetcher definitions, each containing the fetcher's
+        schema including supported types, output format, and other metadata.
 
         Returns:
-        {                           # Dictionary of fetchers
-            "fetcher1": {
-                ...                 # schema of the fetcher
-            },
-            ...
-        }
+            Response: JSON response containing fetcher definitions
+
+        Response Format:
+            {
+                "fetcher1": {
+                    "id": "fetcher1",
+                    "name": "Fetcher Name",
+                    "description": "Description",
+                    "supported_types": ["type1", "type2"],
+                    "output_format": "format",
+                    ...
+                },
+                ...
+            }
         """
         if not self.fetchers:
             self.logger.debug("No fetchers to show")
-
             return self.make_api_response({})
 
         results: dict[str, dict[str, Any]] = {}
         for fetcher in self.fetchers:
+            # Serialize fetcher definition to JSON-compatible dict
             schema = fetcher.model_dump(mode="json", exclude_none=True)
             results[fetcher.id] = schema
 
@@ -974,6 +1160,7 @@ class CluePlugin:
         if not self.run_fetcher or not self.fetchers:
             return self.make_api_response({}, err=f"{self.app_name} does not support any fetchers.", status_code=400)
 
+        # Find the requested fetcher by ID
         fetcher_to_run = next((fetcher for fetcher in self.fetchers if fetcher.id == fetcher_id), None)
         if not fetcher_to_run:
             return self.make_api_response({}, err=f"Fetcher {fetcher_id} does not exist", status_code=404)
@@ -997,6 +1184,7 @@ class CluePlugin:
                     status_code=400,
                 )
 
+            # Validate request body as a Selector object
             raw_request = Selector.model_validate(request.json)
 
             self.logger.info("Running fetcher '%s'", fetcher_id)
@@ -1048,14 +1236,14 @@ class CluePlugin:
         functions defined in OVERRIDABLE_FUNCTIONS.
 
         Supported function names and their purposes:
-        - `enrich`: Main enrichment function for processing selectors
-        - `alternate_bulk_lookup`: Alternative bulk enrichment implementation
-        - `liveness`: Kubernetes liveness probe endpoint
-        - `readyness`: Kubernetes readiness probe endpoint
-        - `run_action`: Function to execute plugin actions
-        - `run_fetcher`: Function to execute plugin fetchers
-        - `setup_actions`: Runtime action definition generation
-        - `validate_token`: Custom authentication token validation
+            - enrich: Main enrichment function for processing selectors
+            - alternate_bulk_lookup: Alternative bulk enrichment implementation
+            - liveness: Kubernetes liveness probe endpoint
+            - readyness: Kubernetes readiness probe endpoint
+            - run_action: Function to execute plugin actions
+            - run_fetcher: Function to execute plugin fetchers
+            - setup_actions: Runtime action definition generation
+            - validate_token: Custom authentication token validation
 
         Args:
             func: The function to register. The function name determines which plugin
@@ -1086,9 +1274,11 @@ class CluePlugin:
                 ", ".join(OVERRIDABLE_FUNCTIONS),
             )
 
+        # Warn if overwriting an existing function
         if getattr(self, function_name) is not None:
             self.logger.warning("plugin.uses decorator is overwriting existing function: %s", function_name)
 
+        # Dynamically set the function as an attribute of this plugin instance
         setattr(self, function_name, func)
 
         return func
