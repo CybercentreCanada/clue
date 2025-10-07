@@ -1,4 +1,6 @@
-.PHONY: setup help
+SHELL = /bin/bash
+
+.PHONY: setup
 setup: ## Install dependencies for both UI and API components
 	@echo "Setting up development environment..."
 
@@ -29,6 +31,19 @@ setup: ## Install dependencies for both UI and API components
 
 	@echo "🎉 Setup complete!"
 
+.PHONY: start-dependencies
+start-dependencies: ## Start development dependencies (Redis, Keycloak) in Docker
+	@echo "Starting development dependencies..."
+	cd api/dev && docker compose up --build -d
+	@echo "✅ Dependencies are running in the background"
+
+.PHONY: stop-dependencies
+stop-dependencies: ## Stop development dependencies (Redis, Keycloak) in Docker
+	@echo "Stopping development dependencies..."
+	cd api/dev && docker compose down
+	@echo "✅ Dependencies have been stopped"
+
+.PHONY: help
 help: ## Show this help message
 	@echo "Available commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
