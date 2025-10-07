@@ -8,10 +8,9 @@ import pytest
 def inject_paths(pytestconfig):
     """Injects specified paths into sys.path for pytest session.
 
-    Parameters
-    ----------
-    pytestconfig : _pytest.config.Config
-        The pytest configuration object containing command-line arguments.
+    Args:
+        pytestconfig (_pytest.config.Config): The pytest configuration object
+            containing command-line arguments.
     """
     for _path in pytestconfig.args:
         folder = Path(_path).resolve()
