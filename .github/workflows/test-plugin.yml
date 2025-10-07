@@ -30,6 +30,7 @@ jobs:
           key: venv-${{ hashFiles('api/poetry.lock') }}
 
       - name: Check for poetry config integrity
+        working-directory: api
         run: |
           poetry --version
           poetry env use 3.12
