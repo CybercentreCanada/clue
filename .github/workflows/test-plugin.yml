@@ -73,5 +73,5 @@ jobs:
         run: |
           PLUGIN_PATH="${{ inputs.plugin-path }}"
           PLUGIN_NAME="${PLUGIN_PATH#plugins/}"
-          python -m pytest -s -v "$PLUGIN_NAME"
+          python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
         working-directory: plugins
