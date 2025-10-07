@@ -14,6 +14,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if test files exist
+        run: |
+          echo "Checking for test directories in ${{ inputs.plugin-path }}"
+          
+          # Check if either 'test' or 'tests' directory exists
+          if [ -d "${{ inputs.plugin-path }}/test" ] || [ -d "${{ inputs.plugin-path }}/tests" ]; then
+            if [ -d "${{ inputs.plugin-path }}/test" ]; then
+              echo "✅ Found 'test' directory"
+            fi
+            if [ -d "${{ inputs.plugin-path }}/tests" ]; then
+              echo "✅ Found 'tests' directory"
+            fi
+          else
+            echo "❌ No test directory found. Expected either 'test' or 'tests' folder in ${{ inputs.plugin-path }}"
+            echo "Skipping test execution as no tests are available."
+            exit 1
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
