@@ -70,4 +70,8 @@ jobs:
         run: pip install pytest
 
       - name: Run Tests
-        run: python -m pytest -s -v ${{inputs.plugin-path}}
+        run: |
+          PLUGIN_PATH="${{ inputs.plugin-path }}"
+          PLUGIN_NAME="${PLUGIN_PATH#plugins/}"
+          python -m pytest -s -v "$PLUGIN_NAME"
+        working-directory: plugins
