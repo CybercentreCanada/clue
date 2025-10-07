@@ -221,9 +221,6 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
     )
 
 
-os.environ["APM_SERVER_URL"] = "https://enrichment-apm.dev.analysis.cyber.gc.ca"
-
-
 plugin = CluePlugin(
     app_name="test_server",
     supported_types={"ipv4", "ipv6", "port", "sha256"},

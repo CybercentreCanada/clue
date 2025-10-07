@@ -75,9 +75,6 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
     )
 
 
-os.environ["APM_SERVER_URL"] = "https://enrichment-apm.dev.analysis.cyber.gc.ca"
-
-
 plugin = CluePlugin(
     app_name="telemetry_server",
     supported_types={"telemetry"},

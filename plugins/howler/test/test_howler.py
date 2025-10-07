@@ -57,7 +57,7 @@ def test_rebuild_link():
         value="development",
         confidence=0.0,
         summary="test",
-        link=Url("https://howler.dev.analysis.cyber.gc.ca/hits/test1"),
+        link=Url("https://howler.example.com/hits/test1"),
     )
 
     update_annotation(annotation, "test2")
@@ -83,7 +83,7 @@ def test_pivot(howler: CluePlugin):
 
     result = howler.run_action(pivot, SearchPivotRequest(selector=Selector(type="ip", value="127.0.0.1")), "potato")
     expected = Url(
-        'https://howler.dev.analysis.cyber.gc.ca/search?query=(howler.outline.threat:"127.0.0.1" OR '
+        'https://howler.example.com/search?query=(howler.outline.threat:"127.0.0.1" OR '
         'howler.outline.target:"127.0.0.1" OR destination.address:"127.0.0.1" OR destination.ip:"127.0.0.1" '
         'OR destination.nat.ip:"127.0.0.1" OR dns.resolved_ip:"127.0.0.1" OR email.parent.destination:"127.0.0.1" '
         'OR email.parent.source:"127.0.0.1" OR host.ip:"127.0.0.1" OR related.ip:"127.0.0.1" OR '
@@ -110,7 +110,7 @@ def test_pivot(howler: CluePlugin):
         "potato",
     )
     expected = Url(
-        'https://howler.dev.analysis.cyber.gc.ca/search?query=(howler.outline.threat:"127.0.0.1" OR '
+        'https://howler.example.com/search?query=(howler.outline.threat:"127.0.0.1" OR '
         'howler.outline.target:"127.0.0.1" OR destination.address:"127.0.0.1" OR destination.ip:"127.0.0.1" '
         'OR destination.nat.ip:"127.0.0.1" OR dns.resolved_ip:"127.0.0.1" OR email.parent.destination:"127.0.0.1" '
         'OR email.parent.source:"127.0.0.1" OR host.ip:"127.0.0.1" OR related.ip:"127.0.0.1" OR '
