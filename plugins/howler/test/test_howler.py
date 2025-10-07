@@ -62,10 +62,14 @@ def test_rebuild_link():
 
     update_annotation(annotation, "test2")
 
+    assert annotation.link is not None
+
     assert annotation.link.path == "/search"
     assert annotation.link.query_params() == [("span", "date.range.all"), ("query", "howler.id:(test1 OR test2)")]
 
     update_annotation(annotation, "test3")
+
+    assert annotation.link is not None
 
     assert annotation.link.path == "/search"
     assert annotation.link.query_params() == [

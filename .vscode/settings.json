@@ -118,5 +118,6 @@
     ],
     "useFixedPosition": true
   },
-  "errorLens.codeLensTemplate": "$source $severity $message"
+  "errorLens.codeLensTemplate": "$source $severity $message",
+  "mypy-type-checker.args": ["--check-untyped-defs"]
 }
