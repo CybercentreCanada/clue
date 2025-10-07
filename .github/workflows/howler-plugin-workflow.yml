@@ -43,11 +43,13 @@ jobs:
     with:
       plugin-path: plugins/howler
   test-howler-plugin:
+    needs: check-howler-plugin-formatting
     name: Test Howler Plugin
     uses: ./.github/workflows/test-plugin.yml
     with:
       plugin-path: plugins/howler
   build-howler-plugin:
+    needs: test-howler-plugin
     name: Build Howler Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml
     with:

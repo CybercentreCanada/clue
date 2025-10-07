@@ -43,6 +43,7 @@ jobs:
     with:
       plugin-path: plugins/example
   build-example-plugin:
+    needs: check-example-plugin-formatting
     name: Build Example Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml
     with:

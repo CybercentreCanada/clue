@@ -43,6 +43,7 @@ jobs:
     with:
       plugin-path: plugins/crtsh
   build-crtsh-plugin:
+    needs: check-crtsh-plugin-formatting
     name: Build crt.sh Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml
     with:
