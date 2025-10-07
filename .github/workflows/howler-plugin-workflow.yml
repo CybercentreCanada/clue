@@ -42,6 +42,11 @@ jobs:
     uses: ./.github/workflows/lint-plugin.yml
     with:
       plugin-path: plugins/howler
+  test-howler-plugin:
+    name: Test Howler Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/howler
   build-howler-plugin:
     name: Build Howler Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml

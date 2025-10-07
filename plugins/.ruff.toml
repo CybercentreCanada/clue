@@ -1,1 +1,5 @@
 extend = "../api/pyproject.toml"
+
+exclude = [
+  "**/test",
+]

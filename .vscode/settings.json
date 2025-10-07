@@ -118,9 +118,5 @@
     ],
     "useFixedPosition": true
   },
-  "errorLens.codeLensTemplate": "$source $severity $message",
-  "mypy-type-checker.args": [
-    "--disable-error-code=import-untyped",
-    "--check-untyped-defs"
-  ]
+  "errorLens.codeLensTemplate": "$source $severity $message"
 }
