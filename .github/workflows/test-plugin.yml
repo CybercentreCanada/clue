@@ -15,6 +15,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: actions/cache@v3
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./api/.venv
+          key: venv-${{ hashFiles('api/poetry.lock') }}
+      - name: Check for poetry config integrity
+        run: |
+          poetry --version
+          poetry env use 3.12
+          poetry check
+          poetry env info
+      - name: Install Dependencies
+        run: |
+          poetry install --verbose --with test
+
       - name: Check if test files exist
         run: |
           echo "Checking for test directories in ${{ inputs.plugin-path }}"
