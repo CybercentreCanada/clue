@@ -9,9 +9,9 @@ from typing import Callable
 from urllib.parse import quote_plus
 
 from flask.testing import FlaskClient
-from termcolor import colored
 
 from clue.plugin import CluePlugin
+from plugin.commands import error, info, success, warn
 
 PLUGINS_PATH = Path(__file__).parent.parent.parent.parent / "plugins"
 sys.path.insert(0, str(PLUGINS_PATH))
@@ -27,26 +27,6 @@ TESTABLE_FUNCTIONS = [
     ("liveness", None),
     ("readyness", None),
 ]
-
-
-def success(*messages: str):
-    "Print success message"
-    print(f"[{colored("success", "green")}]", *messages)
-
-
-def warn(*messages: str):
-    "Print error message"
-    print(f"[{colored("warn", "yellow")}]", *messages)
-
-
-def error(*messages: str):
-    "Print error message"
-    print(f"[{colored("error", "red")}]", *messages)
-
-
-def info(*messages: str):
-    "Print info message"
-    print(f"[{colored("info", "cyan")}]", *messages)
 
 
 class CustomTestClient(FlaskClient):
@@ -176,6 +156,8 @@ def main():  # noqa: C901
         if not (Path(__file__).parent.parent.parent / "plugins" / plugin_name).exists():
             error(f"Plugin {plugin_name} does not exist.")
             plugin_name = None
+
+    sys.path.append(str(PLUGINS_PATH / plugin_name))
 
     try:
         _module = importlib.import_module(f"{plugin_name}.app")

@@ -118,6 +118,13 @@
     ],
     "useFixedPosition": true
   },
-  "errorLens.codeLensTemplate": "$source $severity $message",
-  "mypy-type-checker.args": ["--check-untyped-defs"]
+  "errorLens.messageTemplate": "$severity $code $message",
+  "errorLens.severityText": [
+      "■",
+      "■",
+      "■",
+      "■",
+  ],
+  "mypy-type-checker.args": ["--check-untyped-defs"],
+  "errorLens.gutterIconSet": "squareRounded",
 }
