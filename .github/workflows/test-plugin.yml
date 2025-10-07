@@ -8,7 +8,8 @@ on:
         type: string
 
 jobs:
-  lint-and-format:
+  run-tests:
+    name: Run Unit Tests for Plugin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -17,7 +18,7 @@ jobs:
       - name: Check if test files exist
         run: |
           echo "Checking for test directories in ${{ inputs.plugin-path }}"
-          
+
           # Check if either 'test' or 'tests' directory exists
           if [ -d "${{ inputs.plugin-path }}/test" ] || [ -d "${{ inputs.plugin-path }}/tests" ]; then
             if [ -d "${{ inputs.plugin-path }}/test" ]; then
