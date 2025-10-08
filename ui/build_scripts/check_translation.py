@@ -1,15 +1,17 @@
+#!/usr/bin/python3
+
 import json
 import logging
 import sys
 from pathlib import Path
 
 with open(
-    Path(".").parent / "src" / "locales" / "en" / "translation.json", "r"
+    Path(__file__).parent.parent / "src" / "locales" / "en" / "translation.json", "r"
 ) as en_file:
     en_data = json.load(en_file)
 
 with open(
-    Path(".").parent / "src" / "locales" / "fr" / "translation.json", "r"
+    Path(__file__).parent.parent / "src" / "locales" / "fr" / "translation.json", "r"
 ) as fr_file:
     fr_data = json.load(fr_file)
 

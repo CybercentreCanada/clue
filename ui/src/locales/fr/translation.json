@@ -71,7 +71,6 @@
   "page.home.types": "Types supportés (un par ligne)",
 
   "page.login.button": "Se connecter",
-  "page.login.error": "Tapez simplement n'importe quoi dans les champs du nom d'utilisateur et du mot de passe ...",
   "page.login.password": "Mot de passe",
   "page.login.username": "Nom d'utilisateur",
   "page.logout": "Déconnexion de l'utilisateur actuel ... ",

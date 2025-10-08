@@ -28,3 +28,9 @@ repos:
         language: python
         stages: [pre-commit]
         files: ^ui/.*
+      - id: check-translation
+        name: check-translation
+        entry: ui/build_scripts/check_translation.py
+        language: python
+        stages: [pre-commit]
+        files: ^ui/.*
