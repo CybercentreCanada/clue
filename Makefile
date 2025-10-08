@@ -55,6 +55,10 @@ test-plugin: ## Run a specific plugin interactively (usage: make test-plugin <pl
 	@echo -n "⏩ "
 	cd api && poetry run plugin $(filter-out $@,$(MAKECMDGOALS))
 
+.PHONY: create-plugin
+create-plugin:
+	cd api && poetry run create
+
 .PHONY: help
 help: ## Show this help message
 	@echo "Available commands:"
