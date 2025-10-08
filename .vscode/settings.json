@@ -127,4 +127,5 @@
   ],
   "mypy-type-checker.args": ["--check-untyped-defs"],
   "errorLens.gutterIconSet": "squareRounded",
+  "errorLens.messageBackgroundMode": "message"
 }

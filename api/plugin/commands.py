@@ -64,6 +64,7 @@ def confirm(prompt: str, default_yes: bool = False) -> bool:
 
 def wait_to_continue():
     input(colored("Press enter to continue. ", "blue"))
+    print()
 
 
 def execute(
