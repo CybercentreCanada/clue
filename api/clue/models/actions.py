@@ -5,6 +5,7 @@ from typing import (
     Any,
     Generic,
     Literal,
+    Self,
     TypeVar,
     Union,
     cast,
@@ -14,7 +15,6 @@ from typing import (
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 from pydantic_core import Url, ValidationError
-from typing_extensions import Self
 
 from clue.common.exceptions import ClueValueError
 from clue.common.logging import get_logger
