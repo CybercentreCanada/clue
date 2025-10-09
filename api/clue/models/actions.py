@@ -128,7 +128,7 @@ class ActionBase(BaseModel):
         invalid_types = supported_types - set(SUPPORTED_TYPES.keys())
 
         if invalid_types:
-            raise AssertionError(f"{', '.join(invalid_types)} are not supported types.")
+            logger.warning(f"{', '.join(invalid_types)} are not supported types - you may have a typo!")
 
         return supported_types
 

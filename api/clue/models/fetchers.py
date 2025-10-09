@@ -2,7 +2,14 @@
 import re
 from typing import Dict, Generic, Literal, Optional, Self, Union
 
-from pydantic import BaseModel, Field, JsonValue, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    JsonValue,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import Url
 
 from clue.common.exceptions import ClueValueError
@@ -88,7 +95,7 @@ class FetcherDefinition(BaseModel):
         invalid_types = supported_types - set(SUPPORTED_TYPES.keys())
 
         if invalid_types:
-            raise AssertionError(f"{', '.join(invalid_types)} are not supported types.")
+            logger.warning(f"{', '.join(invalid_types)} are not supported types - you may have a typo!")
 
         return supported_types
 
