@@ -24,6 +24,8 @@ FROM cccsaurora/clue-plugin-base:${base_plugin_version} as release
 
 COPY --chown=clue:clue --from=builder /install /usr/local
 
+ENV PYTHONPATH="/usr/local/lib/python3.12/site-packages:${PYTHONPATH}"
+
 COPY --chown=clue:clue . ./
 
 RUN tree ./
