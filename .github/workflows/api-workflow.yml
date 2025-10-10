@@ -29,6 +29,7 @@ on:
       - "!api/docs/**"
       - "!api/build_scripts/generate_classes.py"
       - .github/workflows/api-workflow.yml
+      - "!api/plugin/**"
   workflow_dispatch: {}
 
 permissions:
