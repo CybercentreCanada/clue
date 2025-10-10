@@ -9,8 +9,8 @@ DEFAULT_TTL = 60 * 60  # 1 Hour
 
 
 class RedisCache(object):
-    def __init__(self, prefix="clue_cache", host=None, port=None, ttl=DEFAULT_TTL):
-        self.c = get_client(host, port, False)
+    def __init__(self, prefix="clue_cache", host=None, port=None, ttl=DEFAULT_TTL, password=None):
+        self.c = get_client(host, port, False, password=password)
         self.prefix = prefix
         self.ttl = ttl
 

@@ -54,7 +54,7 @@ def get_redis():
     """
     from clue.remote.datatypes import get_client
 
-    return get_client(config.core.redis.host, config.core.redis.port, False)
+    return get_client(config.core.redis.host, config.core.redis.port, False, password=config.core.redis.password)
 
 
 cache = forge.cache

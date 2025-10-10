@@ -89,6 +89,11 @@ def get_client(host, port, private, password=None):
         port = int(port or config.core.redis.port)
         password = config.core.redis.password
 
+    if password:
+        logger.debug("Connecting to redis with password")
+    else:
+        logger.warning("Connecting to redis without authentication.")
+
     ssl_kwargs = {}
 
     # Automatically detect if encryption was enabled
