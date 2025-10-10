@@ -4,4 +4,5 @@ line-length = 120
 
 exclude = [
   "**/test",
+  "**/tests",
 ]

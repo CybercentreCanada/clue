@@ -1,7 +1,9 @@
 {
     "exclude": [
         "**/build",
-        "plugins/*/.venv"
+        "plugins/*/.venv",
+        "**/tests",
+        "**/test"
     ],
     "executionEnvironments": [
         {
@@ -12,10 +14,18 @@
         {
             "pythonVersion": "3.12",
             "root": "api"
+        },
+        {
+            "reportAttributeAccessIssue": "none",
+            "root": "plugins/**/test"
+        },
+        {
+            "reportAttributeAccessIssue": "none",
+            "root": "plugins/**/tests"
         }
     ],
     "reportMissingImports": "error",
+    "reportOptionalMemberAccess": "error",
     "strictDictionaryInference": true,
-    "strictListInference": true,
-    "reportOptionalMemberAccess": "error"
+    "strictListInference": true
 }
