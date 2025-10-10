@@ -9,6 +9,7 @@ on:
       - patch/*
     paths:
       - plugins/base/**
+      - api/plugin/**
       - .github/workflows/base-plugin-workflow.yml
     tags:
       - v*

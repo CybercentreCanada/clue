@@ -12,7 +12,10 @@ env
 test
 tests
 examples
-plugin
+
+# PLugin development files
+plugin/templates
+plugin/*.py
 
 pip-log.txt
 pip-delete-this-directory.txt
