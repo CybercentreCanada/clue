@@ -119,6 +119,11 @@ def main():
         info("Creating .dockerignore")
         shutil.copy(TEMPLATES_FOLDER / ".dockerignore", plugin_path)
 
+        manifest_template = (TEMPLATES_FOLDER / "manifest.yml").read_text()
+
+        info("Creating manifest.yml")
+        (plugin_path / "manifest.yml").write_text(manifest_template.replace("$PLUGIN_NAME", plugin_name))
+
         if confirm("Add stub app.py file?", default=True):
             app_py_content = (
                 (TEMPLATES_FOLDER / "app.py")

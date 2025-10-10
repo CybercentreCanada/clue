@@ -1,0 +1,21 @@
+{
+    "exclude": [
+        "**/build",
+        "plugins/*/.venv"
+    ],
+    "executionEnvironments": [
+        {
+            "pythonVersion": "3.12",
+            "reportMissingImports": "none",
+            "root": "plugins"
+        },
+        {
+            "pythonVersion": "3.12",
+            "root": "api"
+        }
+    ],
+    "reportMissingImports": "error",
+    "strictDictionaryInference": true,
+    "strictListInference": true,
+    "reportOptionalMemberAccess": "error"
+}
