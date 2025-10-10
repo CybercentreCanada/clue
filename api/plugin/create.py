@@ -103,7 +103,7 @@ def main():
         if confirm("Would you like to provide a short (one line) description?", default=True):
             description = input("\nPlugin Description: ")
 
-        plugin_path = PLUGINS_FOLDER / plugin_name
+        plugin_path = PLUGINS_FOLDER / plugin_name.replace("-", "_")
         info(f"Creating directory {plugin_path} (permissions inherited from parent folder)")
         plugin_path.mkdir(mode=PLUGINS_FOLDER.stat().st_mode)
 
@@ -174,15 +174,21 @@ def main():
 
             (plugin_path / "app.py").write_text(finished_app_py)
 
-            execute(prep_command(f"ruff format {plugin_name}"), cwd=PLUGINS_FOLDER, capture_output=True)
-            execute(prep_command(f"ruff check --fix {plugin_name}"), cwd=PLUGINS_FOLDER, capture_output=True)
+            execute(
+                prep_command(f"ruff format {plugin_name.replace('-', '_')}"), cwd=PLUGINS_FOLDER, capture_output=True
+            )
+            execute(
+                prep_command(f"ruff check --fix {plugin_name.replace('-', '_')}"),
+                cwd=PLUGINS_FOLDER,
+                capture_output=True,
+            )
 
         if confirm("Add new workflow for your plugin?", default=True):
             workflow_content = (
                 (TEMPLATES_FOLDER / "template-workflow.yml")
                 .read_text()
                 .replace("$PLUGIN_NAME_CAPITALIZED", plugin_name_pretty)
-                .replace("$PLUGIN_NAME", plugin_name)
+                .replace("$PLUGIN_NAME", plugin_name.replace("-", "_"))
             )
 
             (PLUGINS_FOLDER.parent / ".github" / "workflows" / f"{plugin_name}-plugin-workflow.yml").write_text(
