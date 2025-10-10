@@ -91,6 +91,7 @@ def main():
         info(f"Existing plugins are: {', '.join(existing_plugins)}")
 
         plugin_name = get_plugin_name()
+        plugin_name_pretty = " ".join(word.capitalize() for word in plugin_name.split("-"))
 
         info("Provide a small amount of information for the README file.")
 
@@ -128,7 +129,7 @@ def main():
             app_py_content = (
                 (TEMPLATES_FOLDER / "app.py")
                 .read_text()
-                .replace("$PLUGIN_TITLE", " ".join(word.capitalize() for word in plugin_name.split("-")))
+                .replace("$PLUGIN_TITLE", plugin_name_pretty)
                 .replace("$TEAM", team)
                 .replace("$CONTACT", contact)
                 .replace("$DESCRIPTION", description)
@@ -175,7 +176,19 @@ def main():
             execute(prep_command(f"ruff format {plugin_name}"), cwd=PLUGINS_FOLDER, capture_output=True)
             execute(prep_command(f"ruff check --fix {plugin_name}"), cwd=PLUGINS_FOLDER, capture_output=True)
 
-            success("Your plugin has been created!")
+        if confirm("Add new workflow for your plugin?", default=True):
+            workflow_content = (
+                (TEMPLATES_FOLDER / "template-workflow.yml")
+                .read_text()
+                .replace("$PLUGIN_NAME_CAPITALIZED", plugin_name_pretty)
+                .replace("$PLUGIN_NAME", plugin_name)
+            )
+
+            (PLUGINS_FOLDER.parent / ".github" / "workflows" / f"{plugin_name}-plugin-workflow.yml").write_text(
+                workflow_content
+            )
+
+        success("Your plugin has been created!")
     except KeyboardInterrupt:
         print()
         sys.exit(1)
