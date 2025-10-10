@@ -38,19 +38,19 @@ permissions:
 
 jobs:
   check-assemblyline-plugin-formatting:
-    name: Lint Howler Plugin
+    name: Lint Assemblyline Plugin
     uses: ./.github/workflows/lint-plugin.yml
     with:
       plugin-path: plugins/assemblyline
   test-assemblyline-plugin:
     needs: check-assemblyline-plugin-formatting
-    name: Test Howler Plugin
+    name: Test Assemblyline Plugin
     uses: ./.github/workflows/test-plugin.yml
     with:
       plugin-path: plugins/assemblyline
   build-assemblyline-plugin:
     needs: test-assemblyline-plugin
-    name: Build Howler Plugin's Docker Image
+    name: Build Assemblyline Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml
     with:
       plugin-path: plugins/assemblyline
