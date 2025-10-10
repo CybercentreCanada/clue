@@ -29,7 +29,7 @@ logger = get_logger(__file__)
 # This sets up the Flask app, routing, caching, and other core plugin infrastructure
 plugin = CluePlugin(
     # App name used for logging and cache configuration - can be overridden via environment
-    app_name=os.environ.get("APP_NAME", "$PLUGIN_TITLE"),
+    app_name=os.environ.get("APP_NAME", "$PLUGIN_NAME"),
     # Classification level that controls which selectors this plugin can enrich
     classification=CLASSIFICATION,
     # Comma-separated list of selector types this plugin supports (e.g., "ip,domain,hash")

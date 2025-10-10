@@ -129,6 +129,7 @@ def main():
             app_py_content = (
                 (TEMPLATES_FOLDER / "app.py")
                 .read_text()
+                .replace("$PLUGIN_NAME", plugin_name)
                 .replace("$PLUGIN_TITLE", plugin_name_pretty)
                 .replace("$TEAM", team)
                 .replace("$CONTACT", contact)
