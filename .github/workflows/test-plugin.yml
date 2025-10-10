@@ -11,6 +11,8 @@ jobs:
   run-tests:
     name: Run Unit Tests for Plugin
     runs-on: ubuntu-latest
+    env:
+      PLUGIN_PATH: ${{inputs.plugin-path}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -42,10 +44,20 @@ jobs:
         run: |
           poetry install --verbose --with test
 
+      - name: Check and install plugin requirements
+        run: |
+          if [ -f "$PLUGIN_PATH/requirements.txt" ]; then
+            echo "✅ Found requirements.txt in $PLUGIN_PATH"
+            echo "Installing plugin dependencies..."
+            pip install -r "$PLUGIN_PATH/requirements.txt"
+          else
+            echo "ℹ️ No requirements.txt found in $PLUGIN_PATH"
+          fi
+
       - name: Check if test files exist
         working-directory: ${{inputs.plugin-path}}
         run: |
-          echo "Checking for test directories in ${{ inputs.plugin-path }}"
+          echo "Checking for test directories in $PLUGIN_PATH"
 
           # Check if either 'test' or 'tests' directory exists
           if [ -d "test" ] || [ -d "tests" ]; then
@@ -56,7 +68,7 @@ jobs:
               echo "✅ Found 'tests' directory"
             fi
           else
-            echo "❌ No test directory found. Expected either 'test' or 'tests' folder in ${{ inputs.plugin-path }}"
+            echo "❌ No test directory found. Expected either 'test' or 'tests' folder in $PLUGIN_PATH"
             echo "Skipping test execution as no tests are available."
             exit 1
           fi
@@ -71,7 +83,6 @@ jobs:
 
       - name: Run Tests
         run: |
-          PLUGIN_PATH="${{ inputs.plugin-path }}"
           PLUGIN_NAME="${PLUGIN_PATH#plugins/}"
           python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
         working-directory: plugins
