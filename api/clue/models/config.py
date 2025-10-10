@@ -202,6 +202,7 @@ class Auth(BaseModel):
 class RedisServer(BaseModel):
     host: str = Field(description="Hostname of Redis instance", default="127.0.0.1")
     port: int = Field(description="Port of Redis instance", default=6379)
+    password: str | None = Field(description="Password to connect to redis", default=None)
 
 
 class APMServer(BaseModel):

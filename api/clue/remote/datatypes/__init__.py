@@ -77,16 +77,17 @@ def _redis_ssl_kwargs(host: str) -> dict:
     return dict(ssl_ca_certs=os.environ.get(f"{host.upper()}_ROOT_CA_PATH", "/etc/clue/ssl/clue_root-ca.crt"))
 
 
-def get_client(host, port, private):
+def get_client(host, port, private, password=None):
     # In case a structure is passed a client as host
     if isinstance(host, (redis.Redis, redis.StrictRedis)):
         return host
 
-    if not host or not port:
+    if not host or not port or not password:
         from clue.config import config
 
         host = host or config.core.redis.host
         port = int(port or config.core.redis.port)
+        password = config.core.redis.password
 
     ssl_kwargs = {}
 
@@ -97,10 +98,12 @@ def get_client(host, port, private):
         ssl_kwargs["ssl"] = True
 
     if private:
-        return redis.StrictRedis(host=host, port=port, socket_keepalive=True, **ssl_kwargs)
+        return redis.StrictRedis(host=host, port=port, socket_keepalive=True, password=password, **ssl_kwargs)
     else:
         return redis.StrictRedis(
-            connection_pool=get_pool(host, port, ssl=ssl_kwargs.get("ssl", False)), socket_keepalive=True
+            connection_pool=get_pool(host, port, ssl=ssl_kwargs.get("ssl", False)),
+            socket_keepalive=True,
+            password=password,
         )
 
 
