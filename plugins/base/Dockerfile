@@ -39,6 +39,8 @@ WORKDIR /home/clue
 COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
 COPY --chown=clue:clue --from=builder /install/.venv /home/clue/.venv
 
+RUN ls /home/clue -l
+
 RUN cp /home/clue/plugin/files/* .
 
 ENV APP_MODULE=patched:app
