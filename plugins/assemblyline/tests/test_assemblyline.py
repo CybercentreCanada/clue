@@ -211,7 +211,7 @@ def al_c12n_engine():
 
 @pytest.fixture()
 def server(al_client, al_c12n_engine):
-    from plugins.assemblyline_lookup import app
+    from assemblyline import app
 
     orig = app.AL_API_KEY
     orig_client = app.CLIENT
