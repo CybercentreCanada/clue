@@ -37,11 +37,10 @@ USER clue
 
 WORKDIR /home/clue
 COPY --chown=clue:clue --from=builder /install/clue /home/clue/clue
+COPY --chown=clue:clue --from=builder /install/plugin/files/* /home/clue
 COPY --chown=clue:clue --from=builder /install/.venv /home/clue/.venv
 
-RUN ls /home/clue -l
-
-RUN cp /home/clue/plugin/files/* .
+RUN ls -l /home/clue
 
 ENV APP_MODULE=patched:app
 ENV PATH=/home/clue/.local/bin:/home/clue/.venv/bin:$PATH
