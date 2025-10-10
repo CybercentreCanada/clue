@@ -106,16 +106,20 @@ def get_client(host, port, private, password=None):
         return redis.StrictRedis(host=host, port=port, socket_keepalive=True, password=password, **ssl_kwargs)
     else:
         return redis.StrictRedis(
-            connection_pool=get_pool(host, port, ssl=ssl_kwargs.get("ssl", False)),
+            connection_pool=get_pool(host, port, ssl=ssl_kwargs.get("ssl", False), password=password),
             socket_keepalive=True,
             password=password,
         )
 
 
-def get_pool(host, port, ssl=False):
+def get_pool(host: str, port: int, ssl: bool = False, password: str | None = None):
     key = (host, port)
     connection_class = redis.connection.Connection
     connection_kwargs = {}
+
+    if password:
+        connection_kwargs["password"] = password
+
     if ssl:
         connection_class = redis.connection.SSLConnection  # type: ignore[assignment]
         connection_kwargs = _redis_ssl_kwargs(host)
