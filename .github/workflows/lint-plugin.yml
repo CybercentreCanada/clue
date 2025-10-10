@@ -20,13 +20,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install Ruff
-        run: pip install ruff
+        run: pip install ruff mypy
 
       - name: Run Ruff format
         run: ruff format ${{ inputs.plugin-path }} --diff
 
       - name: Run Ruff lint
         run: ruff check ${{ inputs.plugin-path }} --output-format=github
+
+      - name: Run Mypy
+        run: mypy ${{ inputs.plugin-path }}
 
       - name: Install yq
         run: sudo snap install yq
