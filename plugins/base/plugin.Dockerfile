@@ -20,12 +20,13 @@ RUN pip install --no-cache-dir --root-user-action=ignore --no-cache --prefix=/in
 
 RUN rm pip.conf
 
+USER clue
+
 FROM cccsaurora/clue-plugin-base:${base_plugin_version} as release
 
 WORKDIR /home/clue
 
 USER clue
-
 
 COPY --chown=clue:clue --from=builder /install /usr/local
 
