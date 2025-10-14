@@ -16,11 +16,16 @@ ENV PIP_CONFIG_FILE pip.conf
 
 COPY requirements.txt /tmp/requirements.txt
 
-RUN pip install --root-user-action=ignore --no-cache --prefix=/install -r /tmp/requirements.txt
+RUN pip install --no-cache-dir --root-user-action=ignore --no-cache --prefix=/install -r /tmp/requirements.txt
 
 RUN rm pip.conf
 
 FROM cccsaurora/clue-plugin-base:${base_plugin_version} as release
+
+WORKDIR /home/clue
+
+USER clue
+
 
 COPY --chown=clue:clue --from=builder /install /usr/local
 
