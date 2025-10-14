@@ -82,7 +82,7 @@ jobs:
       - name: Test build Clue Base Plugin Docker image (no push)
         uses: docker/build-push-action@v3
         with:
-          context: plugins/base
+          context: .
           file: plugins/base/base.Dockerfile
           push: false
           tags: cccsaurora/clue-plugin-base:test
@@ -145,7 +145,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v3
         with:
-          context: api
+          context: .
           file: plugins/base/base.Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
