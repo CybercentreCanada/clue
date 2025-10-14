@@ -34,7 +34,7 @@ def info(*messages: str):
     print(f"[{colored("info", "cyan")}]", *messages)
 
 
-def success(title: str, latency: float | None = None):
+def success(title: str, latency: float | None = None, skip_wait: bool = False):
     title = colored(title, "green")
 
     if latency is not None:
@@ -42,7 +42,8 @@ def success(title: str, latency: float | None = None):
 
     print(title)
 
-    wait_to_continue()
+    if not skip_wait:
+        wait_to_continue()
 
 
 def prep_command(cmd: str) -> list[str]:

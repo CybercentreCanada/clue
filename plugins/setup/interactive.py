@@ -1,20 +1,24 @@
+import sys
+from pathlib import Path
+
+PLUGINS_PATH = Path(__file__).parent.parent.resolve()
+CLUE_PATH = Path(__file__).parent.parent.parent / "api"
+CLUE_VENV_PATH = CLUE_PATH / ".venv/lib/python3.12/site-packages"
+sys.path.append(str(PLUGINS_PATH))
+sys.path.append(str(CLUE_PATH))
+sys.path.append(str(CLUE_VENV_PATH))
+
 import importlib
 import inspect
 import json
 import os
-import sys
 import textwrap
-from pathlib import Path
 from typing import Callable
 from urllib.parse import quote_plus
 
-from flask.testing import FlaskClient
-
 from clue.plugin import CluePlugin
-from plugin.commands import error, info, success, warn
-
-PLUGINS_PATH = Path(__file__).parent.parent.parent.parent / "plugins"
-sys.path.insert(0, str(PLUGINS_PATH))
+from commands import error, info, success, warn
+from flask.testing import FlaskClient
 
 TESTABLE_FUNCTIONS = [
     ("get_actions", None),
@@ -71,12 +75,12 @@ def test_function(plugin: CluePlugin, fn_id: str, fn: Callable):  # noqa: C901
         if rule.endpoint != fn_id:
             continue
 
+        kwargs: dict[str, str] = {}
         if "GET" in (rule.methods or {}) and "<" not in rule.rule:
             info("Simple endpoint detected. Running GET")
             response = plugin.app.test_client().get(rule.rule)
             info("Response:", json.dumps(response.json, indent=2) if response.json else response.data.decode())
         elif "GET" in (rule.methods or {}):
-            kwargs: dict[str, str] = {}
             info(f"{len(rule.arguments)} arguments are necessary. Supply them now:")
             for argument in sorted(list(rule.arguments)):
                 kwargs[argument] = quote_plus(quote_plus(input(f"{argument}: ")))
@@ -96,7 +100,6 @@ def test_function(plugin: CluePlugin, fn_id: str, fn: Callable):  # noqa: C901
                 else:
                     info("Response:", json.dumps(response.json, indent=2) if response.json else response.data.decode())
         elif "POST" in (rule.methods or {}):
-            kwargs: dict[str, str] = {}
             if "<" in rule.rule:
                 info(f"{len(rule.arguments)} arguments are necessary. Supply them now:")
                 for argument in sorted(list(rule.arguments)):
@@ -161,7 +164,7 @@ def main():  # noqa: C901
 
     try:
         _module = importlib.import_module(f"{plugin_name}.app")
-        success(f"Initializing plugin {plugin_name} for interactivity")
+        success(f"Initializing plugin {plugin_name} for interactivity", skip_wait=True)
     except Exception:
         error(f"Initializing plugin {plugin_name} for interactivity")
         raise
@@ -169,7 +172,7 @@ def main():  # noqa: C901
     plugin: CluePlugin | None = None
     for key, member in inspect.getmembers(_module, predicate=lambda _m: filter_members(_m, _module)):
         if isinstance(member, CluePlugin):
-            success(f"Plugin found exported as member {key}")
+            success(f"Plugin found exported as member {key}", skip_wait=True)
             plugin = member
             break
 

@@ -1,4 +1,4 @@
-name: Clue Howler Plugin
+name: Clue $PLUGIN_NAME_CAPITALIZED Plugin
 
 on:
   push:
@@ -8,9 +8,8 @@ on:
       - rc/*
       - patch/*
     paths:
-      - plugins/howler/**
-      - plugins/build/**
-      - .github/workflows/howler-plugin-workflow.yml
+      - plugins/$PLUGIN_NAME/**
+      - .github/workflows/$PLUGIN_NAME-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
     tags:
       - v*
@@ -21,9 +20,8 @@ on:
       - rc/*
       - patch/*
     paths:
-      - plugins/howler/**
-      - plugins/build/**
-      - .github/workflows/howler-plugin-workflow.yml
+      - plugins/$PLUGIN_NAME/**
+      - .github/workflows/$PLUGIN_NAME-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
   workflow_dispatch: {}
   workflow_run:
@@ -37,23 +35,23 @@ permissions:
   pull-requests: write
 
 jobs:
-  check-howler-plugin-formatting:
-    name: Lint Howler Plugin
+  check-$PLUGIN_NAME-plugin-formatting:
+    name: Lint $PLUGIN_NAME_CAPITALIZED Plugin
     uses: ./.github/workflows/lint-plugin.yml
     with:
-      plugin-path: plugins/howler
-  test-howler-plugin:
-    needs: check-howler-plugin-formatting
-    name: Test Howler Plugin
+      plugin-path: plugins/$PLUGIN_NAME
+  test-$PLUGIN_NAME-plugin:
+    needs: check-$PLUGIN_NAME-plugin-formatting
+    name: Test $PLUGIN_NAME_CAPITALIZED Plugin
     uses: ./.github/workflows/test-plugin.yml
     with:
-      plugin-path: plugins/howler
-  build-howler-plugin:
-    needs: test-howler-plugin
-    name: Build Howler Plugin's Docker Image
+      plugin-path: plugins/$PLUGIN_NAME
+  build-$PLUGIN_NAME-plugin:
+    needs: test-$PLUGIN_NAME-plugin
+    name: Build $PLUGIN_NAME_CAPITALIZED Plugin's Docker Image
     uses: ./.github/workflows/build-plugin.yml
     with:
-      plugin-path: plugins/howler
+      plugin-path: plugins/$PLUGIN_NAME
     permissions:
       id-token: write
       contents: read

@@ -1,7 +1,6 @@
-from pydantic_core import Url
-
 from clue.models.network import Annotation, QueryEntry
 from clue.plugin.utils import Params
+from pydantic_core import Url
 
 # ---
 

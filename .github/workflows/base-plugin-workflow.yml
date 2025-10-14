@@ -43,10 +43,15 @@ jobs:
           ref: develop
       - name: Checkout current ref
         uses: actions/checkout@v4
-      - name: Run docker formatting checks
+      - name: Run docker formatting checks (base)
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: plugins/base/Dockerfile
+          dockerfile: plugins/base/base.Dockerfile
+          failure-threshold: warning
+      - name: Run docker formatting checks (plugin)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: plugins/base/plugin.Dockerfile
           failure-threshold: warning
 
   test_docker_build:
@@ -78,7 +83,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: plugins/base
-          file: plugins/base/Dockerfile
+          file: plugins/base/base.Dockerfile
           push: false
           tags: cccsaurora/clue-plugin-base:test
           build-args: |
@@ -141,7 +146,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: api
-          file: plugins/base/Dockerfile
+          file: plugins/base/base.Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

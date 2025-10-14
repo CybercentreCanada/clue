@@ -53,11 +53,11 @@ test-plugin: ## Run a specific plugin interactively (usage: make test-plugin <pl
 	fi
 	@echo "✅ Running plugin: $(filter-out $@,$(MAKECMDGOALS))"
 	@echo -n "⏩ "
-	cd api && poetry run plugin $(filter-out $@,$(MAKECMDGOALS))
+	cd plugins/setup && python interactive.py $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: create-plugin
 create-plugin:
-	cd api && poetry run create
+	cd plugins/setup && python create.py
 
 .PHONY: help
 help: ## Show this help message

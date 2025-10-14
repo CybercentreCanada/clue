@@ -1,8 +1,7 @@
 import textwrap
 
-from pydantic_core import Url
-
 from clue.models.actions import Action, ActionResult, ExecuteRequest
+from pydantic_core import Url
 
 # ---
 

@@ -9,7 +9,6 @@ on:
       - patch/*
     paths:
       - plugins/assemblyline/**
-      - plugins/build/**
       - .github/workflows/assemblyline-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
     tags:
@@ -22,7 +21,6 @@ on:
       - patch/*
     paths:
       - plugins/assemblyline/**
-      - plugins/build/**
       - .github/workflows/assemblyline-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
   workflow_dispatch: {}

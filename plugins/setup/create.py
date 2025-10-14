@@ -1,13 +1,19 @@
-import re
-import shutil
 import sys
-from email.utils import parseaddr
 from pathlib import Path
 
-from click.termui import confirm
+PLUGINS_FOLDER = Path(__file__).parent.parent.resolve()
+CLUE_PATH = Path(__file__).parent.parent.parent / "api"
+CLUE_VENV_PATH = CLUE_PATH / ".venv/lib/python3.12/site-packages"
+sys.path.append(str(CLUE_PATH))
+sys.path.append(str(CLUE_VENV_PATH))
 
+import re
+import shutil
+from email.utils import parseaddr
+
+from click.termui import confirm
 from clue.constants.supported_types import SUPPORTED_TYPES
-from plugin.commands import (
+from commands import (
     error,
     execute,
     header,
@@ -17,7 +23,6 @@ from plugin.commands import (
     wait_to_continue,
 )
 
-PLUGINS_FOLDER: Path = (Path(__file__).parent.parent.parent / "plugins").resolve()
 TEMPLATES_FOLDER = Path(__file__).parent / "templates"
 
 
@@ -199,13 +204,6 @@ def main():
     except KeyboardInterrupt:
         print()
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\rExiting!" + " " * 80)
 
 
 if __name__ == "__main__":
