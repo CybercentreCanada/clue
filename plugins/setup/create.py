@@ -13,20 +13,21 @@ from email.utils import parseaddr
 
 from click.termui import confirm
 from clue.constants.supported_types import SUPPORTED_TYPES
-from commands import (
-    error,
-    execute,
-    header,
-    info,
-    prep_command,
-    success,
-    wait_to_continue,
-)
+from commands import error, execute, header, info, prep_command, success, wait_to_continue
 
 TEMPLATES_FOLDER = Path(__file__).parent / "templates"
 
 
 def get_plugin_name() -> str:
+    """Prompt user for a valid plugin name.
+
+    Continuously prompts the user until a valid plugin name is provided.
+    A valid name must contain only lowercase letters, numbers, and hyphens,
+    and must not already exist in the plugins folder.
+
+    Returns:
+        str: The validated plugin name.
+    """
     plugin_name: str | None = None
     while plugin_name is None:
         candidate = input("\nPlugin Name: ").lower()
@@ -38,8 +39,11 @@ def get_plugin_name() -> str:
             error("Plugin name can only contain lowercase letters, numbers, and hyphens.")
             continue
 
-        if (PLUGINS_FOLDER / candidate).exists():
-            error(f"Plugin {candidate} already exists at {PLUGINS_FOLDER / candidate} - please use a different name.")
+        if (PLUGINS_FOLDER / candidate.replace("-", "_")).exists():
+            error(
+                f"Plugin {candidate} already exists at {PLUGINS_FOLDER / candidate.replace('-', '_')} - please use a "
+                "different name."
+            )
             continue
 
         plugin_name = candidate
@@ -48,6 +52,13 @@ def get_plugin_name() -> str:
 
 
 def get_team() -> str:
+    """Prompt user for the team that owns the plugin.
+
+    Continuously prompts the user until a non-empty team name is provided.
+
+    Returns:
+        str: The team name that owns the plugin.
+    """
     team: str | None = None
     while team is None:
         team = input("\nTeam Ownership (what team/organization owns this plugin?): ")
@@ -61,6 +72,14 @@ def get_team() -> str:
 
 
 def get_contact() -> str:
+    """Prompt user for a point of contact in RFC-5322 format.
+
+    Continuously prompts the user until a valid contact is provided in the format
+    'Full Name <email@example.com>'. Both name and email components are required.
+
+    Returns:
+        str: The validated contact information in RFC-5322 format.
+    """
     contact: str | None = None
     while contact is None:
         contact = input("\nPoint of Contact (format should be 'Full Name <email address>'): ")
@@ -80,6 +99,19 @@ def get_contact() -> str:
 
 
 def main():
+    """Interactive wizard to create a new Clue plugin.
+
+    Guides the user through the plugin creation process by:
+    - Prompting for plugin name, team ownership, and contact information
+    - Creating the plugin directory structure
+    - Generating README.md, manifest.yml, and optional app.py files
+    - Optionally creating stub enrich and action functions
+    - Optionally creating a GitHub Actions workflow file
+    - Running code formatting and linting on generated files
+
+    Raises:
+        KeyboardInterrupt: If the user cancels the operation with Ctrl+C.
+    """
     try:
         header("Clue Plugin Generation", "This script will walk you through the creation of a new clue plugin.")
 
@@ -88,9 +120,11 @@ def main():
         info("First, we need a name for your plugin. It must not match an existing plugin name.")
 
         existing_plugins = sorted(
-            entry.name
+            entry.name.replace("_", "-")
             for entry in PLUGINS_FOLDER.iterdir()
-            if entry.is_dir() and not re.sub(r"[a-z0-9\-]", "", entry.name, flags=re.IGNORECASE)
+            if entry.is_dir()
+            and not re.sub(r"[a-z0-9_]", "", entry.name, flags=re.IGNORECASE)
+            and not entry.name.startswith("_")
         )
 
         info(f"Existing plugins are: {', '.join(existing_plugins)}")
