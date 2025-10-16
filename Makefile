@@ -56,8 +56,8 @@ test-plugin: ## Run a specific plugin interactively (usage: make test-plugin <pl
 	cd plugins/setup && python interactive.py $(filter-out $@,$(MAKECMDGOALS))
 
 .PHONY: create-plugin
-create-plugin:
-	cd plugins/setup && python create.py
+create-plugin: ## Create a new plugin
+	@cd plugins/setup && python create.py
 
 .PHONY: help
 help: ## Show this help message

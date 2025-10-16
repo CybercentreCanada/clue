@@ -1,0 +1,1497 @@
+# Summary of port uses
+
+- 0 TO 0: In programming APIs (not in communication between hosts), requests a system-allocated (dynamic) port
+- 1 TO 1: [TCP Port Service Multiplexer](https://en.wikipedia.org/wiki/TCP_Port_Service_Multiplexer "TCP Port Service Multiplexer") (TCPMUX). Historic. Both TCP and UDP have been assigned to TCPMUX by IANA, but by design only TCP is specified.
+- 2 TO 2: compressnet (Management Utility)
+- 3 TO 3: compressnet (Compression Process)
+- 5 TO 5: [Remote Job Entry](https://en.wikipedia.org/wiki/Remote_Job_Entry "Remote Job Entry") was historically using socket 5 in its [old socket form](https://en.wikipedia.org/wiki/Network_socket#History "Network socket"), while [MIB](https://en.wikipedia.org/wiki/Management_information_base "Management information base") [PIM](https://en.wikipedia.org/wiki/Protocol_Independent_Multicast "Protocol Independent Multicast") has identified it as TCP/5 and IANA has assigned both TCP and UDP 5 to it.
+- 7 TO 7: [Echo Protocol](https://en.wikipedia.org/wiki/Echo_Protocol "Echo Protocol")
+- 9 TO 9: [Discard Protocol](https://en.wikipedia.org/wiki/Discard_Protocol "Discard Protocol")
+- 9 TO 9: [Wake-on-LAN](https://en.wikipedia.org/wiki/Wake-on-LAN "Wake-on-LAN") **(Unofficial use)**
+- 11 TO 11: Active Users ([systat](https://en.wikipedia.org/wiki/Systat_(protocol) "Systat (protocol)") service)
+- 13 TO 13: [Daytime Protocol](https://en.wikipedia.org/wiki/Daytime_Protocol "Daytime Protocol")
+- 15 TO 15: Previously [netstat](https://en.wikipedia.org/wiki/Netstat "Netstat") service **(Unofficial use)**
+- 17 TO 17: [Quote of the Day](https://en.wikipedia.org/wiki/QOTD "QOTD") (QOTD)
+- 18 TO 18: [Message Send Protocol](https://en.wikipedia.org/wiki/Message_Send_Protocol "Message Send Protocol")
+- 19 TO 19: [Character Generator Protocol](https://en.wikipedia.org/wiki/Character_Generator_Protocol "Character Generator Protocol") (CHARGEN)
+- 20 TO 20: [File Transfer Protocol](https://en.wikipedia.org/wiki/File_Transfer_Protocol "File Transfer Protocol") (FTP) data transfer
+- 21 TO 21: File Transfer Protocol (FTP) control (command)
+- 22 TO 22: [Secure Shell](https://en.wikipedia.org/wiki/Secure_Shell "Secure Shell") (SSH), secure logins, [file transfers](https://en.wikipedia.org/wiki/File_transfer "File transfer") ([scp](https://en.wikipedia.org/wiki/Secure_copy "Secure copy"), [sftp](https://en.wikipedia.org/wiki/SSH_file_transfer_protocol "SSH file transfer protocol")) and port forwarding
+- 23 TO 23: [Telnet](https://en.wikipedia.org/wiki/Telnet "Telnet") protocol—unencrypted text communications
+- 25 TO 25: [Simple Mail Transfer Protocol](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol "Simple Mail Transfer Protocol") (SMTP), used for email routing between mail servers
+- 27 TO 27: nsw-fe (NSW User System FE)
+- 28 TO 28: Palo Alto Networks' Panorama High Availability (HA) sync encrypted port. **(Unofficial use)**
+- 29 TO 29: msg-icp (MSG ICP)
+- 31 TO 31: msg-auth (MSG Authentication)
+- 33 TO 33: dsp (Display Support Protocol)
+- 37 TO 37: [Time Protocol](https://en.wikipedia.org/wiki/Time_Protocol "Time Protocol")
+- 38 TO 38: rap (Route Access Protocol)
+- 39 TO 39: rlp (Resource Location Protocol)
+- 41 TO 41: graphics (Graphics)
+- 42 TO 42: [Host Name Server Protocol](https://en.wikipedia.org/wiki/ARPA_Host_Name_Server_Protocol "ARPA Host Name Server Protocol")
+- 43 TO 43: [WHOIS](https://en.wikipedia.org/wiki/WHOIS "WHOIS") protocol
+- 44 TO 44: mpm-flags (MPM FLAGS Protocol)
+- 45 TO 45: mpm (Message Processing Module [recv])
+- 46 TO 46: mpm-snd (MPM [default send])
+- 47 TO 47: 
+- 48 TO 48: auditd (Digital Audit Daemon)
+- 49 TO 49: [TACACS](https://en.wikipedia.org/wiki/TACACS "TACACS") Login Host protocol. [TACACS+](https://en.wikipedia.org/wiki/TACACS%2B "TACACS+"), still in draft which is an improved but distinct version of TACACS, only uses TCP 49.
+- 50 TO 50: re-mail-ck (Remote Mail Checking Protocol)
+- 51 TO 51: Historically used for [Interface Message Processor](https://en.wikipedia.org/wiki/Interface_Message_Processor "Interface Message Processor") logical address management, entry has been removed by IANA on 2013-05-25
+- 52 TO 52: [Xerox Network Systems](https://en.wikipedia.org/wiki/Xerox_Network_Systems "Xerox Network Systems") (XNS) Time Protocol. Despite this port being assigned by IANA, the service is meant to work on [SPP](https://en.wikipedia.org/wiki/Sequenced_Packet_Protocol "Sequenced Packet Protocol") (ancestor of [IPX/SPX](https://en.wikipedia.org/wiki/IPX/SPX "IPX/SPX")), instead of TCP/IP.
+- 53 TO 53: [Domain Name System](https://en.wikipedia.org/wiki/Domain_Name_System "Domain Name System") (DNS)
+- 54 TO 54: Xerox Network Systems (XNS) Clearinghouse (Name Server). Despite this port being assigned by IANA, the service is meant to work on [SPP](https://en.wikipedia.org/wiki/Sequenced_Packet_Protocol "Sequenced Packet Protocol") (ancestor of [IPX/SPX](https://en.wikipedia.org/wiki/IPX/SPX "IPX/SPX")), instead of TCP/IP.
+- 55 TO 55: isi-gl (ISI Graphics Language)
+- 56 TO 56: Xerox Network Systems (XNS) Authentication Protocol. Despite this port being assigned by IANA, the service is meant to work on [SPP](https://en.wikipedia.org/wiki/Sequenced_Packet_Protocol "Sequenced Packet Protocol") (ancestor of [IPX/SPX](https://en.wikipedia.org/wiki/IPX/SPX "IPX/SPX")), instead of TCP/IP.
+- 58 TO 58: Xerox Network Systems (XNS) Mail. Despite this port being assigned by IANA, the service is meant to work on [SPP](https://en.wikipedia.org/wiki/Sequenced_Packet_Protocol "Sequenced Packet Protocol") (ancestor of [IPX/SPX](https://en.wikipedia.org/wiki/IPX/SPX "IPX/SPX")), instead of TCP/IP.
+- 61 TO 61: Historically assigned to the [NIFTP-Based Mail](/w/index.php?title=NIFTP-Based_Mail&action=edit&redlink=1 "NIFTP-Based Mail (page does not exist)") protocol, but was never documented in the related [IEN](https://en.wikipedia.org/wiki/Internet_Experiment_Note "Internet Experiment Note"). The port number entry was removed from IANA's registry on 2017-05-18.
+- 62 TO 62: acas (ACA Services)
+- 63 TO 63: whoispp (whois++)
+- 64 TO 64: covia (Communications Integrator (CI))
+- 65 TO 65: tacacs-ds (TACACS-Database Service)
+- 66 TO 66: sql-net (Oracle SQL\*NET)
+- 67 TO 67: [Bootstrap Protocol](https://en.wikipedia.org/wiki/Bootstrap_Protocol "Bootstrap Protocol") (BOOTP) server; also used by [Dynamic Host Configuration Protocol](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol "Dynamic Host Configuration Protocol") (DHCP)
+- 68 TO 68: Bootstrap Protocol (BOOTP) client; also used by Dynamic Host Configuration Protocol (DHCP)
+- 69 TO 69: [Trivial File Transfer Protocol](https://en.wikipedia.org/wiki/Trivial_File_Transfer_Protocol "Trivial File Transfer Protocol") (TFTP)
+- 70 TO 70: [Gopher](https://en.wikipedia.org/wiki/Gopher_(protocol) "Gopher (protocol)") protocol
+- 71 TO 74: [NETRJS](https://en.wikipedia.org/wiki/NETRJS "NETRJS") protocol
+- 76 TO 76: deos (Distributed External Object Store)
+- 78 TO 78: vettcp (vettcp)
+- 79 TO 79: [Finger protocol](https://en.wikipedia.org/wiki/Finger_protocol "Finger protocol")
+- 80 TO 80: [Hypertext Transfer Protocol](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol "Hypertext Transfer Protocol") (HTTP) uses TCP in versions 1.x and 2. [HTTP/3](https://en.wikipedia.org/wiki/HTTP/3 "HTTP/3") uses [QUIC](https://en.wikipedia.org/wiki/QUIC "QUIC"), a transport protocol on top of UDP.
+- 81 TO 81: [TorPark](https://en.wikipedia.org/wiki/TorPark "TorPark") [onion routing](https://en.wikipedia.org/wiki/Onion_routing "Onion routing") **(Unofficial use)**
+- 82 TO 82: xfer (XFER Utility)
+- 82 TO 82: TorPark control **(Unofficial use)**
+- 83 TO 83: mit-ml-dev (MIT ML Device)
+- 84 TO 84: ctf (Common Trace Facility)
+- 85 TO 85: mit-ml-dev (MIT ML Device)
+- 86 TO 86: mfcobol (Micro Focus Cobol)
+- 88 TO 88: [Kerberos](https://en.wikipedia.org/wiki/Kerberos_(protocol) "Kerberos (protocol)") authentication system
+- 89 TO 89: su-mit-tg (SU/MIT Telnet Gateway)
+- 90 TO 90: dnsix (DNSIX Security Attribute Token Map)
+- 90 TO 90: [PointCast (dotcom)](https://en.wikipedia.org/wiki/PointCast_(dotcom) "PointCast (dotcom)") **(Unofficial use)**
+- 91 TO 91: mit-dov (MIT Dover Spooler)
+- 92 TO 92: npp (Network Printing Protocol)
+- 93 TO 93: dcp (Device Control Protocol)
+- 94 TO 94: objcall (Tivoli Object Dispatcher)
+- 95 TO 95: SUPDUP, terminal-independent remote login
+- 96 TO 96: dixie (DIXIE Protocol Specification)
+- 97 TO 97: swift-rvf (Swift Remote Virtual File Protocol)
+- 98 TO 98: tacnews (TAC News)
+- 99 TO 99: metagram (Metagram Relay)
+- 101 TO 101: [NIC](https://en.wikipedia.org/wiki/History_of_the_Internet#NIC,_InterNIC,_IANA,_and_ICANN "History of the Internet") [host name](https://en.wikipedia.org/wiki/Hostname "Hostname")
+- 102 TO 102: [ISO](https://en.wikipedia.org/wiki/International_Organization_for_Standardization "International Organization for Standardization") Transport Service Access Point ([TSAP](https://en.wikipedia.org/wiki/TSAP "TSAP")) Class 0 protocol;
+- 104 TO 104: [Digital Imaging and Communications in Medicine](https://en.wikipedia.org/wiki/Digital_Imaging_and_Communications_in_Medicine "Digital Imaging and Communications in Medicine") (DICOM; also port 11112)
+- 105 TO 105: [CCSO Nameserver](https://en.wikipedia.org/wiki/CCSO_Nameserver "CCSO Nameserver")
+- 106 TO 106: [macOS Server](https://en.wikipedia.org/wiki/MacOS_Server "MacOS Server"), (macOS) password server **(Unofficial use)**
+- 107 TO 107: [Remote User Telnet Service](https://en.wikipedia.org/wiki/Rtelnet "Rtelnet") (RTelnet)
+- 108 TO 108: IBM [Systems Network Architecture](https://en.wikipedia.org/wiki/Systems_Network_Architecture "Systems Network Architecture") (SNA) gateway access server
+- 109 TO 109: [Post Office Protocol](https://en.wikipedia.org/wiki/Post_Office_Protocol "Post Office Protocol"), version 2 (POP2)
+- 110 TO 110: Post Office Protocol, version 3 (POP3)
+- 111 TO 111: [Open Network Computing Remote Procedure Call](https://en.wikipedia.org/wiki/Open_Network_Computing_Remote_Procedure_Call "Open Network Computing Remote Procedure Call") (ONC RPC, sometimes referred to as Sun RPC)
+- 112 TO 112: [McIDAS](https://en.wikipedia.org/wiki/McIDAS "McIDAS") Data Transmission Protocol
+- 113 TO 113: [Ident](https://en.wikipedia.org/wiki/Ident_protocol "Ident protocol"), authentication service/identification protocol, used by [IRC](https://en.wikipedia.org/wiki/Internet_Relay_Chat "Internet Relay Chat") servers to identify users
+- 113 TO 113: Authentication Service (auth), the predecessor to *identification protocol*. Used to determine a user's identity of a particular TCP connection.
+- 115 TO 115: [Simple File Transfer Protocol](https://en.wikipedia.org/wiki/Simple_File_Transfer_Protocol "Simple File Transfer Protocol")
+- 117 TO 117: [UUCP Mapping Project](https://en.wikipedia.org/wiki/UUCP_Mapping_Project "UUCP Mapping Project") (path service)
+- 118 TO 118: Structured Query Language ([SQL](https://en.wikipedia.org/wiki/SQL "SQL")) Services
+- 119 TO 119: [Network News Transfer Protocol](https://en.wikipedia.org/wiki/Network_News_Transfer_Protocol "Network News Transfer Protocol") (NNTP), retrieval of newsgroup messages
+- 123 TO 123: [Network Time Protocol](https://en.wikipedia.org/wiki/Network_Time_Protocol "Network Time Protocol") (NTP), used for time synchronization
+- 126 TO 126: Formerly [Unisys](https://en.wikipedia.org/wiki/Unisys "Unisys") Unitary Login, renamed by Unisys to NXEdit. Used by Unisys Programmer's Workbench for Clearpath MCP, an IDE for [Unisys MCP software development](https://en.wikipedia.org/wiki/Unisys_MCP_programming_languages "Unisys MCP programming languages")
+- 135 TO 135: [DCE](https://en.wikipedia.org/wiki/Distributed_Computing_Environment "Distributed Computing Environment") [endpoint](https://en.wikipedia.org/wiki/Communication_endpoint "Communication endpoint") resolution
+- 135 TO 135: [Microsoft](https://en.wikipedia.org/wiki/Microsoft "Microsoft") EPMAP (End Point Mapper), also known as DCE/[RPC](https://en.wikipedia.org/wiki/Remote_procedure_call "Remote procedure call") Locator service, used to remotely manage services including [DHCP server](https://en.wikipedia.org/wiki/DHCP_server "DHCP server"), [DNS](https://en.wikipedia.org/wiki/Domain_Name_System "Domain Name System") server and [WINS](https://en.wikipedia.org/wiki/Windows_Internet_Name_Service "Windows Internet Name Service"). Also used by [DCOM](https://en.wikipedia.org/wiki/Distributed_Component_Object_Model "Distributed Component Object Model")
+- 137 TO 137: [NetBIOS](https://en.wikipedia.org/wiki/NetBIOS "NetBIOS") Name Service, used for name registration and [resolution](https://en.wikipedia.org/wiki/Name_resolution_(computer_systems) "Name resolution (computer systems)")
+- 138 TO 138: NetBIOS Datagram Service
+- 139 TO 139: NetBIOS Session Service
+- 143 TO 143: [Internet Message Access Protocol](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol "Internet Message Access Protocol") (IMAP), management of [electronic mail](https://en.wikipedia.org/wiki/Email "Email") messages on a server
+- 151 TO 151: [HEMS](https://en.wikipedia.org/wiki/Energy_management_system "Energy management system")
+- 152 TO 152: [Background File Transfer Program](/w/index.php?title=Background_File_Transfer_Program&action=edit&redlink=1 "Background File Transfer Program (page does not exist)") (BFTP)
+- 153 TO 153: [Simple Gateway Monitoring Protocol](https://en.wikipedia.org/wiki/Simple_Gateway_Monitoring_Protocol "Simple Gateway Monitoring Protocol") (SGMP), a protocol for remote inspection and alteration of gateway management information
+- 156 TO 156: Structured Query Language ([SQL](https://en.wikipedia.org/wiki/SQL "SQL")) Service
+- 158 TO 158: [Distributed Mail System Protocol](/w/index.php?title=Distributed_Mail_System_Protocol&action=edit&redlink=1 "Distributed Mail System Protocol (page does not exist)") (DMSP, sometimes referred to as Pcmail)
+- 161 TO 161: [Simple Network Management Protocol](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol "Simple Network Management Protocol") (SNMP)
+- 162 TO 162: [Simple Network Management Protocol](https://en.wikipedia.org/wiki/Simple_Network_Management_Protocol "Simple Network Management Protocol") Trap (SNMPTRAP)
+- 165 TO 165: [Xerox](https://en.wikipedia.org/wiki/Xerox "Xerox")
+- 169 TO 169: [SEND](https://en.wikipedia.org/wiki/Secure_Neighbor_Discovery "Secure Neighbor Discovery")
+- 170 TO 170: Network [PostScript](https://en.wikipedia.org/wiki/PostScript "PostScript") [print server](https://en.wikipedia.org/wiki/Print_server "Print server")
+- 175 TO 175: [VMNET](https://en.wikipedia.org/wiki/VMNET "VMNET") service using [NJE](https://en.wikipedia.org/wiki/Remote_job_entry#Network_Job_Entry "Remote job entry")
+- 177 TO 177: [X Display Manager Control Protocol](https://en.wikipedia.org/wiki/X_Display_Manager_Control_Protocol "X Display Manager Control Protocol") (XDMCP), used for remote logins to an [X Display Manager](https://en.wikipedia.org/wiki/X_display_manager "X display manager") server
+- 179 TO 179: [Border Gateway Protocol](https://en.wikipedia.org/wiki/Border_Gateway_Protocol "Border Gateway Protocol") (BGP), used to exchange routing and reachability information among [autonomous systems](https://en.wikipedia.org/wiki/Autonomous_system_(Internet) "Autonomous system (Internet)") (AS) on the [Internet](https://en.wikipedia.org/wiki/Internet "Internet")
+- 180 TO 180: [ris](https://en.wikipedia.org/wiki/Remote_Installation_Services "Remote Installation Services")
+- 194 TO 194: [Internet Relay Chat](https://en.wikipedia.org/wiki/Internet_Relay_Chat "Internet Relay Chat") (IRC)
+- 199 TO 199: [SNMP](https://en.wikipedia.org/wiki/SNMP "SNMP") Unix Multiplexer (SMUX)
+- 201 TO 201: [AppleTalk](https://en.wikipedia.org/wiki/AppleTalk "AppleTalk") Routing Maintenance
+- 209 TO 209: [Quick Mail Transfer Protocol](https://en.wikipedia.org/wiki/Quick_Mail_Transfer_Protocol "Quick Mail Transfer Protocol")
+- 210 TO 210: [ANSI](https://en.wikipedia.org/wiki/ANSI "ANSI") [Z39.50](https://en.wikipedia.org/wiki/Z39.50 "Z39.50")
+- 213 TO 213: [Internetwork Packet Exchange](https://en.wikipedia.org/wiki/Internetwork_Packet_Exchange "Internetwork Packet Exchange") (IPX)
+- 218 TO 218: Message posting protocol (MPP)
+- 220 TO 220: [Internet Message Access Protocol](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol "Internet Message Access Protocol") (IMAP), version 3
+- 225 TO 241: 
+- 249 TO 255: 
+- 259 TO 259: Efficient Short Remote Operations (ESRO)
+- 262 TO 262: Arcisdms
+- 264 TO 264: [Border Gateway Multicast Protocol](https://en.wikipedia.org/wiki/Border_Gateway_Multicast_Protocol "Border Gateway Multicast Protocol") (BGMP)
+- 280 TO 280: http-mgmt
+- 300 TO 300: [ThinLinc](https://en.wikipedia.org/wiki/ThinLinc "ThinLinc") Web Access, Spartan protocol **(Unofficial use)**
+- 308 TO 308: Novastor Online Backup
+- 311 TO 311: [macOS Server](https://en.wikipedia.org/wiki/MacOS_Server "MacOS Server") Admin (officially [AppleShare](https://en.wikipedia.org/wiki/AppleShare "AppleShare") IP Web administration)
+- 312 TO 312: macOS [Xsan](https://en.wikipedia.org/wiki/Xsan "Xsan") administration **(Unofficial use)**
+- 318 TO 318: PKIX [Time Stamp Protocol](https://en.wikipedia.org/wiki/Time_Stamp_Protocol "Time Stamp Protocol") (TSP)
+- 319 TO 319: [Precision Time Protocol](https://en.wikipedia.org/wiki/Precision_Time_Protocol "Precision Time Protocol") (PTP) event messages
+- 320 TO 320: [Precision Time Protocol](https://en.wikipedia.org/wiki/Precision_Time_Protocol "Precision Time Protocol") (PTP) general messages
+- 323 TO 323: [Resource Public Key Infrastructure](https://en.wikipedia.org/wiki/Resource_Public_Key_Infrastructure "Resource Public Key Infrastructure")
+- 350 TO 350: [Mapping of Airline Traffic over Internet Protocol](https://en.wikipedia.org/wiki/Mapping_of_Airline_Traffic_over_Internet_Protocol "Mapping of Airline Traffic over Internet Protocol") (MATIP) type A
+- 351 TO 351: MATIP type B
+- 356 TO 356: cloanto-net-1 (used by Cloanto Amiga Explorer and VMs)
+- 366 TO 366: On-Demand Mail Relay (ODMR)
+- 369 TO 369: Rpc2portmap
+- 370 TO 370: codaauth2, Coda authentication server
+- 370 TO 370: securecast1, outgoing packets to [NAI](https://en.wikipedia.org/wiki/McAfee "McAfee")'s SecureCast serversAs of 2000
+- 371 TO 371: ClearCase albd
+- 376 TO 376: [Amiga](https://en.wikipedia.org/wiki/Amiga "Amiga") Envoy Network Inquiry Protocol
+- 383 TO 383: HP data alarm manager
+- 384 TO 384: A Remote Network Server System
+- 387 TO 387: AURP ([AppleTalk](https://en.wikipedia.org/wiki/AppleTalk "AppleTalk") Update-based Routing Protocol)
+- 388 TO 388: [Unidata LDM](https://en.wikipedia.org/wiki/Local_Data_Manager "Local Data Manager") near real-time data distribution protocol
+- 389 TO 389: [Lightweight Directory Access Protocol](https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol "Lightweight Directory Access Protocol") (LDAP)
+- 399 TO 399: [Digital Equipment Corporation](https://en.wikipedia.org/wiki/Digital_Equipment_Corporation "Digital Equipment Corporation") [DECnet+](/w/index.php?title=DECnet%2B&action=edit&redlink=1 "DECnet+ (page does not exist)") (Phase V) over TCP/IP (RFC1859)
+- 401 TO 401: [Uninterruptible power supply](https://en.wikipedia.org/wiki/Uninterruptible_power_supply "Uninterruptible power supply") (UPS)
+- 427 TO 427: [Service Location Protocol](https://en.wikipedia.org/wiki/Service_Location_Protocol "Service Location Protocol") (SLP)
+- 433 TO 433: NNTP, part of [Network News Transfer Protocol](https://en.wikipedia.org/wiki/Network_News_Transfer_Protocol "Network News Transfer Protocol")
+- 434 TO 434: [Mobile IP](https://en.wikipedia.org/wiki/Mobile_IP "Mobile IP") Agent (RFC 5944)
+- 443 TO 443: [Hypertext Transfer Protocol Secure](https://en.wikipedia.org/wiki/HTTPS "HTTPS") (HTTPS) uses TCP in versions 1.x and 2. [HTTP/3](https://en.wikipedia.org/wiki/HTTP/3 "HTTP/3") uses QUIC, a transport protocol on top of UDP.
+- 444 TO 444: [Simple Network Paging Protocol](https://en.wikipedia.org/wiki/Simple_Network_Paging_Protocol "Simple Network Paging Protocol") (SNPP), RFC 1568
+- 445 TO 445: Microsoft-DS (Directory Services) [Active Directory](https://en.wikipedia.org/wiki/Active_Directory "Active Directory"), Windows shares
+- 445 TO 445: Microsoft-DS (Directory Services) [SMB](https://en.wikipedia.org/wiki/Server_Message_Block "Server Message Block") file sharing
+- 464 TO 464: Kpasswd: [Kerberos](https://en.wikipedia.org/wiki/Kerberos_(protocol) "Kerberos (protocol)") Change/Set password
+- 465 TO 465: Message Submission over TLS protocol
+- 465 TO 465: URL Rendezvous Directory for Cisco SSM
+- 475 TO 475: tcpnethaspsrv, [Aladdin Knowledge Systems](https://en.wikipedia.org/wiki/Aladdin_Knowledge_Systems "Aladdin Knowledge Systems") Hasp services
+- 476 TO 490: Centro Software ERP ports **(Unofficial use)**
+- 491 TO 491: [GO-Global remote access and application publishing software](https://en.wikipedia.org/wiki/GO-Global "GO-Global") **(Unofficial use)**
+- 497 TO 497: [Retrospect](https://en.wikipedia.org/wiki/Retrospect_(software) "Retrospect (software)")
+- 500 TO 500: [Internet Security Association and Key Management Protocol](https://en.wikipedia.org/wiki/Internet_Security_Association_and_Key_Management_Protocol "Internet Security Association and Key Management Protocol") (ISAKMP) / [Internet Key Exchange](https://en.wikipedia.org/wiki/Internet_Key_Exchange "Internet Key Exchange") (IKE)
+- 502 TO 502: [Modbus](https://en.wikipedia.org/wiki/Modbus "Modbus") Protocol
+- 504 TO 504: [Citadel](https://en.wikipedia.org/wiki/Citadel/UX "Citadel/UX"), multiservice protocol for dedicated clients for the Citadel groupware system
+- 510 TO 510: FirstClass Protocol (FCP), used by [FirstClass](https://en.wikipedia.org/wiki/FirstClass "FirstClass") client/server groupware system
+- 512 TO 512: [Rexec](https://en.wikipedia.org/wiki/Remote_Process_Execution "Remote Process Execution"), Remote Process Execution
+- 512 TO 512: comsat, together with [biff](https://en.wikipedia.org/wiki/Biff_(Unix) "Biff (Unix)")
+- 513 TO 513: [rlogin](https://en.wikipedia.org/wiki/Rlogin "Rlogin")
+- 513 TO 513: Who
+- 514 TO 514: [Remote Shell](https://en.wikipedia.org/wiki/Remote_Shell "Remote Shell"), used to execute non-interactive commands on a remote system (Remote Shell, rsh, remsh) **(Unofficial use)**
+- 514 TO 514: [Syslog](https://en.wikipedia.org/wiki/Syslog "Syslog"), used for system logging
+- 515 TO 515: [Line Printer Daemon](https://en.wikipedia.org/wiki/Line_Printer_Daemon_protocol "Line Printer Daemon protocol") (LPD), print service
+- 517 TO 517: [Talk](https://en.wikipedia.org/wiki/Talk_(software) "Talk (software)")
+- 518 TO 518: NTalk
+- 520 TO 520: efs, extended file name server
+- 520 TO 520: [Routing Information Protocol](https://en.wikipedia.org/wiki/Routing_Information_Protocol "Routing Information Protocol") (RIP)
+- 521 TO 521: [Routing Information Protocol Next Generation](https://en.wikipedia.org/wiki/RIPng "RIPng") (RIPng)
+- 524 TO 524: [NetWare Core Protocol](https://en.wikipedia.org/wiki/NetWare_Core_Protocol "NetWare Core Protocol") (NCP) is used for a variety things such as access to primary NetWare server resources, Time Synchronization, etc.
+- 525 TO 525: Timed, [Timeserver](https://en.wikipedia.org/wiki/Timeserver "Timeserver")
+- 530 TO 530: [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call "Remote procedure call") (RPC)
+- 532 TO 532: netnews
+- 533 TO 533: netwall, for emergency broadcasts
+- 540 TO 540: Unix-to-Unix Copy Protocol ([UUCP](https://en.wikipedia.org/wiki/UUCP "UUCP"))
+- 542 TO 542: [commerce](https://en.wikipedia.org/wiki/Commerce "Commerce") (Commerce Applications)
+- 543 TO 543: klogin, [Kerberos](https://en.wikipedia.org/wiki/Kerberos_(protocol) "Kerberos (protocol)") login
+- 544 TO 544: kshell, Kerberos Remote shell
+- 546 TO 546: [DHCPv6](https://en.wikipedia.org/wiki/DHCPv6 "DHCPv6") client
+- 547 TO 547: DHCPv6 server
+- 548 TO 548: [Apple Filing Protocol](https://en.wikipedia.org/wiki/Apple_Filing_Protocol "Apple Filing Protocol") (AFP) over [TCP](https://en.wikipedia.org/wiki/Transmission_Control_Protocol "Transmission Control Protocol")
+- 550 TO 550: new-rwho, new-who
+- 554 TO 554: [Real Time Streaming Protocol](https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol "Real Time Streaming Protocol") (RTSP)
+- 556 TO 556: Remotefs, [RFS](https://en.wikipedia.org/wiki/Remote_File_System "Remote File System"), rfs\_server
+- 560 TO 560: rmonitor, Remote Monitor
+- 561 TO 561: monitor
+- 563 TO 563: [NNTP](https://en.wikipedia.org/wiki/NNTP "NNTP") over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (NNTPS)
+- 564 TO 564: [9P](https://en.wikipedia.org/wiki/9P_(protocol) "9P (protocol)") ([Plan 9](https://en.wikipedia.org/wiki/Plan_9_from_Bell_Labs "Plan 9 from Bell Labs")) **(Unofficial use)**
+- 585 TO 585: Previously assigned for use of [Internet Message Access Protocol](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol "Internet Message Access Protocol") over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (IMAPS), now deregistered in favour of port 993.
+- 587 TO 587: [Email Message Submission](https://en.wikipedia.org/wiki/Mail_submission_agent "Mail submission agent") (No longer preferred; see port 465.)
+- 591 TO 591: [FileMaker](https://en.wikipedia.org/wiki/FileMaker "FileMaker") 6.0 (and later) Web Sharing (HTTP Alternate, also see port 80)
+- 593 TO 593: HTTP RPC Ep Map, [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call "Remote procedure call") over [Hypertext Transfer Protocol](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol "Hypertext Transfer Protocol"), often used by [Distributed Component Object Model](https://en.wikipedia.org/wiki/Distributed_Component_Object_Model "Distributed Component Object Model") services and [Microsoft Exchange Server](https://en.wikipedia.org/wiki/Microsoft_Exchange_Server "Microsoft Exchange Server")
+- 601 TO 601: Reliable [Syslog](https://en.wikipedia.org/wiki/Syslog "Syslog") Service — used for system logging
+- 604 TO 604: TUNNEL profile, a protocol for [BEEP](https://en.wikipedia.org/wiki/BEEP "BEEP") [peers](https://en.wikipedia.org/wiki/Peer-to-peer "Peer-to-peer") to form an [application layer](https://en.wikipedia.org/wiki/Application_layer "Application layer") [tunnel](https://en.wikipedia.org/wiki/Tunneling_protocol "Tunneling protocol")
+- 623 TO 623: ASF Remote Management and Control Protocol (ASF-[RMCP](https://en.wikipedia.org/wiki/Intelligent_Platform_Management_Interface#RMCP "Intelligent Platform Management Interface")) & IPMI Remote Management Protocol
+- 625 TO 625: Open Directory Proxy (ODProxy) **(Unofficial use)**
+- 631 TO 631: [Internet Printing Protocol](https://en.wikipedia.org/wiki/Internet_Printing_Protocol "Internet Printing Protocol") (IPP)
+- 631 TO 631: [Common Unix Printing System](https://en.wikipedia.org/wiki/Common_Unix_Printing_System "Common Unix Printing System") (CUPS) administration console (extension to IPP) **(Unofficial use)**
+- 635 TO 635: RLZ DBase
+- 636 TO 636: [Lightweight Directory Access Protocol](https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol "Lightweight Directory Access Protocol") over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (LDAPS)
+- 639 TO 639: [Multicast Source Discovery Protocol](https://en.wikipedia.org/wiki/Multicast_Source_Discovery_Protocol "Multicast Source Discovery Protocol"), MSDP
+- 641 TO 641: SupportSoft Nexus Remote Command (control/listening), a proxy gateway connecting remote control traffic
+- 643 TO 643: SANity
+- 646 TO 646: [Label Distribution Protocol](https://en.wikipedia.org/wiki/Label_Distribution_Protocol "Label Distribution Protocol") (LDP), a routing protocol used in [MPLS](https://en.wikipedia.org/wiki/Multiprotocol_Label_Switching "Multiprotocol Label Switching") networks
+- 647 TO 647: [DHCP Failover](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol#Reliability "Dynamic Host Configuration Protocol") protocol
+- 648 TO 648: Registry Registrar Protocol (RRP)
+- 651 TO 651: IEEE-MMS
+- 653 TO 653: SupportSoft Nexus Remote Command (data), a proxy gateway connecting remote control traffic
+- 654 TO 654: Media Management System (MMS) Media Management Protocol (MMP)
+- 655 TO 655: [Tinc](https://en.wikipedia.org/wiki/Tinc_(protocol) "Tinc (protocol)") VPN daemon
+- 657 TO 657: [IBM](https://en.wikipedia.org/wiki/IBM "IBM") RMC (Remote monitoring and Control) protocol, used by [System p5](https://en.wikipedia.org/wiki/IBM_System_p "IBM System p") [AIX](https://en.wikipedia.org/wiki/IBM_AIX "IBM AIX") Integrated Virtualization Manager (IVM) and [Hardware Management Console](https://en.wikipedia.org/wiki/IBM_Hardware_Management_Console "IBM Hardware Management Console") to connect managed [logical partitions (LPAR)](https://en.wikipedia.org/wiki/LPAR "LPAR") to enable dynamic partition reconfiguration
+- 660 TO 660: [macOS Server](https://en.wikipedia.org/wiki/MacOS_Server "MacOS Server") administration, version 10.4 and earlier
+- 666 TO 666: *[Doom](https://en.wikipedia.org/wiki/Doom_(1993_video_game) "Doom (1993 video game)")*, the first online [first-person shooter](https://en.wikipedia.org/wiki/First-person_shooter "First-person shooter")
+- 666 TO 666: airserv-ng, [aircrack-ng](https://en.wikipedia.org/wiki/Aircrack-ng "Aircrack-ng")'s server for remote-controlling wireless devices **(Unofficial use)**
+- 674 TO 674: [Application Configuration Access Protocol](https://en.wikipedia.org/wiki/Application_Configuration_Access_Protocol "Application Configuration Access Protocol") (ACAP)
+- 684 TO 684: [CORBA](https://en.wikipedia.org/wiki/Common_Object_Request_Broker_Architecture "Common Object Request Broker Architecture") IIOP SSL
+- 688 TO 688: REALM-RUSD (ApplianceWare Server Appliance Management Protocol)
+- 690 TO 690: Velneo Application Transfer Protocol (VATP)
+- 691 TO 691: [MS](https://en.wikipedia.org/wiki/Microsoft "Microsoft") [Exchange](https://en.wikipedia.org/wiki/Microsoft_Exchange_Server "Microsoft Exchange Server") Routing
+- 694 TO 694: [Linux-HA](https://en.wikipedia.org/wiki/Linux-HA "Linux-HA") high-availability heartbeat
+- 695 TO 695: [IEEE](https://en.wikipedia.org/wiki/IEEE "IEEE") Media Management System over [SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (IEEE-MMS-SSL)
+- 698 TO 698: [Optimized Link State Routing](https://en.wikipedia.org/wiki/Optimized_Link_State_Routing_protocol "Optimized Link State Routing protocol") (OLSR)
+- 700 TO 700: [Extensible Provisioning Protocol](https://en.wikipedia.org/wiki/Extensible_Provisioning_Protocol "Extensible Provisioning Protocol") (EPP), a protocol for communication between [domain name registries](https://en.wikipedia.org/wiki/Domain_name_registry "Domain name registry") and [registrars](https://en.wikipedia.org/wiki/Domain_name_registrar "Domain name registrar") (RFC 5734)
+- 701 TO 701: Link Management Protocol (LMP), a protocol that runs between a pair of [nodes](https://en.wikipedia.org/wiki/Node_(networking) "Node (networking)") and is used to manage [traffic engineering](https://en.wikipedia.org/wiki/Teletraffic_engineering "Teletraffic engineering") (TE) [links](https://en.wikipedia.org/wiki/Telecommunications_link "Telecommunications link")
+- 702 TO 702: IRIS (Internet Registry Information Service) over [BEEP](https://en.wikipedia.org/wiki/BEEP "BEEP") (Blocks Extensible Exchange Protocol) (RFC 3983)
+- 706 TO 706: [Secure Internet Live Conferencing](https://en.wikipedia.org/wiki/SILC_(protocol) "SILC (protocol)") (SILC)
+- 711 TO 711: [Cisco](https://en.wikipedia.org/wiki/Cisco "Cisco") Tag Distribution Protocol—being replaced by the MPLS [Label Distribution Protocol](https://en.wikipedia.org/wiki/Label_Distribution_Protocol "Label Distribution Protocol")
+- 712 TO 712: [Topology Broadcast based on Reverse-Path Forwarding routing protocol](https://en.wikipedia.org/wiki/Topology_Broadcast_based_on_Reverse-Path_Forwarding_routing_protocol "Topology Broadcast based on Reverse-Path Forwarding routing protocol") (TBRPF; RFC 3684)
+- 749 TO 749: Kerberos administration
+- 750 TO 750: kerberos-iv, [Kerberos](https://en.wikipedia.org/wiki/Kerberos_(protocol) "Kerberos (protocol)") version IV
+- 751 TO 751: kerberos\_master, Kerberos authentication **(Unofficial use)**
+- 752 TO 752: passwd\_server, Kerberos password (kpasswd) server **(Unofficial use)**
+- 753 TO 753: Reverse Routing Header (RRH)
+- 753 TO 753: userreg\_server, Kerberos userreg server **(Unofficial use)**
+- 754 TO 754: tell send
+- 754 TO 754: krb5\_prop, Kerberos v5 slave propagation **(Unofficial use)**
+- 760 TO 760: krbupdate [kreg], Kerberos registration **(Unofficial use)**
+- 777 TO 777: machine socket eXtension [msx] protocol **(Unofficial use)**
+- 782 TO 782: [Conserver](https://en.wikipedia.org/wiki/Conserver "Conserver") serial-console management server **(Unofficial use)**
+- 783 TO 783: [SpamAssassin](https://en.wikipedia.org/wiki/SpamAssassin "SpamAssassin") spamd daemon **(Unofficial use)**
+- 800 TO 800: mdbs-daemon
+- 802 TO 802: [MODBUS](https://en.wikipedia.org/wiki/Modbus "Modbus")/TCP Security
+- 808 TO 808: Microsoft Net.TCP Port Sharing Service **(Unofficial use)**
+- 829 TO 829: [Certificate Management Protocol](https://en.wikipedia.org/wiki/Certificate_Management_Protocol "Certificate Management Protocol")
+- 830 TO 830: [NETCONF](https://en.wikipedia.org/wiki/NETCONF "NETCONF") over [SSH](https://en.wikipedia.org/wiki/Secure_Shell "Secure Shell")
+- 831 TO 831: NETCONF over [BEEP](https://en.wikipedia.org/wiki/BEEP "BEEP")
+- 832 TO 832: NETCONF for [SOAP](https://en.wikipedia.org/wiki/SOAP "SOAP") over HTTPS
+- 833 TO 833: NETCONF for SOAP over BEEP
+- 843 TO 843: [Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash "Adobe Flash") **(Unofficial use)**
+- 847 TO 847: [DHCP Failover](https://en.wikipedia.org/wiki/Dynamic_Host_Configuration_Protocol#Reliability "Dynamic Host Configuration Protocol") protocol
+- 848 TO 848: Group Domain Of Interpretation (GDOI) protocol
+- 853 TO 853: [DNS over TLS](https://en.wikipedia.org/wiki/DNS_over_TLS "DNS over TLS") (RFC 7858)
+- 853 TO 853: DNS over QUIC or DNS over DTLS
+- 860 TO 860: [iSCSI](https://en.wikipedia.org/wiki/ISCSI "ISCSI") (RFC 3720)
+- 861 TO 861: OWAMP control (RFC 4656)
+- 862 TO 862: TWAMP control (RFC 5357)
+- 873 TO 873: [rsync](https://en.wikipedia.org/wiki/Rsync "Rsync") file synchronization protocol
+- 888 TO 888: cddbp, [CD DataBase](https://en.wikipedia.org/wiki/CD_database "CD database") ([CDDB](https://en.wikipedia.org/wiki/CDDB "CDDB")) protocol (CDDBP) **(Unofficial use)**
+- 888 TO 888: IBM Endpoint Manager Remote Control **(Unofficial use)**
+- 897 TO 897: [Brocade](https://en.wikipedia.org/wiki/Brocade_Communications_Systems "Brocade Communications Systems") SMI-S RPC **(Unofficial use)**
+- 898 TO 898: Brocade SMI-S RPC SSL **(Unofficial use)**
+- 902 TO 902: [VMware ESXi](https://en.wikipedia.org/wiki/VMware_ESXi "VMware ESXi") **(Unofficial use)**
+- 903 TO 903: VMware ESXi **(Unofficial use)**
+- 953 TO 953: [BIND](https://en.wikipedia.org/wiki/BIND "BIND") remote name daemon control (RNDC)
+- 981 TO 981: Remote HTTPS management for firewall devices running embedded [Check Point VPN-1](https://en.wikipedia.org/wiki/Check_Point_VPN-1 "Check Point VPN-1") software **(Unofficial use)**
+- 987 TO 987: Sony PlayStation Wake On Lan **(Unofficial use)**
+- 987 TO 987: [Microsoft Remote Web Workplace](https://en.wikipedia.org/wiki/Microsoft_Remote_Web_Workplace "Microsoft Remote Web Workplace"), a feature of [Windows Small Business Server](https://en.wikipedia.org/wiki/Windows_Small_Business_Server "Windows Small Business Server") **(Unofficial use)**
+- 988 TO 988: [Lustre (file system)](https://en.wikipedia.org/wiki/Lustre_(file_system) "Lustre (file system)") Protocol (data). **(Unofficial use)**
+- 989 TO 989: [FTPS](https://en.wikipedia.org/wiki/FTPS "FTPS") Protocol (data), [FTP](https://en.wikipedia.org/wiki/FTP "FTP") over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")
+- 990 TO 990: FTPS Protocol (control), FTP over TLS/SSL
+- 991 TO 991: [Netnews](https://en.wikipedia.org/wiki/Netnews "Netnews") Administration System (NAS)
+- 992 TO 992: [Telnet](https://en.wikipedia.org/wiki/Telnet "Telnet") protocol over TLS/SSL
+- 993 TO 993: [Internet Message Access Protocol](https://en.wikipedia.org/wiki/Internet_Message_Access_Protocol "Internet Message Access Protocol") over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (IMAPS)
+- 994 TO 994: Previously assigned to [Internet Relay Chat](https://en.wikipedia.org/wiki/Internet_Relay_Chat "Internet Relay Chat") over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (IRCS), but was not used in common practice.
+- 995 TO 995: [Post Office Protocol](https://en.wikipedia.org/wiki/Post_Office_Protocol "Post Office Protocol") 3 over [TLS/SSL](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") (POP3S)
+- 1010 TO 1010: [ThinLinc](https://en.wikipedia.org/wiki/ThinLinc "ThinLinc") web-based administration interface **(Unofficial use)**
+- 1011 TO 1020: 
+- 1023 TO 1023: 
+- 1023 TO 1023: [z/OS](https://en.wikipedia.org/wiki/Z/OS "Z/OS") Network File System (NFS) (potentially ports 991–1023) **(Unofficial use)**
+- 1024 TO 1024: Reserved
+- 1025 TO 1025: network blackjack
+- 1027 TO 1027: Reserved
+- 1027 TO 1027: Native IPv6 behind IPv4-to-IPv4 NAT Customer Premises Equipment (6a44)
+- 1029 TO 1029: Microsoft [DCOM](https://en.wikipedia.org/wiki/Distributed_Component_Object_Model "Distributed Component Object Model") services **(Unofficial use)**
+- 1058 TO 1058: nim, [IBM](https://en.wikipedia.org/wiki/IBM "IBM") [AIX](https://en.wikipedia.org/wiki/IBM_AIX "IBM AIX") [Network Installation Manager](https://en.wikipedia.org/wiki/Network_Installation_Manager "Network Installation Manager") (NIM)
+- 1059 TO 1059: nimreg, IBM AIX Network Installation Manager (NIM)
+- 1080 TO 1080: [SOCKS](https://en.wikipedia.org/wiki/SOCKS "SOCKS") proxy
+- 1085 TO 1085: [WebObjects](https://en.wikipedia.org/wiki/WebObjects "WebObjects")
+- 1098 TO 1098: rmiactivation, [Java remote method invocation](https://en.wikipedia.org/wiki/Java_remote_method_invocation "Java remote method invocation") (RMI) activation
+- 1099 TO 1099: rmiregistry, Java remote method invocation (RMI) registry
+- 1100 TO 1100: SaltoSystems - Handshake for IP-Components **(Unofficial use)**
+- 1112 TO 1112: [ESET](https://en.wikipedia.org/wiki/ESET "ESET") virus updates **(Unofficial use)**
+- 1113 TO 1113: [Licklider Transmission Protocol](https://en.wikipedia.org/wiki/Licklider_Transmission_Protocol "Licklider Transmission Protocol") (LTP) delay tolerant networking protocol
+- 1119 TO 1119: [Battle.net](https://en.wikipedia.org/wiki/Battle.net "Battle.net") chat/game protocol, used by [Blizzard](https://en.wikipedia.org/wiki/Blizzard_Entertainment "Blizzard Entertainment")'s games
+- 1167 TO 1167: Cisco [IP SLA](https://en.wikipedia.org/wiki/IP_SLA "IP SLA") (Service Assurance Agent)
+- 1194 TO 1194: [OpenVPN](https://en.wikipedia.org/wiki/OpenVPN#Networking "OpenVPN")
+- 1198 TO 1198: The [cajo project](https://en.wikipedia.org/wiki/Cajo_project "Cajo project") Free dynamic transparent distributed computing in Java
+- 1212 TO 1212: Equalsocial [Fediverse](https://en.wikipedia.org/wiki/Fediverse "Fediverse") protocol **(Unofficial use)**
+- 1214 TO 1214: [Kazaa](https://en.wikipedia.org/wiki/Kazaa "Kazaa")
+- 1220 TO 1220: [QuickTime Streaming Server](https://en.wikipedia.org/wiki/QuickTime_Streaming_Server "QuickTime Streaming Server") administration
+- 1234 TO 1234: [Infoseek](https://en.wikipedia.org/wiki/Infoseek "Infoseek") search agent
+- 1234 TO 1234: [VLC media player](https://en.wikipedia.org/wiki/VLC_media_player "VLC media player") default port for UDP/RTP stream **(Unofficial use)**
+- 1241 TO 1241: [Nessus Security Scanner](https://en.wikipedia.org/wiki/Nessus_(software) "Nessus (software)") **(Unofficial use)**
+- 1270 TO 1270: Microsoft [System Center Operations Manager](https://en.wikipedia.org/wiki/System_Center_Operations_Manager "System Center Operations Manager") (SCOM) (formerly Microsoft Operations Manager (MOM)) agent
+- 1293 TO 1293: Internet Protocol Security ([IPSec](https://en.wikipedia.org/wiki/IPSec "IPSec"))
+- 1311 TO 1311: Windows `RxMon.exe`
+- 1311 TO 1311: Dell [OpenManage](https://en.wikipedia.org/wiki/OpenManage "OpenManage") HTTPS **(Unofficial use)**
+- 1314 TO 1314: [Festival Speech Synthesis System](https://en.wikipedia.org/wiki/Festival_Speech_Synthesis_System "Festival Speech Synthesis System") server **(Unofficial use)**
+- 1319 TO 1319: AMX ICSP (Protocol for communications with AMX control systems devices)
+- 1337 TO 1337: [Men&Mice DNS](/w/index.php?title=Men%26Mice_DNS&action=edit&redlink=1 "Men&Mice DNS (page does not exist)")
+- 1337 TO 1337: [Strapi](/w/index.php?title=Strapi&action=edit&redlink=1 "Strapi (page does not exist)") **(Unofficial use)**
+- 1337 TO 1337: Razer Chroma SDK Server **(Unofficial use)**
+- 1337 TO 1337: [Sails.js](https://en.wikipedia.org/wiki/Sails.js "Sails.js") default port **(Unofficial use)**
+- 1341 TO 1341: Qubes ([Manufacturing Execution System](https://en.wikipedia.org/wiki/Manufacturing_Execution_System "Manufacturing Execution System"))
+- 1344 TO 1344: [Internet Content Adaptation Protocol](https://en.wikipedia.org/wiki/Internet_Content_Adaptation_Protocol "Internet Content Adaptation Protocol")
+- 1352 TO 1352: [HCL Notes / Domino](https://en.wikipedia.org/wiki/HCL_Notes "HCL Notes") [(RPC)](https://en.wikipedia.org/wiki/Remote_procedure_call "Remote procedure call") protocol
+- 1360 TO 1360: [Mimer SQL](https://en.wikipedia.org/wiki/Mimer_SQL "Mimer SQL")
+- 1414 TO 1414: [IBM](https://en.wikipedia.org/wiki/IBM "IBM") [WebSphere MQ](https://en.wikipedia.org/wiki/WebSphere_MQ "WebSphere MQ") (formerly known as [MQSeries](https://en.wikipedia.org/wiki/MQSeries "MQSeries"))
+- 1417 TO 1417: [Timbuktu](https://en.wikipedia.org/wiki/Timbuktu_(software) "Timbuktu (software)") Service 1 Port
+- 1418 TO 1418: Timbuktu Service 2 Port
+- 1419 TO 1419: Timbuktu Service 3 Port
+- 1420 TO 1420: Timbuktu Service 4 Port
+- 1431 TO 1431: [Reverse Gossip Transport Protocol](/w/index.php?title=Reverse_Gossip_Transport_Protocol&action=edit&redlink=1 "Reverse Gossip Transport Protocol (page does not exist)") (RGTP), used to access a General-purpose Reverse-Ordered Gossip Gathering System (GROGGS) [bulletin board](https://en.wikipedia.org/wiki/Bulletin_board_system "Bulletin board system"), such as that implemented on the [Cambridge University](https://en.wikipedia.org/wiki/University_of_Cambridge "University of Cambridge")'s [Phoenix system](https://en.wikipedia.org/wiki/Phoenix_(computer) "Phoenix (computer)")
+- 1433 TO 1433: [Microsoft SQL Server](https://en.wikipedia.org/wiki/Microsoft_SQL_Server "Microsoft SQL Server") [database management system](https://en.wikipedia.org/wiki/Database_management_system "Database management system") (MSSQL) server
+- 1434 TO 1434: Microsoft SQL Server database management system (MSSQL) monitor
+- 1476 TO 1476: WiFi Pineapple Hak5.
+- 1481 TO 1481: AIRS data interchange.
+- 1492 TO 1492: *[Sid Meier's CivNet](https://en.wikipedia.org/wiki/Sid_Meier%27s_CivNet "Sid Meier's CivNet")*, a multiplayer remake of the original *Sid Meier's Civilization* game **(Unofficial use)**
+- 1494 TO 1494: Citrix [Independent Computing Architecture](https://en.wikipedia.org/wiki/Independent_Computing_Architecture "Independent Computing Architecture") (ICA) **(Unofficial use)**
+- 1500 TO 1500: [IBM Tivoli Storage Manager](https://en.wikipedia.org/wiki/IBM_Tivoli_Storage_Manager "IBM Tivoli Storage Manager") server **(Unofficial use)**
+- 1501 TO 1501: IBM Tivoli Storage Manager client scheduler **(Unofficial use)**
+- 1503 TO 1503: [Windows Live Messenger](https://en.wikipedia.org/wiki/Windows_Live_Messenger "Windows Live Messenger") (Whiteboard and Application Sharing) **(Unofficial use)**
+- 1512 TO 1512: Microsoft's [Windows Internet Name Service](https://en.wikipedia.org/wiki/Windows_Internet_Name_Service "Windows Internet Name Service") (WINS)
+- 1513 TO 1513: [Garena](https://en.wikipedia.org/wiki/Garena "Garena") game client **(Unofficial use)**
+- 1521 TO 1521: [nCUBE](https://en.wikipedia.org/wiki/NCUBE "NCUBE") License Manager
+- 1521 TO 1521: [Oracle database](https://en.wikipedia.org/wiki/Oracle_database "Oracle database") default listener, in future releases official port 2483 (TCP/IP) and 2484 (TCP/IP with SSL) **(Unofficial use)**
+- 1524 TO 1524: ingreslock, [ingres](https://en.wikipedia.org/wiki/Ingres_(database) "Ingres (database)")
+- 1527 TO 1527: [Oracle Net Services](https://en.wikipedia.org/wiki/Oracle_Net_Services "Oracle Net Services"), formerly known as SQL\*Net
+- 1527 TO 1527: [Apache Derby Network Server](https://en.wikipedia.org/wiki/Apache_Derby#Derby_Network_Server "Apache Derby") **(Unofficial use)**
+- 1533 TO 1533: [IBM Sametime](https://en.wikipedia.org/wiki/IBM_Sametime "IBM Sametime") Virtual Places Chat
+- 1534 TO 1534: Eclipse Target Communication Framework **(Unofficial use)**
+- 1540 TO 1540: [1C:Enterprise](https://en.wikipedia.org/wiki/1C:Enterprise "1C:Enterprise") server agent (ragent) **(Unofficial use)**
+- 1541 TO 1541: 1C:Enterprise master cluster manager (rmngr) **(Unofficial use)**
+- 1542 TO 1542: 1C:Enterprise configuration repository server **(Unofficial use)**
+- 1545 TO 1545: 1C:Enterprise cluster administration server (RAS) **(Unofficial use)**
+- 1547 TO 1547: [Laplink](https://en.wikipedia.org/wiki/Laplink "Laplink")
+- 1550 TO 1550: 1C:Enterprise debug server **(Unofficial use)**
+- 1550 TO 1550: [Gadu-Gadu](https://en.wikipedia.org/wiki/Gadu-Gadu "Gadu-Gadu") (direct client-to-client) **(Unofficial use)**
+- 1560 TO 1590: 1C:Enterprise cluster working processes **(Unofficial use)**
+- 1581 TO 1581: [MIL STD 2045-47001 VMF](https://en.wikipedia.org/wiki/Combat-net_radio "Combat-net radio")
+- 1581 TO 1581: [IBM Tivoli Storage Manager](https://en.wikipedia.org/wiki/IBM_Tivoli_Storage_Manager "IBM Tivoli Storage Manager") web client **(Unofficial use)**
+- 1582 TO 1583: IBM Tivoli Storage Manager server web interface **(Unofficial use)**
+- 1583 TO 1583: [Pervasive PSQL](https://en.wikipedia.org/wiki/Pervasive_PSQL "Pervasive PSQL") **(Unofficial use)**
+- 1589 TO 1589: Cisco VLAN Query Protocol ([VQP](https://en.wikipedia.org/wiki/VQP "VQP"))
+- 1604 TO 1604: [DarkComet](https://en.wikipedia.org/wiki/DarkComet "DarkComet") remote administration tool (RAT) **(Unofficial use)**
+- 1626 TO 1626: [iSketch](https://en.wikipedia.org/wiki/ISketch "ISketch") **(Unofficial use)**
+- 1627 TO 1627: iSketch **(Unofficial use)**
+- 1628 TO 1628: [LonTalk](https://en.wikipedia.org/wiki/LonTalk "LonTalk") normal
+- 1629 TO 1629: LonTalk urgent
+- 1645 TO 1645: Early deployment of [RADIUS](https://en.wikipedia.org/wiki/RADIUS "RADIUS") before RFC standardization was done using UDP port number 1645. Enabled for compatibility reasons by default on [Cisco](https://en.wikipedia.org/wiki/Cisco "Cisco") and [Juniper Networks](https://en.wikipedia.org/wiki/Juniper_Networks "Juniper Networks") RADIUS servers. Official port is 1812. TCP port 1645 **must not** be used for RADIUS. **(Unofficial use)**
+- 1646 TO 1646: Old `radacct` port, RADIUS accounting protocol. Enabled for compatibility reasons by default on Cisco and [Juniper Networks](https://en.wikipedia.org/wiki/Juniper_Networks "Juniper Networks") RADIUS servers. Official port is 1813. TCP port 1646 **must not** be used for RADIUS. **(Unofficial use)**
+- 1666 TO 1666: [Perforce](https://en.wikipedia.org/wiki/Perforce "Perforce") **(Unofficial use)**
+- 1677 TO 1677: [Novell GroupWise](https://en.wikipedia.org/wiki/Novell_GroupWise "Novell GroupWise") clients in client/server access mode
+- 1688 TO 1688: Microsoft [Key Management Service](https://en.wikipedia.org/wiki/Key_Management_Service "Key Management Service") (KMS) for Windows Activation **(Unofficial use)**
+- 1701 TO 1701: [Layer 2 Forwarding Protocol](https://en.wikipedia.org/wiki/Layer_2_Forwarding_Protocol "Layer 2 Forwarding Protocol") (L2F)
+- 1701 TO 1701: [Layer 2 Tunneling Protocol](https://en.wikipedia.org/wiki/Layer_2_Tunneling_Protocol "Layer 2 Tunneling Protocol") (L2TP)
+- 1707 TO 1707: [Windward Studios](https://en.wikipedia.org/wiki/Windward_Studios "Windward Studios") games (vdmplay)
+- 1707 TO 1707: L2TP/IPsec, for establishing an initial connection **(Unofficial use)**
+- 1714 TO 1764: [KDE Connect](https://en.wikipedia.org/wiki/KDE_Connect "KDE Connect") **(Unofficial use)**
+- 1716 TO 1716: [America's Army](https://en.wikipedia.org/wiki/America%27s_Army "America's Army"), a [massively multiplayer online game](https://en.wikipedia.org/wiki/Massively_multiplayer_online_game "Massively multiplayer online game") (MMO) **(Unofficial use)**
+- 1719 TO 1719: [H.323](https://en.wikipedia.org/wiki/H.323 "H.323") registration and alternate communication
+- 1720 TO 1720: [H.323](https://en.wikipedia.org/wiki/H.323 "H.323") call signaling
+- 1723 TO 1723: [Point-to-Point Tunneling Protocol](https://en.wikipedia.org/wiki/Point-to-Point_Tunneling_Protocol "Point-to-Point Tunneling Protocol") (PPTP)
+- 1755 TO 1755: [Microsoft Media Services](https://en.wikipedia.org/wiki/Microsoft_Media_Services "Microsoft Media Services") (MMS, `ms-streaming`)
+- 1761 TO 1761: [Novell ZENworks](https://en.wikipedia.org/wiki/Novell_ZENworks "Novell ZENworks") **(Unofficial use)**
+- 1776 TO 1776: [Emergency management information system](https://en.wikipedia.org/wiki/Emergency_management_information_system "Emergency management information system")
+- 1801 TO 1801: [Microsoft Message Queuing](https://en.wikipedia.org/wiki/Microsoft_Message_Queuing "Microsoft Message Queuing")
+- 1812 TO 1812: [RADIUS](https://en.wikipedia.org/wiki/RADIUS "RADIUS") authentication protocol, `radius`
+- 1813 TO 1813: [RADIUS](https://en.wikipedia.org/wiki/RADIUS "RADIUS") accounting protocol, `radius-acct`
+- 1863 TO 1863: [Microsoft Notification Protocol](https://en.wikipedia.org/wiki/Microsoft_Notification_Protocol "Microsoft Notification Protocol") (MSNP), used by the [Microsoft Messenger service](https://en.wikipedia.org/wiki/Microsoft_Messenger_service "Microsoft Messenger service") and a number of instant messaging [Messenger clients](https://en.wikipedia.org/wiki/Microsoft_Messenger_service#Official_clients "Microsoft Messenger service")
+- 1880 TO 1880: [Node-RED](https://en.wikipedia.org/wiki/Node-RED "Node-RED") **(Unofficial use)**
+- 1883 TO 1883: [MQTT](https://en.wikipedia.org/wiki/MQTT "MQTT") (formerly MQ Telemetry Transport)
+- 1900 TO 1900: [Simple Service Discovery Protocol](https://en.wikipedia.org/wiki/Simple_Service_Discovery_Protocol "Simple Service Discovery Protocol") (SSDP), discovery of [UPnP](https://en.wikipedia.org/wiki/Universal_Plug_and_Play "Universal Plug and Play") devices
+- 1935 TO 1935: [Macromedia Flash](https://en.wikipedia.org/wiki/Adobe_Flash "Adobe Flash") Communications [Server MX](https://en.wikipedia.org/wiki/Macromedia_Studio_MX "Macromedia Studio MX"), the precursor to [Adobe Flash Media Server](https://en.wikipedia.org/wiki/Adobe_Flash_Media_Server "Adobe Flash Media Server") before [Macromedia](https://en.wikipedia.org/wiki/Macromedia "Macromedia")'s acquisition by [Adobe](https://en.wikipedia.org/wiki/Adobe_Inc "Adobe Inc") on December 3, 2005
+- 1935 TO 1935: [Real Time Messaging Protocol](https://en.wikipedia.org/wiki/Real_Time_Messaging_Protocol "Real Time Messaging Protocol") (RTMP), primarily used in [Adobe Flash](https://en.wikipedia.org/wiki/Adobe_Flash "Adobe Flash") **(Unofficial use)**
+- 1965 TO 1965: [Gemini](https://en.wikipedia.org/wiki/Gemini_(protocol) "Gemini (protocol)"), a lightweight, collaboratively designed protocol, striving to fill the gap between Gopher and HTTP **(Unofficial use)**
+- 1967 TO 1967: Cisco IOS IP Service Level Agreements ([IP SLAs](https://en.wikipedia.org/wiki/IP_SLA "IP SLA")) Control Protocol **(Unofficial use)**
+- 1972 TO 1972: [InterSystems Caché](https://en.wikipedia.org/wiki/InterSystems_Cach%C3%A9 "InterSystems Caché"), and [InterSystems](https://en.wikipedia.org/wiki/InterSystems "InterSystems") IRIS versions 2020.3 and later
+- 1984 TO 1984: [Big Brother](https://en.wikipedia.org/wiki/Big_Brother_(software) "Big Brother (software)")
+- 1984 TO 1984: Arweave mining node **(Unofficial use)**
+- 1985 TO 1985: Cisco [Hot Standby Router Protocol](https://en.wikipedia.org/wiki/Hot_Standby_Router_Protocol "Hot Standby Router Protocol") (HSRP)
+- 1998 TO 1998: Cisco X.25 over TCP ([XOT](https://en.wikipedia.org/wiki/XOT "XOT")) service
+- 2000 TO 2000: Cisco [Skinny Client Control Protocol](https://en.wikipedia.org/wiki/Skinny_Client_Control_Protocol "Skinny Client Control Protocol") (SCCP)
+- 2001 TO 2009: hexss http server (python package) **(Unofficial use)**
+- 2010 TO 2010: [Artemis: Spaceship Bridge Simulator](https://en.wikipedia.org/wiki/Artemis:_Spaceship_Bridge_Simulator "Artemis: Spaceship Bridge Simulator") **(Unofficial use)**
+- 2033 TO 2033: [Civilization IV](https://en.wikipedia.org/wiki/Civilization_IV "Civilization IV") multiplayer **(Unofficial use)**
+- 2049 TO 2049: [Network File System](https://en.wikipedia.org/wiki/Network_File_System "Network File System") (NFS)
+- 2056 TO 2056: Civilization IV multiplayer **(Unofficial use)**
+- 2080 TO 2080: [Autodesk](https://en.wikipedia.org/wiki/Autodesk "Autodesk") NLM ([FLEXlm](https://en.wikipedia.org/wiki/FLEXlm "FLEXlm"))
+- 2082 TO 2082: [cPanel](https://en.wikipedia.org/wiki/CPanel "CPanel") default **(Unofficial use)**
+- 2083 TO 2083: Secure [RADIUS](https://en.wikipedia.org/wiki/RADIUS "RADIUS") Service (radsec)
+- 2083 TO 2083: cPanel default [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") **(Unofficial use)**
+- 2086 TO 2086: [GNUnet](https://en.wikipedia.org/wiki/GNUnet "GNUnet")
+- 2086 TO 2086: [WebHost Manager](https://en.wikipedia.org/wiki/WHM "WHM") default **(Unofficial use)**
+- 2087 TO 2087: WebHost Manager default [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") **(Unofficial use)**
+- 2095 TO 2095: cPanel default web mail
+- 2096 TO 2096: cPanel default [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security") web mail **(Unofficial use)**
+- 2100 TO 2100: [Warzone 2100](https://en.wikipedia.org/wiki/Warzone_2100 "Warzone 2100") multiplayer **(Unofficial use)**
+- 2101 TO 2101: [Networked Transport of RTCM via Internet Protocol](https://en.wikipedia.org/wiki/Networked_Transport_of_RTCM_via_Internet_Protocol "Networked Transport of RTCM via Internet Protocol") (NTRIP) **(Unofficial use)**
+- 2102 TO 2102: [Zephyr Notification Service](https://en.wikipedia.org/wiki/Zephyr_(protocol) "Zephyr (protocol)") server
+- 2103 TO 2103: Zephyr Notification Service `serv-hm` connection
+- 2104 TO 2104: Zephyr Notification Service hostmanager
+- 2123 TO 2123: [GTP](https://en.wikipedia.org/wiki/GPRS_Tunnelling_Protocol "GPRS Tunnelling Protocol") control messages (GTP-C)
+- 2137 TO 2137:  **(Unofficial use)**
+- 2142 TO 2142: [TDMoIP](https://en.wikipedia.org/wiki/TDMoIP "TDMoIP") (TDM over IP)
+- 2152 TO 2152: [GTP](https://en.wikipedia.org/wiki/GPRS_Tunnelling_Protocol "GPRS Tunnelling Protocol") user data messages (GTP-U)
+- 2159 TO 2159: [GDB remote debug port](https://en.wikipedia.org/wiki/Gdbserver "Gdbserver")
+- 2181 TO 2181: EForward-document transport system
+- 2181 TO 2181: [Apache ZooKeeper](https://en.wikipedia.org/wiki/Apache_ZooKeeper "Apache ZooKeeper") default client port **(Unofficial use)**
+- 2195 TO 2195: [Apple Push Notification Service](https://en.wikipedia.org/wiki/Apple_Push_Notification_Service "Apple Push Notification Service"), binary, gateway. Deprecated March 2021. **(Unofficial use)**
+- 2196 TO 2196: [Apple Push Notification Service](https://en.wikipedia.org/wiki/Apple_Push_Notification_Service "Apple Push Notification Service"), binary, feedback. Deprecated March 2021. **(Unofficial use)**
+- 2197 TO 2197: [Apple Push Notification Service](https://en.wikipedia.org/wiki/Apple_Push_Notification_Service "Apple Push Notification Service"), [HTTP/2](https://en.wikipedia.org/wiki/HTTP/2 "HTTP/2"), [JSON](https://en.wikipedia.org/wiki/JSON "JSON")-based [API](https://en.wikipedia.org/wiki/API "API"). **(Unofficial use)**
+- 2210 TO 2210: [NOAAPORT](https://en.wikipedia.org/wiki/National_Weather_Service "National Weather Service") Broadcast Network
+- 2211 TO 2211: [EMWIN](https://en.wikipedia.org/wiki/EMWIN "EMWIN")
+- 2221 TO 2221: [ESET](https://en.wikipedia.org/wiki/ESET "ESET") anti-virus updates **(Unofficial use)**
+- 2222 TO 2222: [EtherNet/IP](https://en.wikipedia.org/wiki/EtherNet/IP "EtherNet/IP") implicit messaging for IO data
+- 2222 TO 2222: [DirectAdmin](https://en.wikipedia.org/wiki/DirectAdmin "DirectAdmin") Access **(Unofficial use)**
+- 2222 TO 2226: ESET Remote administrator
+- 2240 TO 2240: [General Dynamics](https://en.wikipedia.org/wiki/General_Dynamics "General Dynamics") Remote Encryptor Configuration Information Protocol (RECIPe)
+- 2261 TO 2261: [CoMotion](https://en.wikipedia.org/wiki/CoMotion "CoMotion") master
+- 2262 TO 2262: CoMotion backup
+- 2302 TO 2302: [ArmA](https://en.wikipedia.org/wiki/ArmA "ArmA") multiplayer **(Unofficial use)**
+- 2302 TO 2302: [Halo: Combat Evolved](https://en.wikipedia.org/wiki/Halo:_Combat_Evolved "Halo: Combat Evolved") multiplayer host **(Unofficial use)**
+- 2303 TO 2303: ArmA multiplayer *(default port for game +1)* **(Unofficial use)**
+- 2303 TO 2303: Halo: Combat Evolved multiplayer listener **(Unofficial use)**
+- 2305 TO 2305: ArmA multiplayer *(default port for game +3)* **(Unofficial use)**
+- 2351 TO 2351: [AIM](https://en.wikipedia.org/wiki/AOL_Instant_Messenger "AOL Instant Messenger") game LAN network port **(Unofficial use)**
+- 2368 TO 2368: [Ghost (blogging platform)](https://en.wikipedia.org/wiki/Ghost_(blogging_platform) "Ghost (blogging platform)") **(Unofficial use)**
+- 2369 TO 2369: Default for [BMC Control-M/Server](https://en.wikipedia.org/wiki/BMC_Control-M "BMC Control-M") Configuration Agent **(Unofficial use)**
+- 2370 TO 2370: Default for BMC Control-M/Server, to allow the Control-M/Enterprise Manager to connect to the Control-M/Server **(Unofficial use)**
+- 2372 TO 2372: Default for [K9 Web Protection](https://en.wikipedia.org/wiki/K9_Web_Protection "K9 Web Protection")/parental controls, content filtering agent **(Unofficial use)**
+- 2375 TO 2375: [Docker](https://en.wikipedia.org/wiki/Docker_(software) "Docker (software)") REST API (plain)
+- 2376 TO 2376: Docker REST API (SSL)
+- 2377 TO 2377: Docker Swarm cluster management communications
+- 2379 TO 2379: CoreOS [etcd](https://en.wikipedia.org/wiki/Etcd "Etcd") client communication
+- 2379 TO 2379: [KGS Go Server](https://en.wikipedia.org/wiki/KGS_Go_Server "KGS Go Server") **(Unofficial use)**
+- 2380 TO 2380: CoreOS etcd server communication
+- 2389 TO 2389: OpenView Session Mgr
+- 2399 TO 2399: [FileMaker](https://en.wikipedia.org/wiki/FileMaker "FileMaker") Data Access Layer (ODBC/JDBC)
+- 2401 TO 2401: [CVS](https://en.wikipedia.org/wiki/Concurrent_Versions_System "Concurrent Versions System") version control system password-based server
+- 2404 TO 2404: [IEC 60870-5-104](https://en.wikipedia.org/wiki/IEC_60870-5-104 "IEC 60870-5-104"), used to send electric power telecontrol messages between two systems via directly connected [data circuits](/w/index.php?title=Data_circuit&action=edit&redlink=1 "Data circuit (page does not exist)")
+- 2424 TO 2424: [OrientDB](https://en.wikipedia.org/wiki/OrientDB "OrientDB") database listening for binary client connections **(Unofficial use)**
+- 2427 TO 2427: [Media Gateway Control Protocol](https://en.wikipedia.org/wiki/Media_Gateway_Control_Protocol "Media Gateway Control Protocol") (MGCP) media gateway
+- 2447 TO 2447: ovwdb—[OpenView](https://en.wikipedia.org/wiki/OpenView "OpenView") [Network Node Manager](https://en.wikipedia.org/wiki/Network_Node_Manager "Network Node Manager") (NNM) daemon
+- 2456 TO 2456: [Valheim](https://en.wikipedia.org/wiki/Valheim "Valheim") **(Unofficial use)**
+- 2459 TO 2459: [XRPL](https://en.wikipedia.org/wiki/Xrp "Xrp")
+- 2480 TO 2480: [OrientDB](https://en.wikipedia.org/wiki/OrientDB "OrientDB") database listening for HTTP client connections **(Unofficial use)**
+- 2483 TO 2483: [Oracle database](https://en.wikipedia.org/wiki/Oracle_database "Oracle database") listening for insecure client connections, replaces port 1521
+- 2484 TO 2484: Oracle database listening for [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") client connections
+- 2500 TO 2500: NetFS communication **(Unofficial use)**
+- 2501 TO 2501: NetFS probe **(Unofficial use)**
+- 2535 TO 2535: [Multicast Address Dynamic Client Allocation Protocol](https://en.wikipedia.org/wiki/Multicast_Address_Dynamic_Client_Allocation_Protocol "Multicast Address Dynamic Client Allocation Protocol") (MADCAP). All standard messages are UDP datagrams.
+- 2541 TO 2541: [LonTalk](https://en.wikipedia.org/wiki/LonTalk "LonTalk")/IP
+- 2546 TO 2548: [EVault](https://en.wikipedia.org/wiki/EVault "EVault") data protection services
+- 2593 TO 2593: *[Ultima Online](https://en.wikipedia.org/wiki/Ultima_Online "Ultima Online")* servers **(Unofficial use)**
+- 2598 TO 2598: Citrix [Independent Computing Architecture](https://en.wikipedia.org/wiki/Independent_Computing_Architecture "Independent Computing Architecture") (ICA) with Session Reliability; port 1494 without session reliability **(Unofficial use)**
+- 2599 TO 2599: *Ultima Online* servers **(Unofficial use)**
+- 2628 TO 2628: [DICT](https://en.wikipedia.org/wiki/DICT "DICT")
+- 2638 TO 2638: [SQL Anywhere](https://en.wikipedia.org/wiki/SQL_Anywhere "SQL Anywhere") database server
+- 2710 TO 2710: XBT Tracker. UDP tracker extension is considered experimental. **(Unofficial use)**
+- 2727 TO 2727: [Media Gateway Control Protocol](https://en.wikipedia.org/wiki/Media_Gateway_Control_Protocol "Media Gateway Control Protocol") (MGCP) media gateway controller (call agent)
+- 2759 TO 2759: [SuperTuxKart](https://en.wikipedia.org/wiki/SuperTuxKart "SuperTuxKart") server **(Unofficial use)**
+- 2761 TO 2761: [DICOM](https://en.wikipedia.org/wiki/DICOM "DICOM") over [Integrated Secure Communication Layer](/w/index.php?title=Integrated_Secure_Communication_Layer&action=edit&redlink=1 "Integrated Secure Communication Layer (page does not exist)") (ISCL)
+- 2762 TO 2762: [DICOM](https://en.wikipedia.org/wiki/DICOM "DICOM") over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")
+- 2775 TO 2775: [Short Message Peer-to-Peer](https://en.wikipedia.org/wiki/Short_Message_Peer-to-Peer "Short Message Peer-to-Peer") (SMPP)
+- 2809 TO 2809: corbaloc:iiop URL, per the [CORBA](https://en.wikipedia.org/wiki/CORBA "CORBA") 3.0.3 specification
+- 2811 TO 2811: gsi ftp, per the [GridFTP](https://en.wikipedia.org/wiki/GridFTP "GridFTP") specification
+- 2827 TO 2827: [I2P](https://en.wikipedia.org/wiki/I2P "I2P") BOB Bridge **(Unofficial use)**
+- 2944 TO 2944: [Megaco](https://en.wikipedia.org/wiki/Megaco "Megaco") text H.248
+- 2945 TO 2945: Megaco binary (ASN.1) H.248
+- 2947 TO 2947: [gpsd](https://en.wikipedia.org/wiki/Gpsd "Gpsd"), GPS daemon
+- 2948 TO 2949: [WAP](https://en.wikipedia.org/wiki/Wireless_Application_Protocol "Wireless Application Protocol") push [Multimedia Messaging Service](https://en.wikipedia.org/wiki/Multimedia_Messaging_Service "Multimedia Messaging Service") (MMS)
+- 2967 TO 2967: [Symantec System Center](https://en.wikipedia.org/wiki/Symantec_AntiVirus "Symantec AntiVirus") agent (SSC-AGENT)
+- 2989 TO 2989: Zarkov Intelligent Agent Communication
+- 3000 TO 3000: [Ruby on Rails](https://en.wikipedia.org/wiki/Ruby_on_Rails "Ruby on Rails") development default **(Unofficial use)**
+- 3000 TO 3000: [Meteor](https://en.wikipedia.org/wiki/Meteor_(web_framework) "Meteor (web framework)") development default **(Unofficial use)**
+- 3000 TO 3000: [Resilio Sync](https://en.wikipedia.org/wiki/Resilio_Sync "Resilio Sync"), spun from BitTorrent Sync. **(Unofficial use)**
+- 3000 TO 3000: Create React App, script to create single-page [React](https://en.wikipedia.org/wiki/React_(JavaScript_library) "React (JavaScript library)") applications **(Unofficial use)**
+- 3000 TO 3000: Gogs and [Gitea](https://en.wikipedia.org/wiki/Gitea "Gitea") (self-hosted [Git](https://en.wikipedia.org/wiki/Git "Git") service) **(Unofficial use)**
+- 3000 TO 3000: [Grafana](https://en.wikipedia.org/wiki/Grafana "Grafana") **(Unofficial use)**
+- 3001 TO 3001: Honeywell Prowatch
+- 3004 TO 3004: [iSync](https://en.wikipedia.org/wiki/ISync "ISync") **(Unofficial use)**
+- 3010 TO 3010: KWS Connector
+- 3020 TO 3020: [Common Internet File System](https://en.wikipedia.org/wiki/Common_Internet_File_System "Common Internet File System") (CIFS). See also port 445 for [Server Message Block](https://en.wikipedia.org/wiki/Server_Message_Block "Server Message Block") (SMB), a dialect of CIFS.
+- 3050 TO 3050: gds-db ([Interbase](https://en.wikipedia.org/wiki/Interbase "Interbase")/[Firebird](https://en.wikipedia.org/wiki/Firebird_(database_server) "Firebird (database server)") databases)
+- 3052 TO 3052: [APC](https://en.wikipedia.org/wiki/APC_by_Schneider_Electric "APC by Schneider Electric") [PowerChute Network](https://en.wikipedia.org/wiki/PowerChute "PowerChute")
+- 3074 TO 3074: Xbox LIVE and [Games for Windows – Live](https://en.wikipedia.org/wiki/Games_for_Windows_%E2%80%93_Live "Games for Windows – Live")
+- 3101 TO 3101: [BlackBerry Enterprise Server](https://en.wikipedia.org/wiki/BlackBerry_Enterprise_Server "BlackBerry Enterprise Server") communication protocol **(Unofficial use)**
+- 3128 TO 3128: [Squid](https://en.wikipedia.org/wiki/Squid_(software) "Squid (software)") caching web proxy **(Unofficial use)**
+- 3225 TO 3225: [Fibre Channel over IP](https://en.wikipedia.org/wiki/Fibre_Channel_over_IP "Fibre Channel over IP") (FCIP)
+- 3233 TO 3233: [WhiskerControl](https://en.wikipedia.org/wiki/WhiskerControl "WhiskerControl") research control protocol
+- 3260 TO 3260: [iSCSI](https://en.wikipedia.org/wiki/ISCSI "ISCSI")
+- 3268 TO 3268: msft-gc, Microsoft Global Catalog ([LDAP](https://en.wikipedia.org/wiki/LDAP "LDAP") service which contains data from [Active Directory](https://en.wikipedia.org/wiki/Active_Directory "Active Directory") forests)
+- 3269 TO 3269: msft-gc-ssl, Microsoft Global Catalog over [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") (similar to port 3268, [LDAP](https://en.wikipedia.org/wiki/LDAP "LDAP") over [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer"))
+- 3283 TO 3283: *Net Assistant*, a predecessor to *Apple Remote Desktop*
+- 3283 TO 3283: [Apple Remote Desktop](https://en.wikipedia.org/wiki/Apple_Remote_Desktop "Apple Remote Desktop") 2.0 or later **(Unofficial use)**
+- 3290 TO 3290: [Virtual Air Traffic Simulation](https://en.wikipedia.org/wiki/VATSIM "VATSIM") (VATSIM) network voice communication **(Unofficial use)**
+- 3305 TO 3305: [Odette File Transfer Protocol](https://en.wikipedia.org/wiki/OFTP "OFTP") (OFTP)
+- 3306 TO 3306: [MySQL](https://en.wikipedia.org/wiki/MySQL "MySQL") database system
+- 3323 TO 3323: [DECE](https://en.wikipedia.org/wiki/DECE "DECE") GEODI Server **(Unofficial use)**
+- 3332 TO 3332: Thundercloud DataPath Overlay Control **(Unofficial use)**
+- 3333 TO 3333: [Eggdrop](https://en.wikipedia.org/wiki/Eggdrop "Eggdrop"), an IRC bot default port **(Unofficial use)**
+- 3333 TO 3333: [Network Caller ID](https://en.wikipedia.org/wiki/Network_Caller_ID "Network Caller ID") server **(Unofficial use)**
+- 3333 TO 3333: [CruiseControl.rb](https://en.wikipedia.org/wiki/CruiseControl.rb "CruiseControl.rb") **(Unofficial use)**
+- 3333 TO 3333: OpenOCD ([gdbserver](https://en.wikipedia.org/wiki/Gdbserver "Gdbserver")) **(Unofficial use)**
+- 3344 TO 3344: Repetier-Server **(Unofficial use)**
+- 3351 TO 3351: [Pervasive PSQL](https://en.wikipedia.org/wiki/Pervasive_PSQL "Pervasive PSQL") **(Unofficial use)**
+- 3386 TO 3386: [GTP'](https://en.wikipedia.org/wiki/GTP%27 "GTP'") [3GPP](https://en.wikipedia.org/wiki/3GPP "3GPP") [GSM](https://en.wikipedia.org/wiki/GSM "GSM")/[UMTS](https://en.wikipedia.org/wiki/UMTS "UMTS") [CDR](https://en.wikipedia.org/wiki/Call_detail_record "Call detail record") logging protocol
+- 3389 TO 3389: [Microsoft Terminal Server](https://en.wikipedia.org/wiki/Microsoft_Terminal_Server "Microsoft Terminal Server") ([RDP](https://en.wikipedia.org/wiki/Remote_Desktop_Protocol "Remote Desktop Protocol")) officially registered as Windows Based Terminal (WBT)
+- 3396 TO 3396: [Novell](https://en.wikipedia.org/wiki/Novell "Novell") NDPS Printer Agent
+- 3412 TO 3412: xmlBlaster
+- 3423 TO 3423: Xware xTrm Communication Protocol
+- 3424 TO 3424: Xware xTrm Communication Protocol over SSL
+- 3435 TO 3435: Pacom Security User Port
+- 3455 TO 3455: [Resource Reservation Protocol](https://en.wikipedia.org/wiki/Resource_Reservation_Protocol "Resource Reservation Protocol") (RSVP)
+- 3478 TO 3478: [STUN](https://en.wikipedia.org/wiki/STUN "STUN"), a protocol for NAT traversal
+- 3478 TO 3478: [TURN](https://en.wikipedia.org/wiki/Traversal_Using_Relay_NAT "Traversal Using Relay NAT"), a protocol for NAT traversal (extension to STUN)
+- 3478 TO 3478: STUN Behavior Discovery. See also port 5349.
+- 3478 TO 3481: [Microsoft Teams](https://en.wikipedia.org/wiki/Microsoft_Teams "Microsoft Teams") **(Unofficial use)**
+- 3479 TO 3479: [PlayStation Network](https://en.wikipedia.org/wiki/PlayStation_Network "PlayStation Network") **(Unofficial use)**
+- 3480 TO 3480: PlayStation Network **(Unofficial use)**
+- 3483 TO 3483: [Slim Devices](https://en.wikipedia.org/wiki/Slim_Devices "Slim Devices") discovery protocol
+- 3483 TO 3483: [Slim Devices](https://en.wikipedia.org/wiki/Slim_Devices "Slim Devices") SlimProto protocol
+- 3493 TO 3493: [Network UPS Tools](https://en.wikipedia.org/wiki/Network_UPS_Tools "Network UPS Tools") (NUT)
+- 3503 TO 3503: MPLS LSP-echo Port
+- 3516 TO 3516: Smartcard Port
+- 3527 TO 3527: [Microsoft Message Queuing](https://en.wikipedia.org/wiki/Microsoft_Message_Queuing "Microsoft Message Queuing")
+- 3535 TO 3535: [SMTP](https://en.wikipedia.org/wiki/SMTP "SMTP") alternate **(Unofficial use)**
+- 3544 TO 3544: [Teredo tunneling](https://en.wikipedia.org/wiki/Teredo_tunneling "Teredo tunneling")
+- 3551 TO 3551: Apcupsd Information Port
+- 3601 TO 3601: [SAP](https://en.wikipedia.org/wiki/SAP "SAP") Message Server Port
+- 3632 TO 3632: [Distcc](https://en.wikipedia.org/wiki/Distcc "Distcc"), distributed compiler
+- 3645 TO 3645: [Cyc](https://en.wikipedia.org/wiki/Cyc "Cyc")
+- 3655 TO 3655: [Advanced Systems Concepts, Inc.](https://en.wikipedia.org/wiki/Advanced_Systems_Concepts,_Inc. "Advanced Systems Concepts, Inc.") ActiveBatch Exec Agent
+- 3659 TO 3659: Apple [SASL](https://en.wikipedia.org/wiki/Simple_Authentication_and_Security_Layer "Simple Authentication and Security Layer"), used by [macOS Server](https://en.wikipedia.org/wiki/MacOS_Server "MacOS Server") Password Server
+- 3659 TO 3659: Battlefield 4 **(Unofficial use)**
+- 3667 TO 3667: Information Exchange
+- 3671 TO 3671: KNXnet/IP(EIBnet/IP)
+- 3689 TO 3689: [Digital Audio Access Protocol](https://en.wikipedia.org/wiki/Digital_Audio_Access_Protocol "Digital Audio Access Protocol") (DAAP), used by [Apple's](https://en.wikipedia.org/wiki/Apple_Inc. "Apple Inc.") [iTunes](https://en.wikipedia.org/wiki/ITunes "ITunes") and [AirPlay](https://en.wikipedia.org/wiki/AirPlay "AirPlay")
+- 3690 TO 3690: [Subversion (SVN)](https://en.wikipedia.org/wiki/Subversion_(software) "Subversion (software)") version control system
+- 3702 TO 3702: [Web Services Dynamic Discovery](https://en.wikipedia.org/wiki/Web_Services_Dynamic_Discovery "Web Services Dynamic Discovery") (WS-Discovery), used by various components of [Windows Vista](https://en.wikipedia.org/wiki/Windows_Vista "Windows Vista") and later
+- 3721 TO 3721: [ES File Explorer](https://en.wikipedia.org/wiki/ES_File_Explorer "ES File Explorer") FTP server **(Unofficial use)**
+- 3724 TO 3724: Some [Blizzard](https://en.wikipedia.org/wiki/Blizzard_Entertainment "Blizzard Entertainment") games
+- 3724 TO 3724: [Club Penguin](https://en.wikipedia.org/wiki/Club_Penguin "Club Penguin") Disney online game for kids **(Unofficial use)**
+- 3725 TO 3725: Netia NA-ER Port
+- 3749 TO 3749: CimTrak registered port
+- 3768 TO 3768: RBLcheckd server daemon
+- 3784 TO 3784: Bidirectional Forwarding Detection (BFD)for IPv4 and IPv6 (Single Hop) (RFC 5881)
+- 3785 TO 3785: VoIP program used by [Ventrilo](https://en.wikipedia.org/wiki/Ventrilo "Ventrilo") **(Unofficial use)**
+- 3799 TO 3799: [RADIUS](https://en.wikipedia.org/wiki/RADIUS "RADIUS") change of authorization
+- 3804 TO 3804: Harman Professional HiQnet protocol
+- 3825 TO 3825: RedSeal Networks client/server connection **(Unofficial use)**
+- 3826 TO 3826: WarMUX game server
+- 3826 TO 3826: RedSeal Networks client/server connection **(Unofficial use)**
+- 3835 TO 3835: RedSeal Networks client/server connection **(Unofficial use)**
+- 3830 TO 3830: System Management Agent, developed and used by Cerner to monitor and manage solutions
+- 3856 TO 3856: ERP Server Application used by F10 Software **(Unofficial use)**
+- 3880 TO 3880: IGRS
+- 3868 TO 3868: [Diameter](https://en.wikipedia.org/wiki/Diameter_(protocol) "Diameter (protocol)") base protocol (RFC 3588)
+- 3872 TO 3872: [Oracle Enterprise Manager](https://en.wikipedia.org/wiki/Oracle_Enterprise_Manager "Oracle Enterprise Manager") Remote Agent
+- 3900 TO 3900: udt\_os, [IBM UniData](https://en.wikipedia.org/wiki/IBM_U2 "IBM U2") UDT OS
+- 3960 TO 3960: *[Warframe](https://en.wikipedia.org/wiki/Warframe "Warframe")* online interaction **(Unofficial use)**
+- 3962 TO 3962: *Warframe* online interaction **(Unofficial use)**
+- 3978 TO 3978: *[OpenTTD](https://en.wikipedia.org/wiki/OpenTTD "OpenTTD")* game (masterserver and content service) **(Unofficial use)**
+- 3978 TO 3978: Palo Alto Networks' Panorama management of firewalls and log collectors & pre-PAN-OS 8.0 Panorama-to-managed devices software updates. **(Unofficial use)**
+- 3979 TO 3979: *OpenTTD* game **(Unofficial use)**
+- 3999 TO 3999: Norman distributed scanning service
+- 4000 TO 4000: *[Diablo II](https://en.wikipedia.org/wiki/Diablo_II "Diablo II")* game **(Unofficial use)**
+- 4001 TO 4001: *[Microsoft Ants](https://en.wikipedia.org/wiki/Microsoft_Ants "Microsoft Ants")* game **(Unofficial use)**
+- 4001 TO 4001: CoreOS [etcd](https://en.wikipedia.org/wiki/Etcd "Etcd") client communication **(Unofficial use)**
+- 4001 TO 4001: [InterPlanetary File System](https://en.wikipedia.org/wiki/InterPlanetary_File_System "InterPlanetary File System") swarm node **(Unofficial use)**
+- 4018 TO 4018: Protocol information and warnings
+- 4035 TO 4035: [IBM](https://en.wikipedia.org/wiki/IBM "IBM") Rational Developer for System z Remote System Explorer Daemon **(Unofficial use)**
+- 4045 TO 4045: [Solaris](https://en.wikipedia.org/wiki/Solaris_(operating_system) "Solaris (operating system)") lockd NFS lock daemon/manager **(Unofficial use)**
+- 4050 TO 4050: Mud Master Chat protocol (MMCP) – Peer-to-peer communications between [MUD](https://en.wikipedia.org/wiki/Multi-user_dungeon "Multi-user dungeon") clients. **(Unofficial use)**
+- 4061 TO 4061: [Ice Location Service](https://doc.zeroc.com/ice/3.7/client-server-features/locators)
+- 4069 TO 4069: [Minger Email Address Verification Protocol](https://en.wikipedia.org/wiki/Minger_Email_Address_Verification_Protocol "Minger Email Address Verification Protocol")
+- 4070 TO 4070: [Amazon Echo](https://en.wikipedia.org/wiki/Amazon_Echo "Amazon Echo") Dot ([Amazon Alexa](https://en.wikipedia.org/wiki/Amazon_Alexa "Amazon Alexa")) streaming connection with [Spotify](https://en.wikipedia.org/wiki/Spotify "Spotify") **(Unofficial use)**
+- 4089 TO 4089: OpenCORE Remote Control Service
+- 4090 TO 4090: [Kerio](https://en.wikipedia.org/wiki/Kerio_Technologies "Kerio Technologies")
+- 4093 TO 4093: PxPlus Client server interface ProvideX
+- 4096 TO 4096: [Ascom Timeplex](https://en.wikipedia.org/wiki/Ascom_(company) "Ascom (company)") Bridge Relay Element (BRE)
+- 4105 TO 4105: Shofar (ShofarNexus)
+- 4111 TO 4111: [Xgrid](https://en.wikipedia.org/wiki/Xgrid "Xgrid")
+- 4116 TO 4116: Smartcard-TLS
+- 4123 TO 4123: Z-Wave Protocol
+- 4125 TO 4125: [Microsoft Remote Web Workplace](https://en.wikipedia.org/wiki/Microsoft_Remote_Web_Workplace "Microsoft Remote Web Workplace") administration **(Unofficial use)**
+- 4172 TO 4172: [Teradici](https://en.wikipedia.org/wiki/Teradici "Teradici") [PCoIP](https://en.wikipedia.org/wiki/PCoIP "PCoIP")
+- 4190 TO 4190: ManageSieve
+- 4195 TO 4195: [AWS](https://en.wikipedia.org/wiki/AWS "AWS") protocol for cloud remoting solution
+- 4197 TO 4197: Harman International's HControl protocol for control and monitoring of Audio, Video, Lighting and Control equipment
+- 4198 TO 4198: Couch Potato Android app **(Unofficial use)**
+- 4200 TO 4200: [Angular](https://en.wikipedia.org/wiki/Angular_(web_framework) "Angular (web framework)") app **(Unofficial use)**
+- 4201 TO 4201: [TinyMUD](https://en.wikipedia.org/wiki/TinyMUD "TinyMUD") and various derivatives **(Unofficial use)**
+- 4222 TO 4222: NATS server default port **(Unofficial use)**
+- 4226 TO 4226: [Aleph One](https://en.wikipedia.org/wiki/Aleph_One_(computer_game) "Aleph One (computer game)"), a computer game **(Unofficial use)**
+- 4242 TO 4242: [Orthanc](https://en.wikipedia.org/wiki/Orthanc_(software) "Orthanc (software)") – [DICOM](https://en.wikipedia.org/wiki/DICOM "DICOM") server **(Unofficial use)**
+- 4242 TO 4242: [Quassel](https://en.wikipedia.org/wiki/Quassel "Quassel") distributed IRC client **(Unofficial use)**
+- 4243 TO 4243: [Docker](https://en.wikipedia.org/wiki/Docker_(software) "Docker (software)") implementations, redistributions, and setups default **(Unofficial use)**
+- 4243 TO 4243: [CrashPlan](https://en.wikipedia.org/wiki/CrashPlan "CrashPlan") **(Unofficial use)**
+- 4244 TO 4244: [Viber](https://en.wikipedia.org/wiki/Viber "Viber") **(Unofficial use)**
+- 4303 TO 4303: Simple Railroad Command Protocol (SRCP)
+- 4307 TO 4307: TrueConf Client – TrueConf Server media data exchange
+- 4321 TO 4321: [Referral Whois (RWhois) Protocol](https://en.wikipedia.org/wiki/RWhois "RWhois")
+- 4433 TO 4433: SaltoSystems - DTLS Based Communication for NCoder **(Unofficial use)**
+- 4444 TO 4444: [Oracle](https://en.wikipedia.org/wiki/Oracle_Corporation "Oracle Corporation") WebCenter Content: Content Server—Intradoc Socket port. (formerly known as Oracle [Universal Content Management](https://en.wikipedia.org/wiki/Universal_Content_Management "Universal Content Management")). **(Unofficial use)**
+- 4444 TO 4444: [Metasploit](https://en.wikipedia.org/wiki/Metasploit "Metasploit")'s default listener port **(Unofficial use)**
+- 4444 TO 4444: [Xvfb](https://en.wikipedia.org/wiki/Xvfb "Xvfb") X server virtual frame buffer service **(Unofficial use)**
+- 4444 TO 4444: OpenOCD ([Telnet](https://en.wikipedia.org/wiki/Telnet "Telnet")) **(Unofficial use)**
+- 4444 TO 4445: [I2P](https://en.wikipedia.org/wiki/I2P "I2P") HTTP/S proxy **(Unofficial use)**
+- 4455 TO 4455: [OBS Studio](https://en.wikipedia.org/wiki/OBS_Studio "OBS Studio") built-in [WebSocket](https://en.wikipedia.org/wiki/WebSocket "WebSocket") plugin default port **(Unofficial use)**
+- 4460 TO 4460: [Network Time Security Key Establishment (NTS)](https://en.wikipedia.org/wiki/Network_Time_Protocol#NTPsec "Network Time Protocol")
+- 4486 TO 4486: Integrated Client Message Service (ICMS)
+- 4488 TO 4488: Apple Wide Area Connectivity Service, used by [Back to My Mac](https://en.wikipedia.org/wiki/Back_to_My_Mac "Back to My Mac")
+- 4500 TO 4500: [IPSec NAT Traversal](https://en.wikipedia.org/wiki/IPsec_Passthrough "IPsec Passthrough") (RFC 3947, RFC 4306)
+- 4502 TO 4534: Microsoft Silverlight connectable ports under non-elevated trust
+- 4505 TO 4506: [Salt](https://en.wikipedia.org/wiki/Salt_(software) "Salt (software)") master **(Unofficial use)**
+- 4534 TO 4534: [Armagetron Advanced](https://en.wikipedia.org/wiki/Armagetron_Advanced "Armagetron Advanced") server default **(Unofficial use)**
+- 4560 TO 4560: default [Log4j](https://en.wikipedia.org/wiki/Log4j "Log4j") socketappender port **(Unofficial use)**
+- 4567 TO 4567: [Sinatra](https://en.wikipedia.org/wiki/Sinatra_(software) "Sinatra (software)") default server port in development mode (HTTP) **(Unofficial use)**
+- 4569 TO 4569: [Inter-Asterisk eXchange](https://en.wikipedia.org/wiki/Inter-Asterisk_eXchange "Inter-Asterisk eXchange") (IAX2)
+- 4604 TO 4604: [Identity Registration Protocol](https://en.wikipedia.org/wiki/Identity_Registration_Protocol "Identity Registration Protocol")
+- 4605 TO 4605: [Direct End to End Secure Chat Protocol](https://en.wikipedia.org/wiki/Direct_End_to_End_Secure_Chat_Protocol "Direct End to End Secure Chat Protocol")
+- 4610 TO 4640: [QualiSystems](https://en.wikipedia.org/wiki/QualiSystems "QualiSystems") TestShell Suite Services **(Unofficial use)**
+- 4662 TO 4662: OrbitNet Message Service
+- 4662 TO 4662: Default for older versions of [eMule](https://en.wikipedia.org/wiki/EMule "EMule") **(Unofficial use)**
+- 4664 TO 4664: [Google Desktop Search](https://en.wikipedia.org/wiki/Google_Desktop "Google Desktop") **(Unofficial use)**
+- 4672 TO 4672: Default for older versions of [eMule](https://en.wikipedia.org/wiki/EMule "EMule") **(Unofficial use)**
+- 4711 TO 4711: [eMule](https://en.wikipedia.org/wiki/EMule "EMule") optional web interface **(Unofficial use)**
+- 4713 TO 4713: [PulseAudio](https://en.wikipedia.org/wiki/PulseAudio "PulseAudio") sound server **(Unofficial use)**
+- 4723 TO 4723: [Appium](https://en.wikipedia.org/wiki/Appium "Appium") open source automation tool **(Unofficial use)**
+- 4724 TO 4724: Default bootstrap port to use on device to talk to [Appium](https://en.wikipedia.org/wiki/Appium "Appium") **(Unofficial use)**
+- 4728 TO 4728: Computer Associates Desktop and Server Management (DMP)/Port Multiplexer
+- 4730 TO 4730: [Gearman](https://en.wikipedia.org/wiki/Gearman "Gearman")'s job server
+- 4739 TO 4739: [IP Flow Information Export](https://en.wikipedia.org/wiki/IP_Flow_Information_Export "IP Flow Information Export")
+- 4747 TO 4747: [Apprentice](https://en.wikipedia.org/wiki/Apprentice_(Magic:_The_Gathering_software) "Apprentice (Magic: The Gathering software)") **(Unofficial use)**
+- 4753 TO 4753: SIMON (service and discovery)
+- 4789 TO 4789: Virtual eXtensible Local Area Network ([VXLAN](https://en.wikipedia.org/wiki/Virtual_Extensible_LAN "Virtual Extensible LAN"))
+- 4791 TO 4791: [IP Routable RocE](https://en.wikipedia.org/wiki/RDMA_over_Converged_Ethernet "RDMA over Converged Ethernet") (RoCEv2)
+- 4840 TO 4840: OPC UA Connection Protocol (TCP) and OPC UA Multicast Datagram Protocol (UDP) for [OPC Unified Architecture](https://en.wikipedia.org/wiki/OPC_Unified_Architecture "OPC Unified Architecture") from [OPC Foundation](https://en.wikipedia.org/wiki/OPC_Foundation "OPC Foundation")
+- 4843 TO 4843: OPC UA TCP Protocol over TLS/SSL for [OPC Unified Architecture](https://en.wikipedia.org/wiki/OPC_Unified_Architecture "OPC Unified Architecture") from [OPC Foundation](https://en.wikipedia.org/wiki/OPC_Foundation "OPC Foundation")
+- 4847 TO 4847: Web Fresh Communication, Quadrion Software & Odorless Entertainment
+- 4848 TO 4848: Java [GlassFish](https://en.wikipedia.org/wiki/GlassFish "GlassFish") Application Server administration default **(Unofficial use)**
+- 4894 TO 4894: [LysKOM](https://en.wikipedia.org/wiki/LysKOM "LysKOM") Protocol A
+- 4900 TO 4900: HFSQL (Hyperfile SQL) Mantra Server from [PC SOFT](/w/index.php?title=PC_SOFT&action=edit&redlink=1 "PC SOFT (page does not exist)") **(Unofficial use)**
+- 4944 TO 4944: [DrayTek](https://en.wikipedia.org/wiki/DrayTek "DrayTek") DSL Status Monitoring **(Unofficial use)**
+- 4949 TO 4949: Munin Resource Monitoring Tool
+- 4950 TO 4950: Cylon Controls UC32 Communications Port
+- 5000 TO 5000: [UPnP](https://en.wikipedia.org/wiki/Universal_Plug_and_Play "Universal Plug and Play")—Windows network device interoperability **(Unofficial use)**
+- 5000 TO 5000: [VTun](https://en.wikipedia.org/wiki/VTun "VTun"), [VPN](https://en.wikipedia.org/wiki/VPN "VPN") Software **(Unofficial use)**
+- 5000 TO 5000: [ASP.NET Core](https://en.wikipedia.org/wiki/ASP.NET_Core "ASP.NET Core") — Development Webserver **(Unofficial use)**
+- 5000 TO 5000: [FlightGear](https://en.wikipedia.org/wiki/FlightGear "FlightGear") multiplayer **(Unofficial use)**
+- 5000 TO 5000: [Synology Inc.](https://en.wikipedia.org/wiki/Synology_Inc. "Synology Inc.") Management Console, File Station, Audio Station **(Unofficial use)**
+- 5000 TO 5000: [Flask](https://en.wikipedia.org/wiki/Flask_(web_framework) "Flask (web framework)") Development Webserver **(Unofficial use)**
+- 5000 TO 5000: [Heroku](https://en.wikipedia.org/wiki/Heroku "Heroku") console access **(Unofficial use)**
+- 5000 TO 5000: [Docker](https://en.wikipedia.org/wiki/Docker_(software) "Docker (software)") Registry **(Unofficial use)**
+- 5000 TO 5000: [AT&T U-verse](https://en.wikipedia.org/wiki/AT%26T_U-verse "AT&T U-verse") [public, educational, and government access](https://en.wikipedia.org/wiki/Public,_educational,_and_government_access "Public, educational, and government access") (PEG) streaming over [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol "Hypertext Transfer Protocol") **(Unofficial use)**
+- 5000 TO 5000: [High-Speed SECS Message Services](https://en.wikipedia.org/wiki/High-Speed_SECS_Message_Services "High-Speed SECS Message Services") **(Unofficial use)**
+- 5000 TO 5000: [3CX Phone System](https://en.wikipedia.org/wiki/3CX_Phone_System "3CX Phone System") Management Console/Web Client (HTTP) **(Unofficial use)**
+- 5000 TO 5000: RidgeRun GStreamer Daemon (GSTD) **(Unofficial use)**
+- 5000 TO 5000: [Apple's](https://en.wikipedia.org/wiki/Apple_Inc. "Apple Inc.") [AirPlay](https://en.wikipedia.org/wiki/AirPlay "AirPlay") Receiver **(Unofficial use)**
+- 5000 TO 5000: [AWS](https://en.wikipedia.org/wiki/AWS "AWS") [Elastic Beanstalk](https://en.wikipedia.org/wiki/Elastic_Beanstalk "Elastic Beanstalk") Proxy server **(Unofficial use)**
+- 5000 TO 5500: *[League of Legends](https://en.wikipedia.org/wiki/League_of_Legends "League of Legends")*, a [multiplayer online battle arena](https://en.wikipedia.org/wiki/Multiplayer_online_battle_arena "Multiplayer online battle arena") video game **(Unofficial use)**
+- 5001 TO 5001: [Slingbox](https://en.wikipedia.org/wiki/Slingbox "Slingbox") and Slingplayer **(Unofficial use)**
+- 5001 TO 5001: [Iperf](https://en.wikipedia.org/wiki/Iperf "Iperf") (Tool for measuring TCP and UDP bandwidth performance) **(Unofficial use)**
+- 5001 TO 5001: [Synology Inc.](https://en.wikipedia.org/wiki/Synology_Inc. "Synology Inc.") Secured Management Console, File Station, Audio Station **(Unofficial use)**
+- 5001 TO 5001: [3CX Phone System](https://en.wikipedia.org/wiki/3CX_Phone_System "3CX Phone System") Management Console/Web Client (HTTPS) **(Unofficial use)**
+- 5001 TO 5001: [InterPlanetary File System](https://en.wikipedia.org/wiki/InterPlanetary_File_System "InterPlanetary File System") RPC API **(Unofficial use)**
+- 5002 TO 5002: ASSA ARX access control system **(Unofficial use)**
+- 5003 TO 5003: [FileMaker](https://en.wikipedia.org/wiki/FileMaker "FileMaker") – name binding and transport
+- 5004 TO 5004: [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol "Real-time Transport Protocol") media data (RTP) (RFC 3551, RFC 4571)
+- 5005 TO 5005: [Real-time Transport Protocol control protocol](https://en.wikipedia.org/wiki/RTP_Control_Protocol "RTP Control Protocol") (RTCP) (RFC 3551, RFC 4571)
+- 5007 TO 5007: Palo Alto Networks – User-ID agent **(Unofficial use)**
+- 5010 TO 5010: Registered to: TelePath (the IBM FlowMark [workflow-management system](https://en.wikipedia.org/wiki/Workflow-management_system "Workflow-management system") messaging platform)  
+The TCP port is now used for: IBM [WebSphere MQ](https://en.wikipedia.org/wiki/WebSphere_MQ "WebSphere MQ") Workflow
+- 5011 TO 5011: TelePath (the IBM FlowMark [workflow-management system](https://en.wikipedia.org/wiki/Workflow-management_system "Workflow-management system") messaging platform)
+- 5022 TO 5022: MSSQL Server Replication and Database mirroring endpoints **(Unofficial use)**
+- 5025 TO 5025: scpi-raw [Standard Commands for Programmable Instruments](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments "Standard Commands for Programmable Instruments")
+- 5029 TO 5029: [Sonic Robo Blast 2](https://en.wikipedia.org/wiki/Sonic_Robo_Blast_2 "Sonic Robo Blast 2") and Sonic Robo Blast 2 Kart servers **(Unofficial use)**
+- 5031 TO 5031: AVM CAPI-over-TCP ([ISDN](https://en.wikipedia.org/wiki/ISDN "ISDN") over [Ethernet](https://en.wikipedia.org/wiki/Ethernet "Ethernet") tunneling) **(Unofficial use)**
+- 5037 TO 5037: Android ADB server **(Unofficial use)**
+- 5044 TO 5044: Standard port in Filebeats/Logstash implementation of Lumberjack protocol.
+- 5048 TO 5048: Texai Message Service
+- 5050 TO 5050: [Yahoo! Messenger](https://en.wikipedia.org/wiki/Yahoo!_Messenger "Yahoo! Messenger") **(Unofficial use)**
+- 5051 TO 5051: ita-agent [Symantec](https://en.wikipedia.org/wiki/NortonLifeLock "NortonLifeLock") Intruder Alert
+- 5060 TO 5060: [Session Initiation Protocol](https://en.wikipedia.org/wiki/Session_Initiation_Protocol "Session Initiation Protocol") (SIP)
+- 5061 TO 5061: [Session Initiation Protocol](https://en.wikipedia.org/wiki/Session_Initiation_Protocol "Session Initiation Protocol") (SIP) over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")
+- 5062 TO 5062: Localisation access
+- 5064 TO 5064: [EPICS](https://en.wikipedia.org/wiki/EPICS "EPICS") Channel Access server
+- 5065 TO 5065: [EPICS](https://en.wikipedia.org/wiki/EPICS "EPICS") Channel Access repeater beacon
+- 5070 TO 5070: [Binary Floor Control Protocol](/w/index.php?title=Binary_Floor_Control_Protocol&action=edit&redlink=1 "Binary Floor Control Protocol (page does not exist)") (BFCP) **(Unofficial use)**
+- 5075 TO 5075: [EPICS](https://en.wikipedia.org/wiki/EPICS "EPICS") PV Access Data
+- 5076 TO 5076: [EPICS](https://en.wikipedia.org/wiki/EPICS "EPICS") PV Access Searches
+- 5080 TO 5080: [NEC Phone System](https://en.wikipedia.org/wiki/List_of_telephone_switches#NEC "List of telephone switches") SV8100 and SV9100 MLC phones: default iSIP port **(Unofficial use)**
+- 5084 TO 5084: [EPCglobal](https://en.wikipedia.org/wiki/EPCglobal "EPCglobal") Low Level Reader Protocol ([LLRP](https://en.wikipedia.org/wiki/LLRP "LLRP"))
+- 5085 TO 5085: EPCglobal Low Level Reader Protocol ([LLRP](https://en.wikipedia.org/wiki/LLRP "LLRP")) over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")
+- 5090 TO 5090: [3CX Phone System](https://en.wikipedia.org/wiki/3CX_Phone_System "3CX Phone System") 3CX Tunnel Protocol, 3CX App API, 3CX Session Border Controller **(Unofficial use)**
+- 5093 TO 5093: [SafeNet, Inc](https://en.wikipedia.org/wiki/SafeNet "SafeNet") Sentinel LM, Sentinel RMS, License Manager, client-to-server
+- 5099 TO 5099: SafeNet, Inc Sentinel LM, Sentinel RMS, License Manager, server-to-server
+- 5104 TO 5104: [IBM](https://en.wikipedia.org/wiki/IBM "IBM") [Tivoli Framework](/w/index.php?title=IBM_Tivoli_Framework&action=edit&redlink=1 "IBM Tivoli Framework (page does not exist)") NetCOOL/Impact [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP") Service **(Unofficial use)**
+- 5121 TO 5121: [Neverwinter Nights](https://en.wikipedia.org/wiki/Neverwinter_Nights_(2002_video_game) "Neverwinter Nights (2002 video game)") **(Unofficial use)**
+- 5150 TO 5150: ATMP Ascend Tunnel Management Protocol
+- 5151 TO 5151: [ESRI](https://en.wikipedia.org/wiki/Environmental_Systems_Research_Institute "Environmental Systems Research Institute") SDE Instance
+- 5151 TO 5151: ESRI SDE Remote Start
+- 5154 TO 5154: [BZFlag](https://en.wikipedia.org/wiki/BZFlag "BZFlag")
+- 5172 TO 5172: PC over IP Endpoint Management
+- 5173 TO 5173: [Vite](https://en.wikipedia.org/wiki/Vite_(software) "Vite (software)") **(Unofficial use)**
+- 5190 TO 5190: [AOL Instant Messenger](https://en.wikipedia.org/wiki/AOL_Instant_Messenger "AOL Instant Messenger") protocol. The chat app is defunct as of 15 December 2017.
+- 5198 TO 5198: [EchoLink](https://en.wikipedia.org/wiki/Echolink "Echolink") VoIP Amateur Radio Software (Voice) **(Unofficial use)**
+- 5199 TO 5199: EchoLink VoIP Amateur Radio Software (Voice) **(Unofficial use)**
+- 5200 TO 5200: EchoLink VoIP Amateur Radio Software (Information) **(Unofficial use)**
+- 5201 TO 5201: [Iperf3](https://en.wikipedia.org/wiki/Iperf3 "Iperf3") (Tool for measuring TCP and UDP bandwidth performance) **(Unofficial use)**
+- 5222 TO 5222: [Extensible Messaging and Presence Protocol](https://en.wikipedia.org/wiki/Extensible_Messaging_and_Presence_Protocol "Extensible Messaging and Presence Protocol") (XMPP) client connection
+- 5223 TO 5223: [Apple Push Notification Service](https://en.wikipedia.org/wiki/Apple_Push_Notification_Service "Apple Push Notification Service") **(Unofficial use)**
+- 5223 TO 5223: Extensible Messaging and Presence Protocol (XMPP) client connection over [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") **(Unofficial use)**
+- 5228 TO 5228: HP Virtual Room Service
+- 5228 TO 5228: [Google Play](https://en.wikipedia.org/wiki/Google_Play "Google Play"), [Android Cloud to Device Messaging Service](https://en.wikipedia.org/wiki/Android_Cloud_to_Device_Messaging_Service "Android Cloud to Device Messaging Service"), [Google Cloud Messaging](https://en.wikipedia.org/wiki/Google_Cloud_Messaging "Google Cloud Messaging") **(Unofficial use)**
+- 5231 TO 5231: Remote Control of Scan Software for [Cruse](https://en.wikipedia.org/wiki/CRUSE "CRUSE") Scanners
+- 5232 TO 5232: [Cruse](https://en.wikipedia.org/wiki/CRUSE "CRUSE") Scanning System Service
+- 5232 TO 5232: [Silicon Graphics](https://en.wikipedia.org/wiki/Silicon_Graphics "Silicon Graphics") Distributed Graphics Library daemon (dgld) **(Unofficial use)**
+- 5235 TO 5236: [Firebase Cloud Messaging](https://en.wikipedia.org/wiki/Firebase_Cloud_Messaging "Firebase Cloud Messaging") **(Unofficial use)**
+- 5242 TO 5242: [Viber](https://en.wikipedia.org/wiki/Viber "Viber") **(Unofficial use)**
+- 5243 TO 5243: Viber **(Unofficial use)**
+- 5246 TO 5246: Control And Provisioning of Wireless Access Points ([CAPWAP](https://en.wikipedia.org/wiki/CAPWAP "CAPWAP")) CAPWAP control
+- 5247 TO 5247: Control And Provisioning of Wireless Access Points (CAPWAP) CAPWAP data
+- 5269 TO 5269: Extensible Messaging and Presence Protocol (XMPP) server-to-server connection
+- 5280 TO 5280: Extensible Messaging and Presence Protocol (XMPP)
+- 5281 TO 5281: Extensible Messaging and Presence Protocol (XMPP) **(Unofficial use)**
+- 5298 TO 5298: Extensible Messaging and Presence Protocol (XMPP)
+- 5310 TO 5310: *[Outlaws](https://en.wikipedia.org/wiki/Outlaws_(1997_video_game) "Outlaws (1997 video game)")*, a 1997 first-person shooter video game
+- 5318 TO 5318: [Certificate Management over CMS](https://en.wikipedia.org/wiki/Certificate_Management_over_CMS "Certificate Management over CMS")
+- 5349 TO 5349: [STUN](https://en.wikipedia.org/wiki/STUN "STUN") over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")/[DTLS](https://en.wikipedia.org/wiki/Datagram_Transport_Layer_Security "Datagram Transport Layer Security"), a protocol for [NAT traversal](https://en.wikipedia.org/wiki/NAT_traversal "NAT traversal")
+- 5349 TO 5349: [TURN](https://en.wikipedia.org/wiki/Traversal_Using_Relay_NAT "Traversal Using Relay NAT") over TLS/DTLS, a protocol for NAT traversal
+- 5349 TO 5349: STUN Behavior Discovery over TLS. See also port 3478.
+- 5351 TO 5351: [NAT Port Mapping Protocol](https://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol "NAT Port Mapping Protocol") and [Port Control Protocol](https://en.wikipedia.org/wiki/Port_Control_Protocol "Port Control Protocol")—client-requested configuration for connections through [network address translators](https://en.wikipedia.org/wiki/Network_Address_Translation "Network Address Translation") and [firewalls](https://en.wikipedia.org/wiki/Firewall_(computing) "Firewall (computing)")
+- 5353 TO 5353: [Multicast DNS](https://en.wikipedia.org/wiki/Multicast_DNS "Multicast DNS") (mDNS)
+- 5355 TO 5355: [Link-Local Multicast Name Resolution](https://en.wikipedia.org/wiki/LLMNR "LLMNR") (LLMNR), allows [hosts](https://en.wikipedia.org/wiki/Host_(network) "Host (network)") to perform [name resolution](https://en.wikipedia.org/wiki/Hostname_resolution "Hostname resolution") for hosts on the same [local link](https://en.wikipedia.org/wiki/Local_area_network "Local area network") (only provided by [Windows Vista](https://en.wikipedia.org/wiki/Windows_Vista "Windows Vista") and [Server 2008](https://en.wikipedia.org/wiki/Server_2008 "Server 2008"))
+- 5357 TO 5357: [Web Services for Devices](https://en.wikipedia.org/wiki/Web_Services_for_Devices "Web Services for Devices") (WSDAPI) (starting from Windows Vista, Windows 7 and Server 2008) **(Unofficial use)**
+- 5358 TO 5358: [WSDAPI](https://en.wikipedia.org/wiki/Web_Services_for_Devices "Web Services for Devices") Applications to Use a Secure Channel (only provided by Windows Vista, Windows 7 and Server 2008) **(Unofficial use)**
+- 5394 TO 5394: Kega Fusion, a Sega multi-console emulator **(Unofficial use)**
+- 5402 TO 5402: [Multicast File Transfer Protocol](/w/index.php?title=Multicast_File_Transfer_Protocol&action=edit&redlink=1 "Multicast File Transfer Protocol (page does not exist)") (MFTP)
+- 5405 TO 5405: [NetSupport Manager](https://en.wikipedia.org/wiki/NetSupport_Manager "NetSupport Manager")
+- 5412 TO 5412: [IBM](https://en.wikipedia.org/wiki/IBM "IBM") Rational Synergy ([Telelogic Synergy](https://en.wikipedia.org/wiki/Telelogic_Synergy "Telelogic Synergy")) (Continuus CM) Message Router
+- 5413 TO 5413: [Wonderware](https://en.wikipedia.org/wiki/Wonderware "Wonderware") SuiteLink service
+- 5417 TO 5417: SNS Agent
+- 5421 TO 5421: [NetSupport Manager](https://en.wikipedia.org/wiki/NetSupport_Manager "NetSupport Manager")
+- 5432 TO 5432: [PostgreSQL](https://en.wikipedia.org/wiki/PostgreSQL "PostgreSQL") database system
+- 5433 TO 5433: Bouwsoft file/webserver **(Unofficial use)**
+- 5445 TO 5445: Cisco Unified Video Advantage **(Unofficial use)**
+- 5450 TO 5450: [OSIsoft](https://en.wikipedia.org/wiki/OSIsoft "OSIsoft") PI Server Client Access **(Unofficial use)**
+- 5457 TO 5457: [OSIsoft](https://en.wikipedia.org/wiki/OSIsoft "OSIsoft") PI Asset Framework Client Access **(Unofficial use)**
+- 5458 TO 5458: [OSIsoft](https://en.wikipedia.org/wiki/OSIsoft "OSIsoft") PI Notifications Client Access **(Unofficial use)**
+- 5480 TO 5480: [VMware](https://en.wikipedia.org/wiki/VMware "VMware") VAMI (Virtual Appliance Management Infrastructure)—used for initial setup of various administration settings on Virtual Appliances designed using the VAMI architecture. **(Unofficial use)**
+- 5481 TO 5481: [Schneider Electric](https://en.wikipedia.org/wiki/Schneider_Electric "Schneider Electric")'s ClearSCADA ([SCADA](https://en.wikipedia.org/wiki/SCADA "SCADA") implementation for Windows) — used for client-to-server communication. **(Unofficial use)**
+- 5495 TO 5495: [IBM Cognos TM1](https://en.wikipedia.org/wiki/TM1 "TM1") Admin server **(Unofficial use)**
+- 5498 TO 5498: [Hotline](https://en.wikipedia.org/wiki/Hotline_Communications "Hotline Communications") tracker server connection **(Unofficial use)**
+- 5499 TO 5499: Hotline tracker server discovery **(Unofficial use)**
+- 5500 TO 5500: Hotline control connection **(Unofficial use)**
+- 5500 TO 5500: [VNC](https://en.wikipedia.org/wiki/Virtual_Network_Computing "Virtual Network Computing") Remote Frame Buffer [RFB protocol](https://en.wikipedia.org/wiki/RFB_protocol "RFB protocol")—for incoming listening viewer **(Unofficial use)**
+- 5501 TO 5501: Hotline file transfer connection **(Unofficial use)**
+- 5517 TO 5517: [Setiqueue](https://en.wikipedia.org/wiki/SETI@home#Software "SETI@home") Proxy server client for [SETI@Home](https://en.wikipedia.org/wiki/SETI@Home "SETI@Home") project **(Unofficial use)**
+- 5550 TO 5550: [Hewlett-Packard](https://en.wikipedia.org/wiki/Hewlett-Packard "Hewlett-Packard") Data Protector **(Unofficial use)**
+- 5554 TO 5554: [Fastboot](https://en.wikipedia.org/wiki/Fastboot "Fastboot") default wireless port **(Unofficial use)**
+- 5555 TO 5555: [Oracle](https://en.wikipedia.org/wiki/Oracle_Corporation "Oracle Corporation") WebCenter Content: Inbound Refinery—Intradoc Socket port. (formerly known as Oracle [Universal Content Management](https://en.wikipedia.org/wiki/Universal_Content_Management "Universal Content Management")). Port though often changed during installation **(Unofficial use)**
+- 5555 TO 5555: [Freeciv](https://en.wikipedia.org/wiki/Freeciv "Freeciv") versions up to 2.0, [Hewlett-Packard](https://en.wikipedia.org/wiki/Hewlett-Packard "Hewlett-Packard") Data Protector, [McAfee EndPoint Encryption](https://en.wikipedia.org/wiki/Comparison_of_disk_encryption_software "Comparison of disk encryption software") Database Server, [SAP](https://en.wikipedia.org/wiki/Session_Announcement_Protocol "Session Announcement Protocol"), Default for Microsoft Dynamics CRM 4.0, Softether VPN default port **(Unofficial use)**
+- 5555 TO 5555: Wireless [adb](https://en.wikipedia.org/wiki/Android_Debug_Bridge "Android Debug Bridge") (Android Debug Bridge) control of an [Android](https://en.wikipedia.org/wiki/Android_(operating_system) "Android (operating system)") device over the network. **(Unofficial use)**
+- 5556 TO 5556: [Freeciv](https://en.wikipedia.org/wiki/Freeciv "Freeciv"), Oracle WebLogic Server Node Manager
+- 5568 TO 5568: Session Data Transport (SDT), a part of [Architecture for Control Networks](https://en.wikipedia.org/wiki/Architecture_for_Control_Networks "Architecture for Control Networks") (ACN)
+- 5601 TO 5601: [Kibana](https://en.wikipedia.org/wiki/Kibana "Kibana") **(Unofficial use)**
+- 5631 TO 5631: pcANYWHEREdata, [Symantec](https://en.wikipedia.org/wiki/NortonLifeLock "NortonLifeLock") [pcAnywhere](https://en.wikipedia.org/wiki/Pcanywhere "Pcanywhere") (version 7.52 and later) data
+- 5632 TO 5632: pcANYWHEREstat, Symantec pcAnywhere (version 7.52 and later) status
+- 5656 TO 5656: [IBM Lotus Sametime](https://en.wikipedia.org/wiki/IBM_Lotus_Sametime "IBM Lotus Sametime") p2p file transfer **(Unofficial use)**
+- 5666 TO 5666: [NRPE](https://en.wikipedia.org/wiki/NRPE "NRPE") ([Nagios](https://en.wikipedia.org/wiki/Nagios "Nagios")) **(Unofficial use)**
+- 5667 TO 5667: NSCA (Nagios) **(Unofficial use)**
+- 5670 TO 5670: [FILEMQ](/w/index.php?title=FILEMQ&action=edit&redlink=1 "FILEMQ (page does not exist)") ZeroMQ File Message Queuing Protocol
+- 5670 TO 5670: [ZRE-DISC](/w/index.php?title=ZRE-DISC&action=edit&redlink=1 "ZRE-DISC (page does not exist)") ZeroMQ Realtime Exchange Protocol (Discovery)
+- 5671 TO 5671: [Advanced Message Queuing Protocol](https://en.wikipedia.org/wiki/Advanced_Message_Queuing_Protocol "Advanced Message Queuing Protocol") (AMQP) over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")
+- 5672 TO 5672: Advanced Message Queuing Protocol (AMQP)
+- 5678 TO 5678: [n8n](/w/index.php?title=N8n&action=edit&redlink=1 "N8n (page does not exist)") **(Unofficial use)**
+- 5678 TO 5678: [MikroTik](https://en.wikipedia.org/wiki/MikroTik "MikroTik") Neighbor Discovery Protocol
+- 5683 TO 5683: [Constrained Application Protocol](https://en.wikipedia.org/wiki/Constrained_Application_Protocol "Constrained Application Protocol") (CoAP)
+- 5684 TO 5684: Constrained Application Protocol Secure (CoAPs)
+- 5693 TO 5693: [Nagios](https://en.wikipedia.org/wiki/Nagios "Nagios") Cross Platform Agent (NCPA) **(Unofficial use)**
+- 5701 TO 5701: [Hazelcast](https://en.wikipedia.org/wiki/Hazelcast "Hazelcast") default communication port **(Unofficial use)**
+- 5718 TO 5718: Microsoft DPM Data Channel (with the agent coordinator) **(Unofficial use)**
+- 5719 TO 5719: Microsoft DPM Data Channel (with the protection agent) **(Unofficial use)**
+- 5722 TO 5722: Microsoft RPC, DFSR (SYSVOL) Replication Service
+- 5723 TO 5723: [System Center Operations Manager](https://en.wikipedia.org/wiki/System_Center_Operations_Manager "System Center Operations Manager") **(Unofficial use)**
+- 5724 TO 5724: Operations Manager Console **(Unofficial use)**
+- 5741 TO 5741: IDA Discover Port 1
+- 5742 TO 5742: IDA Discover Port 2
+- 5800 TO 5800: [VNC](https://en.wikipedia.org/wiki/Virtual_Network_Computing "Virtual Network Computing") Remote Frame Buffer [RFB protocol](https://en.wikipedia.org/wiki/RFB_protocol "RFB protocol") over [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP") **(Unofficial use)**
+- 5800 TO 5800: [ProjectWise Server](https://en.wikipedia.org/wiki/ProjectWise "ProjectWise") **(Unofficial use)**
+- 5900 TO 5900: [Remote Frame Buffer protocol](https://en.wikipedia.org/wiki/RFB_protocol "RFB protocol") (RFB)
+- 5900 TO 5900: [Virtual Network Computing](https://en.wikipedia.org/wiki/Virtual_Network_Computing "Virtual Network Computing") (VNC) Remote Frame Buffer [RFB protocol](https://en.wikipedia.org/wiki/RFB_protocol "RFB protocol") **(Unofficial use)**
+- 5905 TO 5905: Windows service "C:\Program Files\Intel\Intel(R) Online Connect Access\IntelTechnologyAccessService.exe" that listens on 127.0.0.1 **(Unofficial use)**
+- 5931 TO 5931: [AMMYY](https://en.wikipedia.org/wiki/AMMYY "AMMYY") admin Remote Control
+- 5938 TO 5938: [TeamViewer](https://en.wikipedia.org/wiki/TeamViewer "TeamViewer") remote desktop protocol **(Unofficial use)**
+- 5984 TO 5984: [CouchDB](https://en.wikipedia.org/wiki/CouchDB "CouchDB") database server
+- 5985 TO 5985: [Windows PowerShell](https://en.wikipedia.org/wiki/Windows_PowerShell "Windows PowerShell") Default psSession Port [Windows Remote Management Service](https://en.wikipedia.org/wiki/WS-Management "WS-Management") (WinRM-HTTP)
+- 5986 TO 5986: Windows PowerShell Default psSession Port [Windows Remote Management Service](https://en.wikipedia.org/wiki/WS-Management "WS-Management") (WinRM-HTTPS)
+- 5988 TO 5989: [CIM](https://en.wikipedia.org/wiki/Common_Information_Model_(computing) "Common Information Model (computing)")-XML (DMTF Protocol)
+- 6000 TO 6063: [X11](https://en.wikipedia.org/wiki/X_Window_System "X Window System")—used between an X client and server over the network
+- 6005 TO 6005: Default for [BMC Software](https://en.wikipedia.org/wiki/BMC_Software "BMC Software") [Control-M/Server](https://en.wikipedia.org/wiki/BMC_Control-M "BMC Control-M")—Socket used for communication between Control-M processes—though often changed during installation **(Unofficial use)**
+- 6005 TO 6005: Default for [Camfrog](https://en.wikipedia.org/wiki/Camfrog "Camfrog") chat & cam client **(Unofficial use)**
+- 6009 TO 6009: [JD Edwards EnterpriseOne](https://en.wikipedia.org/wiki/JD_Edwards_EnterpriseOne "JD Edwards EnterpriseOne") ERP system JDENet messaging client listener **(Unofficial use)**
+- 6024 TO 6025: Tigermeeting Android client discovery **(Unofficial use)**
+- 6026 TO 6026: Tigermeeting client/server communication **(Unofficial use)**
+- 6030 TO 6031: Tigermeeting Admin user discovery **(Unofficial use)**
+- 6032 TO 6032: Tigermeeting API for cloud management - TigerDriver **(Unofficial use)**
+- 6050 TO 6050: [Arcserve](https://en.wikipedia.org/wiki/Arcserve "Arcserve") backup **(Unofficial use)**
+- 6051 TO 6051: Arcserve backup **(Unofficial use)**
+- 6081 TO 6081: [Generic Network Virtualization Encapsulation](https://en.wikipedia.org/wiki/Generic_Network_Virtualization_Encapsulation "Generic Network Virtualization Encapsulation") (Geneve)
+- 6086 TO 6086: [Peer Distributed Transfer Protocol](https://en.wikipedia.org/wiki/Peer_Distributed_Transfer_Protocol "Peer Distributed Transfer Protocol") (PDTP), FTP like file server in a P2P network
+- 6100 TO 6100: [Vizrt](https://en.wikipedia.org/wiki/Vizrt "Vizrt") System **(Unofficial use)**
+- 6100 TO 6100: [Ventrilo](https://en.wikipedia.org/wiki/Ventrilo "Ventrilo") authentication for version 3 **(Unofficial use)**
+- 6101 TO 6101: Backup Exec Agent Browser **(Unofficial use)**
+- 6110 TO 6110: softcm, [HP](https://en.wikipedia.org/wiki/Hewlett-Packard "Hewlett-Packard") [Softbench](https://en.wikipedia.org/wiki/Softbench "Softbench") CM
+- 6111 TO 6111: spc, [HP](https://en.wikipedia.org/wiki/Hewlett-Packard "Hewlett-Packard") [Softbench](https://en.wikipedia.org/wiki/Softbench "Softbench") Sub-Process Control
+- 6112 TO 6112: dtspcd, execute commands and launch applications remotely
+- 6112 TO 6112: [Blizzard](https://en.wikipedia.org/wiki/Blizzard_Entertainment "Blizzard Entertainment")'s [Battle.net](https://en.wikipedia.org/wiki/Battle.net "Battle.net") gaming service and some games, [ArenaNet](https://en.wikipedia.org/wiki/ArenaNet "ArenaNet") gaming service, [Relic](https://en.wikipedia.org/wiki/Relic_Entertainment "Relic Entertainment") gaming service **(Unofficial use)**
+- 6112 TO 6112: [Club Penguin](https://en.wikipedia.org/wiki/Club_Penguin "Club Penguin") Disney online game for kids **(Unofficial use)**
+- 6113 TO 6113: [Club Penguin](https://en.wikipedia.org/wiki/Club_Penguin "Club Penguin") Disney online game for kids, Used by some [Blizzard](https://en.wikipedia.org/wiki/Blizzard_Entertainment "Blizzard Entertainment") games **(Unofficial use)**
+- 6121 TO 6122: Lacewing networking extensions used in Clickteam Fusion. **(Unofficial use)**
+- 6136 TO 6136: [ObjectDB](https://en.wikipedia.org/wiki/ObjectDB "ObjectDB") database server **(Unofficial use)**
+- 6159 TO 6159: [ARINC](https://en.wikipedia.org/wiki/ARINC "ARINC") 840 [EFB](https://en.wikipedia.org/wiki/Electronic_flight_bag "Electronic flight bag") Application Control Interface
+- 6160 TO 6160: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") Installer Service **(Unofficial use)**
+- 6161 TO 6161: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") vPower NFS Service **(Unofficial use)**
+- 6162 TO 6162: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") Data Mover **(Unofficial use)**
+- 6163 TO 6163: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") Hyper-V Integration Service **(Unofficial use)**
+- 6164 TO 6164: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") WAN Accelerator **(Unofficial use)**
+- 6165 TO 6165: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") WAN Accelerator Data Transfer **(Unofficial use)**
+- 6167 TO 6167: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") Log Shipping Service **(Unofficial use)**
+- 6170 TO 6170: [Veeam](https://en.wikipedia.org/wiki/Veeam "Veeam") Mount Server **(Unofficial use)**
+- 6200 TO 6200: [Oracle WebCenter](https://en.wikipedia.org/wiki/Oracle_WebCenter "Oracle WebCenter") Content Portable: Content Server (With Native UI) and Inbound Refinery **(Unofficial use)**
+- 6201 TO 6201: Thermo-Calc Software AB: Management of service nodes in a processing grid for thermodynamic calculations
+- 6201 TO 6201: Oracle WebCenter Content Portable: Admin **(Unofficial use)**
+- 6225 TO 6225: Oracle WebCenter Content Portable: Content Server Web UI **(Unofficial use)**
+- 6227 TO 6227: Oracle WebCenter Content Portable: JavaDB **(Unofficial use)**
+- 6240 TO 6240: Oracle WebCenter Content Portable: Capture **(Unofficial use)**
+- 6244 TO 6244: Oracle WebCenter Content Portable: Content Server—Intradoc Socket port **(Unofficial use)**
+- 6255 TO 6255: Oracle WebCenter Content Portable: Inbound Refinery—Intradoc Socket port **(Unofficial use)**
+- 6257 TO 6257: [WinMX](https://en.wikipedia.org/wiki/WinMX "WinMX") (see also 6699) **(Unofficial use)**
+- 6260 TO 6260: planet M.U.L.E. **(Unofficial use)**
+- 6262 TO 6262: Sybase [Advantage Database Server](https://en.wikipedia.org/wiki/Advantage_Database_Server "Advantage Database Server") **(Unofficial use)**
+- 6343 TO 6343: [SFlow](https://en.wikipedia.org/wiki/SFlow "SFlow"), sFlow traffic monitoring
+- 6346 TO 6346: [gnutella-svc](https://en.wikipedia.org/wiki/Gnutella "Gnutella"), gnutella ([FrostWire](https://en.wikipedia.org/wiki/FrostWire "FrostWire"), [Limewire](https://en.wikipedia.org/wiki/Limewire "Limewire"), [Shareaza](https://en.wikipedia.org/wiki/Shareaza "Shareaza"), etc.)
+- 6347 TO 6347: gnutella-rtr, Gnutella alternate
+- 6350 TO 6350: App Discovery and Access Protocol
+- 6379 TO 6379: [Redis](https://en.wikipedia.org/wiki/Redis "Redis") key-value data store
+- 6389 TO 6389: [EMC](https://en.wikipedia.org/wiki/EMC_Corporation "EMC Corporation") [CLARiiON](https://en.wikipedia.org/wiki/CLARiiON "CLARiiON") **(Unofficial use)**
+- 6432 TO 6432: PgBouncer—A connection pooler for PostgreSQL
+- 6436 TO 6436: [Leap Motion](https://en.wikipedia.org/wiki/Leap_Motion "Leap Motion") Websocket Server TLS **(Unofficial use)**
+- 6437 TO 6437: Leap Motion Websocket Server **(Unofficial use)**
+- 6443 TO 6443: [Kubernetes](https://en.wikipedia.org/wiki/Kubernetes "Kubernetes") API server
+- 6444 TO 6444: [Sun Grid Engine](https://en.wikipedia.org/wiki/Sun_Grid_Engine "Sun Grid Engine") Qmaster Service
+- 6445 TO 6445: Sun Grid Engine Execution Service
+- 6454 TO 6454: [Art-Net](https://en.wikipedia.org/wiki/Art-Net "Art-Net") protocol **(Unofficial use)**
+- 6463 TO 6472: [Discord](https://en.wikipedia.org/wiki/Discord_(software) "Discord (software)") RPC **(Unofficial use)**
+- 6464 TO 6464: Port assignment for medical device communication in accordance to [IEEE 11073-20701](https://en.wikipedia.org/wiki/ISO/IEEE_11073 "ISO/IEEE 11073")
+- 6513 TO 6513: [NETCONF](https://en.wikipedia.org/wiki/NETCONF "NETCONF") over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")
+- 6514 TO 6514: Syslog over TLS
+- 6515 TO 6515: [Elipse](https://en.wikipedia.org/wiki/Elipse_Software "Elipse Software") RPC Protocol (REC)
+- 6516 TO 6516: [Windows Admin Center](https://en.wikipedia.org/wiki/Windows_Admin_Center "Windows Admin Center") **(Unofficial use)**
+- 6543 TO 6543: [Pylons project#Pyramid](https://en.wikipedia.org/wiki/Pylons_project#Pyramid "Pylons project") Default Pylons Pyramid web service port **(Unofficial use)**
+- 6556 TO 6556: [Check MK](https://en.wikipedia.org/wiki/Check_MK "Check MK") Agent **(Unofficial use)**
+- 6566 TO 6566: [SANE](https://en.wikipedia.org/wiki/Scanner_Access_Now_Easy "Scanner Access Now Easy") (Scanner Access Now Easy)—SANE network scanner daemon
+- 6560 TO 6561: [Speech-Dispatcher](/w/index.php?title=Speech-Dispatcher&action=edit&redlink=1 "Speech-Dispatcher (page does not exist)") daemon **(Unofficial use)**
+- 6571 TO 6571: [Windows Live FolderShare](https://en.wikipedia.org/wiki/Windows_Live_FolderShare "Windows Live FolderShare") client **(Unofficial use)**
+- 6600 TO 6600: Microsoft [Hyper-V](https://en.wikipedia.org/wiki/Hyper-V "Hyper-V") Live
+- 6600 TO 6600: [Music Player Daemon](https://en.wikipedia.org/wiki/Music_Player_Daemon "Music Player Daemon") (MPD) **(Unofficial use)**
+- 6601 TO 6601: [Microsoft Forefront Threat Management Gateway](https://en.wikipedia.org/wiki/Microsoft_Forefront_Threat_Management_Gateway "Microsoft Forefront Threat Management Gateway")
+- 6602 TO 6602: Microsoft Windows WSS Communication
+- 6619 TO 6619: odette-ftps, [Odette File Transfer Protocol](https://en.wikipedia.org/wiki/OFTP "OFTP") ([OFTP](https://en.wikipedia.org/wiki/OFTP "OFTP")) over [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security "Transport Layer Security")/[SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer")
+- 6622 TO 6622: Multicast FTP
+- 6626 TO 6626: Semaphore Messenger
+- 6653 TO 6653: [OpenFlow](https://en.wikipedia.org/wiki/OpenFlow "OpenFlow")
+- 6660 TO 6664: [Internet Relay Chat](https://en.wikipedia.org/wiki/Internet_Relay_Chat "Internet Relay Chat") (IRC) **(Unofficial use)**
+- 6665 TO 6669: Internet Relay Chat (IRC)
+- 6679 TO 6679: Osorno Automation Protocol (OSAUT)
+- 6679 TO 6679: Internet Relay Chat (IRC) [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") (Secure Internet Relay Chat)—often used **(Unofficial use)**
+- 6690 TO 6690: Synology Cloud station **(Unofficial use)**
+- 6697 TO 6697: IRC SSL (Secure Internet Relay Chat)—often used
+- 6699 TO 6699: [WinMX](https://en.wikipedia.org/wiki/WinMX "WinMX") (see also 6257) **(Unofficial use)**
+- 6715 TO 6715: AberMUD and derivatives default port **(Unofficial use)**
+- 6771 TO 6771: BitTorrent [Local Peer Discovery](https://en.wikipedia.org/wiki/Local_Peer_Discovery "Local Peer Discovery") **(Unofficial use)**
+- 6783 TO 6785: [Splashtop Remote](https://en.wikipedia.org/wiki/Splashtop_Remote "Splashtop Remote") server broadcast **(Unofficial use)**
+- 6801 TO 6801: ACNET Control System Protocol
+- 6881 TO 6887: [BitTorrent](https://en.wikipedia.org/wiki/BitTorrent "BitTorrent") beginning of range of ports used most often **(Unofficial use)**
+- 6888 TO 6888: MUSE
+- 6888 TO 6888: BitTorrent continuation of range of ports used most often **(Unofficial use)**
+- 6889 TO 6900: BitTorrent continuation of range of ports used most often **(Unofficial use)**
+- 6891 TO 6900: [Windows Live Messenger](https://en.wikipedia.org/wiki/Windows_Live_Messenger "Windows Live Messenger") (File transfer) **(Unofficial use)**
+- 6901 TO 6901: Windows Live Messenger (Voice) **(Unofficial use)**
+- 6901 TO 6901: BitTorrent continuation of range of ports used most often **(Unofficial use)**
+- 6902 TO 6968: BitTorrent continuation of range of ports used most often **(Unofficial use)**
+- 6924 TO 6924: split-ping, ping with RX/TX latency/loss split
+- 6935 TO 6935: EthoScan Service
+- 6936 TO 6936: XenSource Management Service
+- 6969 TO 6969: acmsoda
+- 6969 TO 6969: [BitTorrent tracker](https://en.wikipedia.org/wiki/BitTorrent_tracker "BitTorrent tracker") **(Unofficial use)**
+- 6970 TO 6999: BitTorrent end of range of ports used most often **(Unofficial use)**
+- 6970 TO 6999: [QuickTime Streaming Server](https://en.wikipedia.org/wiki/QuickTime_Streaming_Server "QuickTime Streaming Server") **(Unofficial use)**
+- 6980 TO 6980: Voicemeeter VBAN network audio protocol **(Unofficial use)**
+- 7000 TO 7000: Default for [Vuze](https://en.wikipedia.org/wiki/Vuze "Vuze")'s built-in [HTTPS](https://en.wikipedia.org/wiki/HTTPS "HTTPS") Bittorrent tracker **(Unofficial use)**
+- 7000 TO 7000: [Avira](https://en.wikipedia.org/wiki/Avira "Avira") Server Management Console **(Unofficial use)**
+- 7001 TO 7001: Avira Server Management Console **(Unofficial use)**
+- 7001 TO 7001: Default for [BEA](https://en.wikipedia.org/wiki/BEA_Systems "BEA Systems") [WebLogic Server](https://en.wikipedia.org/wiki/WebLogic "WebLogic")'s [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP") server, though often changed during installation **(Unofficial use)**
+- 7002 TO 7002: Default for BEA WebLogic Server's HTTPS server, though often changed during installation **(Unofficial use)**
+- 7005 TO 7005: Default for [BMC Software](https://en.wikipedia.org/wiki/BMC_Software "BMC Software") [Control-M/Server](https://en.wikipedia.org/wiki/BMC_Control-M "BMC Control-M") and Control-M/Agent for Agent-to-Server, though often changed during installation **(Unofficial use)**
+- 7006 TO 7006: Default for BMC Software Control-M/Server and Control-M/Agent for Server-to-Agent, though often changed during installation **(Unofficial use)**
+- 7010 TO 7010: Default for Cisco AON AMC (AON Management Console) **(Unofficial use)**
+- 7022 TO 7022: MSSQL Server Replication and Database mirroring endpoints **(Unofficial use)**
+- 7023 TO 7023: Bryan Wilcutt T2-NMCS Protocol for SatCom Modems
+- 7025 TO 7025: Zimbra [LMTP](https://en.wikipedia.org/wiki/Local_Mail_Transfer_Protocol "Local Mail Transfer Protocol") [mailbox]—local mail delivery **(Unofficial use)**
+- 7047 TO 7047: [Zimbra](https://en.wikipedia.org/wiki/Zimbra "Zimbra") conversion server **(Unofficial use)**
+- 7070 TO 7070: [Real Time Streaming Protocol](https://en.wikipedia.org/wiki/Real_Time_Streaming_Protocol "Real Time Streaming Protocol") (RTSP), used by [QuickTime Streaming Server](https://en.wikipedia.org/wiki/QuickTime_Streaming_Server "QuickTime Streaming Server"). TCP is used by default, UDP is used as an alternate. **(Unofficial use)**
+- 7077 TO 7077: Development-Network Authentification-Protocol
+- 7133 TO 7133: [Enemy Territory: Quake Wars](https://en.wikipedia.org/wiki/Enemy_Territory:_Quake_Wars "Enemy Territory: Quake Wars") **(Unofficial use)**
+- 7144 TO 7144: Peercast **(Unofficial use)**
+- 7145 TO 7145: Peercast **(Unofficial use)**
+- 7171 TO 7171: [Tibia](https://en.wikipedia.org/wiki/Tibia_(computer_game) "Tibia (computer game)") **(Unofficial use)**
+- 7262 TO 7262: CNAP (Calypso Network Access Protocol)
+- 7272 TO 7272: WatchMe – WatchMe Monitoring
+- 7306 TO 7306: Zimbra mysql [mailbox] **(Unofficial use)**
+- 7307 TO 7307: Zimbra mysql [logger] **(Unofficial use)**
+- 7312 TO 7312: [Sibelius](https://en.wikipedia.org/wiki/Sibelius_notation_program "Sibelius notation program") License Server **(Unofficial use)**
+- 7396 TO 7396: Web control interface for [Folding@home v7.3.6](https://en.wikipedia.org/wiki/Folding@home#V7 "Folding@home") and later **(Unofficial use)**
+- 7400 TO 7400: RTPS (Real Time Publish Subscribe) [DDS](https://en.wikipedia.org/wiki/Data_Distribution_Service "Data Distribution Service") Discovery
+- 7401 TO 7401: RTPS (Real Time Publish Subscribe) [DDS](https://en.wikipedia.org/wiki/Data_Distribution_Service "Data Distribution Service") User-Traffic
+- 7402 TO 7402: RTPS (Real Time Publish Subscribe) [DDS](https://en.wikipedia.org/wiki/Data_Distribution_Service "Data Distribution Service") Meta-Traffic
+- 7471 TO 7471: Stateless Transport Tunneling (STT) **(Unofficial use)**
+- 7473 TO 7473: [Rise: The Vieneo Province](https://en.wikipedia.org/wiki/Rise:_The_Vieneo_Province "Rise: The Vieneo Province")
+- 7474 TO 7474: Neo4J Server webadmin
+- 7478 TO 7478: Default port used by [Open iT](https://en.wikipedia.org/wiki/Open_iT "Open iT") Server.
+- 7542 TO 7542: *Saratoga* file transfer protocol
+- 7547 TO 7547: CPE WAN Management Protocol (CWMP) [Technical Report 069](https://en.wikipedia.org/wiki/TR-069 "TR-069")
+- 7575 TO 7575: [Populous: The Beginning](https://en.wikipedia.org/wiki/Populous:_The_Beginning "Populous: The Beginning") server **(Unofficial use)**
+- 7624 TO 7624: [Instrument Neutral Distributed Interface](https://en.wikipedia.org/wiki/Instrument_Neutral_Distributed_Interface "Instrument Neutral Distributed Interface")
+- 7631 TO 7631: ERLPhase
+- 7634 TO 7634: hddtemp—Utility to monitor hard drive temperature **(Unofficial use)**
+- 7652 TO 7654: [I2P](https://en.wikipedia.org/wiki/I2P "I2P") anonymizing overlay network **(Unofficial use)**
+- 7655 TO 7655: I2P SAM Bridge Socket API **(Unofficial use)**
+- 7656 TO 7660: I2P anonymizing overlay network **(Unofficial use)**
+- 7659 TO 7659: [Polypheny](/w/index.php?title=Polypheny&action=edit&redlink=1 "Polypheny (page does not exist)") User Interface (database system) **(Unofficial use)**
+- 7670 TO 7670: [BrettspielWelt](https://en.wikipedia.org/wiki/BrettspielWelt "BrettspielWelt") BSW Boardgame Portal **(Unofficial use)**
+- 7680 TO 7680: Delivery Optimization for [Windows 10](https://en.wikipedia.org/wiki/Windows_10 "Windows 10") **(Unofficial use)**
+- 7687 TO 7687: [Bolt](https://en.wikipedia.org/wiki/Bolt_(network_protocol) "Bolt (network protocol)") database connection
+- 7707 TO 7708: *[Killing Floor](https://en.wikipedia.org/wiki/Killing_Floor_(2009_video_game) "Killing Floor (2009 video game)")* **(Unofficial use)**
+- 7717 TO 7717: *Killing Floor* **(Unofficial use)**
+- 7745 TO 7745: HomeBox **(Unofficial use)**
+- 7777 TO 7777: [iChat](https://en.wikipedia.org/wiki/IChat "IChat") server file transfer proxy **(Unofficial use)**
+- 7777 TO 7777: Oracle Cluster File System 2 **(Unofficial use)**
+- 7777 TO 7777: Windows backdoor program tini.exe default **(Unofficial use)**
+- 7777 TO 7777: *Just Cause 2: Multiplayer Mod* Server **(Unofficial use)**
+- 7777 TO 7777: *[Terraria](https://en.wikipedia.org/wiki/Terraria "Terraria")* default server **(Unofficial use)**
+- 7777 TO 7777: *Super Foosball* multiplayer gameplay port **(Unofficial use)**
+- 7777 TO 7777: *San Andreas Multiplayer* (SA-MP) default port server **(Unofficial use)**
+- 7777 TO 7777: *SCP: Secret Laboratory* Multiplayer Server **(Unofficial use)**
+- 7777 TO 7788: *Steam* common default game server ports (Ark, L4D2, etc.)
+- 7777 TO 7788: *Unreal Tournament* series default server **(Unofficial use)**
+- 7831 TO 7831: Default used by Smartlaunch Internet Cafe Administration software **(Unofficial use)**
+- 7880 TO 7880: PowerSchool Gradebook Server
+- 7890 TO 7890: Default that will be used by the iControl Internet Cafe Suite Administration software **(Unofficial use)**
+- 7915 TO 7915: Default for YSFlight server **(Unofficial use)**
+- 7935 TO 7935: Fixed port used for Adobe Flash Debug Player to communicate with a debugger (Flash IDE, Flex Builder or fdb). **(Unofficial use)**
+- 7946 TO 7946: Docker Swarm communication among nodes **(Unofficial use)**
+- 7979 TO 7979: Used by SilverBluff Studios for communication between servers and clients. **(Unofficial use)**
+- 7990 TO 7990: Atlassian [Bitbucket](https://en.wikipedia.org/wiki/Bitbucket "Bitbucket") (default port) **(Unofficial use)**
+- 8000 TO 8000: Commonly used for Internet radio streams such as [SHOUTcast](https://en.wikipedia.org/wiki/SHOUTcast "SHOUTcast"), [Icecast](https://en.wikipedia.org/wiki/Icecast "Icecast") and [iTunes Radio](https://en.wikipedia.org/wiki/ITunes_Radio "ITunes Radio") **(Unofficial use)**
+- 8000 TO 8000: [DynamoDB](https://en.wikipedia.org/wiki/DynamoDB "DynamoDB") Local **(Unofficial use)**
+- 8000 TO 8000: [Django](https://en.wikipedia.org/wiki/Django_(web_framework) "Django (web framework)") Development Webserver **(Unofficial use)**
+- 8000 TO 8000: [Python 3](https://en.wikipedia.org/wiki/Python_3 "Python 3") http.server **(Unofficial use)**
+- 8005 TO 8005: [Tomcat](https://en.wikipedia.org/wiki/Apache_Tomcat "Apache Tomcat") remote shutdown **(Unofficial use)**
+- 8005 TO 8005: [PLATO](https://en.wikipedia.org/wiki/PLATO_(computer_system) "PLATO (computer system)") ASCII protocol (RFC 600) **(Unofficial use)**
+- 8005 TO 8005: Windows SCCM HTTP listener service **(Unofficial use)**
+- 8006 TO 8006: [Quest AppAssure](https://en.wikipedia.org/wiki/Quest_AppAssure "Quest AppAssure") 5 API **(Unofficial use)**
+- 8006 TO 8006: [Proxmox Virtual Environment](https://en.wikipedia.org/wiki/Proxmox_Virtual_Environment "Proxmox Virtual Environment") admin web interface **(Unofficial use)**
+- 8007 TO 8007: Quest AppAssure 5 Engine **(Unofficial use)**
+- 8007 TO 8007: [Proxmox Backup Server](https://en.wikipedia.org/wiki/Proxmox_Backup_Server "Proxmox Backup Server") admin web interface
+- 8008 TO 8008: Alternative port for [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP"). See also ports 80 and 8080. **(Unofficial use)**
+- 8008 TO 8008: [IBM HTTP Server](https://en.wikipedia.org/wiki/IBM_HTTP_Server "IBM HTTP Server") administration default **(Unofficial use)**
+- 8008 TO 8008: [iCal](https://en.wikipedia.org/wiki/ICal "ICal"), a calendar application by [Apple](https://en.wikipedia.org/wiki/Apple,_Inc. "Apple, Inc.") **(Unofficial use)**
+- 8008 TO 8008: [Matrix](https://en.wikipedia.org/wiki/Matrix_(protocol) "Matrix (protocol)") homeserver federation over HTTP **(Unofficial use)**
+- 8009 TO 8009: [Apache JServ Protocol](https://en.wikipedia.org/wiki/Apache_JServ_Protocol "Apache JServ Protocol") (`ajp13`) **(Unofficial use)**
+- 8010 TO 8010: [Buildbot](https://en.wikipedia.org/wiki/Buildbot "Buildbot") web status page **(Unofficial use)**
+- 8042 TO 8042: [Orthanc](https://en.wikipedia.org/wiki/Orthanc_(software) "Orthanc (software)") – REST API over HTTP **(Unofficial use)**
+- 8061 TO 8061: Nikatron Device Protocol (nikatron-dev)
+- 8069 TO 8069: [OpenERP](https://en.wikipedia.org/wiki/OpenERP "OpenERP") 5.0 XML-RPC protocol **(Unofficial use)**
+- 8070 TO 8070: OpenERP 5.0 NET-RPC protocol **(Unofficial use)**
+- 8074 TO 8074: [Gadu-Gadu](https://en.wikipedia.org/wiki/Gadu-Gadu "Gadu-Gadu")
+- 8075 TO 8075: *Killing Floor* web administration interface **(Unofficial use)**
+- 8080 TO 8080: Alternative port for [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP"). See also ports 80 and 8008.
+- 8080 TO 8080: [Apache Tomcat](https://en.wikipedia.org/wiki/Apache_Tomcat "Apache Tomcat") **(Unofficial use)**
+- 8080 TO 8080: [Atlassian JIRA](https://en.wikipedia.org/wiki/Jira_(software) "Jira (software)") applications **(Unofficial use)**
+- 8081 TO 8081: Sun Proxy Admin Service
+- 8088 TO 8088: [Asterisk](https://en.wikipedia.org/wiki/Asterisk_(PBX) "Asterisk (PBX)") management access via HTTP **(Unofficial use)**
+- 8088 TO 8088: [YARN](https://en.wikipedia.org/wiki/Apache_Hadoop "Apache Hadoop") ResourceManager Web UI **(Unofficial use)**
+- 8089 TO 8089: [Splunk](https://en.wikipedia.org/wiki/Splunk "Splunk") daemon management **(Unofficial use)**
+- 8089 TO 8089: [Fritz!Box](https://en.wikipedia.org/wiki/Fritz!Box "Fritz!Box") automatic [TR-069](https://en.wikipedia.org/wiki/TR-069 "TR-069") configuration **(Unofficial use)**
+- 8090 TO 8090: [Atlassian Confluence](https://en.wikipedia.org/wiki/Atlassian_Confluence "Atlassian Confluence") **(Unofficial use)**
+- 8090 TO 8090: Coral Content Distribution Network (legacy; 80 and 8080 now supported) **(Unofficial use)**
+- 8090 TO 8090: Matrix identity server **(Unofficial use)**
+- 8091 TO 8091: [CouchBase](https://en.wikipedia.org/wiki/CouchBase "CouchBase") web administration **(Unofficial use)**
+- 8092 TO 8092: CouchBase API **(Unofficial use)**
+- 8096 TO 8096: [Emby](https://en.wikipedia.org/wiki/Emby "Emby") and [Jellyfin](https://en.wikipedia.org/wiki/Jellyfin "Jellyfin") HTTP port **(Unofficial use)**
+- 8100 TO 8100: SaltoSystems - Pro Access Space Service **(Unofficial use)**
+- 8100 TO 8100: BlueMap, a 3D Minecraft web viewer and mapping tool **(Unofficial use)**
+- 8102 TO 8102: SaltoSystems - Used for LocalIO-Bridge for USB-Devices **(Unofficial use)**
+- 8111 TO 8111: [JOSM](https://en.wikipedia.org/wiki/JOSM "JOSM") Remote Control **(Unofficial use)**
+- 8112 TO 8112: PAC Pacifica Coin **(Unofficial use)**
+- 8116 TO 8116: [Check Point](https://en.wikipedia.org/wiki/Check_Point "Check Point") Cluster Control Protocol **(Unofficial use)**
+- 8118 TO 8118: [Privoxy](https://en.wikipedia.org/wiki/Privoxy "Privoxy")—advertisement-filtering Web proxy
+- 8123 TO 8123: [Polipo](https://en.wikipedia.org/wiki/Polipo "Polipo") Web proxy **(Unofficial use)**
+- 8123 TO 8123: [Home Assistant](https://en.wikipedia.org/wiki/Home_Assistant "Home Assistant") Home automation **(Unofficial use)**
+- 8123 TO 8123: [Minecraft](https://en.wikipedia.org/wiki/Minecraft "Minecraft") Dynmap plugin/mod **(Unofficial use)**
+- 8124 TO 8124:  **(Unofficial use)**
+- 8125 TO 8125: StatsD server **(Unofficial use)**
+- 8139 TO 8139: [Puppet (software)](https://en.wikipedia.org/wiki/Puppet_(software) "Puppet (software)") Client agent **(Unofficial use)**
+- 8140 TO 8140: Puppet (software) Master server
+- 8172 TO 8172: [Microsoft](https://en.wikipedia.org/wiki/Microsoft "Microsoft") Remote Administration for IIS Manager **(Unofficial use)**
+- 8181 TO 8186: [FRITZ!Box](https://en.wikipedia.org/wiki/FRITZ!Box "FRITZ!Box") services **(Unofficial use)**
+- 8184 TO 8184: [NCSA Brown Dog](https://en.wikipedia.org/wiki/NCSA_Brown_Dog "NCSA Brown Dog") Data Access Proxy **(Unofficial use)**
+- 8188 TO 8188: [ComfyUI](https://en.wikipedia.org/wiki/ComfyUI "ComfyUI") Web Interface **(Unofficial use)**
+- 8194 TO 8195: [Bloomberg Terminal](https://en.wikipedia.org/wiki/Bloomberg_Terminal "Bloomberg Terminal")
+- 8200 TO 8200: [GoToMyPC](https://en.wikipedia.org/wiki/GoToMyPC "GoToMyPC") **(Unofficial use)**
+- 8200 TO 8200: MiniDLNA media server Web Interface **(Unofficial use)**
+- 8200 TO 8200: Elastic APM Server **(Unofficial use)**
+- 8222 TO 8222: [VMware](https://en.wikipedia.org/wiki/VMware "VMware") VI Web Access via HTTP **(Unofficial use)**
+- 8236 TO 8236: jRCS listener for [Rocket Software](https://en.wikipedia.org/wiki/Rocket_Software "Rocket Software") jBASE Remote Connectivity Server **(Unofficial use)**
+- 8243 TO 8243: [HTTPS](https://en.wikipedia.org/wiki/HTTPS "HTTPS") listener for Apache Synapse
+- 8245 TO 8245: [Dynamic DNS](https://en.wikipedia.org/wiki/Dynamic_DNS "Dynamic DNS") for at least [No-IP](https://en.wikipedia.org/wiki/No-IP "No-IP") and DynDNS **(Unofficial use)**
+- 8280 TO 8280: [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP") listener for Apache Synapse
+- 8281 TO 8281: HTTP Listener for Gatecraft Plugin **(Unofficial use)**
+- 8291 TO 8291: Winbox—Default on a MikroTik RouterOS for a Windows application used to administer MikroTik RouterOS **(Unofficial use)**
+- 8303 TO 8303: [Teeworlds](https://en.wikipedia.org/wiki/Teeworlds "Teeworlds") Server **(Unofficial use)**
+- 8332 TO 8332: [Bitcoin](https://en.wikipedia.org/wiki/Bitcoin "Bitcoin") [JSON-RPC](https://en.wikipedia.org/wiki/JSON-RPC "JSON-RPC") server **(Unofficial use)**
+- 8333 TO 8333: [Bitcoin](https://en.wikipedia.org/wiki/Bitcoin "Bitcoin") **(Unofficial use)**
+- 8333 TO 8333: [VMware](https://en.wikipedia.org/wiki/VMware "VMware") VI Web Access via HTTPS **(Unofficial use)**
+- 8334 TO 8334: [Filestash](/w/index.php?title=Filestash&action=edit&redlink=1 "Filestash (page does not exist)") server (default) **(Unofficial use)**
+- 8337 TO 8337: VisualSVN Distributed File System Service (VDFS) **(Unofficial use)**
+- 8384 TO 8384: [Syncthing](https://en.wikipedia.org/wiki/Syncthing "Syncthing") web GUI **(Unofficial use)**
+- 8388 TO 8388: [Shadowsocks](https://en.wikipedia.org/wiki/Shadowsocks "Shadowsocks") proxy server **(Unofficial use)**
+- 8400 TO 8400: Commvault Communications Service (GxCVD, found in all client computers)
+- 8401 TO 8401: Commvault Server Event Manager (GxEvMgrS, available in CommServe)
+- 8403 TO 8403: Commvault Firewall (GxFWD, tunnel port for HTTP/HTTPS)
+- 8443 TO 8443: [SW Soft Plesk](https://en.wikipedia.org/wiki/SW_Soft_Plesk "SW Soft Plesk") Control Panel **(Unofficial use)**
+- 8443 TO 8443: [Apache Tomcat](https://en.wikipedia.org/wiki/Apache_Tomcat "Apache Tomcat") SSL **(Unofficial use)**
+- 8443 TO 8443: Promise WebPAM SSL **(Unofficial use)**
+- 8443 TO 8443: [iCal](https://en.wikipedia.org/wiki/ICal "ICal") over [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") **(Unofficial use)**
+- 8443 TO 8443: [MineOs](/w/index.php?title=MineOs&action=edit&redlink=1 "MineOs (page does not exist)") WebUi **(Unofficial use)**
+- 8444 TO 8444: [Bitmessage](https://en.wikipedia.org/wiki/Bitmessage "Bitmessage") **(Unofficial use)**
+- 8444 TO 8444: [Chia](https://en.wikipedia.org/wiki/Chia_(cryptocurrency) "Chia (cryptocurrency)") **(Unofficial use)**
+- 8448 TO 8448: Matrix homeserver federation over HTTPS
+- 8484 TO 8484: [MapleStory](https://en.wikipedia.org/wiki/MapleStory "MapleStory") Login Server **(Unofficial use)**
+- 8500 TO 8500: [Adobe ColdFusion](https://en.wikipedia.org/wiki/Adobe_ColdFusion "Adobe ColdFusion") built-in web server **(Unofficial use)**
+- 8501 TO 8501: [Streamlit](/w/index.php?title=Streamlit&action=edit&redlink=1 "Streamlit (page does not exist)") Open-source Python framework for machine learning and data science **(Unofficial use)**
+- 8530 TO 8530: [Windows Server Update Services](https://en.wikipedia.org/wiki/Windows_Server_Update_Services "Windows Server Update Services") over [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP"), when using the default role installation settings in Windows Server 2012 and later versions. **(Unofficial use)**
+- 8531 TO 8531: [Windows Server Update Services](https://en.wikipedia.org/wiki/Windows_Server_Update_Services "Windows Server Update Services") over [HTTPS](https://en.wikipedia.org/wiki/HTTPS "HTTPS"), when using the default role installation settings in Windows Server 2012 and later versions. **(Unofficial use)**
+- 8555 TO 8555: Symantec DLP OCR Engine **(Unofficial use)**
+- 8555 TO 8555: [Chia](https://en.wikipedia.org/wiki/Chia_(cryptocurrency) "Chia (cryptocurrency)") [JSON-RPC](https://en.wikipedia.org/wiki/JSON-RPC "JSON-RPC") server **(Unofficial use)**
+- 8580 TO 8580: [Freegate](https://en.wikipedia.org/wiki/Freegate "Freegate"), an Internet [anonymizer](https://en.wikipedia.org/wiki/Anonymizer "Anonymizer") and proxy tool **(Unofficial use)**
+- 8601 TO 8601: Wavestore VMS protocol **(Unofficial use)**
+- 8611 TO 8614: [Canon](https://en.wikipedia.org/wiki/Canon_Inc. "Canon Inc.") BubbleJet Network Protocol
+- 8629 TO 8629: Tibero database **(Unofficial use)**
+- 8642 TO 8642: [Lotus Notes Traveler](https://en.wikipedia.org/wiki/IBM_Lotus_Notes_Traveler "IBM Lotus Notes Traveler") auto synchronization for Windows Mobile and Nokia devices **(Unofficial use)**
+- 8691 TO 8691: [Ultra Fractal](https://en.wikipedia.org/wiki/Ultra_Fractal "Ultra Fractal"), a [fractal](https://en.wikipedia.org/wiki/Fractal "Fractal") generation and rendering [software application](https://en.wikipedia.org/wiki/Graphic_art_software "Graphic art software") – distributed calculations over networked computers **(Unofficial use)**
+- 8765 TO 8765: Default port of a local GUN relay peer that the [Internet Archive](https://en.wikipedia.org/wiki/Internet_Archive "Internet Archive") and others use as a decentralized mirror for censorship resistance. **(Unofficial use)**
+- 8767 TO 8767: Voice channel of [TeamSpeak 2](https://en.wikipedia.org/wiki/TeamSpeak_2 "TeamSpeak 2"), a proprietary [Voice over IP](https://en.wikipedia.org/wiki/Voice_over_IP "Voice over IP") protocol targeted at [gamers](https://en.wikipedia.org/wiki/Gamer "Gamer") **(Unofficial use)**
+- 8834 TO 8834: [Nessus](https://en.wikipedia.org/wiki/Nessus_(software) "Nessus (software)"), a [vulnerability scanner](https://en.wikipedia.org/wiki/Vulnerability_scanner "Vulnerability scanner") – remote [XML-RPC](https://en.wikipedia.org/wiki/XML-RPC "XML-RPC") web server **(Unofficial use)**
+- 8840 TO 8840: [Opera Unite](/w/index.php?title=Opera_Unite&action=edit&redlink=1 "Opera Unite (page does not exist)"), an extensible [framework](https://en.wikipedia.org/wiki/Software_framework "Software framework") for web applications **(Unofficial use)**
+- 8880 TO 8880: Alternate port of [CDDB](https://en.wikipedia.org/wiki/CDDB "CDDB") (Compact Disc Database) protocol, used to look up audio CD ([compact disc](https://en.wikipedia.org/wiki/Compact_disc "Compact disc")) information over the [Internet](https://en.wikipedia.org/wiki/Internet "Internet"). See also port 888.
+- 8880 TO 8880: [IBM WebSphere Application Server](https://en.wikipedia.org/wiki/IBM_WebSphere_Application_Server "IBM WebSphere Application Server") [SOAP](https://en.wikipedia.org/wiki/SOAP "SOAP") connector **(Unofficial use)**
+- 8883 TO 8883: Secure [MQTT](https://en.wikipedia.org/wiki/MQTT "MQTT") (MQTT over TLS)
+- 8887 TO 8887: HyperVM over HTTP **(Unofficial use)**
+- 8888 TO 8888: HyperVM over [HTTPS](https://en.wikipedia.org/wiki/HTTPS "HTTPS") **(Unofficial use)**
+- 8888 TO 8888: [Freenet](https://en.wikipedia.org/wiki/Freenet "Freenet") web UI (localhost only) **(Unofficial use)**
+- 8888 TO 8888: Default for [IPython](https://en.wikipedia.org/wiki/IPython "IPython") / [Jupyter](https://en.wikipedia.org/wiki/Jupyter "Jupyter") notebook dashboards **(Unofficial use)**
+- 8888 TO 8888: [MAMP](https://en.wikipedia.org/wiki/MAMP "MAMP") **(Unofficial use)**
+- 8889 TO 8889: MAMP **(Unofficial use)**
+- 8920 TO 8920: [Jellyfin](https://en.wikipedia.org/wiki/Jellyfin "Jellyfin") HTTPS port **(Unofficial use)**
+- 8983 TO 8983: [Apache Solr](https://en.wikipedia.org/wiki/Apache_Solr "Apache Solr") **(Unofficial use)**
+- 8997 TO 8997: Alternate port for [I2P](https://en.wikipedia.org/wiki/I2P "I2P") Monotone Proxy **(Unofficial use)**
+- 8998 TO 8998: I2P Monotone Proxy **(Unofficial use)**
+- 8999 TO 8999: Alternate port for I2P Monotone Proxy **(Unofficial use)**
+- 9000 TO 9000: [SonarQube](https://en.wikipedia.org/wiki/SonarQube "SonarQube") Web Server **(Unofficial use)**
+- 9000 TO 9000: [ClickHouse](https://en.wikipedia.org/wiki/ClickHouse "ClickHouse") default port **(Unofficial use)**
+- 9000 TO 9000: [DBGp](https://en.wikipedia.org/wiki/DBGp "DBGp") **(Unofficial use)**
+- 9000 TO 9000: [SqueezeCenter](https://en.wikipedia.org/wiki/SqueezeCenter "SqueezeCenter") web server & streaming **(Unofficial use)**
+- 9000 TO 9000: [UDPCast](https://en.wikipedia.org/wiki/UDPCast "UDPCast") **(Unofficial use)**
+- 9000 TO 9000: [Play Framework](https://en.wikipedia.org/wiki/Play_Framework "Play Framework") web server **(Unofficial use)**
+- 9000 TO 9000: [Hadoop](https://en.wikipedia.org/wiki/Hadoop_Distributed_File_System "Hadoop Distributed File System") NameNode default port **(Unofficial use)**
+- 9000 TO 9000: [PHP-FPM](https://en.wikipedia.org/wiki/PHP-FPM "PHP-FPM") default port **(Unofficial use)**
+- 9000 TO 9000: [qBittorrent](https://en.wikipedia.org/wiki/QBittorrent "QBittorrent")'s embedded torrent tracker default port **(Unofficial use)**
+- 9000 TO 9000: Emidate **(Unofficial use)**
+- 9001 TO 9001: ETL Service Manager
+- 9001 TO 9001: [Microsoft SharePoint](https://en.wikipedia.org/wiki/Microsoft_SharePoint "Microsoft SharePoint") authoring environment **(Unofficial use)**
+- 9001 TO 9001: cisco-xremote router configuration **(Unofficial use)**
+- 9001 TO 9001: [Tor](https://en.wikipedia.org/wiki/Tor_(anonymity_network) "Tor (anonymity network)") network default (ORPort) **(Unofficial use)**
+- 9001 TO 9001: [DBGp](https://en.wikipedia.org/wiki/DBGp "DBGp") Proxy **(Unofficial use)**
+- 9001 TO 9001: [HSQLDB](https://en.wikipedia.org/wiki/HSQLDB "HSQLDB") default port **(Unofficial use)**
+- 9001 TO 9001: Emidate **(Unofficial use)**
+- 9002 TO 9002: Newforma Server comms **(Unofficial use)**
+- 9002 TO 9002: Emidate **(Unofficial use)**
+- 9003 TO 9003: [Xdebug](https://en.wikipedia.org/wiki/Xdebug "Xdebug") default client port **(Unofficial use)**
+- 9006 TO 9006: [Tomcat](https://en.wikipedia.org/wiki/Apache_Tomcat "Apache Tomcat") in standalone mode **(Unofficial use)**
+- 9008 TO 9008: Zerto VRA encrypted communications listener **(Unofficial use)**
+- 9030 TO 9030: [Tor](https://en.wikipedia.org/wiki/Tor_(anonymity_network) "Tor (anonymity network)") network default (DirPort) **(Unofficial use)**
+- 9042 TO 9042: [Apache Cassandra](https://en.wikipedia.org/wiki/Apache_Cassandra "Apache Cassandra") native protocol clients **(Unofficial use)**
+- 9043 TO 9043: [WebSphere Application Server](https://en.wikipedia.org/wiki/WebSphere_Application_Server "WebSphere Application Server") Administration Console secure **(Unofficial use)**
+- 9050 TO 9051: [Tor](https://en.wikipedia.org/wiki/Tor_(anonymity_network) "Tor (anonymity network)") (SOCKS-5 proxy) **(Unofficial use)**
+- 9060 TO 9060: [WebSphere Application Server](https://en.wikipedia.org/wiki/WebSphere_Application_Server "WebSphere Application Server") Administration Console **(Unofficial use)**
+- 9080 TO 9080: glrpc, [Groove](https://en.wikipedia.org/wiki/Microsoft_Groove "Microsoft Groove") [Collaboration software](https://en.wikipedia.org/wiki/Collaboration_software "Collaboration software") GLRPC
+- 9080 TO 9080: [WebSphere Application Server](https://en.wikipedia.org/wiki/WebSphere_Application_Server "WebSphere Application Server") [HTTP](https://en.wikipedia.org/wiki/HTTP "HTTP") Transport (port 1) [default](https://en.wikipedia.org/wiki/Default_(computer_science) "Default (computer science)") **(Unofficial use)**
+- 9080 TO 9080: Remote Potato by FatAttitude, Windows Media Center addon **(Unofficial use)**
+- 9080 TO 9080: ServerWMC, Windows Media Center addon **(Unofficial use)**
+- 9081 TO 9081: [Zerto](https://en.wikipedia.org/wiki/Zerto "Zerto") ZVM to ZVM communication **(Unofficial use)**
+- 9090 TO 9090: [Cockpit](https://en.wikipedia.org/wiki/Cockpit_(software) "Cockpit (software)") **(Unofficial use)**
+- 9090 TO 9090: [Prometheus](https://en.wikipedia.org/wiki/Prometheus_(software) "Prometheus (software)") metrics server **(Unofficial use)**
+- 9090 TO 9090: [Openfire](https://en.wikipedia.org/wiki/Openfire "Openfire") Administration console **(Unofficial use)**
+- 9090 TO 9090: [SqueezeCenter](https://en.wikipedia.org/wiki/SqueezeCenter "SqueezeCenter") control (CLI) **(Unofficial use)**
+- 9090 TO 9090: [Cherokee](https://en.wikipedia.org/wiki/Cherokee_(web_server) "Cherokee (web server)") Admin panel **(Unofficial use)**
+- 9091 TO 9091: [Openfire](https://en.wikipedia.org/wiki/Openfire "Openfire") Administration console (SSL secured) **(Unofficial use)**
+- 9091 TO 9091: [Transmission (BitTorrent client)](https://en.wikipedia.org/wiki/Transmission_(BitTorrent_client) "Transmission (BitTorrent client)") Web interface **(Unofficial use)**
+- 9092 TO 9092: [H2 (DBMS)](https://en.wikipedia.org/wiki/H2_(DBMS) "H2 (DBMS)") Database server **(Unofficial use)**
+- 9092 TO 9092: [Apache Kafka](https://en.wikipedia.org/wiki/Apache_Kafka "Apache Kafka") A Distributed Streaming Platform **(Unofficial use)**
+- 9095 TO 9095: [Networker](https://en.wikipedia.org/wiki/EMC_NetWorker "EMC NetWorker") Web user interface server **(Unofficial use)**
+- 9100 TO 9100: [PDL](https://en.wikipedia.org/wiki/Page_description_language "Page description language") Data Stream, used for printing to certain network printers
+- 9101 TO 9101: [Bacula](https://en.wikipedia.org/wiki/Bacula "Bacula") Director
+- 9102 TO 9102: [Bacula](https://en.wikipedia.org/wiki/Bacula "Bacula") File Daemon
+- 9103 TO 9103: [Bacula](https://en.wikipedia.org/wiki/Bacula "Bacula") Storage Daemon
+- 9116 TO 9116: SNMP-exporter (Prometheus) **(Unofficial use)**
+- 9119 TO 9119: [MXit](https://en.wikipedia.org/wiki/MXit "MXit") Instant Messenger
+- 9150 TO 9150: [Tor](https://en.wikipedia.org/wiki/Tor_(anonymity_network) "Tor (anonymity network)") browser **(Unofficial use)**
+- 9191 TO 9191: Sierra Wireless Airlink **(Unofficial use)**
+- 9199 TO 9199: Avtex LLC—qStats **(Unofficial use)**
+- 9200 TO 9200: Elasticsearch—default Elasticsearch port **(Unofficial use)**
+- 9217 TO 9217: iPass Platform Service **(Unofficial use)**
+- 9229 TO 9229: NodeJS debugging default port (localhost) **(Unofficial use)**
+- 9293 TO 9293: Sony PlayStation RemotePlay **(Unofficial use)**
+- 9295 TO 9295: Sony PlayStation Remote Play Session creation communication port **(Unofficial use)**
+- 9296 TO 9296: Sony PlayStation Remote Play **(Unofficial use)**
+- 9297 TO 9297: Sony PlayStation Remote Play Video stream **(Unofficial use)**
+- 9300 TO 9300: [IBM Cognos BI](https://en.wikipedia.org/wiki/IBM_Cognos_Business_Intelligence "IBM Cognos Business Intelligence") **(Unofficial use)**
+- 9303 TO 9303: [D-Link Shareport](/w/index.php?title=D-Link_Shareport&action=edit&redlink=1 "D-Link Shareport (page does not exist)") Share storage and MFP printers **(Unofficial use)**
+- 9306 TO 9306: [Sphinx](https://en.wikipedia.org/wiki/Sphinx_(search_engine) "Sphinx (search engine)") Native API
+- 9309 TO 9309: Sony PlayStation Vita Host Collaboration WiFi Data Transfer **(Unofficial use)**
+- 9312 TO 9312: [Sphinx](https://en.wikipedia.org/wiki/Sphinx_(search_engine) "Sphinx (search engine)") SphinxQL
+- 9332 TO 9332: [Litecoin](https://en.wikipedia.org/wiki/Litecoin "Litecoin") [JSON-RPC](https://en.wikipedia.org/wiki/JSON-RPC "JSON-RPC") server **(Unofficial use)**
+- 9333 TO 9333: [Litecoin](https://en.wikipedia.org/wiki/Litecoin "Litecoin") **(Unofficial use)**
+- 9339 TO 9339: Used by all Supercell games such as *Brawl Stars* and *Clash of Clans*, mobile freemium strategy video games **(Unofficial use)**
+- 9389 TO 9389: adws, [Microsoft](https://en.wikipedia.org/wiki/Microsoft "Microsoft") [AD DS](https://en.wikipedia.org/wiki/AD_DS "AD DS") Web Services, [Powershell](https://en.wikipedia.org/wiki/Powershell "Powershell") uses this port
+- 9392 TO 9392: OpenVAS Greenbone Security Assistant web interface **(Unofficial use)**
+- 9418 TO 9418: git, [Git](https://en.wikipedia.org/wiki/Git_(software) "Git (software)") pack transfer service
+- 9419 TO 9419: [MooseFS](https://en.wikipedia.org/wiki/Moose_File_System "Moose File System") distributed file system – master control port **(Unofficial use)**
+- 9420 TO 9420: MooseFS distributed file system – master command port **(Unofficial use)**
+- 9421 TO 9421: MooseFS distributed file system – master client port **(Unofficial use)**
+- 9422 TO 9422: MooseFS distributed file system – Chunkservers **(Unofficial use)**
+- 9425 TO 9425: MooseFS distributed file system – CGI server **(Unofficial use)**
+- 9443 TO 9443: [VMware](https://en.wikipedia.org/wiki/VMware "VMware") Websense Triton console (HTTPS port used for accessing and administrating a vCenter Server via the Web Management Interface) **(Unofficial use)**
+- 9443 TO 9443: [NCSA Brown Dog](https://en.wikipedia.org/wiki/NCSA_Brown_Dog "NCSA Brown Dog") Data Tilling Service **(Unofficial use)**
+- 9535 TO 9535: mngsuite, [LANDesk](https://en.wikipedia.org/wiki/Landesk "Landesk") Management Suite Remote Control
+- 9536 TO 9536: laes-bf, IP Fabrics Surveillance buffering function
+- 9600 TO 9600: [Factory Interface Network Service](https://en.wikipedia.org/wiki/Factory_Interface_Network_Service "Factory Interface Network Service") (FINS), a network protocol used by [Omron](https://en.wikipedia.org/wiki/Omron "Omron") [programmable logic controllers](https://en.wikipedia.org/wiki/Programmable_logic_controller "Programmable logic controller") **(Unofficial use)**
+- 9669 TO 9669: VGG Image Search Engine VISE **(Unofficial use)**
+- 9675 TO 9675: [Spiceworks](https://en.wikipedia.org/wiki/Spiceworks "Spiceworks") Desktop, IT Helpdesk Software **(Unofficial use)**
+- 9676 TO 9676: [Spiceworks](https://en.wikipedia.org/wiki/Spiceworks "Spiceworks") Desktop, IT Helpdesk Software **(Unofficial use)**
+- 9695 TO 9695: [Content centric networking](https://en.wikipedia.org/wiki/Content_centric_networking "Content centric networking") (CCN, CCNx)
+- 9735 TO 9735: [Bitcoin](https://en.wikipedia.org/wiki/Bitcoin "Bitcoin") [Lightning Network](https://en.wikipedia.org/wiki/Lightning_Network "Lightning Network") **(Unofficial use)**
+- 9785 TO 9785: [Viber](https://en.wikipedia.org/wiki/Viber "Viber") **(Unofficial use)**
+- 9800 TO 9800: [WebDAV](https://en.wikipedia.org/wiki/WebDAV "WebDAV") Source
+- 9800 TO 9800: [WebCT](https://en.wikipedia.org/wiki/WebCT "WebCT") e-learning portal **(Unofficial use)**
+- 9875 TO 9875: [Club Penguin](https://en.wikipedia.org/wiki/Club_Penguin "Club Penguin") Disney online game for kids **(Unofficial use)**
+- 9876 TO 9876: [V Rising](https://en.wikipedia.org/wiki/V_Rising "V Rising") Dedicated server **(Unofficial use)**
+- 9877 TO 9877: [V Rising](https://en.wikipedia.org/wiki/V_Rising "V Rising") Dedicated server **(Unofficial use)**
+- 9898 TO 9898: [Tripwire](https://en.wikipedia.org/wiki/Tripwire_(software) "Tripwire (software)")—File Integrity Monitoring Software **(Unofficial use)**
+- 9899 TO 9899: [SCTP](https://en.wikipedia.org/wiki/Stream_Control_Transmission_Protocol "Stream Control Transmission Protocol") tunneling (port number used in SCTP packets encapsulated in UDP, RFC 6951)
+- 9901 TO 9901: Banana for Apache Solr **(Unofficial use)**
+- 9981 TO 9981: [Tvheadend](https://en.wikipedia.org/wiki/Tvheadend "Tvheadend") HTTP server (web interface) **(Unofficial use)**
+- 9982 TO 9982: [Tvheadend](https://en.wikipedia.org/wiki/Tvheadend "Tvheadend") HTSP server (Streaming protocol) **(Unofficial use)**
+- 9987 TO 9987: [TeamSpeak](https://en.wikipedia.org/wiki/TeamSpeak "TeamSpeak") 3 server default (voice) port (for the conflicting service see the IANA list) **(Unofficial use)**
+- 9993 TO 9993: [ZeroTier](https://en.wikipedia.org/wiki/ZeroTier "ZeroTier") Default port for ZeroTier **(Unofficial use)**
+- 9997 TO 9997: [Splunk](https://en.wikipedia.org/wiki/Splunk "Splunk") port for communication between the forwarders and indexers **(Unofficial use)**
+- 9999 TO 9999: [Urchin](https://en.wikipedia.org/wiki/Urchin_Software_Corporation "Urchin Software Corporation") Web Analytics **(Unofficial use)**
+- 9999 TO 9999: [Dash (cryptocurrency)](https://en.wikipedia.org/wiki/Dash_(cryptocurrency) "Dash (cryptocurrency)") **(Unofficial use)**
+- 10000 TO 10000: Network Data Management Protocol ([NDMP](https://en.wikipedia.org/wiki/NDMP "NDMP")) Control stream for network backup and restore.
+- 10000 TO 10000: [BackupExec](https://en.wikipedia.org/wiki/BackupExec "BackupExec") **(Unofficial use)**
+- 10000 TO 10000: [Webmin](https://en.wikipedia.org/wiki/Webmin "Webmin"), Web-based Unix/Linux system administration tool (default port) **(Unofficial use)**
+- 10000 TO 20000: Used on [VoIP](https://en.wikipedia.org/wiki/Voice_over_IP "Voice over IP") networks for receiving and transmitting voice telephony traffic which includes [Google Voice](https://en.wikipedia.org/wiki/Google_Voice "Google Voice") via the [OBiTalk](https://en.wikipedia.org/wiki/Obihai_Technology "Obihai Technology") [ATA](https://en.wikipedia.org/wiki/Analog_telephone_adapter "Analog telephone adapter") devices as well as on the [MagicJack](https://en.wikipedia.org/wiki/MagicJack "MagicJack") and [Vonage](https://en.wikipedia.org/wiki/Vonage "Vonage") ATA network devices. **(Unofficial use)**
+- 10001 TO 10001: [Ubiquiti](https://en.wikipedia.org/wiki/Ubiquiti "Ubiquiti") UniFi access points broadcast to 255.255.255.255:10001 (UDP) to locate the controller(s) **(Unofficial use)**
+- 10009 TO 10009: *[Crossfire](https://en.wikipedia.org/wiki/Crossfire_(2007_video_game) "Crossfire (2007 video game)")*, a multiplayer online First Person Shooter **(Unofficial use)**
+- 10011 TO 10011: [TeamSpeak](https://en.wikipedia.org/wiki/TeamSpeak "TeamSpeak") 3 ServerQuery **(Unofficial use)**
+- 10022 TO 10022: [TeamSpeak](https://en.wikipedia.org/wiki/TeamSpeak "TeamSpeak") 3 ServerQuery over SSH **(Unofficial use)**
+- 10024 TO 10024: Zimbra smtp [mta]—to amavis from postfix **(Unofficial use)**
+- 10025 TO 10025: Zimbra smtp [mta]—back to postfix from amavis **(Unofficial use)**
+- 10042 TO 10042: [Mathoid](https://www.mediawiki.org/wiki/Mathoid "mw:Mathoid") server **(Unofficial use)**
+- 10050 TO 10050: [Zabbix](https://en.wikipedia.org/wiki/Zabbix "Zabbix") agent
+- 10051 TO 10051: [Zabbix](https://en.wikipedia.org/wiki/Zabbix "Zabbix") trapper
+- 10110 TO 10110: NMEA 0183 Navigational Data. Transport of NMEA 0183 sentences over TCP or UDP
+- 10172 TO 10172: Intuit [Quickbooks](https://en.wikipedia.org/wiki/Quickbooks "Quickbooks") client **(Unofficial use)**
+- 10200 TO 10200: [FRISK Software International](https://en.wikipedia.org/wiki/FRISK_Software_International "FRISK Software International")'s *fpscand* virus scanning daemon for Unix platforms **(Unofficial use)**
+- 10200 TO 10200: FRISK Software International's *f-protd* virus scanning daemon for Unix platforms **(Unofficial use)**
+- 10201 TO 10204: FRISK Software International's *f-protd* virus scanning daemon for Unix platforms **(Unofficial use)**
+- 10212 TO 10212: GE Intelligent Platforms Proficy HMI/SCADA – CIMPLICITY WebView
+- 10308 TO 10308: *[Digital Combat Simulator](https://en.wikipedia.org/wiki/Digital_Combat_Simulator "Digital Combat Simulator")* Dedicated Server **(Unofficial use)**
+- 10346 TO 10346: TEKWorx Limited – interfaceIT board protocol
+- 10468 TO 10468: Flyer – discovery protocol **(Unofficial use)**
+- 10480 TO 10480: *[SWAT 4](https://en.wikipedia.org/wiki/SWAT_4 "SWAT 4")* Dedicated Server **(Unofficial use)**
+- 10505 TO 10505: BlueStacks (android simulator) broadcast **(Unofficial use)**
+- 10514 TO 10514: TLS-enabled Rsyslog (default by convention) **(Unofficial use)**
+- 10578 TO 10578: Skyrim Together multiplayer server for [The Elder Scrolls V: Skyrim](https://en.wikipedia.org/wiki/The_Elder_Scrolls_V:_Skyrim "The Elder Scrolls V: Skyrim") mod. **(Unofficial use)**
+- 10800 TO 10800: [Touhou](https://en.wikipedia.org/wiki/Touhou "Touhou") versus games ([Immaterial and Missing Power](https://en.wikipedia.org/wiki/Immaterial_and_Missing_Power "Immaterial and Missing Power"), [Phantasmagoria of Flower View](https://en.wikipedia.org/wiki/Phantasmagoria_of_Flower_View "Phantasmagoria of Flower View"), [Scarlet Weather Rhapsody](https://en.wikipedia.org/wiki/Scarlet_Weather_Rhapsody "Scarlet Weather Rhapsody"), [Hisoutensoku](https://en.wikipedia.org/wiki/Touhou_His%C5%8Dtensoku "Touhou Hisōtensoku"), [Hopeless Masquerade](https://en.wikipedia.org/wiki/Hopeless_Masquerade "Hopeless Masquerade") and [Urban Legend in Limbo](https://en.wikipedia.org/wiki/Urban_Legend_in_Limbo "Urban Legend in Limbo")) **(Unofficial use)**
+- 10801 TO 10801: Bag With Friends multiplayer server for the Peaks of Yore mod. **(Unofficial use)**
+- 10823 TO 10823: *[Farming Simulator 2011](https://en.wikipedia.org/wiki/Farming_Simulator_2011 "Farming Simulator 2011")* **(Unofficial use)**
+- 10891 TO 10891: Jungle Disk (this port is opened by the Jungle Disk Monitor service on the localhost) **(Unofficial use)**
+- 10933 TO 10933: Octopus Deploy Tentacle deployment agent
+- 11100 TO 11100: [Risk of Rain](https://en.wikipedia.org/wiki/Risk_of_Rain "Risk of Rain") multiplayer server **(Unofficial use)**
+- 11111 TO 11111: RiCcI, Remote Configuration Interface (Redhat Linux) **(Unofficial use)**
+- 11112 TO 11112: [ACR](https://en.wikipedia.org/wiki/American_College_of_Radiology "American College of Radiology")/[NEMA](https://en.wikipedia.org/wiki/National_Electrical_Manufacturers_Association "National Electrical Manufacturers Association") [Digital Imaging and Communications in Medicine](https://en.wikipedia.org/wiki/Digital_Imaging_and_Communications_in_Medicine "Digital Imaging and Communications in Medicine") (DICOM)
+- 11211 TO 11211: [memcached](https://en.wikipedia.org/wiki/Memcached "Memcached") **(Unofficial use)**
+- 11214 TO 11214: memcached incoming SSL proxy **(Unofficial use)**
+- 11215 TO 11215: memcached internal outgoing SSL proxy **(Unofficial use)**
+- 11235 TO 11235: [XCOMPUTE](/w/index.php?title=XCOMPUTE&action=edit&redlink=1 "XCOMPUTE (page does not exist)") numerical systems messaging (Xplicit Computing)
+- 11311 TO 11311: [Robot Operating System](https://en.wikipedia.org/wiki/Robot_Operating_System "Robot Operating System") master **(Unofficial use)**
+- 11371 TO 11371: [OpenPGP](https://en.wikipedia.org/wiki/OpenPGP "OpenPGP") HTTP [key server](https://en.wikipedia.org/wiki/Key_server_(cryptographic) "Key server (cryptographic)")
+- 11753 TO 11753: [OpenRCT2](https://en.wikipedia.org/wiki/OpenRCT2 "OpenRCT2") multiplayer **(Unofficial use)**
+- 12000 TO 12000: [CubeForm](/w/index.php?title=CubeForm&action=edit&redlink=1 "CubeForm (page does not exist)"), Multiplayer SandBox Game **(Unofficial use)**
+- 12012 TO 12012: [Audition Online Dance Battle](https://en.wikipedia.org/wiki/Audition_Online_Dance_Battle "Audition Online Dance Battle"), Korea Server—Status/Version Check **(Unofficial use)**
+- 12013 TO 12013: Audition Online Dance Battle, Korea Server **(Unofficial use)**
+- 12035 TO 12035: *[Second Life](https://en.wikipedia.org/wiki/Second_Life "Second Life")*, used for server UDP in-bound **(Unofficial use)**
+- 12043 TO 12043: *Second Life*, used for LSL HTTPS in-bound **(Unofficial use)**
+- 12046 TO 12046: *Second Life*, used for LSL HTTP in-bound **(Unofficial use)**
+- 12201 TO 12201: Graylog Extended Log Format (GELF) **(Unofficial use)**
+- 12222 TO 12222: Light Weight Access Point Protocol ([LWAPP](https://en.wikipedia.org/wiki/LWAPP "LWAPP")) LWAPP data (RFC 5412)
+- 12223 TO 12223: Light Weight Access Point Protocol ([LWAPP](https://en.wikipedia.org/wiki/LWAPP "LWAPP")) LWAPP control (RFC 5412)
+- 12307 TO 12307: Makerbot UDP Broadcast (client to printer) (JSON-RPC) **(Unofficial use)**
+- 12308 TO 12308: Makerbot UDP Broadcast (printer to client) (JSON-RPC) **(Unofficial use)**
+- 12345 TO 12345: *[Cube World](https://en.wikipedia.org/wiki/Cube_World "Cube World")* **(Unofficial use)**
+- 12345 TO 12345: *[Little Fighter 2](https://en.wikipedia.org/wiki/Little_Fighter_2 "Little Fighter 2")* **(Unofficial use)**
+- 12345 TO 12345: [NetBus](https://en.wikipedia.org/wiki/NetBus "NetBus") remote administration tool (often [Trojan horse](https://en.wikipedia.org/wiki/Trojan_horse_(computing) "Trojan horse (computing)")). **(Unofficial use)**
+- 12443 TO 12443: [IBM HMC](https://en.wikipedia.org/wiki/IBM_Hardware_Management_Console "IBM Hardware Management Console") web browser management access over [HTTPS](https://en.wikipedia.org/wiki/HTTPS "HTTPS") instead of default port 443 **(Unofficial use)**
+- 12489 TO 12489: NSClient/NSClient++/NC\_Net (Nagios) **(Unofficial use)**
+- 12975 TO 12975: [LogMeIn](https://en.wikipedia.org/wiki/LogMeIn "LogMeIn") [Hamachi](https://en.wikipedia.org/wiki/Hamachi_(software) "Hamachi (software)") (VPN tunnel software; also port 32976)—used to connect to Mediation Server (bibi.hamachi.cc); will attempt to use [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") (TCP port 443) if both 12975 & 32976 fail to connect **(Unofficial use)**
+- 13000 TO 13050: *[Second Life](https://en.wikipedia.org/wiki/Second_Life "Second Life")*, used for server UDP in-bound **(Unofficial use)**
+- 13008 TO 13008: *[Crossfire](https://en.wikipedia.org/wiki/Crossfire_(2007_video_game) "Crossfire (2007 video game)")*, a multiplayer online First Person Shooter **(Unofficial use)**
+- 13075 TO 13075: Default for [BMC Software](https://en.wikipedia.org/wiki/BMC_Software "BMC Software") [Control-M/Enterprise Manager](https://en.wikipedia.org/wiki/BMC_Control-M "BMC Control-M") Corba communication, though often changed during installation
+- 13400 TO 13400: ISO 13400 Road vehicles — Diagnostic communication over Internet Protocol (DoIP)
+- 13720 TO 13720: [Symantec](https://en.wikipedia.org/wiki/NortonLifeLock "NortonLifeLock") [NetBackup](/w/index.php?title=NetBackup&action=edit&redlink=1 "NetBackup (page does not exist)")—bprd (formerly [VERITAS](https://en.wikipedia.org/wiki/Veritas_Software "Veritas Software"))
+- 13721 TO 13721: Symantec NetBackup—bpdbm (formerly VERITAS)
+- 13724 TO 13724: Symantec Network Utility—vnetd (formerly VERITAS)
+- 13782 TO 13782: Symantec NetBackup—bpcd (formerly VERITAS)
+- 13783 TO 13783: Symantec VOPIED protocol (formerly VERITAS)
+- 13785 TO 13785: Symantec NetBackup Database—nbdb (formerly VERITAS)
+- 13786 TO 13786: Symantec nomdb (formerly VERITAS)
+- 14550 TO 14550: [MAVLink](https://en.wikipedia.org/wiki/MAVLink "MAVLink") Ground Station Port **(Unofficial use)**
+- 14567 TO 14567: [Battlefield 1942](https://en.wikipedia.org/wiki/Battlefield_1942 "Battlefield 1942") and mods **(Unofficial use)**
+- 14652 TO 14652: Repgen DoxBox reporting tool **(Unofficial use)**
+- 14800 TO 14800: [Age of Wonders III](https://en.wikipedia.org/wiki/Age_of_Wonders_III "Age of Wonders III") p2p port **(Unofficial use)**
+- 15000 TO 15000: [psyBNC](https://en.wikipedia.org/wiki/PsyBNC "PsyBNC") **(Unofficial use)**
+- 15000 TO 15000: [Wesnoth](https://en.wikipedia.org/wiki/Wesnoth "Wesnoth") **(Unofficial use)**
+- 15000 TO 15000: Kaspersky Network Agent **(Unofficial use)**
+- 15000 TO 15000: Teltonika networks remote management system (RMS) **(Unofficial use)**
+- 15009 TO 15009: Teltonika networks remote management system (RMS) **(Unofficial use)**
+- 15010 TO 15010: Teltonika networks remote management system (RMS) **(Unofficial use)**
+- 15441 TO 15441: [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet "ZeroNet") fileserver **(Unofficial use)**
+- 15567 TO 15567: *[Battlefield Vietnam](https://en.wikipedia.org/wiki/Battlefield_Vietnam "Battlefield Vietnam")* and mods **(Unofficial use)**
+- 15345 TO 15345: *[XPilot](https://en.wikipedia.org/wiki/XPilot "XPilot")* Contact
+- 15672 TO 15672: [RabbitMQ](https://en.wikipedia.org/wiki/RabbitMQ "RabbitMQ") management plugin **(Unofficial use)**
+- 16000 TO 16000: [Oracle WebCenter](https://en.wikipedia.org/wiki/Oracle_WebCenter "Oracle WebCenter") Content: Imaging (formerly known as Oracle [Universal Content Management](https://en.wikipedia.org/wiki/Universal_Content_Management "Universal Content Management")). Port though often changed during installation **(Unofficial use)**
+- 16000 TO 16000: [shroudBNC](https://en.wikipedia.org/wiki/ShroudBNC "ShroudBNC") **(Unofficial use)**
+- 16080 TO 16080: [macOS Server](https://en.wikipedia.org/wiki/MacOS_Server "MacOS Server") Web (HTTP) service with performance cache **(Unofficial use)**
+- 16200 TO 16200: Oracle WebCenter Content: Content Server (formerly known as Oracle [Universal Content Management](https://en.wikipedia.org/wiki/Universal_Content_Management "Universal Content Management")). Port though often changed during installation **(Unofficial use)**
+- 16225 TO 16225: Oracle WebCenter Content: Content Server Web UI. Port though often changed during installation **(Unofficial use)**
+- 16250 TO 16250: Oracle WebCenter Content: Inbound Refinery (formerly known as Oracle [Universal Content Management](https://en.wikipedia.org/wiki/Universal_Content_Management "Universal Content Management")). Port though often changed during installation **(Unofficial use)**
+- 16261 TO 16261: *[Project Zomboid](https://en.wikipedia.org/wiki/Project_Zomboid "Project Zomboid")* multiplayer. Additional sequential ports used for each player connecting to server. **(Unofficial use)**
+- 16300 TO 16300: Oracle WebCenter Content: Records Management (formerly known as Oracle [Universal Records Management](/w/index.php?title=Universal_Records_Management&action=edit&redlink=1 "Universal Records Management (page does not exist)")). Port though often changed during installation **(Unofficial use)**
+- 16379 TO 16379: [Redis Cluster](https://en.wikipedia.org/wiki/Redis#Clustering "Redis") bus **(Unofficial use)**
+- 16384 TO 16384: CISCO Default RTP MIN **(Unofficial use)**
+- 16384 TO 16403: [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol "Real-time Transport Protocol") (RTP), [RTP Control Protocol](https://en.wikipedia.org/wiki/RTP_Control_Protocol "RTP Control Protocol") (RTCP), used by [Apple](https://en.wikipedia.org/wiki/Apple_Inc. "Apple Inc.")'s [iChat](https://en.wikipedia.org/wiki/IChat "IChat") for audio and video **(Unofficial use)**
+- 16384 TO 16387: Real-time Transport Protocol (RTP), RTP Control Protocol (RTCP), used by Apple's [FaceTime](https://en.wikipedia.org/wiki/FaceTime "FaceTime") and [Game Center](https://en.wikipedia.org/wiki/Game_Center "Game Center") **(Unofficial use)**
+- 16393 TO 16402: Real-time Transport Protocol (RTP), RTP Control Protocol (RTCP), used by Apple's FaceTime and Game Center **(Unofficial use)**
+- 16403 TO 16472: Real-time Transport Protocol (RTP), RTP Control Protocol (RTCP), used by Apple's Game Center **(Unofficial use)**
+- 16400 TO 16400: Oracle WebCenter Content: Capture (formerly known as Oracle Document Capture). Port though often changed during installation **(Unofficial use)**
+- 16567 TO 16567: [Battlefield 2](https://en.wikipedia.org/wiki/Battlefield_2 "Battlefield 2") and mods **(Unofficial use)**
+- 17000 TO 17000: M17 – Digital RF voice and data protocol with Internet (UDP) gateways (reflectors). **(Unofficial use)**
+- 17011 TO 17011: [Worms](https://en.wikipedia.org/wiki/Worms_(series) "Worms (series)") multiplayer **(Unofficial use)**
+- 17224 TO 17224: Train Realtime Data Protocol (TRDP) Process Data, network protocol used in train communication.
+- 17225 TO 17225: Train Realtime Data Protocol (TRDP) Message Data, network protocol used in train communication.
+- 17333 TO 17333: CS Server (CSMS), default binary protocol port **(Unofficial use)**
+- 17472 TO 17472: Tanium Communication Port **(Unofficial use)**
+- 17474 TO 17474: DMXControl 3 Network Discovery **(Unofficial use)**
+- 17475 TO 17475: DMXControl 3 Network Broker **(Unofficial use)**
+- 17476 TO 17476: DMXControl 3 Network Broker TLS **(Unofficial use)**
+- 17500 TO 17500: [Dropbox](https://en.wikipedia.org/wiki/Dropbox_(storage_provider) "Dropbox (storage provider)") LanSync Protocol (db-lsp); used to synchronize file catalogs between Dropbox clients on a local network.
+- 18080 TO 18080: [Monero](https://en.wikipedia.org/wiki/Monero_(cryptocurrency) "Monero (cryptocurrency)") P2P network communications **(Unofficial use)**
+- 18081 TO 18081: Monero incoming RPC calls **(Unofficial use)**
+- 18091 TO 18091: [memcached](https://en.wikipedia.org/wiki/Memcached "Memcached") Internal REST HTTPS for SSL **(Unofficial use)**
+- 18092 TO 18092: memcached Internal CAPI HTTPS for SSL **(Unofficial use)**
+- 18104 TO 18104: RAD PDF Service
+- 18200 TO 18200: [Audition Online Dance Battle](https://en.wikipedia.org/wiki/Audition_Online_Dance_Battle "Audition Online Dance Battle"), AsiaSoft Thailand Server status/version check **(Unofficial use)**
+- 18201 TO 18201: Audition Online Dance Battle, AsiaSoft Thailand Server **(Unofficial use)**
+- 18206 TO 18206: Audition Online Dance Battle, AsiaSoft Thailand Server FAM database **(Unofficial use)**
+- 18300 TO 18300: Audition Online Dance Battle, AsiaSoft SEA Server status/version check **(Unofficial use)**
+- 18301 TO 18301: Audition Online Dance Battle, AsiaSoft SEA Server **(Unofficial use)**
+- 18306 TO 18306: Audition Online Dance Battle, AsiaSoft SEA Server FAM database **(Unofficial use)**
+- 18333 TO 18333: [Bitcoin](https://en.wikipedia.org/wiki/Bitcoin "Bitcoin") testnet **(Unofficial use)**
+- 18400 TO 18400: Audition Online Dance Battle, KAIZEN Brazil Server status/version check **(Unofficial use)**
+- 18401 TO 18401: Audition Online Dance Battle, KAIZEN Brazil Server **(Unofficial use)**
+- 18505 TO 18505: Audition Online Dance Battle R4p3 Server, Nexon Server status/version check **(Unofficial use)**
+- 18506 TO 18506: Audition Online Dance Battle, Nexon Server **(Unofficial use)**
+- 18605 TO 18605: [X-BEAT](https://en.wikipedia.org/wiki/X-BEAT "X-BEAT") status/version check **(Unofficial use)**
+- 18606 TO 18606: [X-BEAT](https://en.wikipedia.org/wiki/X-BEAT "X-BEAT") **(Unofficial use)**
+- 18676 TO 18676: YouView **(Unofficial use)**
+- 18769 TO 18769: iQue Protocol
+- 19000 TO 19000: Audition Online Dance Battle, G10/alaplaya Server status/version check **(Unofficial use)**
+- 19000 TO 19000: [JACK](https://en.wikipedia.org/wiki/JACK_Audio_Connection_Kit "JACK Audio Connection Kit") sound server **(Unofficial use)**
+- 19001 TO 19001: Audition Online Dance Battle, G10/alaplaya Server **(Unofficial use)**
+- 19132 TO 19132: *[Minecraft: Bedrock Edition](https://en.wikipedia.org/wiki/Minecraft:_Bedrock_Edition "Minecraft: Bedrock Edition")* multiplayer server **(Unofficial use)**
+- 19133 TO 19133: *Minecraft: Bedrock Edition* IPv6 multiplayer server **(Unofficial use)**
+- 19150 TO 19150: [Gkrellm](https://en.wikipedia.org/wiki/Gkrellm "Gkrellm") Server **(Unofficial use)**
+- 19226 TO 19226: [Panda Software](https://en.wikipedia.org/wiki/Panda_Security "Panda Security") AdminSecure Communication Agent **(Unofficial use)**
+- 19294 TO 19294: [Google Talk](https://en.wikipedia.org/wiki/Google_Talk "Google Talk") Voice and Video connections **(Unofficial use)**
+- 19295 TO 19295: Google Talk Voice and Video connections **(Unofficial use)**
+- 19302 TO 19302: Google Talk Voice and Video connections **(Unofficial use)**
+- 19531 TO 19531: [systemd](https://en.wikipedia.org/wiki/Systemd "Systemd")-journal-gatewayd **(Unofficial use)**
+- 19532 TO 19532: [systemd](https://en.wikipedia.org/wiki/Systemd "Systemd")-journal-remote **(Unofficial use)**
+- 19788 TO 19788: Mesh Link Establishment protocol for IEEE 802.15.4 radio mesh networks
+- 19771 TO 19771: Softros LAN Messenger uses TCP and UDP ports for collecting user lists and sending messages **(Unofficial use)**
+- 19812 TO 19812: 4D database SQL Communication
+- 19813 TO 19813: 4D database Client Server Communication
+- 19814 TO 19814: 4D database DB4D Communication
+- 19880 TO 19880: Softros LAN Messenger uses TCP port for file transfers **(Unofficial use)**
+- 19999 TO 19999: Distributed Network Protocol—Secure ([DNP](https://en.wikipedia.org/wiki/DNP3 "DNP3")—Secure), a secure version of the protocol used in [SCADA](https://en.wikipedia.org/wiki/SCADA "SCADA") systems between communicating [RTU](https://en.wiktionary.org/wiki/RTU "wikt:RTU")'s and [IED](https://en.wiktionary.org/wiki/IED "wikt:IED")'s
+- 20000 TO 20000: Distributed Network Protocol ([DNP](https://en.wikipedia.org/wiki/DNP3 "DNP3")), a protocol used in [SCADA](https://en.wikipedia.org/wiki/SCADA "SCADA") systems between communicating [RTU](https://en.wikipedia.org/wiki/Remote_Terminal_Unit "Remote Terminal Unit")'s and [IED](https://en.wikipedia.org/wiki/Intelligent_electronic_device "Intelligent electronic device")'s
+- 20000 TO 20000: [OpenWebNet](https://en.wikipedia.org/wiki/OpenWebNet "OpenWebNet"), communications protocol used in [Bticino](https://en.wikipedia.org/wiki/Bticino "Bticino") products
+- 20000 TO 20000: [Usermin](https://en.wikipedia.org/wiki/Usermin "Usermin"), Web-based Unix/Linux user administration tool (default port) **(Unofficial use)**
+- 20000 TO 20000: Used on [VoIP](https://en.wikipedia.org/wiki/Voice_over_IP "Voice over IP") networks for receiving and transmitting voice telephony traffic which includes [Google Voice](https://en.wikipedia.org/wiki/Google_Voice "Google Voice") via the [OBiTalk](https://en.wikipedia.org/wiki/Obihai_Technology "Obihai Technology") [ATA](https://en.wikipedia.org/wiki/Analog_telephone_adapter "Analog telephone adapter") devices as well as on the [MagicJack](https://en.wikipedia.org/wiki/MagicJack "MagicJack") and [Vonage](https://en.wikipedia.org/wiki/Vonage "Vonage") ATA network devices. **(Unofficial use)**
+- 20560 TO 20560: *[Killing Floor](https://en.wikipedia.org/wiki/Killing_Floor_(2009_video_game) "Killing Floor (2009 video game)")* **(Unofficial use)**
+- 20580 TO 20580: *Walljam device communications* **(Unofficial use)**
+- 20581 TO 20581: *Walljam device communications* **(Unofficial use)**
+- 20595 TO 20595: *[0 A.D. Empires Ascendant](https://en.wikipedia.org/wiki/0_A.D._(video_game) "0 A.D. (video game)")* **(Unofficial use)**
+- 20808 TO 20808: Ableton Link **(Unofficial use)**
+- 21025 TO 21025: Starbound Server (default), Starbound **(Unofficial use)**
+- 21064 TO 21064: Default Ingres DBMS server **(Unofficial use)**
+- 22000 TO 22000: [Syncthing](https://en.wikipedia.org/wiki/Syncthing "Syncthing") (default) **(Unofficial use)**
+- 22136 TO 22136: FLIR Systems Camera Resource Protocol **(Unofficial use)**
+- 22222 TO 22222: Davis Instruments, WeatherLink IP **(Unofficial use)**
+- 22347 TO 22347: WibuKey, WIBU-SYSTEMS AG [Copy protection](https://en.wikipedia.org/wiki/Copy_protection "Copy protection")
+- 22350 TO 22350: CodeMeter, WIBU-SYSTEMS AG [Copy protection](https://en.wikipedia.org/wiki/Copy_protection "Copy protection")
+- 22351 TO 22351: CodeMeter-CmWAN, WIBU-SYSTEMS AG [Copy protection](https://en.wikipedia.org/wiki/Copy_protection "Copy protection")
+- 23073 TO 23073: [Soldat](https://en.wikipedia.org/wiki/Soldat_(video_game) "Soldat (video game)") Dedicated Server **(Unofficial use)**
+- 23399 TO 23399: [Skype](https://en.wikipedia.org/wiki/Skype "Skype") default protocol **(Unofficial use)**
+- 23513 TO 23513: [*Duke Nukem 3D* source ports](https://en.wikipedia.org/wiki/Duke_Nukem_3D#Source_ports "Duke Nukem 3D") **(Unofficial use)**
+- 24441 TO 24441: Pyzor spam detection network **(Unofficial use)**
+- 24444 TO 24444: [NetBeans](https://en.wikipedia.org/wiki/NetBeans "NetBeans") integrated development environment **(Unofficial use)**
+- 24465 TO 24465: [Tonido Directory Server](https://en.wikipedia.org/wiki/Tonido "Tonido") for Tonido which is a Personal Web App and P2P platform
+- 24554 TO 24554: [BINKP](https://en.wikipedia.org/wiki/Binkp "Binkp"), [Fidonet](https://en.wikipedia.org/wiki/Fidonet "Fidonet") mail transfers over [TCP/IP](https://en.wikipedia.org/wiki/TCP/IP "TCP/IP")
+- 24800 TO 24800: [Synergy](https://en.wikipedia.org/wiki/Synergy_(software) "Synergy (software)"): keyboard/mouse sharing software **(Unofficial use)**
+- 24842 TO 24842: *[StepMania: Online](https://en.wikipedia.org/wiki/StepMania "StepMania")*: *[Dance Dance Revolution](https://en.wikipedia.org/wiki/Dance_Dance_Revolution "Dance Dance Revolution")* Simulator **(Unofficial use)**
+- 25565 TO 25565: *[Minecraft](https://en.wikipedia.org/wiki/Minecraft "Minecraft")* (Java Edition) multiplayer server **(Unofficial use)**
+- 25565 TO 25565: *Minecraft (Java Edition)* multiplayer server query **(Unofficial use)**
+- 25575 TO 25575: *Minecraft* (Java Edition) multiplayer server RCON **(Unofficial use)**
+- 25734 TO 25735: SOLIDWORKS SolidNetworkLicense Manager **(Unofficial use)**
+- 25826 TO 25826: [collectd](https://en.wikipedia.org/wiki/Collectd "Collectd") default port **(Unofficial use)**
+- 26000 TO 26000: [id Software](https://en.wikipedia.org/wiki/Id_Software "Id Software")'s *[Quake](https://en.wikipedia.org/wiki/Quake_(video_game) "Quake (video game)")* server
+- 26000 TO 26000: *[EVE Online](https://en.wikipedia.org/wiki/EVE_Online "EVE Online")*, *iVentoy* webGUI (see *[Ventoy](https://en.wikipedia.org/wiki/Ventoy "Ventoy"))* **(Unofficial use)**
+- 26000 TO 26000: *[Xonotic](https://en.wikipedia.org/wiki/Xonotic "Xonotic")*, an [open-source](https://en.wikipedia.org/wiki/Open-source_software "Open-source software") [arena shooter](https://en.wikipedia.org/wiki/Arena_shooter "Arena shooter") **(Unofficial use)**
+- 26822 TO 26822: *MSI MysticLight* **(Unofficial use)**
+- 26900 TO 26901: *EVE Online* **(Unofficial use)**
+- 26909 TO 26911: *Action Tanks Online* **(Unofficial use)**
+- 27000 TO 27000: [PowerBuilder](https://en.wikipedia.org/wiki/PowerBuilder "PowerBuilder") *[SySAM](/w/index.php?title=SySAM&action=edit&redlink=1 "SySAM (page does not exist)")* license server **(Unofficial use)**
+- 27000 TO 27006: [id Software](https://en.wikipedia.org/wiki/Id_Software "Id Software")'s *[QuakeWorld](https://en.wikipedia.org/wiki/QuakeWorld "QuakeWorld")* master server **(Unofficial use)**
+- 27000 TO 27009: [FlexNet Publisher](https://en.wikipedia.org/wiki/FlexNet_Publisher "FlexNet Publisher")'s License server (from the range of default ports)
+- 27000 TO 27015: [Steam](https://en.wikipedia.org/wiki/Steam_(service) "Steam (service)") (game client traffic) **(Unofficial use)**
+- 27015 TO 27015: [GoldSrc](https://en.wikipedia.org/wiki/GoldSrc "GoldSrc"), [Source engine](https://en.wikipedia.org/wiki/Source_engine "Source engine") and [Source 2 engine](https://en.wikipedia.org/wiki/Source_2 "Source 2") dedicated server port **(Unofficial use)**
+- 27015 TO 27018: *[Unturned](https://en.wikipedia.org/wiki/Unturned "Unturned")*, a survival game **(Unofficial use)**
+- 27015 TO 27030: Steam (matchmaking and HLTV) **(Unofficial use)**
+- 27015 TO 27030: Steam (downloads) **(Unofficial use)**
+- 27016 TO 27016: *[Magicka](https://en.wikipedia.org/wiki/Magicka "Magicka")* and [Space Engineers](https://en.wikipedia.org/wiki/Space_Engineers "Space Engineers") server port **(Unofficial use)**
+- 27017 TO 27017: [MongoDB](https://en.wikipedia.org/wiki/MongoDB "MongoDB") daemon process (`mongod`) and routing service (`mongos`) **(Unofficial use)**
+- 27031 TO 27035: Steam (In-Home Streaming) **(Unofficial use)**
+- 27036 TO 27036: Steam (In-Home Streaming) **(Unofficial use)**
+- 27100 TO 27100: [Screen Play Games](/w/index.php?title=Screen_Play_Games&action=edit&redlink=1 "Screen Play Games (page does not exist)") controller **(Unofficial use)**
+- 27374 TO 27374: [Sub7](https://en.wikipedia.org/wiki/Sub7 "Sub7") default. **(Unofficial use)**
+- 27500 TO 27900: [id Software](https://en.wikipedia.org/wiki/Id_Software "Id Software")'s *[QuakeWorld](https://en.wikipedia.org/wiki/QuakeWorld "QuakeWorld")* **(Unofficial use)**
+- 27888 TO 27888: [Kaillera](https://en.wikipedia.org/wiki/Kaillera "Kaillera") server **(Unofficial use)**
+- 27901 TO 27910: [id Software](https://en.wikipedia.org/wiki/Id_Software "Id Software")'s *[Quake II](https://en.wikipedia.org/wiki/Quake_II "Quake II")* master server **(Unofficial use)**
+- 27950 TO 27950: *[OpenArena](https://en.wikipedia.org/wiki/OpenArena "OpenArena")* outgoing **(Unofficial use)**
+- 27960 TO 27969: [Activision](https://en.wikipedia.org/wiki/Activision "Activision")'s *[Enemy Territory](https://en.wikipedia.org/wiki/Wolfenstein:_Enemy_Territory "Wolfenstein: Enemy Territory")* and [id Software](https://en.wikipedia.org/wiki/Id_Software "Id Software")'s *[Quake III Arena](https://en.wikipedia.org/wiki/Quake_III_Arena "Quake III Arena")*, *Quake III* and *[Quake Live](https://en.wikipedia.org/wiki/Quake_Live "Quake Live")* and some ioquake3 derived games, such as *Urban Terror* (*OpenArena* incoming) **(Unofficial use)**
+- 28000 TO 28000: [Siemens Digital Industries Software](https://en.wikipedia.org/wiki/Siemens_Digital_Industries_Software "Siemens Digital Industries Software") license server
+- 28001 TO 28001: *[Starsiege: Tribes](https://en.wikipedia.org/wiki/Starsiege:_Tribes "Starsiege: Tribes")* **(Unofficial use)**
+- 28015 TO 28015: [*Rust* (video game)](https://en.wikipedia.org/wiki/Rust_(video_game) "Rust (video game)") **(Unofficial use)**
+- 28016 TO 28016: *Rust* (video game) RCON **(Unofficial use)**
+- 28200 TO 28200: VoxelStorm game server
+- 28260 TO 28260: Palo Alto Networks' Panorama HA-1 backup unencrypted sync port. **(Unofficial use)**
+- 28443 TO 28443: Palo Alto Networks' Panorama-to-managed devices software updates, PAN-OS 8.0 and later. **(Unofficial use)**
+- 28769 TO 28769: Palo Alto Networks' Panorama HA unencrypted sync port. **(Unofficial use)**
+- 28770 TO 28770: Palo Alto Networks' Panorama HA-1 backup sync port. **(Unofficial use)**
+- 28770 TO 28771: *[AssaultCube Reloaded](/w/index.php?title=AssaultCube_Reloaded&action=edit&redlink=1 "AssaultCube Reloaded (page does not exist)")*, a video game based upon a modification of *[AssaultCube](https://en.wikipedia.org/wiki/AssaultCube "AssaultCube")* **(Unofficial use)**
+- 28785 TO 28786: *[Cube 2: Sauerbraten](https://en.wikipedia.org/wiki/Cube_2:_Sauerbraten "Cube 2: Sauerbraten")* **(Unofficial use)**
+- 28852 TO 28852: *[Killing Floor](https://en.wikipedia.org/wiki/Killing_Floor_(2009_video_game) "Killing Floor (2009 video game)")* **(Unofficial use)**
+- 28910 TO 28910: [Nintendo Wi-Fi Connection](https://en.wikipedia.org/wiki/Nintendo_Wi-Fi_Connection "Nintendo Wi-Fi Connection") **(Unofficial use)**
+- 28960 TO 28960: *[Call of Duty](https://en.wikipedia.org/wiki/Call_of_Duty "Call of Duty")*; *[Call of Duty: United Offensive](https://en.wikipedia.org/wiki/Call_of_Duty:_United_Offensive "Call of Duty: United Offensive")*; *[Call of Duty 2](https://en.wikipedia.org/wiki/Call_of_Duty_2 "Call of Duty 2")*; *[Call of Duty 4: Modern Warfare](https://en.wikipedia.org/wiki/Call_of_Duty_4:_Modern_Warfare "Call of Duty 4: Modern Warfare")* *[Call of Duty: World at War](https://en.wikipedia.org/wiki/Call_of_Duty:_World_at_War "Call of Duty: World at War")* (PC platform) **(Unofficial use)**
+- 29000 TO 29000: [Siemens Digital Industries Software](https://en.wikipedia.org/wiki/Siemens_Digital_Industries_Software "Siemens Digital Industries Software") license server
+- 29070 TO 29070: *[Jedi Knight: Jedi Academy](https://en.wikipedia.org/wiki/Jedi_Knight:_Jedi_Academy "Jedi Knight: Jedi Academy")* by [Ravensoft](https://en.wikipedia.org/wiki/Ravensoft "Ravensoft") **(Unofficial use)**
+- 29900 TO 29901: Nintendo Wi-Fi Connection **(Unofficial use)**
+- 29920 TO 29920: Nintendo Wi-Fi Connection **(Unofficial use)**
+- 30000 TO 30000: [XLink Kai P2P](https://en.wikipedia.org/wiki/XLink_Kai "XLink Kai") **(Unofficial use)**
+- 30000 TO 30000: [Luanti](https://en.wikipedia.org/wiki/Luanti "Luanti") server default port **(Unofficial use)**
+- 30000 TO 30000: Foundry Virtual Tabletop server default port **(Unofficial use)**
+- 30003 TO 30003: Amicon FPSU-IP Remote Administration
+- 30004 TO 30004: Amicon FPSU-IP VPN
+- 30033 TO 30033: [TeamSpeak](https://en.wikipedia.org/wiki/TeamSpeak "TeamSpeak") 3 File Transfer **(Unofficial use)**
+- 30120 TO 30120: *[Fivem](/w/index.php?title=Fivem&action=edit&redlink=1 "Fivem (page does not exist)")* (Default Port) GTA V multiplayer **(Unofficial use)**
+- 30564 TO 30564: [Multiplicity](https://en.wikipedia.org/wiki/Multiplicity_(software) "Multiplicity (software)"): keyboard/mouse/clipboard sharing software **(Unofficial use)**
+- 30814 TO 30814: [BeamMP](https://beammp.com/): Unofficial [BeamNG.drive](https://en.wikipedia.org/wiki/BeamNG.drive "BeamNG.drive") multiplayer mod. Default server port **(Unofficial use)**
+- 31337 TO 31337: [Back Orifice](https://en.wikipedia.org/wiki/Back_Orifice "Back Orifice") and [Back Orifice 2000](https://en.wikipedia.org/wiki/Back_Orifice_2000 "Back Orifice 2000") remote administration tools **(Unofficial use)**
+- 31337 TO 31337: [ncat](https://en.wikipedia.org/wiki/Nmap "Nmap"), a [netcat](https://en.wikipedia.org/wiki/Netcat "Netcat") alternative **(Unofficial use)**
+- 31416 TO 31416: [BOINC](https://en.wikipedia.org/wiki/BOINC "BOINC") [RPC](https://en.wikipedia.org/wiki/Remote_procedure_call "Remote procedure call") **(Unofficial use)**
+- 31438 TO 31438: [Rocket U2](https://en.wikipedia.org/wiki/Rocket_U2 "Rocket U2") **(Unofficial use)**
+- 31457 TO 31457: *[TetriNET](https://en.wikipedia.org/wiki/TetriNET "TetriNET")*
+- 32137 TO 32137: [Immunet Protect](https://en.wikipedia.org/wiki/Immunet "Immunet") (UDP in version 2.0, TCP since version 3.0) **(Unofficial use)**
+- 32400 TO 32400: [Plex Media Server](https://en.wikipedia.org/wiki/Plex_Media_Server "Plex Media Server")
+- 32764 TO 32764: A [backdoor](https://en.wikipedia.org/wiki/Backdoor_(computing) "Backdoor (computing)") found on certain Linksys, Netgear and other wireless DSL modems/combination routers **(Unofficial use)**
+- 32887 TO 32887: *[Ace of Spades](https://en.wikipedia.org/wiki/Ace_of_Spades_(video_game) "Ace of Spades (video game)")*, a multiplayer [FPS](https://en.wikipedia.org/wiki/First-person_shooter "First-person shooter") video game **(Unofficial use)**
+- 32976 TO 32976: [LogMeIn Hamachi](https://en.wikipedia.org/wiki/LogMeIn_Hamachi "LogMeIn Hamachi"), a [VPN](https://en.wikipedia.org/wiki/Virtual_private_network "Virtual private network") application; also TCP port 12975 and [SSL](https://en.wikipedia.org/wiki/Secure_Sockets_Layer "Secure Sockets Layer") (TCP 443). **(Unofficial use)**
+- 33434 TO 33434: [traceroute](https://en.wikipedia.org/wiki/Traceroute "Traceroute")
+- 33848 TO 33848: [Jenkins](https://en.wikipedia.org/wiki/Jenkins_(software) "Jenkins (software)"), a [continuous integration](https://en.wikipedia.org/wiki/Continuous_integration "Continuous integration") (CI) tool **(Unofficial use)**
+- 34000 TO 34000: *[Infestation: Survivor Stories](https://en.wikipedia.org/wiki/Infestation:_Survivor_Stories "Infestation: Survivor Stories")* (formerly known as *The War Z*), a multiplayer zombie video game **(Unofficial use)**
+- 34197 TO 34197: *[Factorio](https://en.wikipedia.org/wiki/Factorio "Factorio")*, a multiplayer survival and factory-building game **(Unofficial use)**
+- 35357 TO 35357: [OpenStack Identity](https://en.wikipedia.org/wiki/OpenStack#Identity_(Keystone) "OpenStack") (Keystone) administration
+- 36330 TO 36330: [Folding@home](https://en.wikipedia.org/wiki/Folding@home "Folding@home") Control Port **(Unofficial use)**
+- 37008 TO 37008: [TZSP](https://en.wikipedia.org/wiki/TZSP "TZSP") intrusion detection **(Unofficial use)**
+- 38412 TO 38412: NG Application Protocol (NGAP) for communication between a [gNB](https://en.wikipedia.org/wiki/GNodeB "GNodeB") and AMF in [5G](https://en.wikipedia.org/wiki/5G "5G") core networks
+- 40000 TO 40000: [SafetyNET p](https://en.wikipedia.org/wiki/SafetyNET_p "SafetyNET p") – a real-time [Industrial Ethernet](https://en.wikipedia.org/wiki/Industrial_Ethernet "Industrial Ethernet") protocol
+- 41121 TO 41121: Tentacle Server – [Pandora FMS](https://en.wikipedia.org/wiki/Pandora_FMS "Pandora FMS")
+- 41230 TO 41230: Z-Wave Protocol over DTLS
+- 41794 TO 41794: Crestron Control Port – [Crestron Electronics](https://en.wikipedia.org/wiki/Crestron_Electronics "Crestron Electronics")
+- 41795 TO 41795: Crestron Terminal Port – [Crestron Electronics](https://en.wikipedia.org/wiki/Crestron_Electronics "Crestron Electronics")
+- 41796 TO 41796: Crestron Secure Control Port – [Crestron Electronics](https://en.wikipedia.org/wiki/Crestron_Electronics "Crestron Electronics")
+- 41797 TO 41797: Crestron Secure Terminal Port – [Crestron Electronics](https://en.wikipedia.org/wiki/Crestron_Electronics "Crestron Electronics")
+- 42081 TO 42090: Zippin –Zippin Store
+- 42590 TO 42595: Glue – MakePro X
+- 42999 TO 42999: [Curiosity](https://curiosity.ai/)
+- 43110 TO 43110: [ZeroNet](https://en.wikipedia.org/wiki/ZeroNet "ZeroNet") web UI default port **(Unofficial use)**
+- 43594 TO 43595: *[RuneScape](https://en.wikipedia.org/wiki/RuneScape "RuneScape")* **(Unofficial use)**
+- 44123 TO 44123: Z-Wave Secure Tunnel **(Unofficial use)**
+- 44405 TO 44405: *[Mu Online](https://en.wikipedia.org/wiki/Mu_Online "Mu Online")* Connect Server **(Unofficial use)**
+- 44818 TO 44818: [EtherNet/IP](https://en.wikipedia.org/wiki/EtherNet/IP "EtherNet/IP") explicit messaging
+- 47808 TO 47823: [BACnet](https://en.wikipedia.org/wiki/BACnet "BACnet") Building Automation and Control Networks (4780810 = BAC016 to 4782310 = BACF16)
+- 48556 TO 48556: [drive.web](/w/index.php?title=Drive.web&action=edit&redlink=1 "Drive.web (page does not exist)") AC/DC Drive Automation and Control Networks
+- 48656 TO 48656: Brainy LAB Control Server **(Unofficial use)**
+- 48657 TO 48657: Brainy LAB Control Server **(Unofficial use)**
+- 49151 TO 49151: "IANA Reserved"
+- 49152 TO 65535: [Certificate Management over CMS](https://en.wikipedia.org/wiki/Certificate_Management_over_CMS "Certificate Management over CMS") and [Xsan Filesystem Access](https://en.wikipedia.org/wiki/Xsan "Xsan") **(Unofficial use)**
+- 49160 TO 49160: Palo Alto Networks' Panorama. **(Unofficial use)**
+- 50160 TO 50160: S-CONNECT protocol - data exchange (TCP) and manual device pairing (UDP). **(Unofficial use)**
+- 50161 TO 50161: S-CONNECT protocol - automatic device pairing. **(Unofficial use)**
+- 51413 TO 51413: [Transmission (BitTorrent client)](https://en.wikipedia.org/wiki/Transmission_(BitTorrent_client) "Transmission (BitTorrent client)") **(Unofficial use)**
+- 51515 TO 51515: [Kopia](https://kopia.io/) server **(Unofficial use)**
+- 51820 TO 51820: [WireGuard](https://en.wikipedia.org/wiki/WireGuard "WireGuard") protocol **(Unofficial use)**
+- 52380 TO 52380: Sony [VISCA](https://en.wikipedia.org/wiki/VISCA_Protocol "VISCA Protocol") Network Setting Protocol **(Unofficial use)**
+- 52381 TO 52381: Sony [VISCA](https://en.wikipedia.org/wiki/VISCA_Protocol "VISCA Protocol") over IP Protocol **(Unofficial use)**
+- 59100 TO 59100: AudioRelay **(Unofficial use)**
+- 60000 TO 61000: Range from which [Mosh](https://en.wikipedia.org/wiki/Mosh_(software) "Mosh (software)") – a remote-terminal application similar to [SSH](https://en.wikipedia.org/wiki/Secure_shell "Secure shell") – typically assigns ports for ongoing sessions between Mosh servers and Mosh clients. **(Unofficial use)**
+- 61616 TO 61616: ActiveMQ Classic **(Unofficial use)**
+- 62078 TO 62078: Apple's lockdownd protocol – used for communicating with iPhones and iPads. **(Unofficial use)**
+- 64738 TO 64738: [Mumble](https://en.wikipedia.org/wiki/Mumble_(software) "Mumble (software)") **(Unofficial use)**

@@ -14,7 +14,7 @@ import base64
 import json
 import os
 from pathlib import Path
-from typing import Optional, Union, cast
+from typing import Any, Optional, Union, cast
 
 import geventhttpclient
 from actions.model import SearchPivotRequest
@@ -134,15 +134,14 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
         raise AuthenticationException("Authentication Token is necessary to authenticate with Howler")
 
     try:
-        response = (
-            geventhttpclient.Session(network_timeout=params.max_timeout)
-            .post(
+        response = cast(
+            Any,
+            geventhttpclient.Session(network_timeout=params.max_timeout).post(
                 f"{HOWLER_URL}/api/v1/search/hit",
                 headers={"Authorization": f"Bearer {token}"},
                 json={"filters": [], "offset": 0, "query": query, "rows": params.limit},
-            )
-            .json()
-        )
+            ),
+        ).json()
     except Exception as e:
         logger.exception("Exception on howler connection:")
         raise ClueException(f"Something went wrong when connecting to howler: {str(e)}", cause=e)
