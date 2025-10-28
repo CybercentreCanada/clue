@@ -12,7 +12,7 @@ Clue allows tool developers to inter-connect their apps, allowing analysts to qu
 
 - **🎬 Execute Actions On-The-Fly**: Execute any pre-defined action on an indicator by using Clue Actions.
 
-- **🐶 Display Data Using Fetchers**: Using Clue Fetchers, data can be processed and displayed in any support format, such as Markdown, Json or even Images.
+- **🐶 Display Data Using Fetchers**: Using Clue Fetchers, data can be processed and displayed in any support format, such as Markdown, JSON or even Images.
 
 - **🪄 Seamless Integration**: Clue is extremely easy to add to any UI application, simply initialize the provider and use the Clue components to automatically enrich your data.
 
