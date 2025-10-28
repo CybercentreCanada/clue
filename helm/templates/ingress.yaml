@@ -1,0 +1,38 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "clue.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+{{ include "clue.labels" . | indent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- range $host := .Values.ingress.hosts | default (list "") }}
+    - host: {{ $host | quote }}
+      http:
+        paths:
+          - path: {{ $.Values.ingress.rest.path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-rest
+                port:
+                  name: rest
+          - path: {{ $.Values.ingress.ui.path }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-web
+                port:
+                  name: web
+    {{- end }}
+{{- end }}

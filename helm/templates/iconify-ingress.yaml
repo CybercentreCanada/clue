@@ -1,0 +1,29 @@
+{{- if .Values.iconify.ingress.enabled -}}
+{{- $fullName := include "clue.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-iconify
+  labels:
+{{ include "clue.labels" . | indent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.iconify.ingress.tls }}
+  tls:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.iconify.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-iconify
+                port:
+                  name: iconify
+{{- end }}

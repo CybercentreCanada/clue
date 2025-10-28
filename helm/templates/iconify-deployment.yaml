@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.iconify.name }}
+  labels:
+    app.kubernetes.io/component: iconify
+{{ include "clue.labels" . | indent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/version: {{ .Chart.AppVersion }}
+      app.kubernetes.io/name: {{ include "clue.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: iconify
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        app.kubernetes.io/name: {{ include "clue.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Values.iconify.name }}
+        image: "{{ .Values.images.iconify.repository }}:{{ .Values.images.iconify.tag }}"
+        imagePullPolicy: {{ .Values.images.iconify.pullPolicy | quote }}
+        ports:
+        - containerPort: 3000
+        resources:
+          {{- toYaml .Values.ui.resources | nindent 10 }}

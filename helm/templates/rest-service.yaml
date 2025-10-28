@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: enrichment-rest
+  labels:
+    app: enrichment-rest
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.port | default 5000 }}
+    targetPort: 5000
+    protocol: TCP
+    name: rest
+  selector:
+    app.kubernetes.io/name: {{ include "clue.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: rest

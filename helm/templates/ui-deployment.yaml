@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.ui.name }}
+  labels:
+    app.kubernetes.io/component: ui
+{{ include "clue.labels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/version: {{ .Chart.AppVersion }}
+      app.kubernetes.io/name: {{ include "clue.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: ui
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        app.kubernetes.io/name: {{ include "clue.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      nodeSelector:
+{{ toYaml .Values.ui.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.ui.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.ui.tolerations | indent 8 }}
+      containers:
+      - name: {{ include "clue.name" . }}
+        image: "{{ .Values.images.ui.repository }}:{{ .Values.images.ui.tag }}"
+        imagePullPolicy: {{ .Values.images.ui.pullPolicy | quote }}
+        ports:
+        - containerPort: 3000
+        resources:
+          {{- toYaml .Values.ui.resources | nindent 12 }}
