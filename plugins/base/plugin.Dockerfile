@@ -8,7 +8,7 @@ RUN mkdir /install
 WORKDIR /install
 
 # Get required apk packages
-# RUN apk add --no-cache build-base libffi-dev
+RUN apk add --no-cache build-base libffi-dev
 
 # Add pip.conf file. This allows plugin developers to customize the pip install functionality
 COPY pip.conf pip.conf
