@@ -141,5 +141,6 @@
     "**/node_modules": true,
     "ui/pnpm-lock.yaml": true,
     "ui/target": true
-  }
+  },
+  "makefile.configureOnOpen": false
 }

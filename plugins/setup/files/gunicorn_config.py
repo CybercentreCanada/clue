@@ -2,7 +2,7 @@ import multiprocessing
 from os import environ as env
 
 # Port to bind to
-bind = f"{env.get('HOST')}:{int(env.get('PORT', 8000))}"
+bind = f"{env.get('HOST')}:{int(env.get('PORT', env.get('PLUGIN_PORT', 5000)))}"
 
 # Number of processes to launch
 workers = int(env.get("WORKERS", multiprocessing.cpu_count()))
