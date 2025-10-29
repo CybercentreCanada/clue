@@ -64,22 +64,19 @@ tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" a
 
 [[package]]
 name = "authlib"
-version = "0.15.6"
-description = "The ultimate Python library in building OAuth and OpenID Connect servers."
+version = "1.6.5"
+description = "The ultimate Python library in building OAuth and OpenID Connect servers and clients."
 optional = true
-python-versions = "*"
+python-versions = ">=3.9"
 groups = ["main"]
 markers = "extra == \"server\""
 files = [
-    {file = "Authlib-0.15.6-py2.py3-none-any.whl", hash = "sha256:6de4508ba8125e438a35bcd910d55df7087dccd3dd8517095c2bd9853c372ec1"},
-    {file = "Authlib-0.15.6.tar.gz", hash = "sha256:2988fdf7d0a5c416f5a37ca4b1e7cee360094940229bc97909aed25880326c72"},
+    {file = "authlib-1.6.5-py2.py3-none-any.whl", hash = "sha256:3e0e0507807f842b02175507bdee8957a1d5707fd4afb17c32fb43fee90b6e3a"},
+    {file = "authlib-1.6.5.tar.gz", hash = "sha256:6aaf9c79b7cc96c900f0b284061691c5d4e61221640a948fe690b556a6d6d10b"},
 ]
 
 [package.dependencies]
 cryptography = "*"
-
-[package.extras]
-client = ["requests"]
 
 [[package]]
 name = "autoflake"
@@ -3222,4 +3219,4 @@ server = ["PyYAML", "Werkzeug", "apscheduler", "authlib", "bcrypt", "flasgger", 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "cdb76cab3e7d5fa43cb5d07b250ce57ca03e9f635e4181a7fa0753d67f0f7a63"
+content-hash = "02958a812bf4d5e449186e49bcd661b6f6d9660c9642e35896b9263155f29038"

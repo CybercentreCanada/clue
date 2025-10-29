@@ -17,6 +17,7 @@ export enum StorageKey {
   FLATTEN_JSON = 'flatten_json_view',
   PAGE_COUNT = 'page_count',
   CLUE_CACHE = 'results',
+  LOGIN_NONCE = 'login_nonce',
 
   COLOR_SCHEME = 'color.scheme',
   SHOW_DIRECTIONALITY = 'show.directionality',

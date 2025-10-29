@@ -1,7 +1,7 @@
 from typing import Any
 
 import elasticapm
-from flask import current_app
+from flask import current_app, request
 
 from clue.common.exceptions import (
     AccessDeniedException,
@@ -49,7 +49,9 @@ def parse_user_data(
     provider = oauth.create_client(oauth_provider)
 
     if "id_token" in data:
-        data = provider.parse_id_token(data)
+        data = provider.parse_id_token(
+            data, nonce=request.args.get("nonce", data.get("userinfo", {}).get("nonce", None))
+        )
 
     oauth_provider_config = config.auth.oauth.providers[oauth_provider]
 
