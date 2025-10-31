@@ -24,19 +24,19 @@ Before deploying changes, it is recommended to verify that your local repository
 configuration:
 
 ```bash
-chart diff upgrade -n enrichment -C 3
+chart diff upgrade -n clue -C 3
 ```
 
 If the diff shows unintended changes, review and revert them before proceeding with deployment.
 
 ```diff
-enrichment, tree-viewer, Deployment (apps) has changed:
+clue, example, Deployment (apps) has changed:
 ...
           null
         containers:
-        - name: tree-viewer
--         image: "tree-viewer-plugin:develop"
-+         image: "tree-viewer-plugin:0.12.2_main"
+        - name: example
+-         image: "example-plugin:develop"
++         image: "example-plugin:0.12.2_main"
           imagePullPolicy: "Always"
           ports:
           - containerPort: 5000
@@ -45,5 +45,5 @@ enrichment, tree-viewer, Deployment (apps) has changed:
 ### Interpreting Diff Results
 
 The most important section to review in the diff output is the final portion showing actual deployment changes. In the
-example above, note the image tag change from `develop` to `0.12.2_main` for the `tree-viewer` deployment. This
+example above, note the image tag change from `develop` to `0.12.2_main` for the `example` deployment. This
 indicates that only the specified pod is being updated, which is the expected behavior for plugin deployments.
