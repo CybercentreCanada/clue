@@ -69,7 +69,7 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     None
 
     Result Example:
-    URL Link: /api/v1/static/docs/alfred-docs.md
+    URL Link: /api/v1/static/docs/howler-docs.md
 
     {"markdown": "Markdown documentation of howler-docs.md"}
 

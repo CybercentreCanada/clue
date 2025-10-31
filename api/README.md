@@ -3,9 +3,6 @@
 To start the API for clue, check to ensure that:
 
 1. Docker is composed up through `dev/docker-compose.yml`
-    1. Note that you may need to set up uchimera container connections if you have not tyet done so:
-    2. `az login && az acr login -n uchimera`
-    3. If you do not have permission, reach out to APA2B.
 2. `cd clue/api`
 3. Run `poetry install` within the clue/api folder to install all dependencies
 4. You may need to run `poetry install --with test,dev,types,plugins --all-extras`
@@ -35,7 +32,7 @@ Troubleshooting:
 
 ## Contributing
 
-See [CONTRIBUTING.md](documentation/CONTRIBUTING.md) for more information
+See [CONTRIBUTING.md](docs/CONTRIBUTING.en.md) for more information
 
 ## FAQ
 
@@ -45,7 +42,7 @@ Run `sudo chmod a+rw /var/log/clue/` and `sudo chmod a+rw /etc/clue/conf/`.
 
 ### How can I add dependencies for my plugin?
 
-See [this section](documentation/CONTRIBUTING.md#external-dependencies) of CONTRIBUTING.md.
+See [this section](docs/CONTRIBUTING.en.md#external-dependencies) of CONTRIBUTING.md.
 
 ### Email rendering does not seem to be working?
 

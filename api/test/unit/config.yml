@@ -41,28 +41,28 @@ api:
       classification: TLP:CLEAR
       max_classification: TLP:CLEAR
       url: "http://localhost:5008/"
-      maintainer: APA2B <apa2b-dl@cyber.gc.ca>
+      maintainer: Example <example@example.com>
       datahub_link: http://example.com
       documentation_link: http://example.com
     - name: bad
       classification: TLP:CLEAR
       max_classification: TLP:CLEAR
       url: "http://localhost:5009/"
-      maintainer: APA2B <apa2b-dl@cyber.gc.ca>
+      maintainer: Example <example@example.com>
       datahub_link: http://example.com
       documentation_link: http://example.com
     - name: slow
       classification: TLP:CLEAR
       max_classification: TLP:CLEAR
       url: "http://localhost:5010/"
-      maintainer: APA2B <apa2b-dl@cyber.gc.ca>
+      maintainer: Example <example@example.com>
       datahub_link: http://example.com
       documentation_link: http://example.com
     - name: test-amber
       classification: TLP:AMBER+STRICT
       max_classification: TLP:AMBER+STRICT
       url: "http://localhost:5008/"
-      maintainer: APA2B <apa2b-dl@cyber.gc.ca>
+      maintainer: Example <example@example.com>
       datahub_link: http://example.com
       documentation_link: http://example.com
       production: true
@@ -70,7 +70,7 @@ api:
       classification: TLP:CLEAR
       max_classification: TLP:AMBER+STRICT
       url: "http://localhost:5011"
-      maintainer: APA2B <apa2b-dl@cyber.gc.ca>
+      maintainer: Example <example@example.com>
       documentation_link: http://example.com/
       datahub_link: http://example.com/
     - name: quota-test

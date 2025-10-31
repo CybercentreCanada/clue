@@ -393,13 +393,13 @@ plugin = CluePlugin(
 Since clue is a fairly complex project with a fair number of moving parts, it's important to outline the
 responsibilities of the various stakeholders:
 
-1. APA2B is the primary code-owner of the core clue code (i.e., all code inside the `clue/` folder).
+1. The Cyber Centre is the primary code-owner of the core clue code (i.e., all code inside the `clue/` folder).
 2. Each respective team is responsible for maintenance and evolution of their specific plugin.
 3. Each respective team is responsible for ensuring compatibiliy between their plugin and the central API.
    1. This includes adapting to breaking changes introduced during development of the core clue service.
-   2. APA2B will try its best to limit these breaking changes as much as possible, and give plenty of notice.
-4. APA2B is available for support with development (asking questions, fixing bugs in the central service, etc.).
-5. APA2B is responsible for maintaining the stability of the service as a whole.
+   2. The Cyber Centre will try its best to limit these breaking changes as much as possible, and give plenty of notice.
+4. The Cyber Centre is available for support with development (asking questions, fixing bugs in the central service, etc.).
+5. The Cyber Centre is responsible for maintaining the stability of the service as a whole.
 
 ## Integrating Your Plugin into Clue - Hosting the Code
 
@@ -435,11 +435,11 @@ poetry add -G plugins azure-core 'azure-storage-blob>=12.2.0' 'azure-storage-fil
 
 #### Creating a Pull Request
 
-Once you are satisfied with your plugin, create a pull request for a member of APA2B to review the plugin for final
+Once you are satisfied with your plugin, create a pull request for a member of the Cyber Centre to review the plugin for final
 approval. There are some code quality checks performed on the codebase - if issues are flagged, work with a member of
-APA2B to resolve them. Only readability and compatibility checks are the responsibility of APA2B - we do not have any
-say on the functionality of your plugin, and cannot assist in development of your plugin beyond questions about the base
-clue codebase.
+the Cyber Centre to resolve them. Only readability and compatibility checks are the responsibility of the Cyber
+Centre - we do not have any say on the functionality of your plugin, and cannot assist in development of your plugin
+beyond questions about the base clue codebase.
 
 ### Standalone repo
 
@@ -447,25 +447,6 @@ If you find our code standards too strict or insufficient, or want to develop th
 python, or simply don't want to be included in the repository, you are welcome to host, test and build the plugin in
 a standalone repository. We recommend running integration tests with a copy of the clue API to ensure
 compatibility.
-
-## Deploying the plugin
-
-Currently, deployment of plugins in the enrichment namespace is the responsibility of APA2B - there are no resources to
-allow developers to manually deploy and remove their plugins. However, the plugin can exist anywhere that the central
-clue API can reach, so it's not a requirement to deploy it in that namespace.
-
-If your code is hosted in this repo, APA2B will assist in configuring and deploying your plugin when it is ready for
-production. There are plans to allow improved management of plugins, including deployment to the enrichment namespace
-without the intervention of APA2B, but this will take some time to implement and the work is not currently scheduled.
-
-## Registering the plugin
-
-If you host your plugin's code in this repo, building the image and deploying it will be the responsibility of APA2B -
-otherwise, it is the responsibility of the developers of the plugin.
-
-Currently, registration of plugins with the central clue API is predominantly handled through configuration files
-in the helm chart. There is support for registering plugins at runtime, but it is fairly basic - reach out to APA2B if
-you are interested in runtime registration.
 
 ## Plugin Development Guide
 

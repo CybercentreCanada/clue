@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
+from pydantic_core import Url
 from pytz import timezone
 
 from clue.api.v1.registration import EXTERNAL_PLUGIN_SET
@@ -20,11 +21,9 @@ def sample_external_source():
         classification="TLP:CLEAR",
         max_classification="TLP:CLEAR",
         url="http://localhost:5008/",
-        maintainer="APA2B <apa2b-dl@cyber.gc.ca>",
-        datahub_link="http://example.com",
-        documentation_link="http://example.com",
-        type="ip",
-        value="127.0.0.1",
+        maintainer="Example <example@example.com>",
+        datahub_link=Url("http://example.com"),
+        documentation_link=Url("http://example.com"),
         built_in=False,
     ).model_dump(mode="json", exclude_none=True)
 

@@ -1,10 +1,6 @@
-"""This module was created by CCCS.
+"""This is an example module.
 
-Team: CCCS
-
-Point of Contact: [Matthew Rafuse] <matthew.rafuse@cyber.gc.ca>
-
-Status: Development
+Status: In Development
 """
 
 import os

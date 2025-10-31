@@ -38,7 +38,7 @@ Probably the most annoying part of the current paradigm is the fact that, even a
 
 Kubernetes allows deployment of services/deployments via REST endpoints. The clue API can expose functionality that allows analysts to spin up and down deployments of their applications based on a template YAML file, and check the status of such a deployment. Furthermore, the clue API can allow the updating of the docker image tags, allow analysts to update the exact tag of their deployment when new builds are approved, merged and built.
 
-The status information can come from kubenrnetes, and the image information from uCHIMERA. In the interest of extensibility in the open source ecosystem, these implementation can be plugin-based, allowing easy adapation of the deployment/status information to other envrironments (i.e., pulling tags from dockerhub or status from k3s/minikube/some other non-kubernetes system)
+The status information can come from kubenrnetes, and the image information from docker repositories. In the interest of extensibility in the open source ecosystem, these implementation can be plugin-based, allowing easy adapation of the deployment/status information to other envrironments (i.e., pulling tags from dockerhub or status from k3s/minikube/some other non-kubernetes system)
 
 The bulk of the development effort for this approach will come in:
 

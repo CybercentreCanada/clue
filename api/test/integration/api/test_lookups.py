@@ -42,7 +42,7 @@ def test_get_enrichment(host):
     assert "error" not in json["test"]
     assert json["bad"]["error"]
 
-    assert json["test"]["maintainer"] == "APA2B <apa2b-dl@cyber.gc.ca>"
+    assert json["test"]["maintainer"] == "Example <example@example.com>"
     assert json["test"]["datahub_link"] == "http://example.com/"
     assert json["test"]["documentation_link"] == "http://example.com/"
 

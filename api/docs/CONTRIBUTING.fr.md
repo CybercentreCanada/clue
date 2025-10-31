@@ -14,8 +14,9 @@ Ce document vous guidera dans le développement, la publication et le déploieme
 
 ## Conception
 
-L'approche "par défaut" des plugins clue consiste à exécuter un serveur flask dans un pod sur l'espace de noms dédié à clue, et
-pour que la communication entre les plugins se fasse en interne dans le cluster. Cependant, les plugins peuvent être hébergés à n'importe quel endroit accessible par le serveur central à l'adresse. Le processus d'exécution d'une application ressemble à ceci:
+L'approche "par défaut" des plugins clue consiste à exécuter un serveur flask dans un environnement conteneurisé, avec
+une communication entre les plugins s'effectuant par l'intermédiaire de l'API centrale. Cependant, les plugins peuvent être hébergés n'importe où tant qu'ils sont
+accessibles par le serveur central. Le processus réel d'exécution d'une application ressemble à ceci :
 
 ### Initiation de la demande
 
@@ -387,15 +388,16 @@ plugin = CluePlugin(
 
 ## Intégration de votre plugin dans Clue - Responsabilités et attentes
 
-Étant donné que clue est un projet relativement complexe qui comporte un grand nombre de pièces mobiles, il est important de définir les responsabilités des différentes parties prenantes sur le site :
+Étant donné que clue est un projet relativement complexe qui comporte un grand nombre de pièces mobiles, il est important de définir les
+responsabilités des différentes parties prenantes :
 
-1. APA2B est le principal propriétaire du code de clue-api (c'est-à-dire tout le code contenu dans le dossier `clue/`).
-2. Chaque équipe est responsable de la maintenance et de l'évolution de son plugin spécifique.
-3. Chaque équipe est responsable de la compatibilité entre son plugin et l'API centrale.
-   1. Il s'agit notamment de s'adapter aux ruptures introduites au cours du développement du service de base clue.
-   2. L'APA2B s'efforcera de limiter autant que possible ces changements radicaux et de les annoncer suffisamment à l'avance.
-4. L'APA2B est disponible pour apporter son soutien au développement (poser des questions, corriger des bogues dans le service central, etc.)
-5. L'APA2B est responsable du maintien de la stabilité du service dans son ensemble.
+1. Les mainteneurs principaux sont les propriétaires de code principaux du code de base de clue (c'est-à-dire tout le code contenu dans le dossier `clue/`).
+2. Chaque équipe respective est responsable de la maintenance et de l'évolution de son plugin spécifique.
+3. Chaque équipe respective est responsable d'assurer la compatibilité entre son plugin et l'API centrale.
+   1. Cela inclut l'adaptation aux changements incompatibles introduits au cours du développement du service de base clue.
+   2. Les mainteneurs principaux feront de leur mieux pour limiter autant que possible ces changements incompatibles et donneront un préavis suffisant.
+4. Les mainteneurs principaux sont disponibles pour le soutien au développement (poser des questions, corriger des bogues dans le service central, etc.).
+5. Les mainteneurs principaux sont responsables du maintien de la stabilité du service dans son ensemble.
 
 ## Intégrer votre plugin dans Clue - Héberger le code
 
@@ -421,7 +423,7 @@ Vous devez également ajouter une entrée au
 [`azure-pipelines.yml`](https://github.com/CybercentreCanada/clue-api/blob/develop/azure-pipelines.yml#L277)
 à la racine du projet de votre application.
 
-Pour des informations détaillées sur l'initialisation des tests, voir notre site principal [README](../README.md) de l'APA2B. Pour obtenir un soutien supplémentaire, adressez-vous à l'APA2B à l'adresse.
+Pour des informations détaillées sur l'initialisation des tests, voir notre site principal [README](../README.md).
 
 #### Dépendances externes
 
@@ -435,11 +437,11 @@ poetry add -G plugins azure-core 'azure-storage-blob>=12.2.0' 'azure-storage-fil
 
 #### Création d'une Pull Request
 
-Une fois que vous êtes satisfait de votre plugin, créez une pull request pour qu'un membre de l'APA2B révise le plugin pour l'approbation finale.
-Certains contrôles de la qualité du code sont effectués sur la base de code - si des problèmes sont signalés, travaillez avec un membre de
-APA2B pour les résoudre. Seuls les contrôles de lisibilité et de compatibilité relèvent de la responsabilité de l'APA2B - nous n'avons aucun droit de regard sur
-la fonctionnalité de votre plugin et nous ne pouvons pas vous aider à développer votre plugin au-delà des questions relatives à la base de code
-clue.
+Une fois que vous êtes satisfait de votre plugin, créez une pull request pour que les mainteneurs principaux examinent le plugin pour
+l'approbation finale. Certains contrôles de qualité du code sont effectués sur la base de code - si des problèmes sont signalés, travaillez avec les
+mainteneurs principaux pour les résoudre. Seuls les contrôles de lisibilité et de compatibilité relèvent de la responsabilité des mainteneurs principaux -
+ils n'ont aucun droit de regard sur la fonctionnalité de votre plugin et ne peuvent pas vous aider à développer votre plugin au-delà
+des questions relatives à la base de code clue.
 
 ### Repo autonome
 
@@ -449,22 +451,22 @@ un dépôt autonome. Nous recommandons d'effectuer des tests d'intégration avec
 
 ## Déployer le plugin
 
-Actuellement, le déploiement des plugins dans l'espace de noms d'enrichissement relève de la responsabilité de l'APA2B - il n'existe aucune ressource sur
-permettant aux développeurs de déployer et de supprimer manuellement leurs plugins. Cependant, le plugin peut exister partout où l'API centrale
-clue peut être atteinte, il n'est donc pas nécessaire de le déployer dans cet espace de noms.
+Actuellement, le déploiement des plugins dans l'environnement de production relève de la responsabilité des mainteneurs principaux - il n'existe aucune
+ressource en libre-service permettant aux développeurs de déployer et de supprimer manuellement leurs plugins. Cependant, le plugin peut exister
+n'importe où tant que l'API centrale clue peut l'atteindre, il n'est donc pas nécessaire de le déployer dans l'environnement géré.
 
-Si votre code est hébergé dans ce repo, l'APA2B vous aidera à configurer et à déployer votre plugin lorsqu'il sera prêt pour la production sur.
-Il est prévu d'améliorer la gestion des plugins, y compris leur déploiement dans l'espace de noms d'enrichissement
-sans l'intervention de l'APA2B, mais la mise en œuvre de cette mesure prendra un certain temps et le travail n'est pas prévu pour l'instant.
+Si votre code est hébergé dans ce dépôt, les mainteneurs principaux vous aideront à configurer et à déployer votre plugin lorsqu'il
+sera prêt pour la production. Il est prévu de permettre une gestion améliorée en libre-service des plugins, y compris le déploiement dans
+l'environnement géré, mais cela prendra un certain temps à mettre en œuvre et le travail n'est pas actuellement planifié.
 
 ## Enregistrer le plugin
 
-Si vous hébergez le code de votre plugin dans ce repo, la construction de l'image et son déploiement seront de la responsabilité de l'APA2B -
+Si vous hébergez le code de votre plugin dans ce dépôt, la construction de l'image et son déploiement seront de la responsabilité des mainteneurs principaux -
 sinon, c'est la responsabilité des développeurs du plugin.
 
-Actuellement, l'enregistrement des plugins auprès de l'API centrale de clue est principalement géré par les fichiers de configuration
-dans les charts de Helm. Il existe un support pour l'enregistrement des plugins au moment de l'exécution, mais il est assez basique - contactez l'APA2B si
-vous êtes intéressé par l'enregistrement au moment de l'exécution.
+Actuellement, l'enregistrement des plugins auprès de l'API centrale clue est principalement géré par les fichiers de configuration
+dans la configuration de déploiement. Il existe un support pour l'enregistrement des plugins au moment de l'exécution, mais il est assez basique - contactez les
+mainteneurs principaux si vous êtes intéressé par l'enregistrement au moment de l'exécution.
 
 ## Guide de développement des plugins
 

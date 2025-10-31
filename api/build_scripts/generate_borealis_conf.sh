@@ -51,7 +51,7 @@ api:
       classification: TLP:CLEAR
       max_classification: TLP:CLEAR
       url: "http://localhost:5008"
-      maintainer: APA2B <apa2b-dl@cyber.gc.ca>
+      maintainer: Example <example@example.com>
       documentation_link: http://example.com/
       datahub_link: http://example.com/
 "

@@ -1,8 +1,6 @@
 """Assemblyline Clue Plugin
 
-Team: APA1A
-
-Point of Contact: Ryan Samaroo <Ryan.Samaroo@cyber.gc.ca>
+Team: Canadian Centre for Cyber Security
 
 Status: Production
 

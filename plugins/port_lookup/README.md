@@ -1,8 +1,6 @@
 # Port Lookup
 
-Maintaining Team/Organization: CCCS
-
-Point of Contact: Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>
+Maintaining Team/Organization: Canadian Centre for Cyber Security
 
 Status: In Development
 

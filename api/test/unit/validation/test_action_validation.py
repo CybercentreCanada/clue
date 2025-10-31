@@ -101,20 +101,20 @@ def test_json_schema_params():
                     {
                         "if": {
                             "allOf": [
-                                {"properties": {"test": {"const": "alfred_stg"}}},
+                                {"properties": {"test": {"const": "example_stg"}}},
                                 {
                                     "properties": {"bleh": {"const": True}},
                                     "required": ["bleh"],
                                 },
                             ]
                         },
-                        "then": {"required": ["existing_alfred_stg_retention"]},
+                        "then": {"required": ["existing_example_stg_retention"]},
                     },
                 ],
                 "required": ["test"],
             },
             "id": "retain",
-            "name": "Retain Data to Alfred",
+            "name": "Retain Data to Example",
             "params": {
                 "$defs": {
                     "Selector": {
@@ -206,20 +206,20 @@ def test_json_schema_params():
                         {
                             "if": {
                                 "allOf": [
-                                    {"properties": {"test": {"const": "alfred_stg"}}},
+                                    {"properties": {"test": {"const": "example_stg"}}},
                                     {
                                         "properties": {"bleh": {"const": True}},
                                         "required": ["bleh"],
                                     },
                                 ]
                             },
-                            "then": {"required": ["existing_alfred_stg_retention"]},
+                            "then": {"required": ["existing_example_stg_retention"]},
                         },
                     ],
                     "required": ["test"],
                 },
                 "id": "retain",
-                "name": "Retain Data to Alfred",
+                "name": "Retain Data to Example",
                 "params": {},
                 "summary": "Test.",
                 "supported_types": ["telemetry"],

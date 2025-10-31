@@ -1,8 +1,6 @@
 """Howler Plugin
 
-Team: APA2B
-
-Point of Contact: Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>
+Team: Canadian Centre for Cybersecurity
 
 Status: Production
 
