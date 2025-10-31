@@ -19,7 +19,7 @@ def test_registration(host):
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
         "url": "http://localhost:5008/",
-        "maintainer": "APA2B <apa2b-dl@cyber.gc.ca>",
+        "maintainer": "Example <example@example.com>",
         "datahub_link": "http://example.com",
         "documentation_link": "http://example.com",
         "type": "ip",
@@ -47,7 +47,7 @@ def test_registration_incorrect_json(host):
         "name": "test",
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
-        "maintainer": "APA2B <apa2b-dl@cyber.gc.ca>",
+        "maintainer": "Example <example@example.com>",
         "datahub_link": "http://example.com",
         "documentation_link": "http://example.com",
         "type": "ip",
@@ -103,7 +103,7 @@ def test_get_enrichment_from_new_plugin(host):
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
         "url": "http://localhost:5008/",
-        "maintainer": "APA2B <apa2b-dl@cyber.gc.ca>",
+        "maintainer": "Example <example@example.com>",
         "datahub_link": "http://example.com",
         "documentation_link": "http://example.com",
         "type": "ip",
@@ -124,7 +124,7 @@ def test_get_enrichment_from_new_plugin(host):
 
     json: dict[str, dict[str, Any]] = enrich_res.json()["api_response"]
     assert "error" not in json["test_enrich"]
-    assert json["test_enrich"]["maintainer"] == "APA2B <apa2b-dl@cyber.gc.ca>"
+    assert json["test_enrich"]["maintainer"] == "Example <example@example.com>"
     assert json["test_enrich"]["datahub_link"] == "http://example.com/"
     assert json["test_enrich"]["documentation_link"] == "http://example.com/"
 
@@ -145,7 +145,7 @@ def test_remove_application(host):
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
         "url": "http://localhost:5008/",
-        "maintainer": "APA2B <apa2b-dl@cyber.gc.ca>",
+        "maintainer": "Example <example@example.com>",
         "datahub_link": "http://example.com",
         "documentation_link": "http://example.com",
         "type": "ip",
