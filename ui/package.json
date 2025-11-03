@@ -12,9 +12,9 @@
     ]
   },
   "dependencies": {
-    "@jsonforms/core": "^3.5.1",
-    "@jsonforms/material-renderers": "^3.5.1",
-    "@jsonforms/react": "^3.5.1",
+    "@jsonforms/core": "^3.6.0",
+    "@jsonforms/material-renderers": "^3.6.0",
+    "@jsonforms/react": "^3.6.0",
     "@microlink/react-json-view": "^1.26.2",
     "@testing-library/user-event": "^14.6.1",
     "ajv": "^8.17.1",
@@ -160,5 +160,5 @@
   },
   "type": "module",
   "types": "main.d.ts",
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
