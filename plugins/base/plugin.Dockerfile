@@ -1,6 +1,6 @@
 ARG base_plugin_version
 
-FROM cccsaurora/clue-plugin-base:${base_plugin_version} as builder
+FROM cccs/clue-plugin-base:${base_plugin_version} as builder
 
 USER root
 
@@ -22,7 +22,7 @@ RUN rm pip.conf
 
 USER clue
 
-FROM cccsaurora/clue-plugin-base:${base_plugin_version} as release
+FROM cccs/clue-plugin-base:${base_plugin_version} as release
 
 WORKDIR /home/clue
 

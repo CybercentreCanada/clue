@@ -51,7 +51,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: cccs/aurora/clue-plugin-${{steps.plugin-metadata.outputs.name}}
+          images: cccs/clue-plugin-${{steps.plugin-metadata.outputs.name}}
           tags: |
             type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
             type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
@@ -79,6 +79,6 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: index.docker.io/cccs/aurora/clue-plugin-${{steps.plugin-metadata.outputs.name}}
+          subject-name: index.docker.io/cccs/clue-plugin-${{steps.plugin-metadata.outputs.name}}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true

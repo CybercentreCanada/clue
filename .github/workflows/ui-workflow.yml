@@ -220,7 +220,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: cccs/aurora/clue-ui
+          images: cccs/clue-ui
           tags: |
             type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
@@ -248,6 +248,6 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: index.docker.io/cccs/aurora/clue-ui
+          subject-name: index.docker.io/cccs/clue-ui
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
