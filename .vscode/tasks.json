@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Launch Clue Documentation",
+      "type": "shell",
+      "command": "${workspaceFolder}/mkdocs/venv/Scripts/mkdocs serve",
+      "options": {
+        "cwd": "${workspaceFolder}/mkdocs/"
+      },
+      "problemMatcher": [],
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    }
+  ]
+}

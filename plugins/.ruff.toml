@@ -1,0 +1,14 @@
+extend = "../api/pyproject.toml"
+
+line-length = 120
+
+exclude = [
+  "**/test",
+  "**/tests",
+]
+
+[lint.per-file-ignores]
+
+"setup/interactive.py" = ["T201", "E402"]
+"setup/create.py" = ["T201", "D103", "E402"]
+"setup/commands.py" = ["T201", "D103"]

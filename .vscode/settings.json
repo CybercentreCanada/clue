@@ -1,0 +1,146 @@
+{
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[github-actions-workflow]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.autoIndent": "keep",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.autoIndent": "keep",
+    "editor.defaultColorDecorators": "never",
+    "editor.insertSpaces": true,
+    "editor.quickSuggestions": {
+      "comments": false,
+      "other": true,
+      "strings": true
+    },
+    "editor.tabSize": 2
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit",
+    "source.unusedImports": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "modificationsIfAvailable",
+  "editor.rulers": [
+    120
+  ],
+  "editor.tabSize": 4,
+  "errorLens.alignMessage": {
+    "end": 0,
+    "minimumMargin": 4,
+    "padding": [
+      0,
+      0
+    ],
+    "start": 120,
+    "useFixedPosition": true
+  },
+  "errorLens.gutterIconSet": "squareRounded",
+  "errorLens.messageBackgroundMode": "message",
+  "errorLens.messageTemplate": "$severity $code $message",
+  "errorLens.severityText": [
+    "■",
+    "■",
+    "■",
+    "■"
+  ],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.workingDirectories": [
+    {
+      "changeProcessCWD": true,
+      "directory": "./ui"
+    }
+  ],
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.git": true,
+    "**/.hg": true,
+    "**/.idea": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/.svn": true,
+    "**/CVS": true,
+    "**/Thumbs.db": true,
+    "**/__pycache__": true,
+    "**/clue_api.egg-info": true,
+    "**/dist": true
+  },
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/target": true
+  },
+  "flake8.args": [
+    "--max-line-length=120"
+  ],
+  "flake8.cwd": "${fileDirname}",
+  "git.enableCommitSigning": true,
+  "markdownlint.config": {
+    "MD024": false,
+    "MD033": false
+  },
+  "mypy-type-checker.args": [
+    "--check-untyped-defs"
+  ],
+  "mypy-type-checker.cwd": "${nearestConfig}",
+  "mypy-type-checker.ignorePatterns": [
+    "api/test/**/*.py"
+  ],
+  "mypy-type-checker.importStrategy": "fromEnvironment",
+  "npm.packageManager": "pnpm",
+  "prettier.configPath": "ui/.prettierrc",
+  "python.analysis.autoFormatStrings": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.completeFunctionParens": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/api/.venv/bin/python",
+  "python.terminal.activateEnvironment": false,
+  "python.testing.pytestEnabled": true,
+  "python.testing.pytestPath": "./api",
+  "ruff.configurationPreference": "filesystemFirst",
+  "search.exclude": {
+    "**/*.code-search": true,
+    "**/bower_components": true,
+    "**/node_modules": true,
+    "ui/pnpm-lock.yaml": true,
+    "ui/target": true
+  },
+  "makefile.configureOnOpen": false
+}

@@ -1,0 +1,59 @@
+name: Clue Howler Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/howler/**
+      - .github/workflows/howler-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/howler/**
+      - .github/workflows/howler-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-howler-plugin-formatting:
+    name: Lint Howler Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/howler
+  test-howler-plugin:
+    needs: check-howler-plugin-formatting
+    name: Test Howler Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/howler
+  build-howler-plugin:
+    needs: test-howler-plugin
+    name: Build Howler Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/howler
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

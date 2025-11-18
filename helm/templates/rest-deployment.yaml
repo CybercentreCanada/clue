@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.rest.name }}
+  labels:
+    app.kubernetes.io/component: rest
+{{ include "clue.labels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/version: {{ .Chart.AppVersion }}
+      app.kubernetes.io/name: {{ include "clue.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: rest
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        app.kubernetes.io/name: {{ include "clue.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: rest
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/central-config.yaml") . | sha256sum }}
+    spec:
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+      tolerations:
+{{ toYaml .Values.tolerations | indent 8 }}
+      containers:
+      - name: {{ include "clue.name" . }}
+        image: "{{ .Values.images.rest.repository }}:{{ .Values.images.rest.tag }}"
+        imagePullPolicy: {{ .Values.images.rest.pullPolicy | quote }}
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/clue/conf/
+        env:
+        {{- range .Values.oauth.providers }}
+        - name: {{ upper .name }}_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ .secret.name }}
+              key: {{ .secret.key }}
+        {{- end }}
+        {{- if (and .Values.apm.enabled .Values.apm.tokenSecret) }}
+        - name: ELASTIC_APM_SECRET_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.apm.tokenSecret }}
+              key: {{ .Values.apm.tokenKey | default "token" }}
+        {{- end }}
+       {{- if .Values.apm.enables}}
+        - name: ELASTIC_APM_DEBUG
+          value: {{ .Values.apm.workWithDebug | quote }}
+        - name: ELASTIC_APM_LOG_LEVEL
+          value: {{ .Values.apm.loggingLevel }}
+        {{- end }}
+        - name: WORKERS
+          value: "6"
+        - name: APP_NAME
+          value: {{ .Values.appName | default "clue" }}
+        - name: THREADS
+          value: "4"
+        - name: WORKER_CONNECTIONS
+          value: "2048"
+        - name: LIMIT_REQUEST_FIELD_SIZE
+          value: "16380"
+        - name: ELASTIC_APM_TRANSACTION_MAX_SPANS
+          value: "1000"
+        - name: API__SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: flask-secret-key
+              key: key
+        - name: AUTH__APIKEYS
+          valueFrom:
+            secretKeyRef:
+              name: clue-apikeys
+              key: data
+        {{- if .Values.redis.auth.enabled }}
+        - name: CORE__REDIS__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: clue-redis
+              key: redis-password
+        {{- end }}
+        {{- if (and .Values.service_accounts.enabled .Values.service_accounts.accounts) }}
+        {{- range .Values.service_accounts.accounts }}
+        - name: "SA_{{ upper .provider }}_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              name: {{ .secret.name }}
+              key: {{ .secret.key }}
+        {{- end }}
+        {{- end }}
+
+        resources:
+          {{- toYaml .Values.rest.resources | nindent 12 }}
+      volumes:
+      - name: conf
+        configMap:
+          name: clue-server-conf

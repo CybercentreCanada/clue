@@ -1,0 +1,67 @@
+{
+  "RESTRICTED": "TLP:CLEAR",
+  "UNRESTRICTED": "TLP:CLEAR",
+  "access_req_aliases": {},
+  "access_req_map_lts": {},
+  "access_req_map_stl": {},
+  "description": {
+    "TLP:CLEAR": "Subject to standard copyright rules, TLP:CLEAR information may be distributed without restriction."
+  },
+  "dynamic_groups": true,
+  "dynamic_groups_type": "group",
+  "enforce": true,
+  "groups_aliases": {},
+  "groups_auto_select": [],
+  "groups_auto_select_short": [],
+  "groups_map_lts": {},
+  "groups_map_stl": {},
+  "invalid_mode": false,
+  "levels_aliases": {
+    "RESTRICTED": "TLP:C",
+    "UNCLASSIFIED": "TLP:C",
+    "UNRESTRICTED": "TLP:C"
+  },
+  "levels_map": {
+    "100": "TLP:C",
+    "TLP:C": 100
+  },
+  "levels_map_lts": {
+    "TLP:CLEAR": "TLP:C"
+  },
+  "levels_map_stl": {
+    "TLP:C": "TLP:CLEAR"
+  },
+  "levels_styles_map": {
+    "TLP:CLEAR": {
+      "color": "default"
+    }
+  },
+  "original_definition": {
+    "dynamic_groups": true,
+    "dynamic_groups_type": "group",
+    "enforce": true,
+    "groups": [],
+    "levels": [
+      {
+        "aliases": ["UNRESTRICTED", "UNCLASSIFIED", "U", "TLP:W", "TLP:WHITE"],
+        "css": {
+          "color": "default"
+        },
+        "description": "Subject to standard copyright rules, TLP:CLEAR information may be distributed without restriction.",
+        "lvl": 100,
+        "name": "TLP:CLEAR",
+        "short_name": "TLP:C"
+      }
+    ],
+    "required": [],
+    "restricted": "TLP:CLEAR",
+    "subgroups": [],
+    "unrestricted": "TLP:CLEAR"
+  },
+  "params_map": {},
+  "subgroups_aliases": {},
+  "subgroups_auto_select": [],
+  "subgroups_auto_select_short": [],
+  "subgroups_map_lts": {},
+  "subgroups_map_stl": {}
+}

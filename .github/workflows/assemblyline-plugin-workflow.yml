@@ -1,0 +1,59 @@
+name: Clue Assemblyline Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/assemblyline/**
+      - .github/workflows/assemblyline-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/assemblyline/**
+      - .github/workflows/assemblyline-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-assemblyline-plugin-formatting:
+    name: Lint Assemblyline Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/assemblyline
+  test-assemblyline-plugin:
+    needs: check-assemblyline-plugin-formatting
+    name: Test Assemblyline Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/assemblyline
+  build-assemblyline-plugin:
+    needs: test-assemblyline-plugin
+    name: Build Assemblyline Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/assemblyline
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

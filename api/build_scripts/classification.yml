@@ -1,0 +1,87 @@
+enforce: true
+dynamic_groups: false
+levels:
+  # List of alternate names for the current marking
+  - aliases:
+      - UNRESTRICTED
+      - UNCLASSIFIED
+      - U
+      - TLP:W
+      - TLP:WHITE
+    # Stylesheet applied in the UI for the different levels
+    css:
+      # Name of the color scheme used for display (default, primary, secondary, success, info, warning, error)
+      color: success
+    # Description of the classification level
+    description: Subject to standard copyright rules, TLP:CLEAR information may be distributed without restriction.
+    # Interger value of the Classification level (higher is more classified)
+    lvl: 100
+    # Long name of the classification item
+    name: TLP:CLEAR
+    # Short name of the classification item
+    short_name: TLP:C
+  - aliases: []
+    css:
+      color: success
+    description:
+      Recipients may share TLP:GREEN information with peers and partner organizations
+      within their sector or community, but not via publicly accessible channels. Information
+      in this category can be circulated widely within a particular community. TLP:GREEN
+      information may not be released outside of the community.
+    lvl: 110
+    name: TLP:GREEN
+    short_name: TLP:G
+  - aliases: []
+    css:
+      color: warning
+    description:
+      Recipients may only share TLP:AMBER information with members of their
+      own organization and with clients or customers who need to know the information
+      to protect themselves or prevent further harm.
+    lvl: 120
+    name: TLP:AMBER
+    short_name: TLP:A
+  - aliases:
+      - RESTRICTED
+    css:
+      color: warning
+    description:
+      Recipients may only share TLP:AMBER+STRICT information with members of their
+      own organization.
+    lvl: 125
+    name: TLP:AMBER+STRICT
+    short_name: TLP:A+S
+  - aliases:
+      - PA
+      - PROTECTED A
+    css:
+      color: info
+    description: Protected A Data
+    lvl: 140
+    name: Protected A
+    short_name: PA
+  - aliases:
+      - PB
+      - PROTECTED B
+    css:
+      color: info
+    description: Protected B Data
+    lvl: 150
+    name: Protected B
+    short_name: PB
+
+# List of required tokens:
+#   A user requesting access to an item must have all the
+#   required tokens the item has to gain access to it
+required:
+  - aliases:
+      - OFFICIAL USE ONLY
+    description: Official (Internal) use only
+    name: Official Use Only
+    short_name: OUO
+    # The minimum classification level an item must have
+    #   for this token to be valid. (optional)
+    # require_lvl: 100
+
+restricted: TLP:AMBER+STRICT
+unrestricted: TLP:CLEAR

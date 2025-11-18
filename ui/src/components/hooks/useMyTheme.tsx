@@ -1,0 +1,30 @@
+import type { AppThemeConfigs } from 'commons/components/app/AppConfigs';
+
+const NEW_THEME = {
+  palette: {
+    dark: {
+      background: {
+        default: '#202020',
+        paper: '#202020'
+      },
+      primary: {
+        main: '#7DA1DB'
+      },
+      secondary: {
+        main: '#C0DEEC'
+      }
+    },
+    light: {
+      primary: {
+        main: '#0062BF'
+      },
+      secondary: {
+        main: '#619CB7'
+      }
+    }
+  }
+};
+
+export default function useMyTheme(): AppThemeConfigs {
+  return NEW_THEME;
+}

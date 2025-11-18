@@ -1,0 +1,59 @@
+name: Clue Port Lookup Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/port_lookup/**
+      - .github/workflows/port_lookup-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/port_lookup/**
+      - .github/workflows/port_lookup-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-port_lookup-plugin-formatting:
+    name: Lint Port Lookup Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/port_lookup
+  test-port_lookup-plugin:
+    needs: check-port_lookup-plugin-formatting
+    name: Test Port Lookup Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/port_lookup
+  build-port_lookup-plugin:
+    needs: test-port_lookup-plugin
+    name: Build Port Lookup Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/port_lookup
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

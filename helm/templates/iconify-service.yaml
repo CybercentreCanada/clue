@@ -1,0 +1,19 @@
+{{ if .Values.iconify.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: clue-iconify
+  labels:
+    app: clue-iconify
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.iconify.port | default 3000 }}
+    targetPort: 3000
+    protocol: TCP
+    name: iconify
+  selector:
+    app.kubernetes.io/name: {{ include "clue.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: iconify
+{{ end }}

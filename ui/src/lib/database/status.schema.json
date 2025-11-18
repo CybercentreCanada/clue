@@ -1,0 +1,35 @@
+{
+  "keyCompression": true,
+  "version": 0,
+  "primaryKey": "id",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "type": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "value": {
+      "type": "string",
+      "maxLength": 2048
+    },
+    "classification": {
+      "type": "string"
+    },
+    "status": {
+      "enum": ["pending", "in-progress", "complete"],
+      "type": "string"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["id", "type", "value", "classification", "status"],
+  "indexes": ["type", "value"]
+}

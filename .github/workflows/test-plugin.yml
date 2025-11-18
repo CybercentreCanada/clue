@@ -1,0 +1,93 @@
+name: Test Plugin
+
+on:
+  workflow_call:
+    inputs:
+      plugin-path:
+        required: true
+        type: string
+
+jobs:
+  run-tests:
+    name: Run Unit Tests for Plugin
+    runs-on: ubuntu-latest
+    env:
+      PLUGIN_PATH: ${{inputs.plugin-path}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if test files exist
+        id: check-tests
+        working-directory: ${{inputs.plugin-path}}
+        run: |
+          echo "Checking for test directories in $PLUGIN_PATH"
+
+          # Check if either 'test' or 'tests' directory exists
+          if [ -d "test" ] || [ -d "tests" ]; then
+            if [ -d "test" ]; then
+              echo "✅ Found 'test' directory"
+            fi
+            if [ -d "tests" ]; then
+              echo "✅ Found 'tests' directory"
+            fi
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No test directory found. Expected either 'test' or 'tests' folder in $PLUGIN_PATH"
+            echo "Skipping test execution as no tests are available."
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Python
+        if: steps.check-tests.outputs.run_tests == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        if: steps.check-tests.outputs.run_tests == 'true'
+        run: python -m pip install poetry
+
+      - uses: actions/cache@v3
+        if: steps.check-tests.outputs.run_tests == 'true'
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./api/.venv
+          key: venv-${{ hashFiles('api/poetry.lock') }}
+
+      - name: Check for poetry config integrity
+        if: steps.check-tests.outputs.run_tests == 'true'
+        working-directory: api
+        run: |
+          poetry --version
+          poetry env use 3.12
+          poetry check
+          poetry env info
+
+      - name: Install Dependencies
+        if: steps.check-tests.outputs.run_tests == 'true'
+        working-directory: api
+        run: |
+          poetry install --verbose --with test
+
+      - name: Check and install plugin requirements
+        if: steps.check-tests.outputs.run_tests == 'true'
+        run: |
+          if [ -f "$PLUGIN_PATH/requirements.txt" ]; then
+            echo "✅ Found requirements.txt in $PLUGIN_PATH"
+            echo "Installing plugin dependencies..."
+            pip install -r "$PLUGIN_PATH/requirements.txt"
+          else
+            echo "ℹ️ No requirements.txt found in $PLUGIN_PATH"
+          fi
+
+      - name: Install pytest
+        if: steps.check-tests.outputs.run_tests == 'true'
+        run: pip install pytest
+
+      - name: Run Tests
+        if: steps.check-tests.outputs.run_tests == 'true'
+        run: |
+          PLUGIN_NAME="${PLUGIN_PATH#plugins/}"
+          python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
+        working-directory: plugins

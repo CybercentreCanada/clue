@@ -1,0 +1,117 @@
+extra:
+  alternate:
+  - lang: en
+    link: /
+    name: English
+  - lang: fr
+    link: /fr/
+    name: Français
+
+extra_css:
+- css/extra.css
+
+extra_javascript:
+- https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js
+- js/tables.js
+
+markdown_extensions:
+- toc:
+    permalink: true
+- attr_list
+- pymdownx.tabbed:
+    alternate_style: true
+- pymdownx.details
+- pymdownx.highlight
+- pymdownx.superfences
+- admonition
+- def_list
+- pymdownx.tasklist:
+    custom_checkbox: true
+- pymdownx.emoji:
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+
+nav:
+- Home: index.md
+- Overview:
+  - How It Works:
+    - overview/users.md
+    - overview/plugin_developers.md
+    - overview/integration.md
+- Installation:
+  - installation/helm.md
+  - installation/plugin.md
+- Developer's Guide:
+  - developer/getting_started.md
+  - developer/plugin.md
+  - developer/backend.md
+  - developer/frontend.md
+  - developer/CONTRIBUTING.md
+
+plugins:
+- glightbox:
+    auto_caption: false
+    caption_position: bottom
+    draggable: false
+    effect: zoom
+    height: auto
+    loop: false
+    skip_classes:
+    - no-zoom
+    touchNavigation: true
+    width: 100%
+    zoomable: true
+- search
+- i18n:
+    fallback_to_default: true
+    languages:
+    - build: true
+      default: true
+      locale: en
+      name: English
+    - build: true
+      locale: fr
+      name: Français
+      nav_translations:
+        Home: Accueil
+        Overview: Aperçu
+        How It Works: Fonctionnement
+        Developer's Guide: Guide du développeur
+
+repo_url: https://github.com/CybercentreCanada/clue
+
+site_name: Clue
+
+site_url: https://cybercentrecanada.github.io/clue-docs/
+
+theme:
+  custom_dir: override
+  favicon: images/clue-icon.svg
+  features:
+  - navigation.tabs
+  - navigation.expand
+  - navigation.top
+  icon:
+    repo: fontawesome/brands/github
+  language: en
+  logo: images/clue-icon.svg
+  name: material
+  palette:
+  - media: '(prefers-color-scheme: dark)'
+    scheme: dark
+    primary: custom
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to light mode
+  - media: '(prefers-color-scheme: light)'
+    scheme: light
+    primary: custom
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to dark mode
+  static_templates:
+  - 404.html
+
+validation:
+  absolute_links: ignore
+  unrecognized_links: ignore

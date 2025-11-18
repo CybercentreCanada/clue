@@ -1,0 +1,182 @@
+ingress:
+  hosts:
+    - clue.example.url
+  tls:
+    - hosts:
+        - clue.example.url
+
+iconify:
+  ingress:
+    hosts:
+      - icons.example.url
+    tls:
+      - hosts:
+          - icons.example.url
+
+apm:
+  enabled: false
+  ingress:
+    enabled: false
+    hostname: clue-apm.example.url
+    tls:
+      - hosts:
+          - clue-apm.example.url
+
+oauth:
+  providers:
+    - name: azure
+      secret:
+        name: clue-client-secret
+        key: secret
+
+config:
+  auth:
+    service_account:
+      enabled: false
+
+    oauth:
+      strict_apikeys: false
+      providers:
+        azure:
+          auto_sync: true
+          tenant_id: your-tenant-id
+          client_id: your-client-id
+          access_token_url: https://login.microsoftonline.com/{{ .Values.config.auth.oauth.providers.azure.tenant_id }}/oauth2/v2.0/token
+          api_base_url: https://login.microsoftonline.com/{{ .Values.config.auth.oauth.providers.azure.tenant_id }}/
+          authorize_url: https://login.microsoftonline.com/{{ .Values.config.auth.oauth.providers.azure.tenant_id }}/oauth2/v2.0/authorize
+          jwks_uri: https://login.microsoftonline.com/{{ .Values.config.auth.oauth.providers.azure.tenant_id }}/discovery/v2.0/keys
+          user_get: openid/userinfo
+          iss: https://login.microsoftonline.com/{{ .Values.config.auth.oauth.providers.azure.tenant_id }}/v2.0
+          uid_regex: "^(.+)\\.(.+)@"
+          audience: "{{ .Values.config.auth.oauth.providers.azure.client_id }}"
+          scope: "{{ .Values.config.auth.oauth.providers.azure.client_id }}/.default openid email profile
+            offline_access"
+
+  api:
+    audit: false
+    external_sources:
+      - name: virustotal
+        classification: TLP:CLEAR
+        max_classification: TLP:CLEAR
+        url: "http://virustotal-rest.clue.svc.cluster.local:5000"
+      - name: malware-bazaar
+        classification: TLP:CLEAR
+        max_classification: TLP:CLEAR
+        url: "http://malware-bazaar-rest.clue.svc.cluster.local:5000"
+      - name: howler
+        classification: TLP:CLEAR
+        max_classification: TLP:CLEAR
+        url: "http://howler-rest.clue.svc.cluster.local:5000"
+        obo_target: howler
+      - name: test-plugin
+        classification: TLP:CLEAR
+        max_classification: TLP:AMBER+STRICT
+        url: "http://test-plugin-rest.clue.svc.cluster.local:5000"
+      - name: crt-sh
+        classification: TLP:CLEAR
+        max_classification: TLP:CLEAR
+        url: "http://crt-sh-rest.clue.svc.cluster.local:5000"
+      - name: port-lookup
+        classification: TLP:CLEAR
+        max_classification: TLP:AMBER+STRICT
+        url: "http://port-lookup-rest.clue.svc.cluster.local:5000"
+  core:
+    metrics:
+      apm_server:
+        server_url: http://clue-apm.clue.svc.cluster.local:8200
+
+classification:
+  enforce: true
+  dynamic_groups: true
+  dynamic_groups_type: group
+  restricted: TLP:A+S//CMR//REL TO CSE
+  required:
+    - aliases:
+        - OFFICIAL USE ONLY
+      description: Official (Internal) use only
+      name: Official Use Only
+      short_name: OUO
+    - aliases: []
+      description: Produced using a commercial tool with limited distribution
+      name: COMMERCIAL
+      short_name: CMR
+
+  groups:
+    - aliases: []
+      auto_select: true
+      description: Employees of CSE
+      name: CSE
+      short_name: CSE
+  subgroups: []
+
+plugins:
+  - name: malware-bazaar
+    env:
+      - name: PLUGIN_PORT
+        value: "5000"
+      - name: PORT
+        value: "5000"
+    image:
+      name: cccsaurora/clue-plugin-malware-bazaar
+      tag: nightly
+      pullPolicy: "Always"
+  - name: virustotal
+    env:
+      - name: VT_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: vt-api-key
+            key: key
+      - name: PLUGIN_PORT
+        value: "5000"
+      - name: PORT
+        value: "5000"
+    image:
+      name: cccsaurora/clue-plugin-virustotal
+      tag: nightly
+      pullPolicy: "Always"
+  - name: howler
+    env:
+      - name: PLUGIN_PORT
+        value: "5000"
+      - name: PORT
+        value: "5000"
+      - name: HOWLER_URL
+        value:
+      - name: HOWLER_AUDIENCE
+        value:
+    image:
+      name: cccsaurora/clue-plugin-howler
+      tag: nightly
+      pullPolicy: "Always"
+  - name: test-plugin
+    env:
+      - name: PLUGIN_PORT
+        value: "5000"
+      - name: PORT
+        value: "5000"
+    image:
+      name: cccsaurora/clue-plugin-example
+      tag: nightly
+      pullPolicy: "Always"
+  - name: crt-sh
+    env:
+      - name: PLUGIN_PORT
+        value: "5000"
+      - name: PORT
+        value: "5000"
+    image:
+      name: cccsaurora/clue-plugin-crtsh
+      tag: nightly
+      pullPolicy: "Always"
+  - name: port-lookup
+    env:
+      - name: PLUGIN_PORT
+        value: "5000"
+      - name: PORT
+        value: "5000"
+      - name: CLASSIFICATION
+        value: TLP:CLEAR
+    image:
+      name: cccsaurora/clue-plugin-port-lookup
+      tag: nightly

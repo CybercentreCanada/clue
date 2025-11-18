@@ -1,0 +1,53 @@
+name: Clue Example Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/example/**
+      - .github/workflows/example-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/example/**
+      - .github/workflows/example-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-example-plugin-formatting:
+    name: Lint Example Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/example
+  build-example-plugin:
+    needs: check-example-plugin-formatting
+    name: Build Example Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/example
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

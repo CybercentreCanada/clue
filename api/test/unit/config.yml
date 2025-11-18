@@ -1,0 +1,91 @@
+auth:
+  service_account:
+    enabled: true
+    accounts:
+      - username: goose
+        password: goose
+        provider: keycloak
+
+  oauth:
+    enabled: true
+    providers:
+      keycloak:
+        audience: clue
+        auto_sync: true
+        access_token_url: http://localhost:9100/realms/HogwartsMini/protocol/openid-connect/token
+        api_base_url: http://localhost:9100/realms/HogwartsMini/protocol/openid-connect/
+        authorize_url: http://localhost:9100/realms/HogwartsMini/protocol/openid-connect/auth
+        client_id: clue
+        client_secret: 09RhSF7tp0ShDdDMCszqI4zk8HMroTTZ
+        scope: "openid offline_access"
+        jwks_uri: http://localhost:9100/realms/HogwartsMini/protocol/openid-connect/certs
+        required_groups:
+          - clue_user
+        role_map:
+          user: clue_user
+          admin: clue_admin
+        classification_map:
+          users-sg: TLP:AMBER+STRICT
+          clue_user: Bananananana//invalid+classification
+
+logging:
+  log_level: INFO
+  log_as_json: false
+
+api:
+  audit: false
+  debug: true
+  validate_session_useragent: false
+  external_sources:
+    - name: test
+      classification: TLP:CLEAR
+      max_classification: TLP:CLEAR
+      url: "http://localhost:5008/"
+      maintainer: Example <example@example.com>
+      datahub_link: http://example.com
+      documentation_link: http://example.com
+    - name: bad
+      classification: TLP:CLEAR
+      max_classification: TLP:CLEAR
+      url: "http://localhost:5009/"
+      maintainer: Example <example@example.com>
+      datahub_link: http://example.com
+      documentation_link: http://example.com
+    - name: slow
+      classification: TLP:CLEAR
+      max_classification: TLP:CLEAR
+      url: "http://localhost:5010/"
+      maintainer: Example <example@example.com>
+      datahub_link: http://example.com
+      documentation_link: http://example.com
+    - name: test-amber
+      classification: TLP:AMBER+STRICT
+      max_classification: TLP:AMBER+STRICT
+      url: "http://localhost:5008/"
+      maintainer: Example <example@example.com>
+      datahub_link: http://example.com
+      documentation_link: http://example.com
+      production: true
+    - name: telemetry
+      classification: TLP:CLEAR
+      max_classification: TLP:AMBER+STRICT
+      url: "http://localhost:5011"
+      maintainer: Example <example@example.com>
+      documentation_link: http://example.com/
+      datahub_link: http://example.com/
+    - name: quota-test
+      classification: TLP:CLEAR
+      max_classification: TLP:AMBER+STRICT
+      url: "http://localhost:5008"
+      include_default: false
+      obo_target: test-obo
+  obo_targets:
+    test-obo:
+      enabled: true
+      scope: test
+      quota: 3
+
+ui:
+  cors_origins:
+    - .*localhost.*
+    - .*.cyber.gc.ca

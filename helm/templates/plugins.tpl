@@ -1,0 +1,176 @@
+{{- range .Values.plugins -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  labels:
+    app.kubernetes.io/component: rest
+    app.kubernetes.io/name: {{ .name }}
+    helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    {{- if $.Chart.AppVersion }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion | quote }}
+    {{- end }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+      app.kubernetes.io/name: {{.name}}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+        app.kubernetes.io/name: {{.name}}
+        app.kubernetes.io/instance: {{ $.Release.Name }}
+        app.kubernetes.io/component: rest
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/plugin-config.yaml") $ | sha256sum }}
+    spec:
+      nodeSelector:
+{{ toYaml $.Values.nodeSelector | indent 8 }}
+      affinity:
+{{ toYaml $.Values.affinity | indent 8 }}
+      tolerations:
+{{ toYaml $.Values.tolerations | indent 8 }}
+      containers:
+      - name: {{.name}}
+        image: "{{ include "image_name" (dict "plugin" . "Values" $.Values) }}"
+        imagePullPolicy: {{ .image.pullPolicy | quote }}
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+        - name: conf
+          mountPath: "/etc/{{ .name }}/conf/"
+        env:
+        - name: APP_NAME
+          value: {{ .name }}
+        - name: REQUESTS_CA_BUNDLE
+          value: /etc/ssl/certs/ca-certificates.crt
+        - name: WORKERS
+          value: "12"
+        - name: THREADS
+          value: "4"
+        - name: EXECUTOR_THREADS
+          value: "16"
+        - name: WORKER_CONNECTIONS
+          value: "2048"
+        - name: LIMIT_REQUEST_FIELD_SIZE
+          value: "16380"
+        {{- if $.Values.apm.enabled }}
+        - name: APM_SERVER_URL
+          value: {{ $.Values.config.core.metrics.apm_server.server_url }}
+        {{- if $.Values.apm.tokenSecret }}
+        - name: ELASTIC_APM_SECRET_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ $.Values.apm.tokenSecret }}
+              key: {{ $.Values.apm.tokenKey | default "token" }}
+        {{- end }}
+        - name: ELASTIC_APM_DEBUG
+          value: {{ $.Values.apm.workWithDebug | quote }}
+        - name: ELASTIC_APM_LOG_LEVEL
+          value: {{ $.Values.apm.loggingLevel }}
+        {{- end }}
+        - name: CACHE_TYPE
+          value: {{ .cache_type | default "redis" }}
+        - name: CENTRAL_API_URL
+          value: {{ $.Values.rest.full_url }}
+        {{- if $.Values.redis.auth.enabled }}
+        - name: CORE__REDIS__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: clue-redis
+              key: redis-password
+        {{- end }}
+{{- if .env }}
+{{ tpl (toYaml .env) $ | indent 8 }}
+{{- end }}
+        resources:
+          {{- toYaml $.Values.rest.resources | nindent 12 }}
+      volumes:
+      - name: conf
+        configMap:
+          name: clue-plugin-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}-rest
+  labels:
+    app: {{ .name }}-rest
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .port | default 5000 }}
+    targetPort: 5000
+    protocol: TCP
+    name: rest
+  selector:
+    app.kubernetes.io/name: {{.name}}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/component: rest
+---
+{{- if .ingress -}}
+{{- $prefix := .name -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .name }}
+  labels:
+{{ include "clue.labels" $ | indent 4 }}
+  {{- with $.Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  tls:
+    {{- range $.Values.ingress.tls }}
+    - hosts:
+      {{- range $host := .hosts | default (list "") }}
+        - "{{ $prefix }}-{{ $host }}"
+      {{- end }}
+      secretName: {{.secretName}}
+    {{- end }}
+  rules:
+    {{- range $host := $.Values.ingress.hosts | default (list "") }}
+    - host: "{{ $prefix }}-{{ $host }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $prefix }}-rest
+                port:
+                  name: rest
+    {{- end }}
+{{- end }}
+
+---
+{{- if $.Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .name }}
+  labels: {}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .name }}
+  minReplicas: {{ $.Values.autoscaling.minReplicas }}
+  maxReplicas: {{ $.Values.autoscaling.maxReplicas }}
+  {{- if $.Values.autoscaling.metrics }}
+  metrics:
+  {{- toYaml $.Values.autoscaling.metrics | nindent 4}}
+  {{- end }}
+  {{- if $.Values.autoscaling.behavior }}
+  behavior:
+  {{- toYaml $.Values.autoscaling.behavior | nindent 4 }}
+  {{- end }}
+---
+{{- end }}
+{{- end -}}

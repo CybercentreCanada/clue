@@ -1,0 +1,134 @@
+{
+  "actions.execute": "Execute",
+  "actions.executing": "Executing",
+  "actions.json.hide": "Masquer JSON",
+  "actions.json.show": "Afficher JSON",
+  "action.data": "Données d'Action",
+  "action.available": "Actions disponibles",
+
+  "adminmenu.config": "Configuration",
+  "adminmenu.users": "Usagers",
+  "adminmenu": "Menu d'administration",
+
+  "annotation.failed": "Échoué",
+
+  "all": "Tout",
+
+  "app.language": "Langage",
+  "app.list.empty": "Aucun résultat",
+  "app.search.fullscreen": "Activer la recherche plein écran",
+  "app.search.shortcut": "Effectuer une recherche",
+  "app.search.starttyping": "Commencez à taper et/ou appuyez sur ENTRER",
+
+  "breadcrumb.404": "404",
+
+  "cancel": "Cancel",
+  "classification": "Classification",
+  "close": "Fermer",
+
+  "clipboard": "Copier la valeur dans le presse-papiers",
+  "clipboard.failure": "n'a pas pu être copié dans le presse-papiers.",
+  "clipboard.success": "a été copié dans le presse-papiers.",
+
+  "details.open": "Ouvrir les détails",
+
+  "drawer.chat": "Clavardage",
+  "drawer.collapse": "Fermer le Menu",
+  "drawer.dashboard": "Tableau de bord",
+  "drawer.expand": "Ouvrir le Menu",
+  "drawer.help": "Aide",
+  "drawer.home": "Acceuil",
+  "drawer.items.create": "Créé",
+  "drawer.items.edit": "Modifier",
+  "drawer.items.list": "Liste",
+  "drawer.items": "Items",
+  "drawer.mail.inbox.message": "Message",
+  "drawer.mail.inbox": "Boîte de réception",
+  "drawer.mail.sent": "Expédié",
+  "drawer.mail.trash": "Poubelle",
+  "drawer.mail": "Courriel",
+
+  "enrich": "Enrichir",
+
+  "error": "Erreur",
+
+  "retry.enrich": "Réessayer les enrichissements qui ont échoué",
+
+  "json.viewer.search.label": "Recherche JSON",
+
+  "notification.title": "Notifications",
+
+  "page.404.description": "La page que vous recherchez est introuvable ...",
+  "page.404.title": "404: Introuvable",
+
+  "page.dashboard.title": "Tableau de bord",
+
+  "page.home.title": "Accueil",
+  "page.home.cache": "Sauter le cache du plugin",
+  "page.home.classification": "Classification",
+  "page.home.includeraw": "Inclure les données brutes",
+  "page.home.timeout": "Personnaliser le délai d'attente",
+  "page.home.types": "Types supportés (un par ligne)",
+
+  "page.login.button": "Se connecter",
+  "page.login.password": "Mot de passe",
+  "page.login.username": "Nom d'utilisateur",
+  "page.logout": "Déconnexion de l'utilisateur actuel ... ",
+
+  "personalization.autohideappbar": "Masquer la barre supérieure",
+  "personalization.dark": "Mode Sombre",
+  "personalization.minimizebreadcrumbs": "Minimiser fils d'ariane",
+  "personalization.quicksearch": "Afficher recherche rapide",
+  "personalization.reset_text": "Réinitialiser les paramètres",
+  "personalization.showbreadcrumbs": "Afficher fils d'ariane",
+  "personalization.sticky": "Barre supérieure collante",
+  "personalization": "Personnalisation",
+
+  "quicksearch.aria": "recherche",
+  "quicksearch.placeholder": "Recherche ...",
+
+  "refresh": "Rafraîchir",
+
+  "route.examples": "Exemples de composants",
+
+  "route.help.contributing": "Contribuer",
+  "route.help.dashboard": "Tableau de bord du plugin",
+  "route.plugin": "Plugin",
+  "route.plugin.active": "Actif",
+  "route.help": "Aide",
+  "route.help.loading": "Chargement de la documentation",
+  "route.help.error": "Une erreur s'est produite lors du chargement de la documentation",
+
+  "route.fetchers": "Fetchers",
+  "route.fetchers.fetcher": "Sélectionner un sélecteur",
+  "route.fetchers.type": "Type de sélecteur",
+  "route.fetchers.value": "Valeur du sélecteur",
+  "route.fetchers.title": "Pas d'extrait",
+  "route.fetchers.description": "Ajoutez un nouveau moteur de recherche à rendre en utilisant le formulaire ci-dessus.",
+  "route.fetchers.submit": "Ajouter un fetcher",
+  "route.fetchers.available": "Fetchers disponibles",
+
+  "route.home": "Enrichir les données",
+
+  "route.login.button.oauth.azure": "Azure",
+  "route.login.button.oauth.keycloak": "Keycloak",
+
+  "sources": "Sources",
+  "sources.select.all": "Sélectionner toutes les sources",
+  "sources.select.none": "Désélectionner toutes les sources",
+
+  "summary.unfound": "Résumé introuvable",
+
+  "tooltip.breadcrumbs.max": "Maximiser fils d'ariane",
+  "tooltip.breadcrumbs.min": "Minimiser fils d'ariane",
+
+  "type": "Type",
+
+  "unknown": "Inconnu",
+
+  "usermenu.logout": "Se déconnecter",
+  "usermenu": "Menu d'utilisateur",
+  "usermenu.settings": "Paramètres",
+
+  "value": "Valeur"
+}

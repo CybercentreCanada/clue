@@ -1,0 +1,168 @@
+name: Clue Base Plugin Image
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/base/**
+      - api/plugin/**
+      - .github/workflows/base-plugin-workflow.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - api/**
+      - "!api/LICENSE"
+      - "!api/README.md"
+      - "!api/docs/**"
+      - "!api/build_scripts/generate_classes.py"
+      - plugins/base/**
+      - .github/workflows/base-plugin-workflow.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  formatting:
+    name: Validate Clue Base Plugin
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/base
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+      - name: Checkout current ref
+        uses: actions/checkout@v4
+      - name: Run docker formatting checks (base)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: plugins/base/base.Dockerfile
+          failure-threshold: warning
+      - name: Run docker formatting checks (plugin)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: plugins/base/plugin.Dockerfile
+          failure-threshold: warning
+
+  test_docker_build:
+    if: github.event_name == 'pull_request'
+
+    runs-on: ubuntu-latest
+
+    name: Test Clue Base Plugin Docker Image Build
+
+    needs:
+      - formatting
+
+    defaults:
+      run:
+        working-directory: ./plugins/base
+
+    steps:
+      - name: Checkout current ref
+        uses: actions/checkout@v4
+      - name: Extract Clue API version
+        id: version
+        run: |
+          echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Test build Clue Base Plugin Docker image (no push)
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: plugins/base/base.Dockerfile
+          push: false
+          tags: cccsaurora/clue-plugin-base:test
+          build-args: |
+            version=${{ steps.version.outputs.version }}
+            branch=${{ github.ref }}
+            commit=${{ github.sha }}
+
+  push_to_registry:
+    if: github.event_name != 'pull_request'
+
+    runs-on: ubuntu-latest
+
+    name: Build Clue Base Plugin Docker Image
+
+    needs:
+      - formatting
+
+    defaults:
+      run:
+        working-directory: ./plugins/base
+
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+      - name: Checkout current ref
+        uses: actions/checkout@v4
+      - name: Extract Clue Base Plugin version
+        id: version
+        run: |
+          echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: cccsaurora/clue-plugin-base
+          tags: |
+            type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
+            type=raw,value=${{steps.version.outputs.version}}.${{ github.run_number }}
+            type=raw,value=${{steps.version.outputs.version}}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push Clue Base Plugin Docker image
+        id: push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: plugins/base/base.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            use_prereleases=${{ github.ref == format('refs/heads/{0}', 'develop') }}
+            version=${{ steps.meta.outputs.version }}
+            branch=${{ github.ref }}
+            commit=${{ github.sha }}
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: index.docker.io/cccsaurora/clue-plugin-base
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true

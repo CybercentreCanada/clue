@@ -1,0 +1,7 @@
+{
+  "classification": "TLP:CLEAR",
+  "description": "test fetcher json",
+  "format": "json",
+  "id": "fetcher",
+  "supported_types": ["ip"]
+}

@@ -1,0 +1,59 @@
+name: Clue Virustotal Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/virustotal/**
+      - .github/workflows/virustotal-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/virustotal/**
+      - .github/workflows/virustotal-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-virustotal-plugin-formatting:
+    name: Lint Virustotal Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/virustotal
+  test-virustotal-plugin:
+    needs: check-virustotal-plugin-formatting
+    name: Test Virustotal Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/virustotal
+  build-virustotal-plugin:
+    needs: test-virustotal-plugin
+    name: Build Virustotal Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/virustotal
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

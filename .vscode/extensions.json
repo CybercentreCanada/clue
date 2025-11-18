@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.mypy-type-checker",
+    "ms-python.vscode-pylance",
+    "charliermarsh.ruff",
+    "github.vscode-github-actions",
+    "esbenp.prettier-vscode",
+    "spmeesseman.vscode-taskexplorer",
+  ]
+}

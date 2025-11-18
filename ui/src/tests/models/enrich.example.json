@@ -1,0 +1,53 @@
+{
+  "example": {
+    "items": [
+      {
+        "annotations": [
+          {
+            "analytic": "Test Plugin",
+            "analytic_icon": "circle-flags:lgbt-progress",
+            "confidence": 1,
+            "details": "\n# Test Enrichment\n\nType: ipv4\n\nValue: 127.0.0.1\n",
+            "icon": "circle-flags:lgbt-progress",
+            "link": "https://example.com/",
+            "quantity": 1,
+            "summary": "Test Enrichment - type: ipv4, value: 127.0.0.1",
+            "timestamp": "2025-08-07T19:27:47.503501Z",
+            "type": "context",
+            "ubiquitous": false,
+            "value": "127.0.0.1"
+          }
+        ],
+        "classification": "TLP:CLEAR",
+        "count": 1,
+        "link": "https://example.com/"
+      },
+      {
+        "annotations": [
+          {
+            "analytic": "Test Plugin 2",
+            "analytic_icon": "circle-flags:lgbt-progress",
+            "confidence": 1,
+            "details": "\n# Test Enrichment\n\nType: ipv4\n\nValue: 127.0.0.1\n",
+            "icon": "circle-flags:lgbt-progress",
+            "link": "https://example.com/",
+            "quantity": 1,
+            "summary": "Test Enrichment - type: ipv4, value: 127.0.0.1",
+            "timestamp": "2025-08-07T19:27:47.503501Z",
+            "type": "context",
+            "ubiquitous": false,
+            "value": "127.0.0.1"
+          }
+        ],
+        "classification": "TLP:CLEAR",
+        "count": 1,
+        "link": "https://example.com/"
+      }
+    ],
+    "error": null,
+    "latency": 18,
+    "source": "example",
+    "type": "ipv4",
+    "value": "127.0.0.1"
+  }
+}

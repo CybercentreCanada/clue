@@ -1,0 +1,59 @@
+name: Clue $PLUGIN_NAME_CAPITALIZED Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/$PLUGIN_NAME/**
+      - .github/workflows/$PLUGIN_NAME-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/$PLUGIN_NAME/**
+      - .github/workflows/$PLUGIN_NAME-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-$PLUGIN_NAME-plugin-formatting:
+    name: Lint $PLUGIN_NAME_CAPITALIZED Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/$PLUGIN_NAME
+  test-$PLUGIN_NAME-plugin:
+    needs: check-$PLUGIN_NAME-plugin-formatting
+    name: Test $PLUGIN_NAME_CAPITALIZED Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/$PLUGIN_NAME
+  build-$PLUGIN_NAME-plugin:
+    needs: test-$PLUGIN_NAME-plugin
+    name: Build $PLUGIN_NAME_CAPITALIZED Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/$PLUGIN_NAME
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

@@ -1,0 +1,163 @@
+images:
+  ui:
+    repository: cccsaurora/clue-ui
+    tag: latest
+    pullPolicy: IfNotPresent
+  rest:
+    repository: cccsaurora/clue-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  apm:
+    repository: elastic/apm-server
+    tag: 8.6.2
+    pullPolicy: IfNotPresent
+  iconify:
+    repository: iconify/api
+    tag: latest
+    pullPolicy: Always
+
+oauth:
+  providers:
+    - name:
+      secret:
+        name:
+        key:
+
+
+ui:
+  name: clue-ui
+  resources:
+    limits:
+      cpu: 1
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 500Mi
+
+service_accounts:
+  enabled: false
+
+iconify:
+  enabled: true
+  name: clue-iconify
+  resources:
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 200m
+      memory: 200Mi
+  ingress:
+    enabled: true
+
+rest:
+  name: clue-rest
+
+  full_url: http://clue-rest.clue.svc.cluster.local:5000
+
+  resources:
+    limits:
+      cpu: 750m
+      memory: 1.5Gi
+    requests:
+      cpu: 250m
+      memory: 750Mi
+
+ingress:
+  enabled: true
+
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: 128m
+
+  rest:
+    path: /api
+  websocket:
+    path: /socket
+  ui:
+    path: /
+
+redis:
+  image:
+    repository: redis
+    tag: 7.0.5
+
+  architecture: standalone
+
+  auth:
+    enabled: true
+
+  master:
+    persistence:
+      enabled: false
+
+    resources:
+      requests:
+        cpu: 1
+        memory: 2Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+
+config:
+  auth:
+    oauth:
+      enabled: true
+      providers: {} # This must be overridden
+    allow_apikeys: true
+
+  core:
+    redis:
+      host: clue-redis-master.clue.svc.cluster.local
+      port: 6379
+
+  logging:
+    log_level: DEBUG
+    log_as_json: false
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    # - type: Pod
+    #   pods:
+
+  behavior:
+    scaleUp:
+      #     policies:
+      #       # Only spawn an extra 2 pods in a 1 minute window
+      #       - type: Pods
+      #         value: 2
+      #         periodSeconds: 60
+      #     #
+      stabilizationWindowSeconds: 120
+  #   scaleDown:
+  #     stabilizationWindowSeconds: 60
+
+apm:
+  enabled: false
+
+  # APM has its own logging levels.
+  loggingLevel: info
+
+  # When Flask is in debug mode apm defaults to not shipping its metrics.
+  # This enables it to work still.
+  workWithDebug: "True"
+
+  tokenSecret: clue-apm-credentials
+  tokenKey: token
+
+
+metrics:
+  # Enabling this requires kube-prometheus-stack to be installed on the cluster, since it uses some CRDs from prometheus
+  enabled: false
+  podMonitor:
+    enabled: false
