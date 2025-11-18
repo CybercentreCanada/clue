@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from datetime import datetime
 
 import pytest
@@ -11,6 +12,9 @@ from pydantic_core import Url
 
 @pytest.fixture(scope="module")
 def howler():
+    if "HOWLER_URL" not in os.environ:
+        os.environ["HOWLER_URL"] = "https://howler.example.com"
+
     from app import plugin  # type: ignore
 
     return plugin
