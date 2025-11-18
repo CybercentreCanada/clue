@@ -1,10 +1,10 @@
 images:
   ui:
-    repository: cccsaurora/clue-ui
+    repository: cccs/aurora/clue-ui
     tag: latest
     pullPolicy: IfNotPresent
   rest:
-    repository: cccsaurora/clue-api
+    repository: cccs/aurora/clue-api
     tag: latest
     pullPolicy: IfNotPresent
   apm:

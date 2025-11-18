@@ -117,7 +117,7 @@ plugins:
       - name: PORT
         value: "5000"
     image:
-      name: cccsaurora/clue-plugin-malware-bazaar
+      name: cccs/aurora/clue-plugin-malware-bazaar
       tag: nightly
       pullPolicy: "Always"
   - name: virustotal
@@ -132,7 +132,7 @@ plugins:
       - name: PORT
         value: "5000"
     image:
-      name: cccsaurora/clue-plugin-virustotal
+      name: cccs/aurora/clue-plugin-virustotal
       tag: nightly
       pullPolicy: "Always"
   - name: howler
@@ -146,7 +146,7 @@ plugins:
       - name: HOWLER_AUDIENCE
         value:
     image:
-      name: cccsaurora/clue-plugin-howler
+      name: cccs/aurora/clue-plugin-howler
       tag: nightly
       pullPolicy: "Always"
   - name: test-plugin
@@ -156,7 +156,7 @@ plugins:
       - name: PORT
         value: "5000"
     image:
-      name: cccsaurora/clue-plugin-example
+      name: cccs/aurora/clue-plugin-example
       tag: nightly
       pullPolicy: "Always"
   - name: crt-sh
@@ -166,7 +166,7 @@ plugins:
       - name: PORT
         value: "5000"
     image:
-      name: cccsaurora/clue-plugin-crtsh
+      name: cccs/aurora/clue-plugin-crtsh
       tag: nightly
       pullPolicy: "Always"
   - name: port-lookup
@@ -178,5 +178,5 @@ plugins:
       - name: CLASSIFICATION
         value: TLP:CLEAR
     image:
-      name: cccsaurora/clue-plugin-port-lookup
+      name: cccs/aurora/clue-plugin-port-lookup
       tag: nightly

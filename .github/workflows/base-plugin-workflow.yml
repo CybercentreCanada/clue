@@ -90,7 +90,7 @@ jobs:
           context: .
           file: plugins/base/base.Dockerfile
           push: false
-          tags: cccsaurora/clue-plugin-base:test
+          tags: cccs/aurora/clue-plugin-base:test
           build-args: |
             version=${{ steps.version.outputs.version }}
             branch=${{ github.ref }}
@@ -135,7 +135,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: cccsaurora/clue-plugin-base
+          images: cccs/aurora/clue-plugin-base
           tags: |
             type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
             type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
@@ -163,6 +163,6 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: index.docker.io/cccsaurora/clue-plugin-base
+          subject-name: index.docker.io/cccs/aurora/clue-plugin-base
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
