@@ -160,5 +160,9 @@
   },
   "type": "module",
   "types": "main.d.ts",
+<<<<<<< HEAD
   "version": "1.0.4"
+=======
+  "version": "1.1.0"
+>>>>>>> bb65af6 (bump versions on develop)
 }
