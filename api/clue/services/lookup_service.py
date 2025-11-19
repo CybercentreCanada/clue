@@ -607,7 +607,8 @@ def bulk_query_external(  # noqa: C901
             for entry in data:
                 bulk_result.setdefault(entry.type, {})
                 bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, error=quota_error)
-                return bulk_result
+
+            return bulk_result
 
         # perform the lookup, ensuring access controls are applied
         error = None
