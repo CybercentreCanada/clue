@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 import pytest
+from pydantic_core import Url
 
 from clue.cache import Cache
 from clue.models.network import Annotation, QueryEntry
@@ -13,8 +14,9 @@ from clue.plugin.utils import Params
 def mock_plugin() -> CluePlugin:
     plugin = CluePlugin(
         app_name="tester",
+        classification="TLP:CLEAR",
         supported_types={"ipv4", "ipv6"},
-        enrich=lambda *args: QueryEntry(count=10, annotations=[], link="https://example.com"),
+        enrich=lambda *args: QueryEntry(count=10, annotations=[], link=Url("https://example.com")),
         logger=logging.getLogger("test"),
     )
 
