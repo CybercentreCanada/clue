@@ -219,6 +219,7 @@ jobs:
           key: venv-${{ hashFiles('api/poetry.lock') }}
       - name: Install Dependencies and Build
         run: |
+          cp -r ../docs .
           poetry install
           poetry build
       - name: Extract Clue API version
@@ -326,6 +327,7 @@ jobs:
           key: venv-${{ hashFiles('api/poetry.lock') }}
       - name: Install Dependencies and Build
         run: |
+          cp -r ../docs .
           poetry install
           poetry build
       - name: Extract Clue API version

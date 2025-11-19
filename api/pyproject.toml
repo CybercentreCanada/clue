@@ -146,7 +146,7 @@ log_cli_level = "WARN"
 [tool.poetry]
 package-mode = true
 name = "clue-api"
-version = "1.2.0"
+version = "1.2.1"
 description = "Clue distributed enrichment service"
 authors = ["Canadian Centre for Cyber Security <contact@cyber.gc.ca>"]
 license = "MIT"

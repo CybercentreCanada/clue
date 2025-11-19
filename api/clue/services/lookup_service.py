@@ -19,7 +19,11 @@ from geventhttpclient.response import HTTPResponse
 from pydantic import BaseModel, ValidationError
 from requests import Response
 
-from clue.common.exceptions import AuthenticationException, InvalidDataException
+from clue.common.exceptions import (
+    AuthenticationException,
+    ClueRuntimeError,
+    InvalidDataException,
+)
 from clue.common.logging import get_logger, log_error
 from clue.common.logging.audit import audit
 from clue.config import CLASSIFICATION as CLASSIFICATION
@@ -190,7 +194,7 @@ def generate_params(
     return "?" + "&".join(f"{key}={val}" for key, val in params.items())
 
 
-def process_exception(source_name: str, rsp: Response, exception: Exception):
+def process_exception(source_name: str, rsp: Response | None, exception: Exception):
     """Parses an exception in a response.
 
     Args:
@@ -400,9 +404,9 @@ def query_external(
         # perform the lookup, ensuring access controls are applied
         url = f"{source.url}/lookup/{type_name}/{value}/"
         response: Any = None
+        rsp: HTTPResponse | None = None
+        start = time.perf_counter()
         try:
-            rsp = None
-            start = time.perf_counter()
             with elasticapm.capture_span(url, "http"):
                 parsed_url = urlparse(url)
                 rsp = get_client(f"{parsed_url.scheme}://{parsed_url.netloc}", timeout).get(
@@ -600,7 +604,11 @@ def bulk_query_external(  # noqa: C901
             )
 
         if quota_error := user_service.check_quota(source, user):
-            return build_result(entry.type, entry.value, source, error=quota_error)
+            for entry in data:
+                bulk_result.setdefault(entry.type, {})
+                bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, error=quota_error)
+
+            return bulk_result
 
         # perform the lookup, ensuring access controls are applied
         error = None
@@ -608,9 +616,9 @@ def bulk_query_external(  # noqa: C901
 
         url = f"{source.url}/lookup/"
         response: Any = None
+        start = time.perf_counter()
+        rsp: HTTPResponse | None = None
         try:
-            start = time.perf_counter()
-            rsp: Optional[HTTPResponse] = None
             with elasticapm.capture_span(url, "http"):
                 parsed_url = urlparse(url)
 
@@ -619,6 +627,9 @@ def bulk_query_external(  # noqa: C901
                     body=json.dumps([entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data]),
                     headers=generate_headers(access_token, clue_access_token),
                 )
+
+            if not rsp:
+                raise ClueRuntimeError(f"An error occurred when connecting to {source.name}.")  # noqa: TRY301
 
             logger.debug(f"{rsp.status_code}: {url}")
             response = json.load(rsp)
