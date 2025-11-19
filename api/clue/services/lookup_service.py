@@ -629,7 +629,7 @@ def bulk_query_external(  # noqa: C901
                 )
 
             if not rsp:
-                raise ClueRuntimeError(f"An error occured when connecting to {source.name}.")  # noqa: TRY301
+                raise ClueRuntimeError(f"An error occurred when connecting to {source.name}.")  # noqa: TRY301
 
             logger.debug(f"{rsp.status_code}: {url}")
             response = json.load(rsp)
