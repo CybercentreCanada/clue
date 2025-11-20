@@ -59,7 +59,18 @@ const Fetcher: FC<FetcherProps> = React.memo(
       (async () => {
         try {
           setLoading(true);
-          setResult(await fetchSelector(fetcherId, { type, value, classification }));
+          setResult(
+            fetcherId in fetchers
+              ? await fetchSelector(fetcherId, { type, value, classification })
+              : {
+                  outcome: 'failure',
+                  error:
+                    'Fetcher ID does not correspond to a registered fetcher. Do you have the correct access level?',
+                  format: 'json',
+                  data: null,
+                  link: null
+                }
+          );
         } finally {
           setLoading(false);
         }
@@ -74,9 +85,6 @@ const Fetcher: FC<FetcherProps> = React.memo(
         console.warn(
           "Invalid fetcher id. Must be in the format '<plugin_id>.<fetcher_id>'. Component will not render."
         );
-        return null;
-      } else if (!(fetcherId in fetchers)) {
-        console.warn('Fetcher ID does not correspond to a registered fetcher. Component will not render.');
         return null;
       }
     } else {
@@ -102,7 +110,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
       }
     }
 
-    if (result?.outcome === 'failure' && fetchers[fetcherId].format === 'status') {
+    if (result?.outcome === 'failure' && fetchers[fetcherId]?.format === 'status') {
       return (
         <Chip
           icon={
