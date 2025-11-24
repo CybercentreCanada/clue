@@ -16,7 +16,7 @@ const Actions: FC = () => {
   const executeAction = useClueActionsSelector(ctx => ctx.executeAction);
 
   const [action, setAction] = useState('');
-  const [classification, setClassification] = useState(config.c12nDef.RESTRICTED.replace(/\/\/.+/, ''));
+  const [classification, setClassification] = useState((config?.c12nDef?.RESTRICTED ?? '').replace(/\/\/.+/, ''));
   const [type, setType] = useState('');
   const [value, setValue] = useState('');
 
