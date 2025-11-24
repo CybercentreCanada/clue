@@ -16,6 +16,7 @@ import useMyUser from 'components/hooks/useMyUser';
 import LoginScreen from 'components/logins/Login';
 import useLogin from 'components/logins/hooks/useLogin';
 import NotFoundPage from 'components/routes/404';
+import Actions from 'components/routes/Actions';
 import Contributing from 'components/routes/Contributing';
 import Documentation from 'components/routes/Documentation';
 import Fetchers from 'components/routes/Fetchers';
@@ -125,6 +126,7 @@ const MyApp: FC = () => {
         <Route index element={<Home />} />
         <Route path="examples" element={<Examples />} />
         <Route path="fetchers" element={<Fetchers />} />
+        <Route path="actions" element={<Actions />} />
         <Route path="settings" element={<Settings />} />
         <Route path="help" element={<PluginDashboard />} />
         <Route path="help/contributing" element={<Contributing />} />
