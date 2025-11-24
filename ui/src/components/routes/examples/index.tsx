@@ -15,6 +15,7 @@ import {
   Typography
 } from '@mui/material';
 import PageCenter from 'commons/components/pages/PageCenter';
+import dayjs from 'dayjs';
 import Graph from 'lib/components/display/graph';
 import JSONViewer from 'lib/components/display/json';
 import EnrichedCard from 'lib/components/EnrichedCard';
@@ -24,7 +25,6 @@ import Entry from 'lib/components/group/Entry';
 import Group from 'lib/components/group/Group';
 import RetryFailedEnrichments from 'lib/components/RetryFailedEnrichments';
 import range from 'lodash-es/range';
-import moment from 'moment';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 import { v4 } from 'uuid';
@@ -57,7 +57,7 @@ const Examples: FC = () => {
     () =>
       range(10).map(() => ({
         id: v4(),
-        timestamp: moment().subtract(Math.random() * 1000, 'hours'),
+        timestamp: dayjs().subtract(Math.random() * 1000, 'hours'),
         username: 'test',
         ip: `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(
           Math.random() * 256
@@ -71,7 +71,7 @@ const Examples: FC = () => {
     () =>
       range(10).map(() => ({
         id: v4(),
-        timestamp: moment().subtract(Math.random() * 1000, 'hours'),
+        timestamp: dayjs().subtract(Math.random() * 1000, 'hours'),
         username: 'test',
         ip: `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(
           Math.random() * 256
