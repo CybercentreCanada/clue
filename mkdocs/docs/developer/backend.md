@@ -615,7 +615,7 @@ If Docker services aren't starting properly:
 
 ## Contributing
 
-See [Contributing](https://cybercentrecanada.github.io/clue-docs/developer/contributing) for general information on how to contribute.
+See [Contributing](https://cybercentrecanada.github.io/clue/developer/contributing) for general information on how to contribute.
 
 In addition to the standard contributing practices, here are some additional guidelines specific to the Clue API project:
 

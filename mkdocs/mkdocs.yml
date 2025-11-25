@@ -82,7 +82,7 @@ repo_url: https://github.com/CybercentreCanada/clue
 
 site_name: Clue
 
-site_url: https://cybercentrecanada.github.io/clue-docs/
+site_url: https://cybercentrecanada.github.io/clue/
 
 theme:
   custom_dir: override
