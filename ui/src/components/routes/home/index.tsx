@@ -244,7 +244,9 @@ const Home: FC = () => {
         <Stack direction="row" spacing={0.5}>
           {loading && isEmpty(Object.keys(typesDetection))
             ? range(0, 3).map(v => <Skeleton key={v} variant="rounded" height="24px" width="50px" />)
-            : Object.keys(typesDetection).map(type => <Chip key={type} size="small" label={type} />)}
+            : Object.keys(typesDetection)
+                .sort()
+                .map(type => <Chip key={type} size="small" label={type} />)}
         </Stack>
         <LinearProgress sx={theme => ({ transition: theme.transitions.create('opacity'), opacity: +loading })} />
         <Stack position="relative">
