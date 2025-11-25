@@ -38,8 +38,8 @@ Clue est livré avec plusieurs plugins intégrés pour enrichir vos données de 
 
 ## Documentation
 
-Pour la documentation, voir <https://cybercentrecanada.github.io/clue-docs/>
+Pour la documentation, voir <https://cybercentrecanada.github.io/clue/>
 
 ### Développement
 
-Si vous souhaitez contribuer à Clue, suivez le [guide du développeur](https://cybercentrecanada.github.io/clue-docs/developer/getting_started/), créez une branche et commencez à coder !
+Si vous souhaitez contribuer à Clue, suivez le [guide du développeur](https://cybercentrecanada.github.io/clue/developer/getting_started/), créez une branche et commencez à coder !
