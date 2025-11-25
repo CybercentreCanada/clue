@@ -196,7 +196,7 @@
   <div class="md-grid md-typeset">
     <div class="tx-hero">
       <div class="tx-hero__image">
-        <img src="/clue-docs/images/splash.png" draggable="false" />
+        <img src="/clue/images/splash.png" draggable="false" />
       </div>
       <div class="tx-hero__content">
         <h1>
@@ -390,6 +390,170 @@
             {%else%}
               Clue plugins are easy to write, allowing you to query, show and interact with your own apps from within
               any other app using Clue.
+            {%endif%}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="moreinfo">
+      <div class="titlecard">
+        <h1>
+          <span class="icon"> 🔌 </span>
+          {%if 'fr/' in page.url %}
+            Plugins Disponibles
+          {%else%}
+            Available Plugins
+          {%endif%}
+        </h1>
+        <p>
+          {%if 'fr/' in page.url %}
+            Clue est livré avec plusieurs plugins intégrés pour enrichir vos données de sécurité :
+          {%else%}
+            Clue comes with several built-in plugins to enrich your security data:
+          {%endif%}
+        </p>
+      </div>
+
+      <div class="features">
+        <div class="entry">
+          <span class="icon">
+            🔍
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              AssemblyLine
+            {%else%}
+              AssemblyLine
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              S'intègre avec la plateforme d'analyse de malware AssemblyLine pour fournir des résultats d'analyse
+              détaillés et de la threat intelligence pour les échantillons de fichiers.
+            {%else%}
+              Integrates with AssemblyLine malware analysis platform to provide detailed analysis results and threat
+              intelligence for file samples.
+            {%endif%}
+          </span>
+        </div>
+        <div class="entry">
+          <span class="icon">
+            📜
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              Transparence des Certificats (crt.sh)
+            {%else%}
+              Certificate Transparency (crt.sh)
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              Recherche les certificats SSL/TLS pour les domaines en utilisant la base de données des journaux de
+              Transparence des Certificats crt.sh.
+            {%else%}
+              Looks up SSL/TLS certificates for domains using the crt.sh Certificate Transparency logs database.
+            {%endif%}
+          </span>
+        </div>
+        <div class="entry">
+          <span class="icon">
+            📋
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              Plugin Exemple
+            {%else%}
+              Example Plugin
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              Un modèle de plugin d'exemple qui démontre comment créer des plugins Clue personnalisés pour les
+              développeurs.
+            {%else%}
+              A sample plugin template that demonstrates how to create custom Clue plugins for developers.
+            {%endif%}
+          </span>
+        </div>
+        <div class="entry">
+          <span class="icon">
+            🚨
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              Howler
+            {%else%}
+              Howler
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              S'intègre avec la plateforme de triage d'alertes Howler pour vérifier si les sélecteurs (indicateurs) sont
+              présents dans les alertes de sécurité, aidant les analystes à identifier les menaces et les cibles.
+            {%else%}
+              Integrates with Howler alert triage platform to check if selectors (indicators) are present in security
+              alerts, helping analysts identify threats and targets.
+            {%endif%}
+          </span>
+        </div>
+        <div class="entry">
+          <span class="icon">
+            🦠
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              MalwareBazaar
+            {%else%}
+              MalwareBazaar
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              Se connecte à MalwareBazaar pour fournir de la threat intelligence sur les malwares, incluant les
+              recherches de hash et les informations d'échantillons.
+            {%else%}
+              Connects to MalwareBazaar to provide malware intelligence, including hash lookups and sample information.
+            {%endif%}
+          </span>
+        </div>
+        <div class="entry">
+          <span class="icon">
+            🚪
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              Recherche de Port
+            {%else%}
+              Port Lookup
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              Fournit la correspondance entre les numéros de port et les noms de service en utilisant les assignations
+              de ports IANA et les définitions de service.
+            {%else%}
+              Provides port number to service name mapping using IANA port assignments and service definitions.
+            {%endif%}
+          </span>
+        </div>
+        <div class="entry">
+          <span class="icon">
+            🛡️
+          </span>
+          <strong>
+            {%if 'fr/' in page.url %}
+              VirusTotal
+            {%else%}
+              VirusTotal
+            {%endif%}
+          </strong>
+          <span class="description">
+            {%if 'fr/' in page.url %}
+              S'intègre avec l'API VirusTotal pour effectuer des vérifications de réputation sur les fichiers, URLs,
+              domaines et adresses IP.
+            {%else%}
+              Integrates with VirusTotal API to perform reputation checks on files, URLs, domains, and IP addresses.
             {%endif%}
           </span>
         </div>
