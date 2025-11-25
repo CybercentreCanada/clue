@@ -1,0 +1,14 @@
+{{- range .Values.plugins -}}
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clue-plugin-conf-{{ .name }}
+data:
+  config.yml: |-
+    {{- toYaml $.Values.config | nindent 4 }}
+
+  classification.yml: |-
+    {{- toYaml $.Values.classification | nindent 4 }}
+
+{{- end -}}

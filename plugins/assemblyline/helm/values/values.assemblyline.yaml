@@ -1,0 +1,71 @@
+clue-plugin:
+  plugins:
+    - name: assemblyline
+      env:
+        - name: AL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: al-api-key
+              key: key
+        - name: AL_URL_BASE
+          value:
+        - name: AL_USER
+          value:
+        - name: AL_TOKEN_PROVIDER
+          value:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+        - name: ENABLED_SOURCES
+          value: "result|alert"
+      image:
+        name: cccsaurora/clue-plugin-assemblyline
+        tag: nightly
+        pullPolicy: "Always"
+    - name: safelist
+      env:
+        - name: AL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: al-api-key
+              key: key
+        - name: AL_URL_BASE
+          value:
+        - name: AL_USER
+          value:
+        - name: AL_TOKEN_PROVIDER
+          value:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+        - name: ENABLED_SOURCES
+          value: "safelist"
+      image:
+        name: cccsaurora/clue-plugin-assemblyline
+        tag: nightly
+        pullPolicy: "Always"
+    - name: badlist
+      env:
+        - name: AL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: al-api-key
+              key: key
+        - name: AL_URL_BASE
+          value:
+        - name: AL_USER
+          value:
+        - name: AL_TOKEN_PROVIDER
+          value:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+        - name: ENABLED_SOURCES
+          value: "badlist"
+      image:
+        name: cccsaurora/clue-plugin-assemblyline
+        tag: nightly
+        pullPolicy: "Always"

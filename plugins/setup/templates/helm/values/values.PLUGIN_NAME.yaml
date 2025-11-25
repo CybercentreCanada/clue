@@ -1,0 +1,12 @@
+clue-plugin:
+  plugins:
+    - name: $PLUGIN_NAME
+      env:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+      image:
+        name: cccsaurora/clue-plugin-$PLUGIN_NAME
+        tag: nightly
+        pullPolicy: "Always"

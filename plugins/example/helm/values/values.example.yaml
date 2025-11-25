@@ -1,0 +1,21 @@
+clue-plugin:
+  plugins:
+    - name: test-plugin
+      env:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+      image:
+        name: cccsaurora/clue-plugin-example
+        tag: nightly
+        pullPolicy: "Always"
+      # If you want to include additional resources in your plugin, you can add them here:
+      extraResources:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: additional-config
+          data:
+            # you can also use helm template patterns, for example:
+            sha256sum-of-pluginconf: '{{ include (print $.Template.BasePath "/plugin-config.yaml") $ | sha256sum }}'

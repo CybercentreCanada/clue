@@ -1,0 +1,16 @@
+clue-plugin:
+  plugins:
+    - name: howler
+      env:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+        - name: HOWLER_URL
+          value:
+        - name: HOWLER_AUDIENCE
+          value:
+      image:
+        name: cccsaurora/clue-plugin-howler
+        tag: nightly
+        pullPolicy: "Always"

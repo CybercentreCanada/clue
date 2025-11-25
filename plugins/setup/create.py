@@ -11,6 +11,7 @@ import re
 import shutil
 from email.utils import parseaddr
 
+import yaml
 from click.termui import confirm
 from clue.constants.supported_types import SUPPORTED_TYPES
 from commands import error, execute, header, info, prep_command, success, wait_to_continue
@@ -233,6 +234,46 @@ def main():
             (PLUGINS_FOLDER.parent / ".github" / "workflows" / f"{plugin_name}-plugin-workflow.yml").write_text(
                 workflow_content
             )
+
+        if confirm("Add helm chart?", default=True):
+            info("creating Chart.yaml and values files")
+            helm_path = plugin_path / "helm"
+            helm_path.mkdir(exist_ok=True, parents=True)
+
+            chart_yaml_content = (
+                (TEMPLATES_FOLDER / "helm" / "Chart.yaml")
+                .read_text()
+                .replace("$PLUGIN_NAME", plugin_name.replace("_", "-"))
+            )
+
+            (helm_path / "Chart.yaml").write_text(chart_yaml_content)
+
+            helm_values_path = helm_path / "values"
+            helm_values_path.mkdir(exist_ok=True, parents=True)
+
+            values_yaml_content = (
+                (TEMPLATES_FOLDER / "helm" / "values" / "values.PLUGIN_NAME.yaml")
+                .read_text()
+                .replace("$PLUGIN_NAME", plugin_name.replace("_", "-"))
+            )
+
+            values_yaml_path = helm_values_path / f"values.{plugin_name.replace('-', '_')}.yaml"
+            values_yaml_path.write_text(values_yaml_content)
+
+            info("adding chart to helmfile.yaml")
+            helmfile_path = PLUGINS_FOLDER / "helmfile.yaml"
+            with helmfile_path.open("r") as f:
+                helmfile_data = yaml.safe_load(f)
+            helmfile_data["releases"].append(
+                {
+                    "chart": helm_path.relative_to(helmfile_path.parent).as_posix(),
+                    "name": plugin_name.replace("_", "-"),
+                    "namespace": "clue-plugins",
+                    "values": [values_yaml_path.relative_to(helmfile_path.parent).as_posix()],
+                }
+            )
+            with helmfile_path.open("w") as f:
+                yaml.safe_dump(helmfile_data, f)
 
         success("Your plugin has been created!")
     except KeyboardInterrupt:

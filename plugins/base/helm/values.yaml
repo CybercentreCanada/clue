@@ -1,0 +1,50 @@
+config:
+  logging:
+    log_level: DEBUG
+    log_as_json: false
+
+  core:
+    redis:
+      host: clue-redis-master.clue.svc.cluster.local
+      port: 6379
+
+resources:
+  limits:
+    cpu: 1
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 500Mi
+
+rest:
+  full_url: http://clue-rest.clue.svc.cluster.local:5000
+
+redis:
+  auth:
+    enabled: true
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    # - type: Pod
+    #   pods:
+
+  behavior:
+    scaleUp:
+      #     policies:
+      #       # Only spawn an extra 2 pods in a 1 minute window
+      #       - type: Pods
+      #         value: 2
+      #         periodSeconds: 60
+      #     #
+      stabilizationWindowSeconds: 120
+  #   scaleDown:
+  #     stabilizationWindowSeconds: 60

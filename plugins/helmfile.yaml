@@ -1,0 +1,36 @@
+releases:
+- chart: assemblyline/helm
+  name: assemblyline
+  namespace: clue-plugins
+  values:
+  - assemblyline/helm/values/values.assemblyline.yaml
+- chart: crtsh/helm
+  name: crtsh
+  namespace: clue-plugins
+  values:
+  - crtsh/helm/values/values.crtsh.yaml
+- chart: example/helm
+  name: example
+  namespace: clue-plugins
+  values:
+  - example/helm/values/values.example.yaml
+- chart: howler/helm
+  name: howler
+  namespace: clue-plugins
+  values:
+  - howler/helm/values/values.howler.yaml
+- chart: malware_bazaar/helm
+  name: malware-bazaar
+  namespace: clue-plugins
+  values:
+  - malware_bazaar/helm/values/values.malware_bazaar.yaml
+- chart: port_lookup/helm
+  name: port-lookup
+  namespace: clue-plugins
+  values:
+  - port_lookup/helm/values/values.port_lookup.yaml
+- chart: virustotal/helm
+  name: virustotal
+  namespace: clue-plugins
+  values:
+  - virustotal/helm/values/values.virustotal.yaml
