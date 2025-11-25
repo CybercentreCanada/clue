@@ -1,6 +1,6 @@
 import { Typography } from '@mui/material';
 import { FeedItem } from 'commons/components/notification';
-import dayjs from 'dayjs';
+import { dayjs } from 'lib/utils/time';
 import { FC, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 

@@ -1,6 +1,6 @@
-import dayjs from 'dayjs';
 import { flatten, unflatten } from 'flat';
 import type { FailedRequest } from 'lib/types/lookup';
+import { dayjs } from 'lib/utils/time';
 import isArray from 'lodash-es/isArray';
 import isEmpty from 'lodash-es/isEmpty';
 import isEqual from 'lodash-es/isEqual';

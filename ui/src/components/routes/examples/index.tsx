@@ -15,7 +15,6 @@ import {
   Typography
 } from '@mui/material';
 import PageCenter from 'commons/components/pages/PageCenter';
-import dayjs from 'dayjs';
 import Graph from 'lib/components/display/graph';
 import JSONViewer from 'lib/components/display/json';
 import EnrichedCard from 'lib/components/EnrichedCard';
@@ -24,6 +23,7 @@ import EnrichedTypography from 'lib/components/EnrichedTypography';
 import Entry from 'lib/components/group/Entry';
 import Group from 'lib/components/group/Group';
 import RetryFailedEnrichments from 'lib/components/RetryFailedEnrichments';
+import { dayjs } from 'lib/utils/time';
 import range from 'lodash-es/range';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
