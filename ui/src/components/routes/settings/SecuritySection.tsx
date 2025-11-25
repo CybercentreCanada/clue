@@ -3,8 +3,8 @@ import { Chip, Grid, IconButton, TableCell, TableRow } from '@mui/material';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
 import { StorageKey } from 'lib/utils/constants';
+import { dayjs } from 'lib/utils/time';
 import type { ClueUser } from 'models/entities/ClueUser';
-import moment from 'moment';
 import type { FC } from 'react';
 import { useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
@@ -40,7 +40,7 @@ const SecuritySection: FC<{
           type="password"
         />
       )}
-      {config?.configuration.auth.allow_apikeys && (
+      {(config?.configuration.auth as any).allow_apikeys && (
         <TableRow sx={{ cursor: 'pointer' }}>
           <TableCell style={{ whiteSpace: 'nowrap' }}>{t('page.settings.security.table.apikeys')}</TableCell>
           <TableCell width="100%">
@@ -55,7 +55,7 @@ const SecuritySection: FC<{
                         : '')
                     }
                     style={{
-                      backgroundColor: moment.utc(apiKey[2]).isBefore(moment().utc()) ? 'orange' : 'default'
+                      backgroundColor: dayjs.utc(apiKey[2]).isBefore(dayjs().utc()) ? 'orange' : 'default'
                     }}
                     onDelete={removeApiKey ? () => removeApiKey(apiKey) : null}
                   />
