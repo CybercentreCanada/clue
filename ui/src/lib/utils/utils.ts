@@ -1,20 +1,20 @@
 import { flatten, unflatten } from 'flat';
 import type { FailedRequest } from 'lib/types/lookup';
+import { dayjs } from 'lib/utils/time';
 import isArray from 'lodash-es/isArray';
 import isEmpty from 'lodash-es/isEmpty';
 import isEqual from 'lodash-es/isEqual';
 import isNil from 'lodash-es/isNil';
 import isPlainObject from 'lodash-es/isPlainObject';
 import uniqWith from 'lodash-es/uniqWith';
-import moment from 'moment';
 
 export const twitterShort = (date: string | Date | number): string => {
   if (!date || date === '?') {
     return '?';
   }
 
-  const now = moment();
-  const comparedDate = moment(date);
+  const now = dayjs();
+  const comparedDate = dayjs(date);
 
   if (comparedDate.isAfter(now)) {
     return now.fromNow();
