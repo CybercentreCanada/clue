@@ -15,7 +15,6 @@ import {
   Typography
 } from '@mui/material';
 import PageCenter from 'commons/components/pages/PageCenter';
-import dayjs from 'dayjs';
 import Graph from 'lib/components/display/graph';
 import JSONViewer from 'lib/components/display/json';
 import EnrichedCard from 'lib/components/EnrichedCard';
