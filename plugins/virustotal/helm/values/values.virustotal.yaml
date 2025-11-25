@@ -1,0 +1,17 @@
+clue-plugin:
+  plugins:
+    - name: virustotal
+      env:
+        - name: VT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vt-api-key
+              key: key
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+      image:
+        name: cccsaurora/clue-plugin-virustotal
+        tag: nightly
+        pullPolicy: "Always"

@@ -1,11 +1,10 @@
 {{- range .Values.plugins -}}
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .name }}
   labels:
-    app.kubernetes.io/component: rest
+    app.kubernetes.io/component: plugin
     app.kubernetes.io/name: {{ .name }}
     helm.sh/chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
@@ -16,16 +15,16 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/version: {{ $.Chart.AppVersion }}
       app.kubernetes.io/name: {{.name}}
       app.kubernetes.io/instance: {{ $.Release.Name }}
+      app.kubernetes.io/version: {{ $.Chart.AppVersion }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/version: {{ $.Chart.AppVersion }}
+        app.kubernetes.io/component: plugin
         app.kubernetes.io/name: {{.name}}
         app.kubernetes.io/instance: {{ $.Release.Name }}
-        app.kubernetes.io/component: rest
+        app.kubernetes.io/version: {{ $.Chart.AppVersion }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/plugin-config.yaml") $ | sha256sum }}
     spec:
@@ -59,21 +58,6 @@ spec:
           value: "2048"
         - name: LIMIT_REQUEST_FIELD_SIZE
           value: "16380"
-        {{- if $.Values.apm.enabled }}
-        - name: APM_SERVER_URL
-          value: {{ $.Values.config.core.metrics.apm_server.server_url }}
-        {{- if $.Values.apm.tokenSecret }}
-        - name: ELASTIC_APM_SECRET_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: {{ $.Values.apm.tokenSecret }}
-              key: {{ $.Values.apm.tokenKey | default "token" }}
-        {{- end }}
-        - name: ELASTIC_APM_DEBUG
-          value: {{ $.Values.apm.workWithDebug | quote }}
-        - name: ELASTIC_APM_LOG_LEVEL
-          value: {{ $.Values.apm.loggingLevel }}
-        {{- end }}
         - name: CACHE_TYPE
           value: {{ .cache_type | default "redis" }}
         - name: CENTRAL_API_URL
@@ -89,30 +73,32 @@ spec:
 {{ tpl (toYaml .env) $ | indent 8 }}
 {{- end }}
         resources:
-          {{- toYaml $.Values.rest.resources | nindent 12 }}
+          {{- toYaml $.Values.resources | nindent 10 }}
       volumes:
       - name: conf
         configMap:
-          name: clue-plugin-conf
+          name: clue-plugin-conf-{{ .name }}
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .name }}-rest
+  name: {{ .name }}-plugin
   labels:
-    app: {{ .name }}-rest
+    app: {{ .name }}-plugin
 spec:
   type: ClusterIP
   ports:
   - port: {{ .port | default 5000 }}
     targetPort: 5000
     protocol: TCP
-    name: rest
+    name: plugin
   selector:
-    app.kubernetes.io/name: {{.name}}
+    app.kubernetes.io/name: {{ .name }}
     app.kubernetes.io/instance: {{ $.Release.Name }}
-    app.kubernetes.io/component: rest
+    app.kubernetes.io/component: plugin
 ---
+
 {{- if .ingress -}}
 {{- $prefix := .name -}}
 apiVersion: networking.k8s.io/v1
@@ -143,13 +129,13 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ $prefix }}-rest
+                name: {{ $prefix }}-plugin
                 port:
-                  name: rest
+                  name: plugin
     {{- end }}
 {{- end }}
-
 ---
+
 {{- if $.Values.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -171,6 +157,15 @@ spec:
   behavior:
   {{- toYaml $.Values.autoscaling.behavior | nindent 4 }}
   {{- end }}
----
 {{- end }}
+---
+
+{{- if .extraResources }}
+  {{- range $resource := .extraResources }}
+    # this bit allows plugin devs to include arbitrary kubernetes resources in their values
+    {{- tpl (toYaml $resource) $ | nindent 0 }}
+---
+  {{- end }}
+{{- end }}
+
 {{- end -}}

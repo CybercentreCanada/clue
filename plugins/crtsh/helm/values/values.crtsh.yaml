@@ -1,0 +1,12 @@
+clue-plugin:
+  plugins:
+    - name: crt-sh
+      env:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+      image:
+        name: cccsaurora/clue-plugin-crtsh
+        tag: nightly
+        pullPolicy: "Always"

@@ -1,0 +1,13 @@
+clue-plugin:
+  plugins:
+    - name: port-lookup
+      env:
+        - name: PLUGIN_PORT
+          value: "5000"
+        - name: PORT
+          value: "5000"
+        - name: CLASSIFICATION
+          value: TLP:CLEAR
+      image:
+        name: cccsaurora/clue-plugin-port-lookup
+        tag: nightly
