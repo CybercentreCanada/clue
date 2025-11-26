@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { ClueDatabaseContext } from './ClueDatabaseContext';
-import useClueEnrichSelector from './selectors';
+import { useClueEnrichSelector } from './selectors';
 
 /**
  * Custom hook that retrieves error records from the database for a given value.
@@ -46,6 +46,7 @@ const useErrors = (value: string): { source: string; message: string }[] => {
         observable.unsubscribe();
       } catch (e) {
         // Log warning if unsubscription fails (shouldn't normally happen)
+        // eslint-disable-next-line no-console
         console.warn(e);
       }
     };

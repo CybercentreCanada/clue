@@ -24,7 +24,6 @@ const StatusChip: FC<ChipProps & { data: FetcherStatusResult['data'] }> = ({ dat
         </a>
       }
       {...chipProps}
-      onDelete={data.link ? () => console.log('Navigating to %s', data.link) : null}
       label={(data.labels.find(label => label.language === i18n.language) ?? data.labels[0])?.label ?? t('unknown')}
       sx={[
         ...(Array.isArray(chipProps?.sx) ? chipProps?.sx : [chipProps?.sx]),

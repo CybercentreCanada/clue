@@ -13,7 +13,7 @@ import { MOCK_RESPONSES } from '../../tests/server-handlers';
 import { ClueEnrichContextType } from './ClueEnrichContextType';
 import { ClueEnrichProps } from './ClueEnrichProps';
 import { ClueProvider } from './ClueProvider';
-import useClueEnrichSelector from './selectors';
+import { useClueEnrichSelector } from './selectors';
 
 // Configuration for testing - chunk size determines how many selectors are processed together
 const ENRICH_CHUNK_SIZE = 5;
