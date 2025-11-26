@@ -7,17 +7,14 @@ import time
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 from typing import Any, Optional
-from urllib.parse import urlparse
 
-import elasticapm
-from elasticapm.traces import Transaction, execution_context
+from elasticapm.traces import Transaction, capture_span, execution_context
 from flask import Request, request
 from gevent import Greenlet
 from gevent.pool import Pool
-from geventhttpclient import HTTPClient
-from geventhttpclient.response import HTTPResponse
 from pydantic import BaseModel, ValidationError
-from requests import Response
+from requests import Response, Session
+from requests.adapters import HTTPAdapter
 
 from clue.common.exceptions import (
     AuthenticationException,
@@ -35,31 +32,31 @@ from clue.models.selector import Selector
 from clue.services import auth_service, type_service, user_service
 
 logger = get_logger(__file__)
-CLIENTS: dict[str, HTTPClient] = {}
+CLIENTS: dict[str, Session] = {}
 
 
-def get_client(base_url: str, timeout: float) -> HTTPClient:
-    """Gets or creates an HTTPClient for the provided base_url.
+def get_client(base_url: str, timeout: float) -> Session:
+    """Gets or creates a requests session for the provided base_url.
 
     Args:
         base_url (str): The base url of the desired client.
         timeout (float): The connection and network timeout to use (is multiplied by 3).
 
     Returns:
-        HTTPClient: The HTTPClient instance matching the provided base_url.
+        Session: The requests Session instance matching the provided base_url.
     """
     client_hash = sha256(base_url.encode())
     client_hash.update(str(timeout).encode())
     client_key = client_hash.hexdigest()
 
     if client_key not in CLIENTS:
-        # Pool of 16 connections by default
-        CLIENTS[client_key] = HTTPClient.from_url(
-            base_url,
-            concurrency=math.floor(int(os.environ.get("EXECUTOR_THREADS", 32)) / 2),
-            connection_timeout=timeout * 3,
-            network_timeout=timeout * 3,
-        )
+        session = Session()
+        # Configure connection pool with HTTPAdapter
+        pool_connections = math.floor(int(os.environ.get("EXECUTOR_THREADS", 32)) / 2)
+        adapter = HTTPAdapter(pool_connections=pool_connections, pool_maxsize=pool_connections, max_retries=1)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        CLIENTS[client_key] = session
 
     return CLIENTS[client_key]
 
@@ -252,7 +249,7 @@ def parse_response(source: ExternalSource, user: dict[str, Any], api_response: A
     Returns:
         list[QueryEntry]: The list of results contained in the response.
     """
-    with elasticapm.capture_span(source.name, "parsing"):
+    with capture_span(source.name, "parsing"):
         if isinstance(api_response, dict):
             api_response = [api_response]
 
@@ -294,7 +291,7 @@ def parse_bulk_response(
     if source.production:
         logger.debug(f"Skipping validation for production source {source.name}")
 
-    with elasticapm.capture_span(f"{source.name}-bulk", "parsing"):
+    with capture_span(f"{source.name}-bulk", "parsing"):
         for type in api_response:
             bulk_result.setdefault(type, {})
             for value in api_response[type]:
@@ -379,7 +376,7 @@ def query_external(
 
     finish_result = functools.partial(build_result, type_name, value, source)
 
-    with elasticapm.capture_span(query_external.__name__, span_type="greenlet"):
+    with capture_span(query_external.__name__, span_type="greenlet"):
         if type_name not in type_service.all_supported_types(user, access_token=access_token).get(source.name, {}):
             return finish_result(error="invalid_type")
 
@@ -404,17 +401,18 @@ def query_external(
         # perform the lookup, ensuring access controls are applied
         url = f"{source.url}/lookup/{type_name}/{value}/"
         response: Any = None
-        rsp: HTTPResponse | None = None
+        rsp: Response | None = None
         start = time.perf_counter()
         try:
-            with elasticapm.capture_span(url, "http"):
-                parsed_url = urlparse(url)
-                rsp = get_client(f"{parsed_url.scheme}://{parsed_url.netloc}", timeout).get(
-                    parsed_url.path + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
+            with capture_span(url, "http"):
+                rsp = get_client(source.url, timeout).get(
+                    url + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     headers=generate_headers(access_token, clue_access_token),
+                    timeout=(timeout * 3, timeout * 3),
                 )
+                rsp.raise_for_status()
 
-            response = json.load(rsp)
+            response = rsp.json()
         except Exception as exception:
             return finish_result(
                 error=process_exception(source.name, rsp, exception),
@@ -571,7 +569,7 @@ def bulk_query_external(  # noqa: C901
     if apm_transaction:
         execution_context.set_transaction(apm_transaction)
 
-    with elasticapm.capture_span(bulk_query_external.__name__, span_type="greenlet"):
+    with capture_span(bulk_query_external.__name__, span_type="greenlet"):
         supported_types = type_service.all_supported_types(user, access_token=access_token).get(source.name, {})
         bulk_result: dict[str, dict[str, QueryResult]] = {}
 
@@ -617,22 +615,22 @@ def bulk_query_external(  # noqa: C901
         url = f"{source.url}/lookup/"
         response: Any = None
         start = time.perf_counter()
-        rsp: HTTPResponse | None = None
+        rsp: Response | None = None
         try:
-            with elasticapm.capture_span(url, "http"):
-                parsed_url = urlparse(url)
-
-                rsp = get_client(f"{parsed_url.scheme}://{parsed_url.netloc}", timeout * 1.1).post(
-                    parsed_url.path + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
-                    body=json.dumps([entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data]),
+            with capture_span(url, "http"):
+                rsp = get_client(source.url, timeout).post(
+                    url + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
+                    json=[entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data],
                     headers=generate_headers(access_token, clue_access_token),
+                    timeout=(timeout * 3, timeout * 3),
                 )
+                rsp.raise_for_status()
 
             if not rsp:
                 raise ClueRuntimeError(f"An error occurred when connecting to {source.name}.")  # noqa: TRY301
 
             logger.debug(f"{rsp.status_code}: {url}")
-            response = json.load(rsp)
+            response = rsp.json()
         except Exception as exception:
             error = process_exception(source.name, rsp, exception)
         finally:
