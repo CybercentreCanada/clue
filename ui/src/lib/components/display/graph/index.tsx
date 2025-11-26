@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { parseEvent } from 'commons/components/utils/keyboard';
 import * as d3 from 'd3';
+import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import useComparator from 'lib/hooks/useComparator';
 import { useMyLocalStorageItem } from 'lib/hooks/useMyLocalStorage';
 import type { NestedDataset } from 'lib/types/graph';
@@ -25,6 +26,7 @@ import { StorageKey } from 'lib/utils/constants';
 import get from 'lodash-es/get';
 import type { FC, KeyboardEventHandler } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useContextSelector } from 'use-context-selector';
 import { cssImportant } from '../../../utils/graph';
 import Iconified from '../icons/Iconified';
 import ExpandMoreButton from './ExpandMoreButton';
@@ -33,6 +35,7 @@ import NodePanel from './visualizations/panels/NodePanel';
 import Tree from './visualizations/tree';
 
 const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx = {} }) => {
+  const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
   const theme = useTheme();
   const isDark = useMemo(() => theme.palette.mode === 'dark', [theme]);
   const { runComparator } = useComparator();
@@ -322,7 +325,7 @@ const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx 
                   transform: 'translateX(-50%) translateY(-50%)'
                 }}
               >
-                No dataset has been selected!
+                {t('graph.no.dataset')}
               </Typography>
             </>
           )}
@@ -362,18 +365,12 @@ const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx 
                     {option.value}
                   </li>
                 )}
-                renderInput={params => (
-                  <TextField
-                    {...params}
-                    error={hasError}
-                    label="Enter a node ID, and press [ctrl + enter] to select it. [ctrl + space] will open an autocomplete menu."
-                  />
-                )}
+                renderInput={params => <TextField {...params} error={hasError} label={t('graph.node.input.label')} />}
               />
               <FormControl sx={{ minWidth: '150px', backgroundColor: alpha(theme.palette.background.paper, 0.8) }}>
-                <InputLabel id="viz-label">Visualization</InputLabel>
+                <InputLabel id="viz-label">{t('graph.visualization')}</InputLabel>
                 <Select
-                  label="Visualization"
+                  label={t('graph.visualization')}
                   labelId="viz-label"
                   value={viz}
                   onChange={event => setViz(event.target.value as 'tree' | 'cloud')}
@@ -391,7 +388,7 @@ const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx 
                 expand={showPanel}
                 onClick={() => setShowPanel(!showPanel)}
                 aria-expanded={showPanel}
-                aria-label="show more"
+                aria-label={t('graph.show.more')}
                 size="small"
                 sx={{
                   marginLeft: 'auto !important',
@@ -421,7 +418,10 @@ const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx 
             <Stack direction="row" spacing={0.5} alignItems="center">
               {showCoordinates && (
                 <span>
-                  {currentZoom.x.toFixed(0)}, {currentZoom.y.toFixed(0)} ({currentZoom.k.toFixed(2)}x)
+                  {currentZoom.x.toFixed(0)}
+                  {', '}
+                  {currentZoom.y.toFixed(0)} ({currentZoom.k.toFixed(2)}
+                  {'x'})
                 </span>
               )}
               <IconButton
@@ -447,8 +447,14 @@ const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx 
             >
               <code>
                 <Stack direction="row" spacing={1}>
-                  <span>(abs: {absoluteMousePos.join(', ')})</span>
-                  <span>(rel: {relativeMousePos.join(', ')})</span>
+                  <span>
+                    ({'abs: '}
+                    {absoluteMousePos.join(', ')})
+                  </span>
+                  <span>
+                    ({'rel: '}
+                    {relativeMousePos.join(', ')})
+                  </span>
                 </Stack>
               </code>
             </Card>

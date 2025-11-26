@@ -5,14 +5,16 @@ import type { StorageKey } from 'lib/utils/constants';
 import { MY_LOCAL_STORAGE_PREFIX } from 'lib/utils/constants';
 import { useContext } from 'react';
 
-export default function useMyLocalStorage() {
+const useMyLocalStorage = () => {
   return useLocalStorage(MY_LOCAL_STORAGE_PREFIX);
-}
+};
 
-export function useMyLocalStorageItem<T>(key: StorageKey, initialValue?: T) {
+export const useMyLocalStorageItem = <T,>(key: StorageKey, initialValue?: T) => {
   return useLocalStorageItem(key, initialValue, MY_LOCAL_STORAGE_PREFIX);
-}
+};
 
-export function useMyLocalStorageProvider() {
+export const useMyLocalStorageProvider = () => {
   return useContext(LocalStorageContext);
-}
+};
+
+export default useMyLocalStorage;

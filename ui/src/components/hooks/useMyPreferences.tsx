@@ -64,7 +64,7 @@ const APP_BANNER_DARK = (
   </Stack>
 );
 
-export default function useMyPreferences(): AppPreferenceConfigs {
+const useMyPreferences = (): AppPreferenceConfigs => {
   // The following menu items will show up in the Left Navigation Drawer
   const MENU_ITEMS = useMemo<AppLeftNavElement[]>(
     () => {
@@ -190,4 +190,6 @@ export default function useMyPreferences(): AppPreferenceConfigs {
     }),
     [USER_MENU_ITEMS, ADMIN_MENU_ITEMS, MENU_ITEMS]
   );
-}
+};
+
+export default useMyPreferences;

@@ -25,5 +25,3 @@ export const useClueComponentSelector = <Selected,>(
 ): Selected => {
   return useContextSelector<ClueComponentContextType, Selected>(ClueComponentContext, selector);
 };
-
-export default useClueEnrichSelector;

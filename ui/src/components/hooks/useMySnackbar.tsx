@@ -2,7 +2,7 @@ import type { OptionsObject, SnackbarMessage } from 'notistack';
 import { useSnackbar } from 'notistack';
 import { useCallback, useMemo } from 'react';
 
-export default function useMySnackbar() {
+const useMySnackbar = () => {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const snackBarOptions: OptionsObject = useMemo(
     () => ({
@@ -62,4 +62,6 @@ export default function useMySnackbar() {
     }),
     [showErrorMessage, showInfoMessage, showSuccessMessage, showWarningMessage]
   );
-}
+};
+
+export default useMySnackbar;
