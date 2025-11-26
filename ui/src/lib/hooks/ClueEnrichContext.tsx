@@ -229,14 +229,14 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
         const enrichData: EnrichResponses = Object.values(Object.values(enrichmentResult)[0])[0];
 
-        await statusRecord?.incrementalPatch({ status: 'complete' });
-
         await _addEntries(Object.values(enrichData));
 
         return enrichData;
       } catch (e) {
         console.error(e);
         return {};
+      } finally {
+        await statusRecord?.incrementalPatch({ status: 'complete' });
       }
     },
     [
