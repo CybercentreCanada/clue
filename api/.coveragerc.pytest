@@ -4,7 +4,6 @@ sigterm = True
 data_file = .coverage.pytest
 omit =
     clue/gunicorn_config.py
-    clue/patched.py
     clue/external/*
     clue/helper/ws.py
     clue/odm/models/*
