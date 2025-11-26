@@ -1,10 +1,11 @@
 import { Stack, Typography } from '@mui/material';
 import { ClueDatabaseContext } from 'lib/hooks/ClueDatabaseContext';
-import useClueEnrichSelector from 'lib/hooks/selectors';
+import { useClueComponentSelector, useClueEnrichSelector } from 'lib/hooks/selectors';
 import type { FC } from 'react';
 import { useContext, useEffect, useState } from 'react';
 
 const QueryStatus: FC = () => {
+  const { t } = useClueComponentSelector(ctx => ctx.i18next);
   const database = useContext(ClueDatabaseContext);
   const ready = useClueEnrichSelector(ctx => ctx.ready);
 
@@ -29,6 +30,7 @@ const QueryStatus: FC = () => {
       try {
         observables.forEach(_observable => _observable.unsubscribe());
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.warn(e);
       }
     };
@@ -48,9 +50,15 @@ const QueryStatus: FC = () => {
         p: 1
       })}
     >
-      <Typography sx={{ fontFamily: 'monospace' }}>Pending: {pendingCount}</Typography>
-      <Typography sx={{ fontFamily: 'monospace' }}>In Progress: {inProgressCount}</Typography>
-      <Typography sx={{ fontFamily: 'monospace' }}>Complete: {completeCount}</Typography>
+      <Typography sx={{ fontFamily: 'monospace' }}>
+        {t('query.status.pending')}: {pendingCount}
+      </Typography>
+      <Typography sx={{ fontFamily: 'monospace' }}>
+        {t('query.status.inprogress')}: {inProgressCount}
+      </Typography>
+      <Typography sx={{ fontFamily: 'monospace' }}>
+        {t('query.status.complete')}: {completeCount}
+      </Typography>
     </Stack>
   );
 };

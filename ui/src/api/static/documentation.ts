@@ -4,10 +4,10 @@ import type { AxiosRequestConfig } from 'axios';
 
 export type DocumentationResponse = { [type: string]: string };
 
-export function uri(file: string) {
+export const uri = (file: string) => {
   return joinAllUri(parentUri(), 'docs', file);
-}
+};
 
-export function get(file: string, config?: AxiosRequestConfig): Promise<DocumentationResponse> {
+export const get = (file: string, config?: AxiosRequestConfig): Promise<DocumentationResponse> => {
   return hget(uri(file), null, config);
-}
+};

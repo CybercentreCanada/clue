@@ -1,7 +1,7 @@
 import type { Dispatch, FC, PropsWithChildren, SetStateAction } from 'react';
 import { useMemo, useState } from 'react';
 import { createContext } from 'use-context-selector';
-import useClueEnrichSelector from './selectors';
+import { useClueEnrichSelector } from './selectors';
 
 export type ClueGroupContextProps = {
   type: string;

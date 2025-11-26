@@ -16,7 +16,7 @@ const DEFAULT_CONFIG = {
   onConflict: null
 };
 
-export default function useMyApi() {
+const useMyApi = () => {
   const { showErrorMessage } = useMySnackbar();
 
   const dispatchApi = useCallback(
@@ -58,4 +58,6 @@ export default function useMyApi() {
     }),
     [dispatchApi]
   );
-}
+};
+
+export default useMyApi;

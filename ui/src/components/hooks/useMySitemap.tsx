@@ -20,7 +20,7 @@ import { useTranslation } from 'react-i18next';
 // excluded?: boolean = false -> when true, indicates to breadcrumbs component to not render this route.
 // breadcrumbs?: string[] -> a static list of breadcrumb paths to be rendered for the given route.
 // textWidth?: number -> the max width of the text when rendering the breadcrumb.
-export default function useMySitemap(): AppSiteMapConfigs {
+const useMySitemap = (): AppSiteMapConfigs => {
   const { t } = useTranslation();
   return useMemo(
     () => ({
@@ -73,4 +73,6 @@ export default function useMySitemap(): AppSiteMapConfigs {
     }),
     [t]
   );
-}
+};
+
+export default useMySitemap;

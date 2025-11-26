@@ -23,7 +23,7 @@ const findNode = (nodeId: string, flatNodes: RawEntry[]) => {
 };
 
 export const getPathToRoot = (nodeId, data: RawEntry[][]) => {
-  function getRoot(currNodeId: string, results: Set<string>) {
+  const getRoot = (currNodeId: string, results: Set<string>) => {
     if (results.has(currNodeId)) {
       return results;
     }
@@ -35,12 +35,13 @@ export const getPathToRoot = (nodeId, data: RawEntry[][]) => {
       });
     }
     return newResults;
-  }
+  };
+
   return getRoot(nodeId, new Set<string>());
 };
 
 export const getAllChildren = (nodeId, data: RawEntry[][]) => {
-  function getChildren(currNodeId: string, results: Set<string>) {
+  const getChildren = (currNodeId: string, results: Set<string>) => {
     if (results.has(currNodeId)) {
       return results;
     }
@@ -53,7 +54,8 @@ export const getAllChildren = (nodeId, data: RawEntry[][]) => {
       });
     }
     return newResults;
-  }
+  };
+
   return getChildren(nodeId, new Set<string>());
 };
 

@@ -72,7 +72,9 @@ const GroupControl: FC = () => {
             borderColor: theme.palette.divider
           })}
         >
-          <Typography color="text.secondary">{values?.length ?? 0} selected</Typography>
+          <Typography color="text.secondary">
+            {values?.length ?? 0} {t('selected')}
+          </Typography>
         </Box>
         <FlexOne />
         <Autocomplete

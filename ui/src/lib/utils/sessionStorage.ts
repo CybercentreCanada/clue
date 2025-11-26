@@ -12,7 +12,7 @@ const {
   // This allows us to write to the same key many times in quick succession without actually writing it to session storage right away.
   let changes = {};
 
-  const _getStored = function <T = string>(name: StorageKey): T {
+  const _getStored = <T = string>(name: StorageKey): T => {
     return (changes[buildName(name)] ?? JSON.parse(sessionStorage.getItem(buildName(name)))) as T;
   };
 

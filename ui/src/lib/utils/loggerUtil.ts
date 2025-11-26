@@ -3,8 +3,9 @@
  * @param message The debug message.
  * @param loggingEnabled the flag to determine if debugging is enabled.
  */
-export function clueDebugLogger(message: string, loggingEnabled: boolean) {
+export const clueDebugLogger = (message: string, loggingEnabled: boolean) => {
   if (loggingEnabled) {
+    // eslint-disable-next-line no-console
     console.debug(message);
   }
-}
+};

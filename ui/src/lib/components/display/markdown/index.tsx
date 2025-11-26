@@ -8,8 +8,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
-import DynamicTabs from './DynamicTabs';
-import { codeTabs } from './markdownPlugins/tabs';
 
 const customComponents = (type: string, children: any) => {
   const child = children instanceof Array ? children[0] : children;
@@ -19,18 +17,9 @@ const customComponents = (type: string, children: any) => {
         {child}
       </Alert>
     );
-  } else if (type === 'tabs') {
-    return (
-      <DynamicTabs
-        tabs={JSON.parse(child).map(t => ({
-          title: t.title,
-          children: customComponents(t.lang, t.value)
-        }))}
-      />
-    );
-  } else {
-    return <code>{child}</code>;
   }
+
+  return <code>{child}</code>;
 };
 
 const Markdown: FC<{
@@ -45,7 +34,7 @@ const Markdown: FC<{
   return (
     <ReactMarkdown
       rehypePlugins={[rehypeRaw]}
-      remarkPlugins={[remarkGfm, codeTabs as any]}
+      remarkPlugins={[remarkGfm]}
       components={{
         code: ({ node, className, children, ...props }) => {
           if (node.children?.length === 1 && node.children[0].type === 'text') {
