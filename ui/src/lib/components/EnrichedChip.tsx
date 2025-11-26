@@ -5,7 +5,7 @@ import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import { ClueGroupContext } from 'lib/hooks/ClueGroupContext';
 import type { ShowInfoOptions } from 'lib/hooks/CluePopupContext';
 import { CluePopupContext } from 'lib/hooks/CluePopupContext';
-import useClueEnrichSelector from 'lib/hooks/selectors';
+import { useClueEnrichSelector } from 'lib/hooks/selectors';
 import useAnnotations from 'lib/hooks/useAnnotations';
 import ActionIcon from 'lib/icons/Action';
 import AssessmentIcon from 'lib/icons/Assessment';

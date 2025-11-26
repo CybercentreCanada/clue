@@ -1,5 +1,5 @@
 import { Button, Checkbox, Divider, FormControlLabel, Popover, Stack, TextField } from '@mui/material';
-import useClueEnrichSelector, { useClueComponentSelector } from 'lib/hooks/selectors';
+import { useClueComponentSelector, useClueEnrichSelector } from 'lib/hooks/selectors';
 import type { FC } from 'react';
 import { memo, useEffect, useState } from 'react';
 

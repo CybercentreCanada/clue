@@ -25,6 +25,8 @@ const NEW_THEME = {
   }
 };
 
-export default function useMyTheme(): AppThemeConfigs {
+const useMyTheme = (): AppThemeConfigs => {
   return NEW_THEME;
-}
+};
+
+export default useMyTheme;

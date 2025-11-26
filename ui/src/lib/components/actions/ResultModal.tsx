@@ -25,10 +25,10 @@ const ResultModal: FC<{
     return null;
   }
 
-  try {
-    return (
-      <Modal open={show} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClose={onClose}>
-        <Paper sx={{ maxHeight: '80%', maxWidth: '80%', height: '100%', p: 2, minWidth: '750px' }}>
+  return (
+    <Modal open={show} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClose={onClose}>
+      <Paper sx={{ maxHeight: '80%', maxWidth: '80%', height: '100%', p: 2, minWidth: '750px' }}>
+        <ErrorBoundary>
           <Stack spacing={1} height="100%">
             <Stack direction="row" spacing={1} alignItems="center">
               {result.action.action_icon && <Icon height="1.5rem" icon={result.action.action_icon} />}
@@ -61,14 +61,10 @@ const ResultModal: FC<{
               </Button>
             </Stack>
           </Stack>
-        </Paper>
-      </Modal>
-    );
-  } catch (e) {
-    console.warn(e);
-
-    return null;
-  }
+        </ErrorBoundary>
+      </Paper>
+    </Modal>
+  );
 };
 
 export default memo(ResultModal);
