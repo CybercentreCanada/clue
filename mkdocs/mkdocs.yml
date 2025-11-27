@@ -39,7 +39,8 @@ nav:
     - overview/plugin_developers.md
     - overview/integration.md
 - Installation:
-  - installation/helm.md
+  - installation/deps.md
+  - installation/app.md
   - installation/plugin.md
 - Developer's Guide:
   - developer/getting_started.md

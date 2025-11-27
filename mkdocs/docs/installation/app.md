@@ -1,4 +1,4 @@
-# Kubernetes Deployment Guide (using Helm)
+# Deploying And Managing Clue.
 
 This document provides guidance for deploying and managing Clue on a Kubernetes cluster.
 
@@ -10,34 +10,7 @@ In this repository, a helm chart is provided that will allow you to deploy Clue 
 
 In order to deploy Clue to a Kubernetes cluster, you'll need to install [kubectl](https://kubernetes.io/docs/reference/kubectl/) as well as [helm](https://helm.sh/) to install the provided helm chart.
 
-### Installing Kubectl
-
-If you don't have Kubectl installed, follow the [official installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
-
-Verify kubectl installation:
-
-```bash
-kubectl version
-```
-
-### Installing Helm and Helm-diff
-
-If you don't have Helm installed, follow the [official installation guide](https://helm.sh/docs/intro/install).
-
-Verify helm installation:
-
-```bash
-helm version
-```
-
-It's also recommended (but not mandatory) to use helm-diff, follow the [official installation guide](https://github.com/databus23/helm-diff?tab=readme-ov-file#install)
-
-
-Verify helm-diff installation:
-
-```bash
-helm diff version
-```
+You can find more information on the [Deployment Dependencies](https://cybercentrecanada.github.io/clue/installation/deps/) page.
 
 ## Deployment
 
@@ -78,7 +51,7 @@ kubectl create secret generic clue-apikeys -n clue --from-literal=data={}
 
 ### 3. Creating your deployment-specific values file
 
-In order to have deployment specific values, you'll need to create a new values-\<deployment>.yaml file. This file doesn't necessarily need to live in this repo, but it needs to be accessible to helm.
+In order to have deployment specific values, you'll need to create a new values-\<deployment>.yaml file. This file doesn't necessarily need to live in this repo, but it needs to be accessible to helm. We usually include them under helm/values, you'll find a values.example.yaml file already there for reference
 
 In this file, you'll be able to override values from the values.yaml file by keeping the same structure. For example, if you want to use a different image tag for the UI and API deployments:
 ```yaml
@@ -94,8 +67,9 @@ images:
 Here's a command that will install the helm chart, using `clue` as the deployment name, and deploying to the `clue` namespace:
 
 ```bash
-# helm install <deployment-name> -n <namespace> <path-to-chart-directory> --values <path-to-deployment-specific-values>
-helm install clue -n clue helm/ --values helm/values/values.yaml --values helm/values/values-deployment.yaml
+cd helm
+# helm install <deployment-name> <path-to-chart-directory> -n <namespace> --values <path-to-deployment-specific-values>
+helm install clue . -n clue --values helm/values/values.yaml --values helm/values/values-deployment.yaml
 ```
 
 ### 5. Updating the deployment
