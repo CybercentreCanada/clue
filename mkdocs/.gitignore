@@ -4,3 +4,5 @@
 /env/
 
 .pyvenv_venv_path
+
+!/docs/charts/*.tgz
