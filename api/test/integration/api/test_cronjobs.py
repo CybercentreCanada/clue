@@ -56,7 +56,7 @@ def test_update_external_source_list(host, mock_scheduler: BackgroundScheduler, 
 def test_job_scheduler(host):
     if scheduler.state == 1:
         scheduler.remove_all_jobs()
-        scheduler.shutdown()
+        scheduler.shutdown(False)
 
     root_dir = Path(__file__).parent.parent.parent.parent
     module_path = root_dir / "clue" / "cronjobs"
@@ -67,7 +67,7 @@ def test_job_scheduler(host):
     setup_jobs()
     assert len(scheduler.get_jobs()) == len(modules_to_import)
     scheduler.remove_all_jobs()
-    scheduler.shutdown()
+    scheduler.shutdown(False)
 
 
 def test_job_scheduler_exception_raised(host):
@@ -76,4 +76,4 @@ def test_job_scheduler_exception_raised(host):
         mock_import.side_effect = exception
         setup_jobs()
         assert len(scheduler.get_jobs()) == 0
-        scheduler.shutdown()
+        scheduler.shutdown(False)
