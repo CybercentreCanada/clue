@@ -11,6 +11,7 @@ from jwt.api_jwk import PyJWK
 from clue.common.exceptions import ClueKeyError, ClueValueError
 from clue.common.logging import get_logger
 from clue.config import cache, config
+from clue.security.utils import decode_jwt_payload
 
 logger = get_logger(__file__)
 
@@ -19,6 +20,9 @@ def get_jwk(access_token: str) -> PyJWK:
     """Get the JSON Web Key associated with the given JWT"""
     # "kid" is the JSON Web Key's identifier. It tells us which key was used to validate the token.
     kid = jwt.get_unverified_header(access_token).get("kid")
+    if not kid or not isinstance(kid, str):
+        raise ClueValueError("Unexpected kid value in access token: %s", kid)
+
     jwks, _ = get_jwks()
 
     try:
@@ -50,6 +54,9 @@ def get_provider(access_token: str) -> str:
     """
     # "kid" is the JSON Web Key's identifier. It tells us which key was used to validate the token.
     kid = jwt.get_unverified_header(access_token).get("kid")
+    if not kid or not isinstance(kid, str):
+        raise ClueValueError("Unexpected kid value in access token: %s", kid)
+
     _, providers = get_jwks()
 
     try:
@@ -91,6 +98,16 @@ def get_jwks() -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
                 providers[jwk["kid"]] = provider_name
 
     return (jwks, providers)
+
+
+def extract_audience(access_token: str) -> list[str]:
+    "Extract the audience from an encoded JWT."
+    audience: list[str] | str | None = decode_jwt_payload(access_token).get("aud", None)
+
+    if not audience:
+        return []
+
+    return [audience] if not isinstance(audience, list) else audience
 
 
 def get_audience(oauth_provider: str) -> str:
@@ -156,7 +173,7 @@ def decode(
             options={"verify_aud": validate_audience},
             **kwargs,
         )  # type: ignore
-    except jwt.InvalidAudienceError:
+    except jwt.exceptions.InvalidAudienceError:
         logger.debug("Default audience did not match - checking additional audiences")
         if config.auth.oauth.other_audiences is not None:
             # The main audience isn't valid, let's try the others
@@ -174,7 +191,11 @@ def decode(
                 except jwt.InvalidAudienceError:
                     continue
 
-        logger.debug("Default and additional audiences failed to validate")
+        logger.warning(
+            "Default and additional audiences failed to validate. Expected: %s, Actual: %s",
+            audience,
+            ",".join(extract_audience(access_token)),
+        )
         raise
 
 

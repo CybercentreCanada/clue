@@ -1,7 +1,6 @@
-
 import pytest
 
-from clue.services.auth_service import extract_audience
+from clue.services.jwt_service import extract_audience
 from test.utils.oauth_credentials import get_token
 
 

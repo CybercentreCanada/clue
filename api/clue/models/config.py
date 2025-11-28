@@ -69,7 +69,7 @@ class OAuthProvider(BaseModel):
     classification_map: dict[str, str] = Field(
         default={}, description="A mapping of OAuth groups to classification levels"
     )
-    access_token_url: str | None = Field(description="URL to get access token")
+    access_token_url: str = Field(description="URL to get access token")
     authorize_url: str | None = Field(description="URL used to authorize access to a resource")
     api_base_url: str | None = Field(description="Base URL for downloading the user's and groups info")
     audience: str | None = Field(

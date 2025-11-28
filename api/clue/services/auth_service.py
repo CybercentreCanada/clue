@@ -2,7 +2,7 @@ import base64
 import hashlib
 from typing import Any, Optional, Union
 
-import elasticapm
+from elasticapm.traces import capture_span
 from flask import request
 
 from clue.common.exceptions import (
@@ -17,7 +17,7 @@ from clue.config import config, get_redis
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.obo import get_obo_token
-from clue.security.utils import decode_jwt_payload, generate_random_secret
+from clue.security.utils import generate_random_secret
 from clue.services import jwt_service, user_service
 
 logger = get_logger(__file__)
@@ -123,7 +123,7 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
     return None
 
 
-@elasticapm.capture_span(span_type="authentication")
+@capture_span(span_type="authentication")
 def bearer_auth(
     data: str, skip_jwt: bool = False, skip_internal: bool = False
 ) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
@@ -164,7 +164,7 @@ def bearer_auth(
             raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
-@elasticapm.capture_span(span_type="authentication")
+@capture_span(span_type="authentication")
 def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
     """This function identifies the user via the internal API key functionality.
 
@@ -243,7 +243,7 @@ def decode_b64(b64_str: str) -> str:
         raise InvalidDataException("Basic authentication data must be base64 encoded") from e
 
 
-@elasticapm.capture_span(span_type="authentication")
+@capture_span(span_type="authentication")
 def basic_auth(
     data: str, is_base64: bool = True, skip_apikey: bool = False, skip_password: bool = False
 ) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
@@ -267,6 +267,7 @@ def basic_auth(
     [username, data] = key_pair.split(":", maxsplit=1)
 
     validated_user = None
+    priv = None
     if not skip_apikey:
         validated_user, priv = validate_apikey(username, data)
 
@@ -299,16 +300,6 @@ def basic_auth(
     return validated_user, priv
 
 
-def extract_audience(access_token: str) -> list[str]:
-    "Extract the audience from an encoded JWT."
-    audience: list[str] | str | None = decode_jwt_payload(access_token).get("aud", None)
-
-    if not audience:
-        return []
-
-    return [audience] if not isinstance(audience, list) else audience
-
-
 # TODO: sa-clue support
 def check_obo(source: ExternalSource, access_token: str, username: str) -> tuple[Optional[str], Optional[str]]:
     """Checks whether a token's audience matches the source, and if it doesn't, tries to get an OBO token for the source
@@ -333,7 +324,7 @@ def check_obo(source: ExternalSource, access_token: str, username: str) -> tuple
 
             access_token = sa_token
 
-        audience = extract_audience(access_token)
+        audience = jwt_service.extract_audience(access_token)
 
         # Check if this is a standard clue token
         if jwt_service.get_audience(jwt_service.get_provider(access_token)) in audience:
