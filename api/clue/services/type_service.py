@@ -1,12 +1,13 @@
 from typing import Any
 
-import elasticapm
 import requests
+from elasticapm.traces import capture_span
 from flask import request
 from requests import exceptions
 
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, DEBUG, cache, config
+from clue.constants.env import DISABLE_CACHE
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.helper.headers import generate_headers
 from clue.models.config import ExternalSource
@@ -57,12 +58,12 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
     """
     url = f"{source_url}{'' if source_url.endswith('/') else '/'}types/"
 
-    if result := CACHE.get(url):
+    if not DISABLE_CACHE and (result := CACHE.get(url)):
         logger.info("Cache hit for url %s", url)
         return result
 
     logger.debug("Cache miss, polling plugin")
-    with elasticapm.capture_span(f"GET {url}", span_type="http"):
+    with capture_span(f"GET {url}", span_type="http"):
         headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
         try:
@@ -81,7 +82,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             except requests.exceptions.JSONDecodeError:
                 logger.exception(
                     f"Parsing error in error ({rsp.status_code}) response - unknown format\n"
-                    f"Raw response: {rsp.content}"
+                    f"Raw response: {rsp.content.decode()}"
                 )
                 return None
             except KeyError:
@@ -103,7 +104,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             CACHE.set(url, types_result)
             return types_result
         except requests.exceptions.JSONDecodeError:
-            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.content}")
+            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.content.decode()}")
             return None
         except Exception:
             logger.exception("External API did not return expected format:")

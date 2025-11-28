@@ -8,7 +8,7 @@ line-length = 120
 # coverage.py settings #
 ########################
 [tool.coverage.run]
-omit = ["clue/gunicorn_config.py", "clue/patched.py", "test/utils/*"]
+omit = ["clue/gunicorn_config.py", "test/utils/*"]
 branch = true
 sigterm = true
 data_file = ".coverage.server"
@@ -76,9 +76,6 @@ line-length = 120
 indent-width = 4
 target-version = "py312"
 
-[tool.ruff.format]
-exclude = ["clue/patched.py"]
-
 [tool.ruff.lint]
 select = [
   "E",
@@ -112,7 +109,6 @@ ignore = [
   "TRY300",
 ]
 exclude = [
-  "clue/patched.py",
   "plugins/assemblyline_lookup/app.py",
   "plugins/**/test*.py",
 ]
@@ -184,7 +180,6 @@ flask-caching = "^2.1.0"
 gunicorn = ">=22,<24"
 gevent = "^24.2.1"
 pydantic = "^2.7.1"
-geventhttpclient = "^2.3.1"
 pydantic-settings = { extras = ["yaml"], version = "^2.3.4" }
 redis = { version = "^5.0.3" }
 beautifulsoup4 = "^4.13.3"
@@ -232,7 +227,7 @@ name = "pypi"
 priority = "supplemental"
 
 [tool.poetry.scripts]
-server = "clue.patched:main"
+server = "clue.app:main"
 test = "build_scripts.run_tests:main"
 last_success = "build_scripts.last_success:main"
 check_changes = "build_scripts.check_changes:main"
@@ -261,6 +256,7 @@ types-pyyaml = "^6.0.12.20240311"
 types-pytz = "^2024.1.0.20240203"
 types-redis = "^4.6.0.20241004"
 types-dateparser = "^1.2.0.20250208"
+types-requests = "^2.32.4.20250913"
 
 [build-system]
 requires = ["poetry-core"]
