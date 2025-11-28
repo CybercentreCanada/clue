@@ -265,7 +265,7 @@ def test_bulk_enrichment_sources(host):
     if not access_token:
         pytest.skip("Could not connect to keycloak.")
 
-    bulk_req = [
+    bulk_req: list[dict[str, Any]] = [
         {"type": "ipv4", "value": "127.0.0.1", "sources": ["test", "bad"]},
         {"type": "ipv4", "value": "127.0.0.2", "sources": ["test-amber"]},
     ]
@@ -296,3 +296,60 @@ def test_bulk_enrichment_sources(host):
             assert "error" not in json[entry["type"]][entry["value"]]["test-amber"]
         else:
             assert "test-amber" not in json[entry["type"]][entry["value"]]
+
+
+def test_case_normalization_single(host):
+    """Test that type and value are normalized to lowercase for single enrichment."""
+    access_token = get_token()
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    # Mixed case type and value
+    res = requests.get(
+        f"{host}/api/v1/lookup/enrich/IPv4/127.0.0.1",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert res.ok
+    json = res.json()["api_response"]
+
+    # Should respond as if type/value were lowercase
+    assert "test" in json
+    assert json["test"]["items"][0]["count"] == 10
+
+    # Uppercase value
+    res = requests.get(
+        f"{host}/api/v1/lookup/enrich/IPV4/127.0.0.1",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert res.ok
+    json = res.json()["api_response"]
+
+    assert "test" in json
+    assert json["test"]["items"][0]["count"] == 10
+
+
+def test_case_normalization_bulk(host):
+    """Test that type and value are normalized to lowercase for bulk enrichment."""
+    access_token = get_token()
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    bulk_req = [
+        {"type": "IPv4", "value": "127.0.0.1"},
+        {"type": "IPV6", "value": "127.0.0.2"},
+        {"type": "EmAiL_Address", "value": "TEST@123.COM"},
+    ]
+    res = requests.post(
+        f"{host}/api/v1/lookup/enrich",
+        params={"max_timeout": 5.0, "sources": "test|bad"},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json=bulk_req,
+    )
+    assert res.ok
+    json = res.json()["api_response"]
+    # Should respond as if type/value were lowercase
+    assert "ipv4" in json and "ipv6" in json and "email_address" in json
+    assert json["ipv4"]["127.0.0.1"]["test"]["items"][0]["count"] == 10
+    assert json["ipv6"]["127.0.0.2"]["test"]["items"][0]["count"] == 10

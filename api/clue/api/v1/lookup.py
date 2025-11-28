@@ -205,13 +205,16 @@ def enrich(type_name: str, value: str, **kwargs) -> dict[str, QueryResult]:
     user = kwargs["user"]
 
     # For backwards compatability, if eml is used it is replaced with email
-    type_name = type_name.replace("eml", "email")
+    type_name = type_name.lower().replace("eml", "email")
 
     if type_name == "telemetry":
         try:
             json.loads(urllib.parse.unquote(value))
         except json.JSONDecodeError:
             return bad_request(err="If type is telemetry, value must be a valid JSON object.")
+    else:
+        # Normalize to lowercase all non-telemetry inputs
+        value = value.lower()
 
     # re-encode the type after being decoded going through flask/wsgi route
     value = urllib.parse.quote(value, safe="")
