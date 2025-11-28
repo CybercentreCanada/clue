@@ -23,7 +23,7 @@ If you suspect the data has changed (e.g., an IP reputation update), you can for
 
 1. In the Clue UI, look for the **"Skip Plugins' Cache"** option.
 2. Enable this option before running your enrichment.
-3. This forces Clue to ignore the 5-minute cache and fetch live data.
+3. This forces Clue to ignore any cached results and fetch live data.
 
 ### Why is it faster the second time?
 
