@@ -42,10 +42,7 @@ class Selector(BaseModel):
                 json.loads(self.value)
             except json.JSONDecodeError as e:
                 raise AssertionError("If type is telemetry, value must be a valid JSON object.") from e
-        else:
-            self.value = self.value.lower()
-
-        if self.type in CASE_INSENSITIVE_TYPES:
+        elif self.type in CASE_INSENSITIVE_TYPES:
             self.value = self.value.lower()
 
         if not self.classification:
