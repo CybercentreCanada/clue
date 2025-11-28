@@ -67,7 +67,7 @@ const Actions: FC = () => {
           disabled={isEmpty(actions)}
           fullWidth
           value={classification}
-          options={Object.keys(config.c12nDef.levels_map_lts)}
+          options={Object.keys(config?.c12nDef?.levels_map_lts ?? {})}
           onChange={(__, classificationValue) => setClassification(classificationValue)}
           renderInput={params => (
             <TextField {...params} sx={{ minWidth: '250px' }} label={t('page.home.classification')} />
