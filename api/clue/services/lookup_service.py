@@ -408,7 +408,7 @@ def query_external(
                 rsp = get_client(source.url, timeout).get(
                     url + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     headers=generate_headers(access_token, clue_access_token),
-                    timeout=(timeout * 3, timeout * 3),
+                    timeout=(timeout, timeout * 3),
                 )
                 rsp.raise_for_status()
 
