@@ -19,7 +19,7 @@ def get_apps_list() -> list[dict[str, str]]:
     apps: list[dict[str, Any]] = []
 
     if "pytest" in sys.modules or TESTING:
-        return []
+        return apps
 
     if config.api.discover_url:
         try:
