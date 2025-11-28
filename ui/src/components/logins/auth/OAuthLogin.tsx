@@ -2,7 +2,7 @@ import { Button, CircularProgress, Stack } from '@mui/material';
 import api from 'api';
 import { useMyLocalStorageItem } from 'lib/hooks/useMyLocalStorage';
 import { StorageKey } from 'lib/utils/constants';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import useLogin from '../hooks/useLogin';
@@ -15,14 +15,24 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const { doOAuth } = useLogin();
+  const setNonce = useMyLocalStorageItem(StorageKey.LOGIN_NONCE)[1];
+
   const [buttonLoading, setButtonLoading] = useState(false);
 
-  const setNonce = useMyLocalStorageItem(StorageKey.LOGIN_NONCE)[1];
+  const codeRedemption = useRef<Promise<void>>();
 
   useEffect(() => {
     if (searchParams.get('code')) {
       setButtonLoading(true);
-      doOAuth().finally(() => setButtonLoading(false));
+
+      if (!codeRedemption.current) {
+        codeRedemption.current = doOAuth();
+      }
+
+      codeRedemption.current.finally(() => {
+        codeRedemption.current = null;
+        setButtonLoading(false);
+      });
     }
   }, [doOAuth, searchParams]);
 
