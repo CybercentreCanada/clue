@@ -29,10 +29,10 @@ def _get_token_raw(service: str, user: str) -> Optional[str]:
     if token_store.length() > 0:
         result = token_store.random(1)
 
-        if len(result) < 1:
-            logger.warning("Token store reported more than one entry, but was empty on fetch.")
-        else:
+        if len(result) > 0:
             return result[0]
+
+        logger.warning("Token store reported more than one entry, but was empty on fetch.")
 
     return None
 
