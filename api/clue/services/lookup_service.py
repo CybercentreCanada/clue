@@ -167,7 +167,7 @@ def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):
 
 def generate_params(
     limit: int, timeout: float, no_annotation: bool = False, include_raw: bool = False, no_cache: bool = False
-) -> dict[str, str | int | float]:
+) -> dict[str, str | int | float | bool]:
     """Generates HTTP request parameters for a call to a source.
 
     Args:
