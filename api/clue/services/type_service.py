@@ -81,7 +81,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             except requests.exceptions.JSONDecodeError:
                 logger.exception(
                     f"Parsing error in error ({rsp.status_code}) response - unknown format\n"
-                    f"Raw response: {rsp.content.decode()}"
+                    f"Raw response: {rsp.text}"
                 )
                 return None
             except KeyError:
@@ -103,7 +103,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             CACHE.set(url, types_result)
             return types_result
         except requests.exceptions.JSONDecodeError:
-            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.content.decode()}")
+            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.text}")
             return None
         except Exception:
             logger.exception("External API did not return expected format:")
