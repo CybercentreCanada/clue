@@ -628,7 +628,8 @@ def bulk_query_external(  # noqa: C901
         try:
             with capture_span(url, "http"):
                 rsp = get_client(source.url, timeout).post(
-                    url + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
+                    url,
+                    params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     json=[entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data],
                     headers=generate_headers(access_token, clue_access_token),
                     timeout=(timeout * 3, timeout * 3),
