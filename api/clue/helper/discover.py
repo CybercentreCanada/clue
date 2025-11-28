@@ -1,4 +1,3 @@
-import sys
 from typing import Any
 
 import requests
@@ -18,7 +17,7 @@ def get_apps_list() -> list[dict[str, str]]:
     """
     apps: list[dict[str, Any]] = []
 
-    if "pytest" in sys.modules or TESTING:
+    if TESTING:
         return apps
 
     if config.api.discover_url:
