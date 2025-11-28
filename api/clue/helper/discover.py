@@ -25,7 +25,9 @@ def get_apps_list() -> list[dict[str, str]]:
             resp = requests.get(config.api.discover_url, headers={"accept": "application/json"}, timeout=5)
 
             if not resp.ok:
-                logger.warning(f"Invalid response from server for apps discovery: {config.api.discover_url}")
+                logger.warning(
+                    "Invalid response %s from server for apps discovery: %s", resp.status_code, config.api.discover_url
+                )
                 return apps
 
             data = resp.json()
