@@ -77,7 +77,7 @@ const Actions: FC = () => {
               {...(props as any)}
               sx={{ flexDirection: 'column', alignItems: 'start !important' }}
               primary={option}
-              secondary={config.c12nDef.description[option]}
+              secondary={config?.c12nDef?.description?.[option]}
             />
           )}
           sx={{ flex: 1 }}
@@ -105,7 +105,7 @@ const Actions: FC = () => {
         />
         <Button
           disabled={
-            !(action && ((type && value && classification) || isEmpty(actions[action].supported_types))) || loading
+            !(action && ((type && value && classification) || isEmpty(actions[action]?.supported_types))) || loading
           }
           startIcon={<PlayArrow />}
           variant="outlined"
