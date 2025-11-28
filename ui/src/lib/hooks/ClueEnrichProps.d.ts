@@ -51,12 +51,14 @@ export interface ClueEnrichProps {
 
   /**
    * Add modify the Axios request configuration before the request is sent
+   *
    * @param config The existing axios request config
    */
   onNetworkCall?: (config: AxiosRequestConfig) => AxiosRequestConfig;
 
   /**
-   * Modify the list of sources enrichments are requested from before the
+   * Modify the list of sources enrichments are requested from before enrichment is requested
+   *
    * @param configuredSources The list of sources configured globally to execute
    * @param availableSources The full list of available sources in clue
    * @param selectors The list of selectors about to be enriched
