@@ -37,4 +37,4 @@ SUPPORTED_TYPES = {
     "tenant-id": UUID4_REGEX,
 }
 
-CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id"]
+CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]

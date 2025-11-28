@@ -1,9 +1,10 @@
 # ruff: noqa: D101
 import ipaddress
 import json
+from typing import Annotated
 
 from flask import request
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 from typing_extensions import Self
 
 from clue.common.logging import get_logger
@@ -14,7 +15,7 @@ logger = get_logger(__file__)
 
 
 class Selector(BaseModel):
-    type: str
+    type: Annotated[str, StringConstraints(to_lower=True, strip_whitespace=True)]
     value: str
     classification: str | None = Field(default=None)
     sources: list[str] | None = Field(default=None)
@@ -41,8 +42,7 @@ class Selector(BaseModel):
                 json.loads(self.value)
             except json.JSONDecodeError as e:
                 raise AssertionError("If type is telemetry, value must be a valid JSON object.") from e
-
-        if self.type in CASE_INSENSITIVE_TYPES:
+        elif self.type in CASE_INSENSITIVE_TYPES:
             self.value = self.value.lower()
 
         if not self.classification:
