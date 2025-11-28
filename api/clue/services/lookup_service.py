@@ -14,7 +14,7 @@ from gevent import Greenlet
 from gevent.pool import Pool
 from pydantic import BaseModel, ValidationError
 from requests import Response, Session
-from requests.adapters import HTTPAdapter
+from requests.adapters import HTTPAdapter, Retry
 
 from clue.common.exceptions import (
     AuthenticationException,
@@ -53,9 +53,17 @@ def get_client(base_url: str, timeout: float) -> Session:
         session = Session()
         # Configure connection pool with HTTPAdapter
         pool_connections = math.floor(int(os.environ.get("EXECUTOR_THREADS", 32)) / 2)
-        adapter = HTTPAdapter(pool_connections=pool_connections, pool_maxsize=pool_connections, max_retries=1)
+
+        retry_strategy = Retry(
+            total=2, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504], allowed_methods=["GET", "POST"]
+        )
+        adapter = HTTPAdapter(
+            pool_connections=pool_connections, pool_maxsize=pool_connections, max_retries=retry_strategy
+        )
+
         session.mount("http://", adapter)
         session.mount("https://", adapter)
+
         CLIENTS[client_key] = session
 
     return CLIENTS[client_key]
@@ -159,7 +167,7 @@ def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):
 
 def generate_params(
     limit: int, timeout: float, no_annotation: bool = False, include_raw: bool = False, no_cache: bool = False
-):
+) -> dict[str, str | int | float]:
     """Generates HTTP request parameters for a call to a source.
 
     Args:
@@ -173,7 +181,7 @@ def generate_params(
         str: A string of HTTP params formatted so that it can be appended to a url
             (in the format "?param1=value1&param2=value2")
     """
-    params = {
+    params: dict[str, str | int | float | bool] = {
         "limit": limit,
         "max_timeout": max(timeout * 0.95, 0.5),
         "deadline": (datetime.now(timezone.utc) + timedelta(seconds=max(timeout * 0.95, 0.5))).timestamp(),
@@ -188,7 +196,7 @@ def generate_params(
     if no_cache:
         params["no_cache"] = True
 
-    return "?" + "&".join(f"{key}={val}" for key, val in params.items())
+    return params
 
 
 def process_exception(source_name: str, rsp: Response | None, exception: Exception):
@@ -406,7 +414,8 @@ def query_external(
         try:
             with capture_span(url, "http"):
                 rsp = get_client(source.url, timeout).get(
-                    url + generate_params(limit, timeout, no_annotation, include_raw, no_cache),
+                    url,
+                    params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     headers=generate_headers(access_token, clue_access_token),
                     timeout=(timeout, timeout * 3),
                 )
