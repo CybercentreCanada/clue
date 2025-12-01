@@ -13,7 +13,7 @@ This section addresses common questions for analysts and users regarding data pe
 **No.** Clue uses **session storage**, which means your enrichment data persists only as long as your browser tab is open.
 **Warning:** If you close your tab or window, all your current enrichment results will be lost.
 
-### How long does data stay "fresh"?
+### How long does the data stay "fresh"?
 
 By default, plugins cache results for **5 minutes**. If you search for the same indicator within that window, you will see the cached result. After 5 minutes, Clue will automatically fetch new data from the source.
 
