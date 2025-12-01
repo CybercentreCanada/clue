@@ -7,6 +7,7 @@ from requests import exceptions
 
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, DEBUG, cache, config
+from clue.constants.env import DISABLE_CACHE
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.helper.headers import generate_headers
 from clue.models.config import ExternalSource
@@ -57,7 +58,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
     """
     url = f"{source_url}{'' if source_url.endswith('/') else '/'}types/"
 
-    if result := CACHE.get(url):
+    if not DISABLE_CACHE and (result := CACHE.get(url)):
         logger.info("Cache hit for url %s", url)
         return result
 

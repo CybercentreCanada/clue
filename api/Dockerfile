@@ -90,4 +90,4 @@ ENV CLUE_IMAGE_TAG=${version_tag}
 # Switch back to clue and run the app
 USER clue
 
-CMD ["gunicorn", "clue.patched:app", "--config=python:clue.gunicorn_config", "--worker-class", "gevent"]
+CMD ["gunicorn", "clue.app:app", "--config=python:clue.gunicorn_config", "--worker-class", "gevent"]

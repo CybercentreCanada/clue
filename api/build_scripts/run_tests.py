@@ -24,9 +24,8 @@ def generate_flask_command(server_id: str, port: int):
 
 
 def main():  # noqa: C901
+    servers: list[subprocess.Popen] = []
     try:
-        servers: list[subprocess.Popen] = []
-
         if Path(".coverage").exists():
             print("Removing existing coverage files")
             subprocess.check_call(
@@ -37,41 +36,44 @@ def main():  # noqa: C901
         servers.append(
             subprocess.Popen(
                 prep_command(generate_flask_command("test_server", 5008)),
-                env={**os.environ.copy(), "SKIP_DISCOVERY": "true"},
+                env={**os.environ.copy(), "SKIP_DISCOVERY": "true", "TESTING": "true"},
             )
         )
         servers.append(
             subprocess.Popen(
                 prep_command(generate_flask_command("bad_server", 5009)),
-                env={**os.environ.copy(), "SKIP_DISCOVERY": "true"},
+                env={**os.environ.copy(), "SKIP_DISCOVERY": "true", "TESTING": "true"},
             )
         )
         servers.append(
             subprocess.Popen(
                 prep_command(generate_flask_command("slow_server", 5010)),
-                env={**os.environ.copy(), "SKIP_DISCOVERY": "true"},
+                env={**os.environ.copy(), "SKIP_DISCOVERY": "true", "TESTING": "true"},
             )
         )
         servers.append(
             subprocess.Popen(
                 prep_command(generate_flask_command("telemetry_server", 5011)),
-                env={**os.environ.copy(), "SKIP_DISCOVERY": "true"},
+                env={**os.environ.copy(), "SKIP_DISCOVERY": "true", "TESTING": "true"},
             )
         )
         servers.append(
             subprocess.Popen(
                 prep_command("flask --app test.utils.test_server run --no-reload --port 5012"),
-                env={**os.environ.copy(), "SKIP_DISCOVERY": "true", "CLASSIFICATION": "TLP:AMBER+STRICT"},
+                env={
+                    **os.environ.copy(),
+                    "SKIP_DISCOVERY": "true",
+                    "CLASSIFICATION": "TLP:AMBER+STRICT",
+                    "TESTING": "true",
+                },
             )
         )
 
         print(f"Running central API {'(with coverage)' if len(sys.argv) < 2 else ''}")
         servers.append(
             subprocess.Popen(
-                prep_command(
-                    f"{'coverage run -m ' if len(sys.argv) < 2 else ''}flask --app clue.patched run --no-reload"
-                ),
-                env={**os.environ.copy(), "SKIP_DISCOVERY": "true"},
+                prep_command(f"{'coverage run -m ' if len(sys.argv) < 2 else ''}flask --app clue.app run --no-reload"),
+                env={**os.environ.copy(), "SKIP_DISCOVERY": "true", "DISABLE_CACHE": "true", "TESTING": "true"},
             )
         )
 

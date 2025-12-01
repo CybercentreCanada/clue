@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 import time
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from packaging.version import parse
 
 from clue.common.logging import get_logger
 from clue.common.uid import get_random_id
+from clue.constants.env import TESTING
 
 logger = get_logger(__file__)
 
@@ -91,7 +93,7 @@ def get_client(host, port, private, password=None):
 
     if password:
         logger.debug("Connecting to redis with password")
-    else:
+    elif "pytest" not in sys.modules and not TESTING:
         logger.warning("Connecting to redis without authentication.")
 
     ssl_kwargs = {}
