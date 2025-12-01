@@ -137,7 +137,7 @@ Les plug-ins utilisent la mise en cache côté serveur pour améliorer les temps
 
 Le système peut être configuré de deux manières, ce qui affecte la façon dont les données sont partagées entre les utilisateurs :
 
-1. **Mise en cache Redis (Partagé)** : Le cache est partagé dans tout le système. Si vous enrichissez un indicateur, votre collègue verra le résultat mis en cache immédiatement.
+1. **Mise en cache Redis (Partagé)** : Le cache est partagé dans tout le système. Si vous enrichissez un indicateur, votre collègue verra le résultat mis en cache lorsqu'il interrogera le même indicateur.
 2. **Mise en cache mémoire locale (Isolé)** : Chaque unité de traitement (« worker ») possède son propre cache.
 
 **Note pour l'analyste (Dépannage) :**
