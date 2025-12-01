@@ -17,7 +17,7 @@ This section addresses common questions for analysts and users regarding data pe
 
 By default, plugins cache results for **5 minutes**. If you search for the same indicator within that window, you will see the cached result. After 5 minutes, Clue will automatically fetch new data from the source.
 
-### How do I get new data immediately?
+### How do I bypass the cache/get new data immediately?
 
 If you suspect the data has changed (e.g., an IP reputation update), you can force a refresh:
 
