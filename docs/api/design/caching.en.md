@@ -8,7 +8,7 @@ storage and retrieval across different components.
 
 This section addresses common questions for analysts and users regarding data persistence and freshness.
 
-### Does my data save?
+### Is the data saved anywhere?
 
 **No.** Clue uses **session storage**, which means your enrichment data persists only as long as your browser tab is open.
 **Warning:** If you close your tab or window, all your current enrichment results will be lost.
