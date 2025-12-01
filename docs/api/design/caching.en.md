@@ -4,6 +4,15 @@ Clue implements a multi-layered caching architecture to optimize performance and
 The caching system operates at both the client-side (UI) and server-side (API/Plugins) levels, providing efficient data
 storage and retrieval across different components.
 
+## Overview
+
+The caching architecture consists of two main layers:
+
+1. **Client-side Caching**: Browser-based storage for UI data persistence.
+2. **Plugin-side Caching**: Server-side caching (Redis or Local) within individual plugins.
+
+Cache Bypass Controls allow users to force fresh data retrieval when needed.
+
 ## User Guide: Caching FAQ
 
 This section addresses common questions for analysts and users regarding data persistence and freshness.
@@ -25,17 +34,17 @@ If you suspect the data has changed (e.g., an IP reputation update), you can for
 2. Enable this option before running your enrichment.
 3. This forces Clue to ignore any cached results and fetch live data.
 
+Alternatively, in an application with the clue UI integrated, you can force refreshing from specific plugins using the
+enrich button:
+
+1. Click on the selector you wish to refresh
+2. Click the "Enrich" button a tthe top right of the popover
+3. Select the source you wish to re-enrich from.
+4. This forces that plugin to ignore any cached results and fetch live data.
+
 ### Why is it faster the second time?
 
 When you view a result you've already enriched in your current session, it loads instantly because it is stored in your browser's local cache (Client-side caching).
-
-## Overview
-
-The caching architecture consists of three main layers:
-
-1. **Client-side Caching**: Browser-based storage for UI data persistence.
-2. **Plugin-side Caching**: Server-side caching (Redis or Local) within individual plugins.
-3. **Cache Bypass Controls**: Mechanisms to force fresh data retrieval when needed.
 
 ## Client-side Caching (UI)
 
@@ -77,12 +86,13 @@ The database manages two main types of data:
 
 #### Selectors Collection
 
-* Schema: `selector.schema.json`
+* Schema: `ui/src/lib/database/selector.schema.json`
 * Indexed by type, value, and classification for efficient querying
 * Automatically manages data compression and validation
 
 #### Status Collection
 
+* Schema: `ui/src/lib/database/status.schema.json`
 * Enables queue management for bulk enrichment operations
 * Prevents duplicate requests by checking existing status records
 
@@ -101,6 +111,10 @@ data efficiently:
 <summary>Technical Implementation</summary>
 
 ```typescript
+/**
+ * ui/src/lib/hooks/ClueEnrichContext
+ */
+
 // 1. Check existing status to prevent duplicates
 let statusRecord = await database.status
   .findOne({ selector: { type, value, classification } })
@@ -150,9 +164,13 @@ If you and a colleague see different results for the same indicator at the same 
 
 #### Redis Caching
 
-Redis provides distributed caching that is shared across all plugin workers and pods in a Kubernetes cluster.
+Redis provides distributed caching that is shared across all plugin workers and pods in a Kubernetes cluster. In scalable
+deployments with many workers, using a centralized cache like redis is preferred so workers can share cache information.
+Conversely, the ease of simple cache systems on smaller deployments with only a single flask server running requires less
+infrastructure and may be a better fit.
 
 ```python
+# api/clue/cache/__init__.py
 # Uses ExpiringHash for distributed caching
 self.__redis_cache = ExpiringHash(cache_name, host=get_redis(), ttl=timeout)
 ```
@@ -186,9 +204,14 @@ Cache keys are generated using SHA256 hashing of:
 * Result limit parameters
 
 ```python
+# api/clue/cache/__init__.py
 def __generate_hash(self, type_name: str, value: str, params: Params) -> str:
     hash_data = sha256(type_name.encode())
-    # ... hashing logic ...
+    hash_data.update(value.encode())
+
+    hash_data.update(str(params.annotate).encode())
+    hash_data.update(str(params.raw).encode())
+    hash_data.update(str(params.limit).encode())
     return hash_data.hexdigest()
 ```
 
@@ -204,7 +227,6 @@ To force a fresh lookup:
 
 1. Locate the **"Skip Plugins' Cache"** option in the interface.
 2. Enable it before submitting your request.
-3. This sends a signal to the server to ignore any existing cache and fetch new data from the source.
 
 <details>
 <summary>Technical Implementation: API & Client</summary>
@@ -239,13 +261,13 @@ const options = {
 * **Intelligent Batching**: Requests are automatically grouped to reduce API calls
 * **Status Tracking**: Prevents duplicate requests for the same selector
 * **Memory Management**: Session storage automatically cleans up on tab close
+* **Key Compression**: RxDB uses key compression to reduce storage overhead
 
 ### Plugin-side Optimizations
 
 * **Configurable TTL**: Cache timeout can be adjusted per plugin (default: 5 minutes)
 * **Serialization**: Efficient JSON serialization with Pydantic models
 * **Error Handling**: Graceful fallback when cache operations fail
-* **Key Compression**: RxDB uses key compression to reduce storage overhead
 
 ## Cache Invalidation
 
@@ -311,6 +333,3 @@ const config: DatabaseConfig = {
 ```
 
 </details>
-
-This multi-layered caching architecture ensures optimal performance while providing flexibility for different
-deployment scenarios and use cases.

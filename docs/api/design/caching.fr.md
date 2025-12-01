@@ -7,7 +7,7 @@ Le système de mise en cache fonctionne à la fois au niveau du client (IU) et d
 
 Cette section répond aux questions courantes des analystes et des utilisateurs concernant la persistance et la fraîcheur des données.
 
-### Mes données sont-elles sauvegardées ?
+### Les données sont-elles sauvegardées quelque part ?
 
 **Non.** Clue utilise le **stockage de session**, ce qui signifie que vos données d'enrichissement ne persistent que tant que votre onglet de navigateur est ouvert.
 **Avertissement :** Si vous fermez votre onglet ou votre fenêtre, tous vos résultats d'enrichissement actuels seront perdus.
@@ -16,13 +16,20 @@ Cette section répond aux questions courantes des analystes et des utilisateurs 
 
 Par défaut, les plug-ins mettent en cache les résultats pendant **5 minutes**. Si vous recherchez le même indicateur dans ce laps de temps, vous verrez le résultat mis en cache. Après 5 minutes, Clue récupérera automatiquement de nouvelles données à partir de la source.
 
-### Comment obtenir de nouvelles données immédiatement ?
+### Comment contourner le cache / obtenir de nouvelles données immédiatement ?
 
 Si vous pensez que les données ont changé (par exemple, une mise à jour de la réputation d'une adresse IP), vous pouvez forcer une actualisation :
 
-1. Dans l'interface utilisateur de Clue, recherchez l'option **« Sauter le cache du plugin »**.
-2. Activez cette option avant de soumettre votre demande.
-3. Cela signale au serveur d'ignorer tout cache existant et de récupérer des données en direct à partir de la source.
+1. Sur la page d'accueil de l'interface utilisateur de Clue, recherchez l'option case à cocher **« Sauter le cache du plugin »**.
+2. Activez cette option avant de lancer votre enrichissement.
+3. Cela force Clue à ignorer tous les résultats mis en cache et à récupérer des données en direct.
+
+Alternativement, dans une application avec l'interface utilisateur Clue intégrée, vous pouvez forcer l'actualisation à partir de plugins spécifiques en utilisant le bouton d'enrichissement :
+
+1. Cliquez sur le sélecteur que vous souhaitez actualiser.
+2. Cliquez sur le bouton « Enrichir » en haut à droite de la fenêtre contextuelle.
+3. Sélectionnez la source à partir de laquelle vous souhaitez ré-enrichir.
+4. Cela force ce plugin à ignorer tous les résultats mis en cache et à récupérer des données en direct.
 
 ### Pourquoi est-ce plus rapide la deuxième fois ?
 
@@ -30,11 +37,12 @@ Lorsque vous consultez un résultat que vous avez déjà enrichi dans votre sess
 
 ## Aperçu
 
-L'architecture de mise en cache se compose de trois couches principales :
+L'architecture de mise en cache se compose de deux couches principales :
 
 1. **Mise en cache côté client** : Stockage basé sur le navigateur pour la persistance des données de l'IU.
 2. **Mise en cache côté plug-in** : Mise en cache côté serveur (Redis ou locale) au sein des plug-ins individuels.
-3. **Contrôles de contournement du cache** : Mécanismes pour forcer la récupération de données fraîches lorsque nécessaire.
+
+Les contrôles de contournement du cache permettent aux utilisateurs de forcer la récupération de données fraîches lorsque nécessaire.
 
 ## Mise en cache côté client (IU)
 
@@ -76,12 +84,13 @@ La base de données gère deux types principaux de données :
 
 #### Collection de sélecteurs
 
-* Schéma : `selector.schema.json`
+* Schéma : `ui/src/lib/database/selector.schema.json`
 * Indexé par type, valeur et classification pour une interrogation efficace
 * Gère automatiquement la compression et la validation des données
 
 #### Collection de statuts
 
+* Schéma : `ui/src/lib/database/status.schema.json`
 * Permet la gestion de la file d'attente pour les opérations d'enrichissement en masse
 * Empêche les demandes en double en vérifiant les enregistrements de statut existants
 
@@ -99,6 +108,10 @@ Lorsque vous demandez des données d'enrichissement, le système suit un flux de
 <summary>Implémentation technique</summary>
 
 ```typescript
+/**
+ * ui/src/lib/hooks/ClueEnrichContext
+ */
+
 // 1. Vérifier le statut existant pour éviter les doublons
 let statusRecord = await database.status
   .findOne({ selector: { type, value, classification } })
@@ -137,7 +150,7 @@ Les plug-ins utilisent la mise en cache côté serveur pour améliorer les temps
 
 Le système peut être configuré de deux manières, ce qui affecte la façon dont les données sont partagées entre les utilisateurs :
 
-1. **Mise en cache Redis (Partagé)** : Le cache est partagé dans tout le système. Si vous enrichissez un indicateur, votre collègue verra le résultat mis en cache lorsqu'il interrogera le même indicateur.
+1. **Mise en cache Redis (Partagé)** : Le cache est partagé dans tout le système. Si vous enrichissez un indicateur, votre collègue verra le résultat mis en cache lorsqu'il interrogera le même indicateur (note : il peut y avoir de légers délais de propagation dans les systèmes distribués).
 2. **Mise en cache mémoire locale (Isolé)** : Chaque unité de traitement (« worker ») possède son propre cache.
 
 **Note pour l'analyste (Dépannage) :**
@@ -148,9 +161,10 @@ Si vous et un collègue voyez des résultats différents pour le même indicateu
 
 #### Mise en cache Redis
 
-Redis fournit une mise en cache distribuée partagée entre tous les workers de plug-in et les pods dans un cluster Kubernetes.
+Redis fournit une mise en cache distribuée partagée entre tous les workers de plug-in et les pods dans un cluster Kubernetes. Dans les déploiements évolutifs avec de nombreux workers, l'utilisation d'un cache centralisé comme Redis est préférable afin que les workers puissent partager les informations de cache. Inversement, la simplicité des systèmes de cache simples sur des déploiements plus petits avec un seul serveur Flask nécessite moins d'infrastructure et peut être mieux adaptée.
 
 ```python
+# api/clue/cache/__init__.py
 # Utilise ExpiringHash pour la mise en cache distribuée
 self.__redis_cache = ExpiringHash(cache_name, host=get_redis(), ttl=timeout)
 ```
@@ -184,9 +198,14 @@ Les clés de cache sont générées en utilisant le hachage SHA256 de :
 * Paramètres de limite de résultat
 
 ```python
+# api/clue/cache/__init__.py
 def __generate_hash(self, type_name: str, value: str, params: Params) -> str:
     hash_data = sha256(type_name.encode())
-    # ... logique de hachage ...
+    hash_data.update(value.encode())
+
+    hash_data.update(str(params.annotate).encode())
+    hash_data.update(str(params.raw).encode())
+    hash_data.update(str(params.limit).encode())
     return hash_data.hexdigest()
 ```
 
@@ -237,13 +256,13 @@ const options = {
 * **Traitement par lots intelligent** : Les demandes sont automatiquement regroupées pour réduire les appels API.
 * **Suivi du statut** : Empêche les demandes en double pour le même sélecteur.
 * **Gestion de la mémoire** : Le stockage de session se nettoie automatiquement à la fermeture de l'onglet.
+* **Compression des clés** : RxDB utilise la compression des clés pour réduire la surcharge de stockage.
 
 ### Optimisations côté plug-in
 
 * **TTL configurable** : Le délai d'expiration du cache peut être ajusté par plug-in (par défaut : 5 minutes).
 * **Sérialisation** : Sérialisation JSON efficace avec les modèles Pydantic.
 * **Gestion des erreurs** : Repli gracieux lorsque les opérations de cache échouent.
-* **Compression des clés** : RxDB utilise la compression des clés pour réduire la surcharge de stockage.
 
 ## Invalidation du cache
 
