@@ -27,7 +27,12 @@ def _get_token_raw(service: str, user: str) -> Optional[str]:
     token_store = _get_obo_token_store(service, user)
 
     if token_store.length() > 0:
-        return token_store.random(1)[0]
+        result = token_store.random(1)
+
+        if len(result) > 0:
+            return result[0]
+
+        logger.warning("Token store reported at least one entry, but was empty on fetch.")
 
     return None
 
