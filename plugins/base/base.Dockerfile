@@ -43,7 +43,7 @@ COPY --chown=clue:clue --from=builder /install/.venv /home/clue/.venv
 
 RUN ls -l /home/clue
 
-ENV APP_MODULE=patched:app
+ENV APP_MODULE=app:app
 ENV PATH=/home/clue/.local/bin:/home/clue/.venv/bin:$PATH
 ENV PYTHONPATH=$PYTHONPATH:/home/clue/.venv/lib/python3.12/site-packages
 
@@ -53,4 +53,4 @@ ENV WORKER_CLASS=gevent
 ENV HOST=0.0.0.0
 ENV PORT=8000
 EXPOSE $PORT
-ENTRYPOINT ["python", "-m", "gunicorn", "-c", "/home/clue/gunicorn_config.py", "-k", "gevent", "--pythonpath", "/home/clue", "patched:app"]
+ENTRYPOINT ["python", "-m", "gunicorn", "-c", "/home/clue/gunicorn_config.py", "-k", "gevent", "--pythonpath", "/home/clue", "app:app"]

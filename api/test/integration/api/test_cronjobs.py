@@ -28,10 +28,14 @@ def sample_external_source():
     ).model_dump(mode="json", exclude_none=True)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def mock_scheduler():
     mock_scheduler = BackgroundScheduler(timezone=timezone(os.getenv("SCHEDULER_TZ", "America/Toronto")))
-    return mock_scheduler
+
+    yield mock_scheduler
+
+    if mock_scheduler.state == 1:
+        mock_scheduler.shutdown()
 
 
 def test_update_external_source_list(host, mock_scheduler: BackgroundScheduler, sample_external_source: ExternalSource):
@@ -56,7 +60,6 @@ def test_update_external_source_list(host, mock_scheduler: BackgroundScheduler, 
 def test_job_scheduler(host):
     if scheduler.state == 1:
         scheduler.remove_all_jobs()
-        scheduler.shutdown()
 
     root_dir = Path(__file__).parent.parent.parent.parent
     module_path = root_dir / "clue" / "cronjobs"
@@ -67,7 +70,6 @@ def test_job_scheduler(host):
     setup_jobs()
     assert len(scheduler.get_jobs()) == len(modules_to_import)
     scheduler.remove_all_jobs()
-    scheduler.shutdown()
 
 
 def test_job_scheduler_exception_raised(host):
@@ -76,4 +78,3 @@ def test_job_scheduler_exception_raised(host):
         mock_import.side_effect = exception
         setup_jobs()
         assert len(scheduler.get_jobs()) == 0
-        scheduler.shutdown()
