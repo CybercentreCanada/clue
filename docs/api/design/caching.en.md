@@ -21,7 +21,7 @@ By default, plugins cache results for **5 minutes**. If you search for the same 
 
 If you suspect the data has changed (e.g., an IP reputation update), you can force a refresh:
 
-1. In the Clue UI, look for the **"Skip Plugins' Cache"** option.
+1. In the Clue UI Homepage, look for the **"Skip Plugins' Cache"** checkbox option.
 2. Enable this option before running your enrichment.
 3. This forces Clue to ignore any cached results and fetch live data.
 
