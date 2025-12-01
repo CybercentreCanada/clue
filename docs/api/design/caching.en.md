@@ -139,7 +139,7 @@ Plugins use server-side caching to improve response times. This means if you or 
 
 The system can be configured in two ways, which affects how data is shared between users:
 
-1. **Redis Caching (Shared)**: The cache is shared across the entire system. If you enrich an indicator, your colleague will see the cached result immediately.
+1. **Redis Caching (Shared)**: The cache is shared across the entire system. If you enrich an indicator, your colleague will see the cached result when they query the same indicator (note: there may be slight propagation delays in distributed systems).
 2. **Local Memory Caching (Isolated)**: Each processing unit ("worker") has its own cache.
 
 **Analyst Note (Troubleshooting):**
