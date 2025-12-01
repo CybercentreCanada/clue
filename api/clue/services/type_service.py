@@ -1,7 +1,7 @@
 from typing import Any
 
-import elasticapm
 import requests
+from elasticapm.traces import capture_span
 from flask import request
 from requests import exceptions
 
@@ -62,12 +62,12 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
         return result
 
     logger.debug("Cache miss, polling plugin")
-    with elasticapm.capture_span(f"GET {url}", span_type="http"):
+    with capture_span(f"GET {url}", span_type="http"):
         headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
         try:
             rsp = requests.get(url, headers=headers, timeout=3.0)
-        except exceptions.ConnectionError:
+        except (exceptions.ConnectionError, exceptions.ReadTimeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception(f"Unable to connect: {url}")
             return None
@@ -81,7 +81,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             except requests.exceptions.JSONDecodeError:
                 logger.exception(
                     f"Parsing error in error ({rsp.status_code}) response - unknown format\n"
-                    f"Raw response: {rsp.content}"
+                    f"Raw response: {rsp.text}"
                 )
                 return None
             except KeyError:
@@ -103,7 +103,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             CACHE.set(url, types_result)
             return types_result
         except requests.exceptions.JSONDecodeError:
-            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.content}")
+            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.text}")
             return None
         except Exception:
             logger.exception("External API did not return expected format:")
