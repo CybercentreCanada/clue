@@ -38,7 +38,7 @@ Alternatively, in an application with the clue UI integrated, you can force refr
 enrich button:
 
 1. Click on the selector you wish to refresh
-2. Click the "Enrich" button a tthe top right of the popover
+2. Click the "Enrich" button a the top right of the popover
 3. Select the source you wish to re-enrich from.
 4. This forces that plugin to ignore any cached results and fetch live data.
 
