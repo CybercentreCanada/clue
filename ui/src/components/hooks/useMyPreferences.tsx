@@ -5,6 +5,7 @@ import {
   ExitToApp,
   Help,
   HelpCenter,
+  PlayArrowOutlined,
   Settings,
   SupervisorAccount,
   SystemUpdateAlt
@@ -85,6 +86,15 @@ const useMyPreferences = (): AppPreferenceConfigs => {
             i18nKey: 'route.fetchers',
             route: '/fetchers',
             icon: <SystemUpdateAlt />
+          }
+        },
+        {
+          type: 'item',
+          element: {
+            id: 'actions',
+            i18nKey: 'route.actions',
+            route: '/actions',
+            icon: <PlayArrowOutlined />
           }
         },
         {
