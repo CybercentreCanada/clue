@@ -63,7 +63,7 @@ const ActionForm: FC<{
           type: 'Control',
           scope: `#/properties/${key}`,
           options: {
-            autocomplete: !!(value as JSONSchema7).enum,
+            autocomplete: !!(value as JSONSchema7).enum || (value as any).options?.autocomplete,
             showUnfocusedDescription: true,
             ...(value as any).options
           },
