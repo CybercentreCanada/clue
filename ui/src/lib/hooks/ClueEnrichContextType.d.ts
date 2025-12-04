@@ -1,5 +1,6 @@
 import type { StatusDocument } from 'lib/database/types';
 import type { BulkEnrichResponses, EnrichResponses, FailedRequest, Selector } from 'lib/types/lookup';
+import type { ClassificationDefinition } from 'lib/utils/classificationParser';
 
 export interface ClueEnrichContextType {
   /**
@@ -102,6 +103,12 @@ export interface ClueEnrichContextType {
    * @param value the URL to use for iconify
    */
   setCustomIconify: (value: string) => void;
+
+  /**
+   * Set the default classification given a classification definition
+   * @param func the function the will return the default classification
+   */
+  setDefaultClassification: (func: (classification: ClassificationDefinition) => string) => void;
 
   /**
    * Is the clue context ready to enrich?

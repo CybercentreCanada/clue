@@ -1,5 +1,5 @@
 {
-  "RESTRICTED": "TLP:CLEAR",
+  "RESTRICTED": "TLP:AMBER+STRICT",
   "UNRESTRICTED": "TLP:CLEAR",
   "access_req_aliases": {},
   "access_req_map_lts": {},
@@ -17,7 +17,7 @@
   "groups_map_stl": {},
   "invalid_mode": false,
   "levels_aliases": {
-    "RESTRICTED": "TLP:C",
+    "RESTRICTED": "TLP:AMBER+STRICT",
     "UNCLASSIFIED": "TLP:C",
     "UNRESTRICTED": "TLP:C"
   },
@@ -54,7 +54,7 @@
       }
     ],
     "required": [],
-    "restricted": "TLP:CLEAR",
+    "restricted": "TLP:AMBER+STRICT",
     "subgroups": [],
     "unrestricted": "TLP:CLEAR"
   },

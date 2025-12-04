@@ -151,8 +151,8 @@ describe('enrich functionality', () => {
       const result = await hook.result.current(...testData);
 
       expect(hpost).toBeCalledWith(
-        '/api/v1/lookup/enrich?classification=TLP%3ACLEAR&max_timeout=5',
-        [{ type: 'ip', value: '127.0.0.1', classification: 'TLP:CLEAR' }],
+        '/api/v1/lookup/enrich?classification=TLP%3AAMBER%2BSTRICT&max_timeout=5',
+        [{ type: 'ip', value: '127.0.0.1', classification: 'TLP:AMBER+STRICT' }],
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
 
@@ -213,8 +213,8 @@ describe('enrich functionality', () => {
       const result = await hook.result.current(...testData);
 
       expect(hpost).toBeCalledWith(
-        '/api/v1/lookup/enrich?classification=TLP%3ACLEAR&max_timeout=5',
-        [{ type: 'ip', value: '127.0.0.1', classification: 'TLP:CLEAR' }],
+        '/api/v1/lookup/enrich?classification=TLP%3AAMBER%2BSTRICT&max_timeout=5',
+        [{ type: 'ip', value: '127.0.0.1', classification: 'TLP:AMBER+STRICT' }],
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
 
@@ -317,7 +317,7 @@ describe('enrich functionality', () => {
       const result = await hook.result.current(testData);
 
       expect(hpost).toBeCalledWith(
-        '/api/v1/lookup/enrich?classification=TLP%3ACLEAR&max_timeout=5',
+        '/api/v1/lookup/enrich?classification=TLP%3AAMBER%2BSTRICT&max_timeout=5',
         testData,
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
@@ -374,7 +374,7 @@ describe('enrich functionality', () => {
       const result = await hook.result.current(testData);
 
       expect(hpost).toBeCalledWith(
-        '/api/v1/lookup/enrich?classification=TLP%3ACLEAR&max_timeout=5',
+        '/api/v1/lookup/enrich?classification=TLP%3AAMBER%2BSTRICT&max_timeout=5',
         testData,
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
@@ -497,10 +497,10 @@ describe('enrich functionality', () => {
 
       expect(hpost).toHaveBeenCalledOnce();
       expect(hpost).toBeCalledWith(
-        '/api/v1/lookup/enrich?classification=TLP%3ACLEAR&max_timeout=5',
+        '/api/v1/lookup/enrich?classification=TLP%3AAMBER%2BSTRICT&max_timeout=5',
         expect.arrayContaining([
-          { type: 'ip', value: '127.0.0.1', classification: 'TLP:CLEAR' },
-          { type: 'ip', value: '127.0.0.2', classification: 'TLP:CLEAR' }
+          { type: 'ip', value: '127.0.0.1', classification: 'TLP:AMBER+STRICT' },
+          { type: 'ip', value: '127.0.0.2', classification: 'TLP:AMBER+STRICT' }
         ]),
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
@@ -614,10 +614,167 @@ describe('enrich functionality', () => {
 
       expect(hpost).toHaveBeenCalledOnce();
       expect(hpost).toBeCalledWith(
-        '/api/v1/lookup/enrich?sources=example&classification=TLP%3ACLEAR&max_timeout=5',
+        '/api/v1/lookup/enrich?sources=example&classification=TLP%3AAMBER%2BSTRICT&max_timeout=5',
         [{ type: 'ip', value: '127.0.0.1', classification: 'TLP:CLEAR' }],
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
+    });
+  });
+
+  /**
+   * Tests for the setDefaultClassification functionality
+   * This tests the ability to dynamically update the default classification level used for enrichments:
+   * - Setting classification based on c12nDef configuration
+   * - Using callback functions to derive classification
+   * - Ensuring enrichments use the updated classification
+   */
+  describe('setDefaultClassification', () => {
+    let hook: RenderHookResult<
+      Pick<ClueEnrichContextType, 'setDefaultClassification' | 'defaultClassification' | 'enrich'>,
+      any
+    >;
+
+    beforeEach(async () => {
+      vi.mocked(hpost).mockClear();
+
+      // Clear database for each test
+      await database.status.find({ selector: { id: { $exists: true } } }).remove();
+      await database.selectors.find({ selector: { id: { $exists: true } } }).remove();
+
+      await act(async () => {
+        hook = renderHook(
+          () =>
+            useClueEnrichSelector(ctx => ({
+              setDefaultClassification: ctx.setDefaultClassification,
+              defaultClassification: ctx.defaultClassification,
+              enrich: ctx.enrich
+            })),
+          {
+            wrapper: Wrapper
+          }
+        );
+      });
+    });
+
+    /**
+     * Test that the default classification starts with the expected initial value
+     * Should be 'TLP:CLEAR' based on the mock configuration
+     */
+    it('should initialize with the default classification from config', async () => {
+      expect(hook.result.current.defaultClassification).toBe('TLP:AMBER+STRICT');
+    });
+
+    /**
+     * Test that setDefaultClassification can update the default classification
+     * using a callback function that receives the c12nDef configuration
+     */
+    it('should allow setting default classification using a callback function', async () => {
+      await act(async () => {
+        hook.result.current.setDefaultClassification(c12nDef => c12nDef.UNRESTRICTED);
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:CLEAR'));
+    });
+
+    /**
+     * Test that setDefaultClassification can set custom classification values
+     * Should support arbitrary classification strings
+     */
+    it('should allow setting custom classification values', async () => {
+      await act(async () => {
+        hook.result.current.setDefaultClassification(() => 'TLP:RED');
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:RED'));
+    });
+
+    /**
+     * Test that enrichment operations use the updated default classification
+     * Should apply the new classification to enrichment requests
+     */
+    it('should use updated classification in enrichment requests', async () => {
+      await act(async () => {
+        hook.result.current.setDefaultClassification(c12nDef => c12nDef.UNRESTRICTED);
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:CLEAR'));
+
+      await act(async () => {
+        await hook.result.current.enrich('ip', '192.168.1.1');
+      });
+
+      expect(hpost).toBeCalledWith(
+        '/api/v1/lookup/enrich?classification=TLP%3ACLEAR&max_timeout=5',
+        [{ type: 'ip', value: '192.168.1.1', classification: 'TLP:CLEAR' }],
+        expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
+      );
+    });
+
+    /**
+     * Test that enrichment operations can override the default classification
+     * Should allow per-request classification overrides
+     */
+    it('should allow enrichment to override the default classification', async () => {
+      await act(async () => {
+        hook.result.current.setDefaultClassification(c12nDef => c12nDef.UNRESTRICTED);
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:CLEAR'));
+
+      await act(async () => {
+        await hook.result.current.enrich('ip', '192.168.1.1', { classification: 'TLP:GREEN' });
+      });
+
+      expect(hpost).toBeCalledWith(
+        '/api/v1/lookup/enrich?classification=TLP%3AGREEN&max_timeout=5',
+        [{ type: 'ip', value: '192.168.1.1', classification: 'TLP:GREEN' }],
+        expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
+      );
+    });
+
+    /**
+     * Test that multiple calls to setDefaultClassification update the value correctly
+     * Should support changing classification multiple times
+     */
+    it('should handle multiple classification updates', async () => {
+      await act(async () => {
+        hook.result.current.setDefaultClassification(c12nDef => c12nDef.UNRESTRICTED);
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:CLEAR'));
+
+      await act(async () => {
+        hook.result.current.setDefaultClassification(c12nDef => c12nDef.RESTRICTED);
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:AMBER+STRICT'));
+
+      await act(async () => {
+        hook.result.current.setDefaultClassification(() => 'TLP:RED');
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:RED'));
+    });
+
+    /**
+     * Test that status records use the updated default classification
+     * Should apply the new classification when creating status records
+     */
+    it('should use updated classification when creating status records', async () => {
+      await act(async () => {
+        hook.result.current.setDefaultClassification(c12nDef => c12nDef.UNRESTRICTED);
+      });
+
+      await waitFor(() => expect(hook.result.current.defaultClassification).toBe('TLP:CLEAR'));
+
+      await act(async () => {
+        await hook.result.current.enrich('ip', '10.0.0.1');
+      });
+
+      const statusRecords = await database.status.find({ selector: { value: '10.0.0.1' } }).exec();
+
+      expect(statusRecords.length).toBe(1);
+      expect(statusRecords[0].classification).toBe('TLP:CLEAR');
     });
   });
 });

@@ -51,6 +51,7 @@ import { SNACKBAR_EVENT_ID, type SnackbarEvents } from './data/event';
 import buildDatabase from './database';
 import { ClueComponentContext } from './hooks/ClueComponentContext';
 import type { ClueConfigContextProps } from './hooks/ClueConfigProvider';
+import { ClueConfigContext } from './hooks/ClueConfigProvider';
 import { ClueDatabaseContext, type ClueDatabaseContextProps } from './hooks/ClueDatabaseContext';
 import { ClueEnrichContext } from './hooks/ClueEnrichContext';
 import { CluePopupContext } from './hooks/CluePopupContext';
@@ -58,6 +59,7 @@ import { ClueProvider } from './hooks/ClueProvider';
 import { useClueActionsSelector, useClueEnrichSelector, useClueFetcherSelector } from './hooks/selectors';
 import useClue from './hooks/useClue';
 import useClueActions from './hooks/useClueActions';
+import useClueConfig from './hooks/useClueConfig';
 import AssessmentIcon from './icons/Assessment';
 import ContextIcon from './icons/Context';
 import OpinionIcon from './icons/Opinion';
@@ -72,6 +74,7 @@ export {
   AssessmentIcon,
   buildDatabase,
   ClueComponentContext,
+  ClueConfigContext,
   ClueDatabaseContext,
   ClueEnrichContext,
   CluePopupContext,
@@ -93,6 +96,7 @@ export {
   useClue,
   useClueActions,
   useClueActionsSelector,
+  useClueConfig,
   useClueEnrichSelector,
   useClueFetcherSelector
 };
