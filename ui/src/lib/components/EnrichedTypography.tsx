@@ -111,6 +111,7 @@ const EnrichedTypography: FC<EnrichedTypographyProps & TypographyProps> = ({
       spacing={1}
       alignItems="center"
       {...slotProps?.stack}
+      className={`enriched-typography ${slotProps?.stack?.className ?? ''}`.trim()}
       sx={[
         {
           cursor: !loading && !hideDetails ? 'pointer' : 'inherit',
