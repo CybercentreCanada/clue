@@ -5,15 +5,15 @@ FROM python:3.12-alpine AS base
 RUN passwd -l root
 
 # Upgrade packages and get required packages
-RUN apk update && apk upgrade && apk add --no-cache libffi=3.4.8-r0
+RUN apk update && apk upgrade && apk add --no-cache libffi=3.5.2-r0
 
 
-FROM base as builder
+FROM base AS builder
 
 RUN mkdir -p /install/files
 WORKDIR /install
 
-RUN apk add --no-cache build-base=0.5-r3 gcc=14.2.0-r6 musl-dev=1.2.5-r10 libffi-dev=3.4.8-r0 openssl-dev=3.5.4-r0
+RUN apk add --no-cache build-base=0.5-r3 gcc=14.2.0-r6 musl-dev=1.2.5-r10 libffi-dev=3.5.2-r0 openssl-dev=3.5.4-r0
 
 # Install poetry
 RUN pip install --no-cache-dir --no-warn-script-location poetry==2.2.1
