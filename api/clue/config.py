@@ -14,7 +14,6 @@ AUDIT = config.api.audit
 
 SECRET_KEY = config.api.secret_key
 DEBUG = config.api.debug
-MAX_CLASSIFICATION = CLASSIFICATION.UNRESTRICTED
 
 USER_TYPES = {"admin", "user"}
 

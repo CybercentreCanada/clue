@@ -43,7 +43,17 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   const clueConfig = useClueConfig();
   const database = useContext(ClueDatabaseContext);
 
-  const defaultClassification = useMemo(() => clueConfig.config?.c12nDef?.UNRESTRICTED, [clueConfig.config]);
+
+  const [configuredDefaultClassification, setConfiguredDefaultClassification] = useState<string>(null);
+  const defaultClassification = useMemo(
+    () => configuredDefaultClassification ?? _defaultClassification ?? clueConfig.config?.c12nDef?.RESTRICTED,
+    [_defaultClassification, clueConfig.config?.c12nDef?.RESTRICTED, configuredDefaultClassification]
+  );
+
+  const setDefaultClassification: ClueEnrichContextType['setDefaultClassification'] = useCallback(
+    func => setConfiguredDefaultClassification(func(clueConfig.config?.c12nDef)),
+    [clueConfig.config?.c12nDef]
+  );
 
   /**
    * Is the Clue Provider ready to perform queries?
@@ -557,6 +567,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       guessType,
       queueEnrich,
       setCustomIconify,
+      setDefaultClassification,
       setReady: setIsReady,
       defaultClassification,
       ready: isReady && !!database && !!clueConfig.config?.c12nDef
@@ -570,6 +581,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       availableSources,
       guessType,
       queueEnrich,
+      setDefaultClassification,
       defaultClassification,
       isReady,
       database,

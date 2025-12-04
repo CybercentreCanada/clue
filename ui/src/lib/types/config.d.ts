@@ -1,3 +1,5 @@
+import type { ClassificationDefinition } from 'lib/utils/classificationParser';
+
 export interface ApiType {
   configuration: {
     auth: {
@@ -12,5 +14,5 @@ export interface ApiType {
       apps: any[];
     };
   };
-  c12nDef: any;
+  c12nDef: ClassificationDefinition;
 }
