@@ -79,19 +79,14 @@ const EnrichedTypography: FC<EnrichedTypographyProps & TypographyProps> = ({
 
   const clicker = useMemo(
     () =>
-      !loading
-        ? !hideDetails || useDetailsIcon
-          ? (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-              showInfo('details', anchorRef.current, { type, value, classification }, buildOptions());
-              otherProps.onClick?.(e);
-              e.stopPropagation();
-              e.preventDefault();
-            }
-          : otherProps.onClick
-        : // We need to give a dummy callback when loading so the popover doesn't get confused
-          (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
+      !hideDetails || useDetailsIcon
+        ? (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
+            showInfo('details', anchorRef.current, { type, value, classification }, buildOptions());
             otherProps.onClick?.(e);
-          },
+            e.stopPropagation();
+            e.preventDefault();
+          }
+        : otherProps.onClick,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loading, hideDetails, useDetailsIcon, otherProps, type, value, classification]
   );
@@ -116,6 +111,7 @@ const EnrichedTypography: FC<EnrichedTypographyProps & TypographyProps> = ({
       spacing={1}
       alignItems="center"
       {...slotProps?.stack}
+      className={`enriched-typography ${slotProps?.stack?.className ?? ''}`.trim()}
       sx={[
         {
           cursor: !loading && !hideDetails ? 'pointer' : 'inherit',

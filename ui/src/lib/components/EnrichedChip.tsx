@@ -69,19 +69,14 @@ const EnrichedChip: FC<EnrichmentProps & ChipProps> = React.memo(
 
     const clicker = useMemo(
       () =>
-        !loading
-          ? !hideDetails || useDetailsIcon
-            ? (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-                showInfo('details', anchorRef.current, { type, value, classification }, buildOptions());
-                otherProps.onClick?.(e);
-                e.stopPropagation();
-                e.preventDefault();
-              }
-            : otherProps.onClick
-          : // We need to give a dummy callback when loading so the popover doesn't get confused
-            (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+        !hideDetails || useDetailsIcon
+          ? (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+              showInfo('details', anchorRef.current, { type, value, classification }, buildOptions());
               otherProps.onClick?.(e);
-            },
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          : otherProps.onClick,
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [loading, hideDetails, useDetailsIcon, otherProps, type, value, classification]
     );
