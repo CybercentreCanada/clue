@@ -43,7 +43,6 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   const clueConfig = useClueConfig();
   const database = useContext(ClueDatabaseContext);
 
-
   const [configuredDefaultClassification, setConfiguredDefaultClassification] = useState<string>(null);
   const defaultClassification = useMemo(
     () => configuredDefaultClassification ?? _defaultClassification ?? clueConfig.config?.c12nDef?.RESTRICTED,
