@@ -96,7 +96,7 @@ describe('Functionality', () => {
     const { container } = render(<EnrichedTypography value={value} type={type} />);
 
     const typography = container.querySelector('.enriched-typography');
-    user.click(typography);
+    await user.click(typography);
 
     await waitFor(() => {
       expect(mockShowInfo).toBeCalledWith('details', typography, { classification: 'example', type, value }, {});
