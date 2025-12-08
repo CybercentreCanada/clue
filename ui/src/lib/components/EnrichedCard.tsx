@@ -28,6 +28,8 @@ import type { FC } from 'react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import AnnotationEntry from './AnnotationEntry';
+import ExecutePopover from './actions/ExecutePopover';
+import EnrichPopover from './enrichment/EnrichPopover';
 
 export interface EnrichedCardProps {
   type: string;
@@ -62,6 +64,7 @@ const EnrichedCard: FC<EnrichedCardProps & CardProps> = ({
 
   const [annotations, loading] = useAnnotations(type, value, classification);
   const errors = useErrors(value);
+  const enrichRequest = { type, value, classification };
 
   const options = useMemo(() => ['all', ...uniq(annotations.map(annotation => annotation.type))], [annotations]);
 
@@ -88,21 +91,21 @@ const EnrichedCard: FC<EnrichedCardProps & CardProps> = ({
           <Stack direction="row" spacing={1} alignItems="center">
             <FrequencyText annotations={annotations} value={value} variant="h6" />
             <AssessmentIcon
-              value={{ type, value, classification }}
+              value={enrichRequest}
               annotations={annotations}
               counters={counters}
               fontSize="1em"
               disableTooltip
             />
             <OpinionIcon
-              value={{ type, value, classification }}
+              value={enrichRequest}
               annotations={annotations}
               counters={counters}
               fontSize="1em"
               disableTooltip
             />
             <ContextIcon
-              value={{ type, value, classification }}
+              value={enrichRequest}
               annotations={annotations}
               counters={counters}
               showExtraIcon={contextIcon}
@@ -110,6 +113,9 @@ const EnrichedCard: FC<EnrichedCardProps & CardProps> = ({
               disableTooltip
             />
             {loading && !hideLoading && <CircularProgress color="primary" size={18} />}
+            <div style={{ flex: 1 }} />
+            <EnrichPopover selector={enrichRequest} />
+            <ExecutePopover selectors={[enrichRequest]} />
           </Stack>
         }
       />
