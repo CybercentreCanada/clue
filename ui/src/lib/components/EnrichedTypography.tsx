@@ -88,7 +88,7 @@ const EnrichedTypography: FC<EnrichedTypographyProps & TypographyProps> = ({
           }
         : otherProps.onClick,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loading, hideDetails, useDetailsIcon, otherProps, type, value, classification]
+    [hideDetails, useDetailsIcon, otherProps, type, value, classification]
   );
 
   useEffect(() => {
