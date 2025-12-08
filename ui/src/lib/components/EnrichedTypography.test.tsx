@@ -6,7 +6,7 @@ import { verifyExistence, verifyText } from '../../tests/test-utils';
 import EnrichedTypography from './EnrichedTypography';
 
 const database = await vi.hoisted(
-  async () => await (await import('lib/database')).default({ devMode: false, storageType: 'memory' })
+  async () => (await import('lib/database')).default({ devMode: false, storageType: 'memory' })
 );
 
 const mockQueueEnrich = vi.hoisted(() => vi.fn());
