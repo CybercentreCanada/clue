@@ -21,9 +21,15 @@ const onNetworkCall = vi.fn(conf => conf);
 const database = await buildDatabase({ devMode: false, storageType: 'memory' });
 
 // Test wrapper component that provides the action context
-const Wrapper = ({ children }) => {
+const Wrapper = ({ children, includeContext = false }) => {
   return (
-    <ClueProvider ready database={database} getToken={getToken} onNetworkCall={onNetworkCall}>
+    <ClueProvider
+      ready
+      database={database}
+      getToken={getToken}
+      onNetworkCall={onNetworkCall}
+      includeContext={includeContext}
+    >
       {children}
     </ClueProvider>
   );
@@ -144,6 +150,7 @@ describe('action functionality', () => {
         expect(hpost).toBeCalledWith(
           '/api/v1/actions/execute/example/action',
           {
+            context: null,
             selector: value,
             selectors: [],
             value: 'example'
@@ -195,12 +202,12 @@ describe('action functionality', () => {
     describe('Complex Action', () => {
       let rendered: RenderResult;
       let user: UserEvent;
-      beforeEach(async () => {
+      beforeEach(async _context => {
         rendered = await act(async () => {
           user = userEvent.setup();
 
           const _rendered = await render(
-            <Wrapper>
+            <Wrapper includeContext={_context.task.name === 'should pass includeContext through form submission'}>
               <TestActionExecutionElement />
             </Wrapper>
           );
@@ -247,6 +254,7 @@ describe('action functionality', () => {
         expect(hpost).toBeCalledWith(
           '/api/v1/actions/execute/example/action',
           {
+            context: null,
             selector: { type: 'ip', value: '127.0.0.1' },
             selectors: [],
             value: 'example'
@@ -256,6 +264,51 @@ describe('action functionality', () => {
 
         // The form should close after successful execution
         expect(rendered.queryByText('actions.execute')).not.toBeInTheDocument();
+      });
+
+      /**
+       * Test that includeContext and extraContext are passed through during form submission
+       * Should include context information when executing action through the form
+       */
+      it('should pass includeContext through form submission', async () => {
+        // Simulate clicking the execute button to trigger the action
+        await act(async () => {
+          (await rendered.findByTestId('execute')).click();
+        });
+
+        // The action form should open because the payload is invalid
+        expect(rendered.getByText('actions.execute')).toBeInTheDocument();
+
+        // Find the value input field in the form
+        const valueInput: HTMLInputElement = rendered.getByTestId('#/properties/value-input') as HTMLInputElement;
+
+        // Simulate user typing a valid value
+        await act(async () => {
+          await user.click(valueInput);
+          await user.keyboard('example');
+        });
+
+        // Wait for the execute button to become enabled
+        await waitFor(() => expect((rendered.getByText('actions.execute') as HTMLButtonElement).disabled).toBe(false));
+
+        // Clear previous mock calls
+        vi.mocked(hpost).mockClear();
+
+        // Submit the form
+        await act(async () => {
+          await rendered.getByText('actions.execute').click();
+        });
+
+        // Assert that the network call was made with context information
+        expect(hpost).toHaveBeenCalledOnce();
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        // Verify context is included with timestamp and URL
+        expect(payload.context).toMatchObject({
+          timestamp: expect.any(String),
+          url: expect.any(Object)
+        });
       });
 
       /**
@@ -350,6 +403,193 @@ describe('action functionality', () => {
         });
 
         expect(rendered.queryByText('actions.execute')).not.toBeInTheDocument();
+      });
+    });
+
+    /**
+     * Tests for the includeContext functionality
+     * Tests the ability to include contextual information (timestamp, URL) with action execution:
+     * - Default behavior when includeContext is not set
+     * - Including context when enabled in provider
+     * - Overriding context inclusion per execution
+     * - Including extra custom context data
+     */
+    describe('includeContext', () => {
+      let hook: RenderHookResult<ClueActionContextType['executeAction'], any>;
+
+      beforeEach(async () => {
+        vi.mocked(hpost).mockClear();
+        vi.mocked(hget).mockClear();
+
+        await act(async () => {
+          hook = renderHook(() => useClueActionsSelector(ctx => ctx.executeAction), { wrapper: Wrapper });
+        });
+      });
+
+      /**
+       * Test that context is not included by default
+       * Should execute action without context parameter
+       */
+      it('should not include context by default', async () => {
+        await act(async () => {
+          await hook.result.current('example.action', [{ type: 'ip', value: '192.168.1.1' } as Selector], {
+            value: 'test-value'
+          });
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toBeNull();
+      });
+
+      /**
+       * Test that context can be included when specified in execution options
+       * Should include timestamp and URL information
+       */
+      it('should include context when includeContext option is true', async () => {
+        await act(async () => {
+          await hook.result.current(
+            'example.action',
+            [{ type: 'ip', value: '192.168.1.1' } as Selector],
+            { value: 'test-value' },
+            { includeContext: true }
+          );
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toMatchObject({
+          timestamp: expect.any(String),
+          url: expect.any(Object)
+        });
+      });
+
+      /**
+       * Test that context can be explicitly disabled in execution options
+       * Should override provider-level includeContext setting
+       */
+      it('should respect includeContext: false option', async () => {
+        await act(async () => {
+          await hook.result.current(
+            'example.action',
+            [{ type: 'ip', value: '192.168.1.1' } as Selector],
+            { value: 'test-value' },
+            { includeContext: false }
+          );
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toBeNull();
+      });
+
+      /**
+       * Test that extra context can be included along with basic context
+       * Should merge extraContext with timestamp and URL
+       */
+      it('should include extraContext when provided', async () => {
+        await act(async () => {
+          await hook.result.current(
+            'example.action',
+            [{ type: 'ip', value: '192.168.1.1' } as Selector],
+            { value: 'test-value' },
+            {
+              includeContext: true,
+              extraContext: {
+                source: 'test-suite',
+                customField: 'custom-value'
+              }
+            }
+          );
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toMatchObject({
+          timestamp: expect.any(String),
+          url: expect.any(Object),
+          source: 'test-suite',
+          customField: 'custom-value'
+        });
+      });
+
+      /**
+       * Test that extraContext can be included without includeContext
+       * Should only include the custom context fields
+       */
+      it('should include only extraContext when includeContext is false', async () => {
+        await act(async () => {
+          await hook.result.current(
+            'example.action',
+            [{ type: 'ip', value: '192.168.1.1' } as Selector],
+            { value: 'test-value' },
+            {
+              includeContext: false,
+              extraContext: {
+                source: 'test-suite'
+              }
+            }
+          );
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toMatchObject({
+          source: 'test-suite'
+        });
+        expect(payload.context).not.toHaveProperty('timestamp');
+        expect(payload.context).not.toHaveProperty('url');
+      });
+
+      /**
+       * Test that timestamp in context is in ISO format
+       * Should use dayjs().toISOString() format
+       */
+      it('should include timestamp in ISO format when context is enabled', async () => {
+        await act(async () => {
+          await hook.result.current(
+            'example.action',
+            [{ type: 'ip', value: '192.168.1.1' } as Selector],
+            { value: 'test-value' },
+            { includeContext: true }
+          );
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        // hpost is called with (uri, payload, config)
+        // context is in payload.context
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toHaveProperty('timestamp');
+        expect(typeof payload.context.timestamp).toBe('string');
+        // Verify it's a valid ISO 8601 timestamp
+        expect(new Date(payload.context.timestamp).toISOString()).toBe(payload.context.timestamp);
+      });
+
+      /**
+       * Test that URL in context includes location information
+       * Should include window.location object
+       */
+      it('should include URL location object when context is enabled', async () => {
+        await act(async () => {
+          await hook.result.current(
+            'example.action',
+            [{ type: 'ip', value: '192.168.1.1' } as Selector],
+            { value: 'test-value' },
+            { includeContext: true }
+          );
+        });
+
+        const mockCall = vi.mocked(hpost).mock.calls[0];
+        const payload = mockCall[1] as any;
+
+        expect(payload.context).toHaveProperty('url');
+        expect(payload.context.url).toBe(window.location);
       });
     });
   });
