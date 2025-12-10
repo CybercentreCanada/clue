@@ -28,6 +28,9 @@ logger = get_logger(__file__)
 
 
 class ExecuteRequest(BaseModel):
+    context: dict[str, Any] | None = Field(
+        description="Contextual information on where the action is being executed (if provided)", default=None
+    )
     selector: Selector | None = Field(description="The selector to execute the action on.", default=None)
     selectors: list[Selector] = Field(description="The selectors to execute the action on.", default=[])
 
