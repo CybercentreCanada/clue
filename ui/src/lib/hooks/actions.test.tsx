@@ -202,18 +202,23 @@ describe('action functionality', () => {
     describe('Complex Action', () => {
       let rendered: RenderResult;
       let user: UserEvent;
-      beforeEach(async _context => {
-        rendered = await act(async () => {
+
+      const renderTestComponent = async (includeContext: boolean = false) => {
+        return await act(async () => {
           user = userEvent.setup();
 
           const _rendered = await render(
-            <Wrapper includeContext={_context.task.name === 'should pass includeContext through form submission'}>
+            <Wrapper includeContext={includeContext}>
               <TestActionExecutionElement />
             </Wrapper>
           );
 
           return _rendered;
         });
+      };
+
+      beforeEach(async () => {
+        rendered = await renderTestComponent(false);
       });
 
       /**
@@ -271,6 +276,9 @@ describe('action functionality', () => {
        * Should include context information when executing action through the form
        */
       it('should pass includeContext through form submission', async () => {
+        rendered.unmount();
+        rendered = await renderTestComponent(true);
+
         // Simulate clicking the execute button to trigger the action
         await act(async () => {
           (await rendered.findByTestId('execute')).click();
