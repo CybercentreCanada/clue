@@ -114,7 +114,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
             output=Url(f"https://www.google.com/search?q={query}"),
         )
     if action.id == "test_context":
-        if request.context:
+        if request.context is not None:
             return ActionResult(
                 outcome="success",
                 summary="Context received",
