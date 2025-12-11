@@ -82,7 +82,7 @@ def default_validate_token():
     return None, "No bearer token was provided. Please provide a Bearer token in the Authorization header"
 
 
-def liveness(**_):
+def default_liveness(**_):
     """Default liveness probe for Kubernetes health checks.
 
     This endpoint indicates whether the application is running and alive.
@@ -94,7 +94,7 @@ def liveness(**_):
     return make_response("OK")
 
 
-def readyness(**_):
+def default_readyness(**_):
     """Default readiness probe for Kubernetes health checks.
 
     This endpoint indicates whether the application is ready to serve traffic.
@@ -253,9 +253,9 @@ class CluePlugin:
     run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None
     """The main function for running actions.
 
-    Accepts the selected action definition as well as the ExecuteRequest. If the Action definition's parameters were
-    extended with a custom ExecuteRequest (i.e. to add additional user parameters) that instance will be passed instead,
-    and casting the argument will be necessary.
+    Accepts the selected action definition as well as an ExecuteRequest instance (or an instance of any ExecuteRequest
+    subclass). If the Action definition's parameters were extended with a custom ExecuteRequest (i.e. to add additional
+    user parameters) that instance will be passed instead, and casting the argument will be necessary.
     """
 
     fetchers: list[FetcherDefinition] | None
@@ -285,10 +285,10 @@ class CluePlugin:
         enable_cache: Union[bool, Literal["redis"], Literal["local"]] = True,
         enrich: Callable[[str, str, Params, str | None], Union[list[QueryEntry], QueryEntry]] | None = None,
         fetchers: list[FetcherDefinition] | None = None,
-        liveness: Callable[[], Response] = liveness,
+        liveness: Callable[[], Response] = default_liveness,
         local_cache_options: dict[str, Any] | None = None,
         logger: logging.Logger | None = None,
-        readyness: Callable[[], Response] = readyness,
+        readyness: Callable[[], Response] = default_readyness,
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
@@ -340,9 +340,10 @@ class CluePlugin:
             run_action:
                 The main function for running actions.
 
-                Accepts the selected action definition as well as the ExecuteRequest. If the Action definition's
-                parameters were extended with a custom ExecuteRequest (i.e. to add additional user parameters) that
-                instance will be passed instead, and casting the argument will be necessary.
+                Accepts the selected action definition as well as an ExecuteRequest instance (or an instance of any
+                ExecuteRequest subclass). If the Action definition's parameters were extended with a custom
+                ExecuteRequest (i.e. to add additional user parameters) that instance will be passed instead, and
+                casting the argument will be necessary.
             fetchers:
                 A list of fetcher definitions this plugin supports.
 

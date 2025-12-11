@@ -13,7 +13,7 @@ from pydantic_core import Url
 from clue.common.logging import get_logger
 from clue.models.actions import Action, ActionResult, ExecuteRequest
 from clue.models.fetchers import FetcherDefinition, FetcherResult
-from clue.models.network import QueryEntry
+from clue.models.network import Annotation, QueryEntry
 from clue.models.results.graph import GraphResult
 from clue.models.results.image import ImageResult
 from clue.models.results.status import StatusLabel, StatusResult
@@ -29,43 +29,43 @@ with open(Path(__file__).parent.parent / "graphs" / "process.json", "r") as json
 def enrich(*args):
     return QueryEntry(
         count=10,
-        link="https://example.com",
+        link=Url("https://example.com"),
         classification=os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
         annotations=[
-            {
-                "type": "opinion",
-                "value": "malicious",
-                "confidence": 0.7,
-                "severity": 1.0,
-                "summary": "This is a bad ip",
-                "details": "# Breaking news\nThis is a bad IP",
-                "analytic": "test enrichment",
-                "version": "0.0.1",
-                "timestamp": datetime(2024, 1, 1, 1, 1, 1).isoformat(),
-            },
-            {
-                "type": "opinion",
-                "value": "malicious",
-                "confidence": 0.7,
-                "severity": 1.0,
-                "summary": "This is a bad ip",
-                "details": "# Breaking news\nThis is a bad IP",
-                "author": "this is author",
-                "version": "0.0.1",
-                "timestamp": datetime(2024, 1, 1, 1, 1, 1).isoformat(),
-            },
-            {
-                "type": "context",
-                "value": "pride",
-                "icon": "circle-flags:lgbt-progress",
-                "confidence": 0.7,
-                "summary": "This selector is an ally",
-                "details": "# Breaking news\nThis selector is an ally",
-                "analytic": "idk",
-                "version": "0.0.3",
-                "timestamp": datetime(2024, 1, 1, 1, 1, 1).isoformat(),
-                "ubiquitous": True,
-            },
+            Annotation(
+                type="opinion",
+                value="malicious",
+                confidence=0.7,
+                severity=1.0,
+                summary="This is a bad ip",
+                details="# Breaking news\nThis is a bad IP",
+                analytic="test enrichment",
+                version="0.0.1",
+                timestamp=datetime(2024, 1, 1, 1, 1, 1),
+            ),
+            Annotation(
+                type="opinion",
+                value="malicious",
+                confidence=0.7,
+                severity=1.0,
+                summary="This is a bad ip",
+                details="# Breaking news\nThis is a bad IP",
+                author="this is author",
+                version="0.0.1",
+                timestamp=datetime(2024, 1, 1, 1, 1, 1),
+            ),
+            Annotation(
+                type="context",
+                value="pride",
+                icon="circle-flags:lgbt-progress",
+                confidence=0.7,
+                summary="This selector is an ally",
+                details="# Breaking news\nThis selector is an ally",
+                analytic="idk",
+                version="0.0.3",
+                timestamp=datetime(2024, 1, 1, 1, 1, 1),
+                ubiquitous=True,
+            ),
         ],
         raw_data=[{"classification": os.environ.get("CLASSIFICATION", "TLP:CLEAR"), "data": '{"test": "raw data"}'}],
     )
@@ -101,7 +101,12 @@ class Params(ExecuteRequest):
     other_choice: ChoiceEnum = Field(description="Another choice for you with no default")
 
 
-def run_action(action: Action, request: Params, token: str | None) -> ActionResult:
+def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
+    if not isinstance(request, Params):
+        return ActionResult(
+            outcome="failure", summary="Invalid action request type", format="json", output={"value": None}
+        )
+
     if action.id == "test_pivot":
         query = "potato"
         if request.selectors:
@@ -113,6 +118,22 @@ def run_action(action: Action, request: Params, token: str | None) -> ActionResu
             format="pivot",
             output=Url(f"https://www.google.com/search?q={query}"),
         )
+
+    if action.id == "test_context":
+        if request.context:
+            return ActionResult(
+                outcome="success",
+                summary="Context received",
+                format="json",
+                output={"context": request.context},
+            )
+        else:
+            return ActionResult(
+                outcome="failure",
+                summary="No context provided",
+                format="json",
+                output={"context": None},
+            )
 
     if action.accept_empty:
         if request.selector:
@@ -164,6 +185,15 @@ def setup_actions(*args, **kwargs):
             summary="Execute a pivot",
             supported_types={"ip", "port", "sha256"},
             accept_multiple=True,
+        ),
+        Action[ExecuteRequest](
+            id="test_context",
+            action_icon="codicon:info",
+            name="Test Context",
+            classification="TLP:CLEAR",
+            summary="Test context field",
+            supported_types={"ip", "port", "sha256"},
+            accept_multiple=False,
         ),
         Action[Params](
             id="test_action",
@@ -267,7 +297,7 @@ plugin = CluePlugin(
 
 app = plugin.app
 
-PORT = os.environ.get("PLUGIN_PORT", 10768)
+PORT = int(os.environ.get("PLUGIN_PORT", 10768))
 
 
 def main():
