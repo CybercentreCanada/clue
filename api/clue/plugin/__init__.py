@@ -94,7 +94,7 @@ def default_liveness(**_):
     return make_response("OK")
 
 
-def default_readyness(**_):
+def default_readiness(**_):
     """Default readiness probe for Kubernetes health checks.
 
     This endpoint indicates whether the application is ready to serve traffic.
@@ -271,7 +271,7 @@ class CluePlugin:
     liveness: Callable[[], Response]
     "A liveness probe for kubernetes implementations of clue."
 
-    readyness: Callable[[], Response]
+    readiness: Callable[[], Response]
     "A readyness probe for kubernetes implementations of clue."
 
     def __init__(
@@ -288,7 +288,7 @@ class CluePlugin:
         liveness: Callable[[], Response] = default_liveness,
         local_cache_options: dict[str, Any] | None = None,
         logger: logging.Logger | None = None,
-        readyness: Callable[[], Response] = default_readyness,
+        readyness: Callable[[], Response] = default_readiness,
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
@@ -371,7 +371,7 @@ class CluePlugin:
 
         self.classification = classification
         self.liveness = liveness
-        self.readyness = readyness
+        self.readiness = readyness
 
         # Convert comma-separated string to set for easier membership testing
         if isinstance(supported_types, str):
@@ -669,7 +669,7 @@ class CluePlugin:
         self.app.add_url_rule("/lookup/<type_name>/<value>/", self.lookup.__name__, self.lookup, methods=["GET"])
         self.app.add_url_rule("/lookup/", self.bulk_lookup.__name__, self.bulk_lookup, methods=["POST"])
         self.app.add_url_rule("/healthz/live", self.liveness.__name__, self.liveness)
-        self.app.add_url_rule("/healthz/ready", self.readyness.__name__, self.readyness)
+        self.app.add_url_rule("/healthz/ready", self.readiness.__name__, self.readiness)
 
     def make_api_response(self: Self, data: Any, err: str = "", status_code: int = 200) -> Response:
         """Create a standardized JSON response for all API endpoints.

@@ -102,11 +102,6 @@ class Params(ExecuteRequest):
 
 
 def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
-    if not isinstance(request, Params):
-        return ActionResult(
-            outcome="failure", summary="Invalid action request type", format="json", output={"value": None}
-        )
-
     if action.id == "test_pivot":
         query = "potato"
         if request.selectors:
@@ -118,7 +113,6 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
             format="pivot",
             output=Url(f"https://www.google.com/search?q={query}"),
         )
-
     if action.id == "test_context":
         if request.context:
             return ActionResult(
@@ -147,6 +141,11 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
             return ActionResult(
                 outcome="success", summary="We don't got a value", format="json", output={"value": None}
             )
+
+    if not isinstance(request, Params):
+        return ActionResult(
+            outcome="failure", summary="Invalid action request type", format="json", output={"value": None}
+        )
 
     if request.choice == "c":
         return ActionResult(outcome="failure", summary="We don't got a value", format="json", output={"value": None})
