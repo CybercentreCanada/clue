@@ -366,7 +366,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         setLoading(false);
       }
     },
-    [availableActions, baseURL, defaultIncludeContext, getHashKey, getToken, onNetworkCall, runningActionData?.id, t]
+    [availableActions, baseURL, defaultIncludeContext, getHashKey, getToken, onNetworkCall, runningActionData?.id, t, i18n]
   );
 
   const cancelAction: ClueActionContextType['cancelAction'] = useCallback(() => {
