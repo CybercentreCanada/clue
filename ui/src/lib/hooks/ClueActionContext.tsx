@@ -148,7 +148,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   getToken,
   onNetworkCall
 }) => {
-  const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
+  const { t, i18n } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
   const { ready } = useClue();
 
   const [runningActionData, setRunningActionData] = useState<RunningActionData>(null);
@@ -236,7 +236,8 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       if (includeContext) {
         context = {
           timestamp: dayjs().toISOString(),
-          url: window.location
+          url: window.location,
+          language: i18n?.language ?? 'en'
         };
       }
 

@@ -115,11 +115,18 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
         )
     if action.id == "test_context":
         if request.context is not None:
+            # Demonstrate accessing typed fields
+            context_info = {
+                "context": request.context,
+                "url": request.context.get("url"),
+                "timestamp": request.context.get("timestamp"),
+                "language": request.context.get("language"),
+            }
             return ActionResult(
                 outcome="success",
                 summary="Context received",
                 format="json",
-                output={"context": request.context},
+                output=context_info,
             )
         else:
             return ActionResult(
