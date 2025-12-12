@@ -272,7 +272,7 @@ class CluePlugin:
     "A liveness probe for kubernetes implementations of clue."
 
     readiness: Callable[[], Response]
-    "A readyness probe for kubernetes implementations of clue."
+    "A readiness probe for kubernetes implementations of clue."
 
     def __init__(
         self: Self,
