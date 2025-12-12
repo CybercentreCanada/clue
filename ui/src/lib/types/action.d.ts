@@ -1,5 +1,11 @@
 import type { JSONSchema7 } from 'json-schema';
 
+export interface ActionContextInformation {
+  url?: string;
+  timestamp?: string;
+  [key: string]: any;
+}
+
 export interface ActionDefinition {
   accept_multiple?: boolean;
   action_icon?: string;

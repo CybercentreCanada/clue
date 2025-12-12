@@ -66,7 +66,7 @@ def test_action_validator():
         )
 
     with pytest.raises(ValidationError):
-        Action[BaseModel].model_validate(
+        Action[BaseModel].model_validate(  # pyright: ignore[reportInvalidTypeArguments]
             {
                 "id": "test_action",
                 "name": "Test Action",
@@ -268,3 +268,65 @@ def test_action_result_validation():
         format="json",
         output=CustomJsonResult(test="test"),
     )
+
+
+def test_execute_request_context_field():
+    """Test the context field in ExecuteRequest accepts arbitrary dictionaries"""
+    # Test with context provided
+    request = ExecuteRequest.model_validate(
+        {
+            "context": {"source": "ui", "user_id": 123, "nested": {"key": "value"}},
+            "selector": {"type": "ip", "value": "127.0.0.1"},
+        }
+    )
+    assert request.context is not None
+    assert request.context["source"] == "ui"
+    assert request.context["user_id"] == 123
+    assert request.context["nested"]["key"] == "value"
+
+    # Test without context (should default to None)
+    request_no_context = ExecuteRequest.model_validate({"selector": {"type": "ip", "value": "127.0.0.1"}})
+    assert request_no_context.context is None
+
+    # Test with empty context dictionary
+    request_empty = ExecuteRequest.model_validate({"context": {}, "selector": {"type": "ip", "value": "127.0.0.1"}})
+    assert request_empty.context == {}
+
+    # Test context in subclass
+    request_subclass = ActionParamsGood.model_validate(
+        {
+            "context": {"origin": "test", "metadata": {"version": "1.0"}},
+            "selector": {"type": "domain", "value": "example.com"},
+            "potato": 42,
+            "arg2": "test_value",
+        }
+    )
+    assert request_subclass.context is not None
+    assert request_subclass.context["origin"] == "test"
+    assert request_subclass.context["metadata"]["version"] == "1.0"
+    assert request_subclass.potato == 42
+    assert request_subclass.arg2 == "test_value"
+
+    # Test that context can contain various types
+    request_varied = ExecuteRequest.model_validate(
+        {
+            "context": {
+                "string_val": "text",
+                "int_val": 100,
+                "float_val": 3.14,
+                "bool_val": True,
+                "list_val": [1, 2, 3],
+                "null_val": None,
+            },
+            "selector": {"type": "sha256", "value": "a" * 64},
+        }
+    )
+
+    assert request_varied.context is not None
+
+    assert request_varied.context["string_val"] == "text"
+    assert request_varied.context["int_val"] == 100
+    assert request_varied.context["float_val"] == 3.14
+    assert request_varied.context["bool_val"] is True
+    assert request_varied.context["list_val"] == [1, 2, 3]
+    assert request_varied.context["null_val"] is None

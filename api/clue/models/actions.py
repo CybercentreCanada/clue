@@ -5,7 +5,9 @@ from typing import (
     Any,
     Generic,
     Literal,
+    NotRequired,
     Self,
+    TypedDict,
     TypeVar,
     Union,
     cast,
@@ -27,7 +29,18 @@ from clue.models.validators import validate_classification
 logger = get_logger(__file__)
 
 
+class ActionContextInformation(TypedDict, total=False):
+    """Contextual information on where the action is being executed."""
+
+    url: NotRequired[str | None]
+    timestamp: NotRequired[str | None]
+    language: NotRequired[str | None]
+
+
 class ExecuteRequest(BaseModel):
+    context: ActionContextInformation | dict[str, Any] | None = Field(
+        description="Contextual information on where the action is being executed (if provided)", default=None
+    )
     selector: Selector | None = Field(description="The selector to execute the action on.", default=None)
     selectors: list[Selector] = Field(description="The selectors to execute the action on.", default=[])
 
