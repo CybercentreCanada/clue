@@ -11,7 +11,12 @@ from pydantic import Field
 from pydantic_core import Url
 
 from clue.common.logging import get_logger
-from clue.models.actions import Action, ActionResult, ExecuteRequest
+from clue.models.actions import (
+    Action,
+    ActionContextInformation,
+    ActionResult,
+    ExecuteRequest,
+)
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.network import Annotation, QueryEntry
 from clue.models.results.graph import GraphResult
@@ -101,6 +106,10 @@ class Params(ExecuteRequest):
     other_choice: ChoiceEnum = Field(description="Another choice for you with no default")
 
 
+class ExtraContext(ActionContextInformation):
+    source: str | None = Field(default=None)
+
+
 def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
     if action.id == "test_pivot":
         query = "potato"
@@ -115,12 +124,15 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
         )
     if action.id == "test_context":
         if request.context is not None:
+            context = request.context.coerce_to(ExtraContext)
+
             # Demonstrate accessing typed fields
             context_info = {
-                "context": request.context,
-                "url": request.context.get("url"),
-                "timestamp": request.context.get("timestamp"),
-                "language": request.context.get("language"),
+                "context": context.model_extra,
+                "url": context.url,
+                "timestamp": context.timestamp,
+                "language": context.language,
+                "source": context.source,
             }
             return ActionResult(
                 outcome="success",

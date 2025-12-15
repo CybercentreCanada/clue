@@ -49,7 +49,7 @@ OVERRIDABLE_FUNCTIONS = [
     "enrich",  # Main enrichment function for processing selectors
     "alternate_bulk_lookup",  # Alternative bulk enrichment implementation
     "liveness",  # Kubernetes liveness probe endpoint
-    "readyness",  # Kubernetes readiness probe endpoint
+    "readiness",  # Kubernetes readiness probe endpoint
     "run_action",  # Function to execute plugin actions
     "run_fetcher",  # Function to execute plugin fetchers
     "setup_actions",  # Runtime action definition generation
@@ -191,8 +191,8 @@ class CluePlugin:
             completed FetcherResult.
         liveness:
             A liveness probe for kubernetes implementations of clue.
-        readyness:
-            A readyness probe for kubernetes implementations of clue.
+        readiness:
+            A readiness probe for kubernetes implementations of clue.
     """
 
     alternate_bulk_lookup: Callable[[list[dict[str, str]], Params], dict[str, dict[str, BulkEntry]]] | None
@@ -288,7 +288,7 @@ class CluePlugin:
         liveness: Callable[[], Response] = default_liveness,
         local_cache_options: dict[str, Any] | None = None,
         logger: logging.Logger | None = None,
-        readyness: Callable[[], Response] = default_readiness,
+        readiness: Callable[[], Response] = default_readiness,
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
@@ -354,8 +354,8 @@ class CluePlugin:
                 completed FetcherResult.
             liveness:
                 A liveness probe for kubernetes implementations of Clue.
-            readyness:
-                A readyness probe for kubernetes implementations of Clue.
+            readiness:
+                A readiness probe for kubernetes implementations of Clue.
         """
         self.alternate_bulk_lookup = alternate_bulk_lookup
         # Create Flask app using the module name (before first dot) as app name
@@ -371,7 +371,7 @@ class CluePlugin:
 
         self.classification = classification
         self.liveness = liveness
-        self.readiness = readyness
+        self.readiness = readiness
 
         # Convert comma-separated string to set for easier membership testing
         if isinstance(supported_types, str):
@@ -1240,7 +1240,7 @@ class CluePlugin:
             - enrich: Main enrichment function for processing selectors
             - alternate_bulk_lookup: Alternative bulk enrichment implementation
             - liveness: Kubernetes liveness probe endpoint
-            - readyness: Kubernetes readiness probe endpoint
+            - readiness: Kubernetes readiness probe endpoint
             - run_action: Function to execute plugin actions
             - run_fetcher: Function to execute plugin fetchers
             - setup_actions: Runtime action definition generation

@@ -336,11 +336,13 @@ def test_run_action_with_context(host, access_token):
     assert response["output"]["url"] == "https://example.com/investigation/123"
     assert response["output"]["timestamp"] == "2024-01-01T12:00:00Z"
     assert response["output"]["language"] == "en"
+    assert response["output"]["source"] == "ui"
+
     # Test arbitrary fields still work
-    assert response["output"]["context"]["source"] == "ui"
     assert response["output"]["context"]["user_id"] == 123
     assert response["output"]["context"]["metadata"]["version"] == "1.0"
     assert response["output"]["context"]["metadata"]["feature"] == "test"
+    assert "source" not in response["output"]["context"]
 
     # Test without context
     res = requests.post(
