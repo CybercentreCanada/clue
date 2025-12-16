@@ -301,3 +301,142 @@ def test_run_action_multiple_email(host, access_token):
     assert response["outcome"] == "success"
     assert response["summary"] == "We got a param value"
     assert response["output"]["value"] == "testerino"
+
+
+def test_run_action_with_context(host, access_token):
+    """Test that context is properly passed to actions"""
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    # Test with typed fields (url, timestamp, language) and arbitrary fields
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_context",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "selector": {"type": "ip", "value": "127.0.0.1"},
+            "context": {
+                "url": "https://example.com/investigation/123",
+                "timestamp": "2024-01-01T12:00:00Z",
+                "language": "en",
+                "source": "ui",
+                "user_id": 123,
+                "metadata": {"version": "1.0", "feature": "test"},
+            },
+        },
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "success"
+    assert response["summary"] == "Context received"
+    # Test typed fields are accessible
+    assert response["output"]["url"] == "https://example.com/investigation/123"
+    assert response["output"]["timestamp"] == "2024-01-01T12:00:00Z"
+    assert response["output"]["language"] == "en"
+    assert response["output"]["source"] == "ui"
+
+    # Test arbitrary fields still work
+    assert response["output"]["context"]["user_id"] == 123
+    assert response["output"]["context"]["metadata"]["version"] == "1.0"
+    assert response["output"]["context"]["metadata"]["feature"] == "test"
+    assert "source" not in response["output"]["context"]
+
+    # Test without context
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_context",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"selector": {"type": "ip", "value": "127.0.0.1"}},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "failure"
+    assert response["summary"] == "No context provided"
+    assert response["output"]["context"] is None
+
+    # Test with empty context
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_context",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"selector": {"type": "ip", "value": "127.0.0.1"}, "context": {}},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "success"
+    assert response["summary"] == "Context received"
+    assert response["output"]["context"] == {}
+
+    # Typed fields should be None when not provided
+    assert response["output"]["url"] is None
+    assert response["output"]["timestamp"] is None
+    assert response["output"]["language"] is None
+
+    # Test with only some typed fields provided
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_context",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "selector": {"type": "ip", "value": "127.0.0.1"},
+            "context": {
+                "url": "https://example.com/case/456",
+                "timestamp": "2024-12-12T10:30:00Z",
+                # language not provided
+                "custom_field": "custom_value",
+            },
+        },
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "success"
+    assert response["output"]["url"] == "https://example.com/case/456"
+    assert response["output"]["timestamp"] == "2024-12-12T10:30:00Z"
+    assert response["output"]["language"] is None
+    assert response["output"]["context"]["custom_field"] == "custom_value"
+
+    # Test context with various data types
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_context",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "selector": {"type": "ip", "value": "127.0.0.1"},
+            "context": {
+                "language": None,  # Test explicit None for typed field
+                "string_field": "test_string",
+                "int_field": 42,
+                "float_field": 3.14,
+                "bool_field": True,
+                "list_field": [1, 2, 3],
+                "null_field": None,
+                "nested": {"key": "value"},
+            },
+        },
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "success"
+    assert response["output"]["language"] is None
+    assert response["output"]["context"]["string_field"] == "test_string"
+    assert response["output"]["context"]["int_field"] == 42
+    assert response["output"]["context"]["float_field"] == 3.14
+    assert response["output"]["context"]["bool_field"] is True
+    assert response["output"]["context"]["list_field"] == [1, 2, 3]
+    assert response["output"]["context"]["null_field"] is None
+    assert response["output"]["context"]["nested"]["key"] == "value"

@@ -14,7 +14,9 @@ import type { ActionDefinitionsResponse, ActionResult } from 'lib/types/action';
 import type { Selector } from 'lib/types/lookup';
 import type RunningActionData from 'lib/types/RunningActionData';
 import type { WithActionData } from 'lib/types/WithActionData';
+import { dayjs } from 'lib/utils/time';
 import { safeDispatchEvent } from 'lib/utils/window';
+import { isNil } from 'lodash-es';
 import type { FC, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createContext, useContextSelector } from 'use-context-selector';
@@ -69,6 +71,20 @@ export interface ClueActionContextType {
        * how long should the action have to respond?
        */
       timeout?: number;
+
+      /**
+       * Should contextual information about the source of the action be included?
+       *
+       * This information includes:
+       * - Exact execution time
+       * - Current URL on execution
+       */
+      includeContext?: boolean;
+
+      /**
+       * Additional context information to include on execution. Useful for tight connections between actions and the UI.
+       */
+      extraContext?: Record<string, any>;
     }
   ) => Promise<void>;
 
@@ -106,6 +122,11 @@ export interface ClueActionProps {
   classification?: string;
 
   /**
+   * Should basic context information (execution time, current url) be included when executing an action?
+   */
+  includeContext?: boolean;
+
+  /**
    * Get an access token for the clue API.
    *
    * @returns An access token valid for use with the clue API.
@@ -123,10 +144,11 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   baseURL,
   children,
   classification: defaultClassification,
+  includeContext: defaultIncludeContext,
   getToken,
   onNetworkCall
 }) => {
-  const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
+  const { t, i18n } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
   const { ready } = useClue();
 
   const [runningActionData, setRunningActionData] = useState<RunningActionData>(null);
@@ -179,11 +201,13 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
-      const { forceMenu, onComplete, skipMenu, timeout } = {
+      const { forceMenu, onComplete, skipMenu, timeout, includeContext, extraContext } = {
         forceMenu: false,
         skipMenu: false,
         onComplete: null,
         timeout: null,
+        includeContext: defaultIncludeContext ?? false,
+        extraContext: null,
         ...options
       };
 
@@ -207,6 +231,22 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       const validator = AJV.compile(actionToRun.params);
 
       const validatedParams = { selectors: stringifiedSelectors, ...params };
+
+      let context: Record<string, any> | null = null;
+      if (includeContext) {
+        context = {
+          timestamp: dayjs().toISOString(),
+          url: window.location,
+          language: i18n?.language ?? 'en'
+        };
+      }
+
+      if (!isNil(extraContext)) {
+        context = {
+          ...(context ?? {}),
+          ...extraContext
+        };
+      }
 
       setLoading(true);
 
@@ -233,6 +273,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           action: actionToRun,
           selectors: selectors,
           params: validatedParams ?? {},
+          context,
           onComplete,
           timeout
         });
@@ -248,6 +289,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           actionId,
           stringifiedSelectors,
           validatedParams ?? {},
+          context,
           { timeout },
           requestConfig
         );
@@ -324,7 +366,17 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         setLoading(false);
       }
     },
-    [availableActions, baseURL, getHashKey, getToken, onNetworkCall, runningActionData?.id, t]
+    [
+      availableActions,
+      baseURL,
+      defaultIncludeContext,
+      getHashKey,
+      getToken,
+      i18n?.language,
+      onNetworkCall,
+      runningActionData?.id,
+      t
+    ]
   );
 
   const cancelAction: ClueActionContextType['cancelAction'] = useCallback(() => {

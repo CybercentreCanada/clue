@@ -102,7 +102,7 @@ describe('Actions API', () => {
 
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      const result = await post('test.action', mockSelector, mockParams);
+      const result = await post('test.action', mockSelector, mockParams, {});
 
       expect(vi.mocked(joinUri)).toHaveBeenCalledWith('/api/v1/actions/execute', 'test/action', null);
       expect(vi.mocked(hpost)).toHaveBeenCalledWith(
@@ -110,6 +110,7 @@ describe('Actions API', () => {
         {
           ...mockParams,
           selector: mockSelector,
+          context: {},
           selectors: []
         },
         undefined
@@ -125,12 +126,13 @@ describe('Actions API', () => {
 
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      const result = await post('my.action', [mockSelector], mockParams);
+      const result = await post('my.action', [mockSelector], mockParams, {});
 
       expect(vi.mocked(hpost)).toHaveBeenCalledWith(
         '/api/v1/actions/execute/my/action',
         {
           ...mockParams,
+          context: {},
           selector: mockSelector,
           selectors: []
         },
@@ -154,12 +156,13 @@ describe('Actions API', () => {
 
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      const result = await post('bulk.action', multipleSelectors, mockParams);
+      const result = await post('bulk.action', multipleSelectors, mockParams, {});
 
       expect(vi.mocked(hpost)).toHaveBeenCalledWith(
         '/api/v1/actions/execute/bulk/action',
         {
           ...mockParams,
+          context: {},
           selectors: multipleSelectors
         },
         undefined
@@ -177,7 +180,7 @@ describe('Actions API', () => {
       };
       global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
 
-      await post('timeout.action', mockSelector, mockParams, { timeout: 30000 });
+      await post('timeout.action', mockSelector, mockParams, {}, { timeout: 30000 });
 
       expect(global.URLSearchParams).toHaveBeenCalledWith('max_timeout=30000');
       expect(vi.mocked(joinUri)).toHaveBeenCalledWith('/api/v1/actions/execute', 'timeout/action', mockSearchParams);
@@ -187,7 +190,7 @@ describe('Actions API', () => {
       const mockResult: ActionResult = { outcome: 'success' };
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      await post('no-timeout.action', mockSelector, mockParams, { timeout: null });
+      await post('no-timeout.action', mockSelector, mockParams, {}, { timeout: null });
 
       expect(vi.mocked(joinUri)).toHaveBeenCalledWith('/api/v1/actions/execute', 'no-timeout/action', null);
     });
@@ -200,16 +203,20 @@ describe('Actions API', () => {
       const mockResult: ActionResult = { outcome: 'success' };
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      await post('config.action', mockSelector, mockParams, {}, config);
+      await post('config.action', mockSelector, mockParams, {}, {}, config);
 
-      expect(vi.mocked(hpost)).toHaveBeenCalledWith(expect.any(String), expect.any(Object), config);
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/config/action',
+        expect.any(Object),
+        config
+      );
     });
 
     it('should handle action IDs with dots correctly', async () => {
       const mockResult: ActionResult = { outcome: 'success' };
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      await post('category.action', mockSelector, mockParams);
+      await post('category.action', mockSelector, mockParams, {});
 
       expect(vi.mocked(joinUri)).toHaveBeenCalledWith('/api/v1/actions/execute', 'category/action', null);
     });
@@ -218,7 +225,7 @@ describe('Actions API', () => {
       const error = new Error('Server error');
       vi.mocked(hpost).mockRejectedValue(error);
 
-      await expect(post('error.action', mockSelector, mockParams)).rejects.toThrow('Server error');
+      await expect(post('error.action', mockSelector, mockParams, {})).rejects.toThrow('Server error');
     });
 
     it('should handle failure outcome in response', async () => {
@@ -228,10 +235,303 @@ describe('Actions API', () => {
       };
       vi.mocked(hpost).mockResolvedValue(mockResult);
 
-      const result = await post('failing.action', mockSelector, mockParams);
+      const result = await post('failing.action', mockSelector, mockParams, {});
 
       expect(result).toEqual(mockResult);
       expect(result.outcome).toBe('failure');
+    });
+  });
+
+  // Test the context parameter handling
+  describe('post - context handling', () => {
+    const mockSelector: Selector = {
+      type: 'ip',
+      value: '192.168.1.1',
+      classification: 'TLP:WHITE'
+    };
+
+    const mockParams = { param1: 'value1' };
+
+    beforeEach(() => {
+      vi.mocked(joinUri).mockImplementation((...parts) => {
+        return parts.filter(part => part !== null).join('/');
+      });
+    });
+
+    it('should include context when provided as object', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const context = {
+        source: 'ui',
+        user_id: 123,
+        metadata: { version: '1.0' }
+      };
+
+      await post('test.action', mockSelector, mockParams, context);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should set context to null when null is provided', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      await post('test.action', mockSelector, mockParams, null);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context: null
+        },
+        undefined
+      );
+    });
+
+    it('should handle empty context object', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      await post('test.action', mockSelector, mockParams, {});
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context: {}
+        },
+        undefined
+      );
+    });
+
+    it('should handle context with nested objects', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const context = {
+        level1: {
+          level2: {
+            level3: {
+              deepValue: 'nested'
+            }
+          }
+        }
+      };
+
+      await post('test.action', mockSelector, mockParams, context);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should handle context with arrays', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const context = {
+        items: [1, 2, 3],
+        tags: ['tag1', 'tag2'],
+        mixed: [{ id: 1 }, { id: 2 }]
+      };
+
+      await post('test.action', mockSelector, mockParams, context);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should handle context with various primitive types', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const context = {
+        stringField: 'test',
+        numberField: 42,
+        floatField: 3.14,
+        booleanField: true,
+        nullField: null,
+        undefinedField: undefined
+      };
+
+      await post('test.action', mockSelector, mockParams, context);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should handle context with special characters in string values', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const context = {
+        specialChars: 'test@#$%^&*()',
+        unicode: '测试',
+        emoji: '🚀🔥',
+        whitespace: '  spaces  \n\ttabs  '
+      };
+
+      await post('test.action', mockSelector, mockParams, context);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should handle context with multiple selectors', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const selector2: Selector = {
+        type: 'domain',
+        value: 'example.com',
+        classification: 'TLP:GREEN'
+      };
+
+      const context = {
+        origin: 'bulk_operation',
+        batch_id: 'batch-123'
+      };
+
+      await post('test.action', [mockSelector, selector2], mockParams, context);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selectors: [mockSelector, selector2],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should preserve context alongside timeout options', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const mockSearchParams = {
+        toString: vi.fn(() => 'max_timeout=5000')
+      };
+      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+
+      const context = {
+        requestId: 'req-123',
+        timestamp: '2024-01-01T00:00:00Z'
+      };
+
+      await post('test.action', mockSelector, mockParams, context, { timeout: 5000 });
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        expect.any(String),
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        undefined
+      );
+    });
+
+    it('should preserve context alongside axios config', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const context = {
+        feature: 'test_feature',
+        env: 'staging'
+      };
+
+      const config: AxiosRequestConfig = {
+        headers: { 'X-Custom': 'value' }
+      };
+
+      await post('test.action', mockSelector, mockParams, context, {}, config);
+
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          ...mockParams,
+          selector: mockSelector,
+          selectors: [],
+          context
+        },
+        config
+      );
+    });
+
+    // TODO: Consider revisiting this functionality?
+    it('should handle context that overlaps with param names', async () => {
+      const mockResult: ActionResult = { outcome: 'success' };
+      vi.mocked(hpost).mockResolvedValue(mockResult);
+
+      const paramsWithContext = {
+        param1: 'value1',
+        context: 'this should be overwritten'
+      };
+
+      const actualContext = {
+        correctContext: 'data'
+      };
+
+      await post('test.action', mockSelector, paramsWithContext, actualContext);
+
+      // Context from the dedicated parameter should override any 'context' in params
+      expect(vi.mocked(hpost)).toHaveBeenCalledWith(
+        '/api/v1/actions/execute/test/action',
+        {
+          param1: 'value1',
+          selector: mockSelector,
+          selectors: [],
+          context: actualContext
+        },
+        undefined
+      );
     });
   });
 });
