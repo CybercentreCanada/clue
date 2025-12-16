@@ -49,7 +49,7 @@ OVERRIDABLE_FUNCTIONS = [
     "enrich",  # Main enrichment function for processing selectors
     "alternate_bulk_lookup",  # Alternative bulk enrichment implementation
     "liveness",  # Kubernetes liveness probe endpoint
-    "readyness",  # Kubernetes readiness probe endpoint
+    "readiness",  # Kubernetes readiness probe endpoint
     "run_action",  # Function to execute plugin actions
     "run_fetcher",  # Function to execute plugin fetchers
     "setup_actions",  # Runtime action definition generation
@@ -82,7 +82,7 @@ def default_validate_token():
     return None, "No bearer token was provided. Please provide a Bearer token in the Authorization header"
 
 
-def liveness(**_):
+def default_liveness(**_):
     """Default liveness probe for Kubernetes health checks.
 
     This endpoint indicates whether the application is running and alive.
@@ -94,7 +94,7 @@ def liveness(**_):
     return make_response("OK")
 
 
-def readyness(**_):
+def default_readiness(**_):
     """Default readiness probe for Kubernetes health checks.
 
     This endpoint indicates whether the application is ready to serve traffic.
@@ -191,8 +191,8 @@ class CluePlugin:
             completed FetcherResult.
         liveness:
             A liveness probe for kubernetes implementations of clue.
-        readyness:
-            A readyness probe for kubernetes implementations of clue.
+        readiness:
+            A readiness probe for kubernetes implementations of clue.
     """
 
     alternate_bulk_lookup: Callable[[list[dict[str, str]], Params], dict[str, dict[str, BulkEntry]]] | None
@@ -253,9 +253,9 @@ class CluePlugin:
     run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None
     """The main function for running actions.
 
-    Accepts the selected action definition as well as the ExecuteRequest. If the Action definition's parameters were
-    extended with a custom ExecuteRequest (i.e. to add additional user parameters) that instance will be passed instead,
-    and casting the argument will be necessary.
+    Accepts the selected action definition as well as an ExecuteRequest instance (or an instance of any ExecuteRequest
+    subclass). If the Action definition's parameters were extended with a custom ExecuteRequest (i.e. to add additional
+    user parameters) that instance will be passed instead, and casting the argument will be necessary.
     """
 
     fetchers: list[FetcherDefinition] | None
@@ -271,8 +271,8 @@ class CluePlugin:
     liveness: Callable[[], Response]
     "A liveness probe for kubernetes implementations of clue."
 
-    readyness: Callable[[], Response]
-    "A readyness probe for kubernetes implementations of clue."
+    readiness: Callable[[], Response]
+    "A readiness probe for kubernetes implementations of clue."
 
     def __init__(
         self: Self,
@@ -285,10 +285,10 @@ class CluePlugin:
         enable_cache: Union[bool, Literal["redis"], Literal["local"]] = True,
         enrich: Callable[[str, str, Params, str | None], Union[list[QueryEntry], QueryEntry]] | None = None,
         fetchers: list[FetcherDefinition] | None = None,
-        liveness: Callable[[], Response] = liveness,
+        liveness: Callable[[], Response] = default_liveness,
         local_cache_options: dict[str, Any] | None = None,
         logger: logging.Logger | None = None,
-        readyness: Callable[[], Response] = readyness,
+        readiness: Callable[[], Response] = default_readiness,
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
@@ -340,9 +340,10 @@ class CluePlugin:
             run_action:
                 The main function for running actions.
 
-                Accepts the selected action definition as well as the ExecuteRequest. If the Action definition's
-                parameters were extended with a custom ExecuteRequest (i.e. to add additional user parameters) that
-                instance will be passed instead, and casting the argument will be necessary.
+                Accepts the selected action definition as well as an ExecuteRequest instance (or an instance of any
+                ExecuteRequest subclass). If the Action definition's parameters were extended with a custom
+                ExecuteRequest (i.e. to add additional user parameters) that instance will be passed instead, and
+                casting the argument will be necessary.
             fetchers:
                 A list of fetcher definitions this plugin supports.
 
@@ -353,8 +354,8 @@ class CluePlugin:
                 completed FetcherResult.
             liveness:
                 A liveness probe for kubernetes implementations of Clue.
-            readyness:
-                A readyness probe for kubernetes implementations of Clue.
+            readiness:
+                A readiness probe for kubernetes implementations of Clue.
         """
         self.alternate_bulk_lookup = alternate_bulk_lookup
         # Create Flask app using the module name (before first dot) as app name
@@ -370,7 +371,7 @@ class CluePlugin:
 
         self.classification = classification
         self.liveness = liveness
-        self.readyness = readyness
+        self.readiness = readiness
 
         # Convert comma-separated string to set for easier membership testing
         if isinstance(supported_types, str):
@@ -668,7 +669,7 @@ class CluePlugin:
         self.app.add_url_rule("/lookup/<type_name>/<value>/", self.lookup.__name__, self.lookup, methods=["GET"])
         self.app.add_url_rule("/lookup/", self.bulk_lookup.__name__, self.bulk_lookup, methods=["POST"])
         self.app.add_url_rule("/healthz/live", self.liveness.__name__, self.liveness)
-        self.app.add_url_rule("/healthz/ready", self.readyness.__name__, self.readyness)
+        self.app.add_url_rule("/healthz/ready", self.readiness.__name__, self.readiness)
 
     def make_api_response(self: Self, data: Any, err: str = "", status_code: int = 200) -> Response:
         """Create a standardized JSON response for all API endpoints.
@@ -1239,7 +1240,7 @@ class CluePlugin:
             - enrich: Main enrichment function for processing selectors
             - alternate_bulk_lookup: Alternative bulk enrichment implementation
             - liveness: Kubernetes liveness probe endpoint
-            - readyness: Kubernetes readiness probe endpoint
+            - readiness: Kubernetes readiness probe endpoint
             - run_action: Function to execute plugin actions
             - run_fetcher: Function to execute plugin fetchers
             - setup_actions: Runtime action definition generation

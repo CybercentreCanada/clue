@@ -1,6 +1,6 @@
 import { hget, hpost, joinUri, uri as parentUri } from 'api';
 import type { AxiosRequestConfig } from 'axios';
-import type { ActionDefinitionsResponse, ActionResult } from 'lib/types/action';
+import type { ActionContextInformation, ActionDefinitionsResponse, ActionResult } from 'lib/types/action';
 import type { Selector } from 'lib/types/lookup';
 import isNil from 'lodash-es/isNil';
 
@@ -16,6 +16,7 @@ export const post = (
   actionId: string,
   selectors: Selector | Selector[],
   params: { [index: string]: any },
+  context: ActionContextInformation | null,
   options: {
     timeout?: number;
   } = { timeout: null },
@@ -37,6 +38,8 @@ export const post = (
   } else {
     payload.selectors = selectors;
   }
+
+  payload.context = context ?? null;
 
   return hpost(
     joinUri(

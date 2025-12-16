@@ -13,7 +13,14 @@ from typing import (
     get_origin,
 )
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 from pydantic_core import Url, ValidationError
 
 from clue.common.exceptions import ClueValueError
@@ -27,7 +34,45 @@ from clue.models.validators import validate_classification
 logger = get_logger(__file__)
 
 
+class ActionContextInformation(BaseModel):
+    """Contextual information on where the action is being executed."""
+
+    model_config = ConfigDict(extra="allow")
+
+    url: str | None = Field(default=None, description="URL context for the action")
+    timestamp: str | None = Field(default=None, description="Timestamp when the action was initiated")
+    language: str | None = Field(default=None, description="Language context for the action")
+
+    def coerce_to(self, cls: type["ActionContextInformationType"]) -> "ActionContextInformationType":
+        """Coerce this ActionContextInformation instance to a specific subclass.
+
+        This method is useful when you need to convert this context instance to a more
+        specific subclass that may have additional fields or validation.
+
+        Args:
+            cls: The target ActionContextInformation subclass to coerce to.
+
+        Returns:
+            An instance of the specified class with all data from this context.
+
+        Example:
+            >>> class MyContext(ActionContextInformation):
+            ...     custom_field: str | None = None
+            >>> base_context = ActionContextInformation(url="https://example.com")
+            >>> my_context = base_context.coerce_to(MyContext)
+            >>> isinstance(my_context, MyContext)
+            True
+        """
+        return cls.model_validate(self.model_dump(mode="json"))
+
+
+ActionContextInformationType = TypeVar("ActionContextInformationType", bound=ActionContextInformation)
+
+
 class ExecuteRequest(BaseModel):
+    context: ActionContextInformation | None = Field(
+        description="Contextual information on where the action is being executed (if provided)", default=None
+    )
     selector: Selector | None = Field(description="The selector to execute the action on.", default=None)
     selectors: list[Selector] = Field(description="The selectors to execute the action on.", default=[])
 
