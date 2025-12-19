@@ -199,6 +199,13 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     [defaultClassification]
   );
 
+
+  const sleep = (ms: number) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  };
+
+
+
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
       const { forceMenu, onComplete, skipMenu, timeout, includeContext, extraContext } = {
@@ -293,6 +300,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           { timeout },
           requestConfig
         );
+
         const actionResultWithData = { ...actionResult, actionId, action: actionToRun };
 
         onComplete?.(actionResultWithData);

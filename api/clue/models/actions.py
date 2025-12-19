@@ -123,6 +123,7 @@ class ActionBase(BaseModel):
     )
     accept_empty: bool = Field(description="Does this action support execution with no selectors?", default=False)
     accept_multiple: bool = Field(description="Does this action support multiple values?", default=False)
+    async_result: bool = Field(description="Does this action run asynchronously?", default=False)
     format: str | None = Field(
         description="What is the format of the output, if known?",
         default=None,
@@ -130,6 +131,8 @@ class ActionBase(BaseModel):
     extra_schema: Any | None = Field(
         description="Extra key values for the form schema. These will overwrite default behaviour", default={}
     )
+
+
 
     @field_validator("id")
     @classmethod
@@ -242,7 +245,9 @@ class Action(ActionBase, Generic[ER]):
 
 
 class ActionResult(BaseModel, Generic[DATA]):
-    outcome: Union[Literal["success"], Literal["failure"]] = Field(description="Did the action succeed or fail?")
+    outcome: Union[Literal["success"], Literal["failure"], Literal["pending"]] = Field(
+        description="Did the action succeed or fail or is it pending?"
+    )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
     output: DATA | Url | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(

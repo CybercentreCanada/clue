@@ -26,6 +26,7 @@ export interface ActionResult<T = any> {
   output?: T;
   format?: string;
   link?: string;
+  done?: boolean
 }
 
 export type ActionDefinitionsResponse = { [type: string]: ActionDefinition };

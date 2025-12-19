@@ -1,15 +1,66 @@
 import { Icon } from '@iconify/react';
-import { Button, Divider, Modal, Paper, Stack, Typography } from '@mui/material';
+import { Button, CircularProgress, Divider, Modal, Paper, Stack, Typography } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import type { FC } from 'react';
-import { memo } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import ClassificationChip from '../ClassificationChip';
 import ErrorBoundary from '../ErrorBoundary';
+import api from 'api';
+
+
+export const useActionResult = (resultWithData: WithActionData<ActionResult>, interval = 1000) => {
+  const [result, setResult] = useState<ActionResult>(resultWithData);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const taskId = useMemo(() => resultWithData?.output?.task_id, [resultWithData?.output?.task_id]);
+
+  const actionId = useMemo(() => resultWithData?.actionId, [resultWithData?.actionId]);
+
+  useEffect(() => {
+    if (!taskId) return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+
+      const res = await api.actions.post(
+        actionId,
+        [{ type: 'task_id', value: taskId }],
+        {},
+        {},
+        {},
+        {}
+      );
+
+      if (res.outcome === "success" || res.outcome === "failure") {
+        setResult({ ...res, done: true });
+      } else {
+        if (cancelled) return;
+        timeoutRef.current = setTimeout(poll, interval);
+      }
+
+    };
+
+    poll();
+
+    return () => {
+      cancelled = true;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [taskId, interval, actionId]);
+
+  useEffect(() => {
+    setResult(resultWithData);
+  }, [resultWithData]);
+
+  return useMemo(() => resultWithData || result ? ({ ...resultWithData, ...result }) : undefined, [resultWithData, result]);
+
+};
 
 /**
  * The Annotation Popover is for showing a permanent popover on click with interactivity. For showing data on hover, use Annotation Popper.
@@ -18,12 +69,15 @@ const ResultModal: FC<{
   show?: boolean;
   result: WithActionData<ActionResult>;
   onClose?: () => void;
-}> = ({ result, onClose, show = false }) => {
+}> = ({ result: _result, onClose, show = false }) => {
   const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
+
+  const result = useActionResult(_result);
 
   if (!result) {
     return null;
   }
+
 
   return (
     <Modal open={show} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClose={onClose}>
@@ -44,10 +98,11 @@ const ResultModal: FC<{
 
             <Typography variant="body1">{result.action.summary}</Typography>
             <Divider flexItem />
-            <ErrorBoundary>
+            {result.done ? <ErrorBoundary>
               {result.format === 'markdown' && <Markdown md={result.output} />}
               {result.format === 'json' && <JSONViewer data={result.output} collapse forceCompact />}
-            </ErrorBoundary>
+            </ErrorBoundary> : <CircularProgress />}
+
             <div style={{ flex: 1 }} />
             <Stack direction="row" spacing={1}>
               <div style={{ flex: 1 }} />
