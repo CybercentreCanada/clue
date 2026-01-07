@@ -91,31 +91,27 @@ def execute_action(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
     except ClueException as err:
         return internal_error(err=err.message)
 
-@generate_swagger_docs(responses={200: "Successful lookup to selected plugins"})
+
+@generate_swagger_docs(responses={200: "Successfully fetched status of action"})
 @actions_api.route("/status/<plugin_id>/<action_id>", methods=["GET"])
 @api_login()
 def get_action_status(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
-    """Search other services for additional information related to the provided data.
+    """Get the status or result of a running action.
 
     Variables:
     plugin_id (str): the ID of the plugin who owns the action to execute
     action_id (str): the ID of the action to execute
 
     Arguments:
-    None
+    task_id (str): the celery task id to get the status of
 
-    Data Block:
-    {
-        type: "ip",
-        value: "127.0.0.1",
-        ...
-    }
 
     Result Example:
     {
-        "outcome": "success | failure", # was this execution a success or failure?
+        "outcome": "success | failure | pending", # was this execution a success or failure or is it still pending?
         "format": "link", # What format is the output in?
         "output": "http://example.com" # The output of the action. Can be any data structure.
+        "task_id": if the action is still running, what is the task id so that we can fetch the status again
     }
     """
     try:

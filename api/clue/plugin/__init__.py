@@ -1226,7 +1226,7 @@ class CluePlugin:
 
             result = self.get_status(action_to_check, status_request, token)
         except json.JSONDecodeError as e:
-            self.logger.warning("JSON decoding error during execution: %s", str(e))
+            self.logger.warning("JSON decoding error which getting status: %s", str(e))
 
             result = ActionResult(
                 outcome="failure",
@@ -1235,7 +1235,7 @@ class CluePlugin:
         except ValidationError as err:
             self.logger.warning("Validation error during execution: %s", str(err))
 
-            result = ActionResult(outcome="failure", summary=f"Validation error on execution: {str(err)}")
+            result = ActionResult(outcome="failure", summary=f"Validation error: {str(err)}")
         except ClueException as e:
             self.logger.exception("ClueException during execution:")
 
@@ -1244,10 +1244,8 @@ class CluePlugin:
             self.logger.exception("%s during execution:", e.__class__.__name__)
 
             result = ActionResult(outcome="failure", summary=f"An unknown error occurred during execution: {str(e)}")
-        finally:
-            self.logger.info("Execution finished.")
 
-        self.logger.info("Action result: %s", result.outcome)
+        self.logger.info("Action status: %s", result.outcome)
 
         return self.make_api_response(result)
 

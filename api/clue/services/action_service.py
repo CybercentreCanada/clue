@@ -185,8 +185,9 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             f"Something went wrong when retrieving the result from plugin '{plugin_id}': {err.__class__.__name__}."
         )
 
+
 def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[str, Any]) -> ActionResult:
-    """Executes a specified action.
+    """Gets the status of a specified action with task_id.
 
     Args:
         plugin_id (str): The ID of the plugin.
@@ -216,7 +217,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
 
         if error:
             logger.error("%s: %s", plugin.name, error)
-            return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
+            return ActionResult(outcome="failure", summary="Invalid token provided.")
 
     headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
@@ -239,7 +240,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
 
         return ActionResult.model_validate(result["api_response"])
     except (JSONDecodeError, exceptions.ConnectionError) as err:
-        logger.exception(f"Something went wrong when retrieving the result from plugin '{plugin_id}'")
+        logger.exception(f"Something went wrong when retrieving the status from plugin '{plugin_id}'")
         raise ClueException(
-            f"Something went wrong when retrieving the result from plugin '{plugin_id}': {err.__class__.__name__}."
+            f"Something went wrong when retrieving the status from plugin '{plugin_id}': {err.__class__.__name__}."
         )

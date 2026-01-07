@@ -42,6 +42,7 @@ def test_invalid_file(host, access_token):
 
     assert "The file does not exist or is typed incorrectly." in response["api_error_message"]
 
+
 # TODO: Rewrite so they work
 # def test_get_all_valid_files(host, access_token):
 #     if not access_token:
