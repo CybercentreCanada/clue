@@ -92,8 +92,9 @@ const ResultModal: FC<{
             <Divider flexItem />
             {result.done ? (
               <ErrorBoundary>
-                {result.format === 'markdown' && <Markdown md={result.output} />}
-                {result.format === 'json' ? (
+                {result.format === 'markdown' ? (
+                  <Markdown md={result.output} />
+                ) : result.format === 'json' ? (
                   <JSONViewer data={result.output} collapse forceCompact />
                 ) : (
                   <JSONViewer data={result} collapse forceCompact /> // on failure
