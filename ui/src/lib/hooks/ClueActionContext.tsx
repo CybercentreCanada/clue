@@ -199,7 +199,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     [defaultClassification]
   );
 
-
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
       const { forceMenu, onComplete, skipMenu, timeout, includeContext, extraContext } = {
