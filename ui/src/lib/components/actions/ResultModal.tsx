@@ -1,7 +1,6 @@
 import { Icon } from '@iconify/react';
-import { Button, CircularProgress, Divider, Modal, Paper, Stack, Typography } from '@mui/material';
-import JSONViewer from 'lib/components/display/json';
-import Markdown from 'lib/components/display/markdown';
+import { Button, Divider, LinearProgress, Modal, Paper, Stack, Typography } from '@mui/material';
+import api from 'api';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
@@ -9,41 +8,33 @@ import type { FC } from 'react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import ClassificationChip from '../ClassificationChip';
+import JSONViewer from '../display/json';
+import Markdown from '../display/markdown';
 import ErrorBoundary from '../ErrorBoundary';
-import api from 'api';
 
-
-export const useActionResult = (resultWithData: WithActionData<ActionResult>, interval = 1000) => {
+export const useActionResult = (resultWithData: WithActionData<ActionResult>, interval = 2000) => {
   const [result, setResult] = useState<ActionResult>(resultWithData);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const taskId = useMemo(() => resultWithData?.output?.task_id, [resultWithData?.output?.task_id]);
+  const taskId = useMemo(() => resultWithData?.task_id, [resultWithData?.task_id]);
 
   const actionId = useMemo(() => resultWithData?.actionId, [resultWithData?.actionId]);
 
   useEffect(() => {
-    if (!taskId) return;
+    if (resultWithData?.outcome !== 'pending' || !taskId) return;
 
     let cancelled = false;
 
     const poll = async () => {
+      const res = await api.actions.getStatus(actionId, taskId);
 
-      const res = await api.actions.post(
-        actionId,
-        [{ type: 'task_id', value: taskId }],
-        {},
-        {},
-        {},
-        {}
-      );
-
-      if (res.outcome === "success" || res.outcome === "failure") {
+      if ((res.outcome === 'success' || res.outcome === 'failure') && !res.output?.task_id) {
         setResult({ ...res, done: true });
       } else {
         if (cancelled) return;
+        setResult({ ...res });
         timeoutRef.current = setTimeout(poll, interval);
       }
-
     };
 
     poll();
@@ -52,14 +43,16 @@ export const useActionResult = (resultWithData: WithActionData<ActionResult>, in
       cancelled = true;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [taskId, interval, actionId]);
+  }, [taskId, interval, actionId, resultWithData?.task_id, resultWithData?.outcome]);
 
   useEffect(() => {
     setResult(resultWithData);
   }, [resultWithData]);
 
-  return useMemo(() => resultWithData || result ? ({ ...resultWithData, ...result }) : undefined, [resultWithData, result]);
-
+  return useMemo(
+    () => (resultWithData || result ? { ...resultWithData, ...result } : undefined),
+    [resultWithData, result]
+  );
 };
 
 /**
@@ -77,7 +70,6 @@ const ResultModal: FC<{
   if (!result) {
     return null;
   }
-
 
   return (
     <Modal open={show} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClose={onClose}>
@@ -98,10 +90,21 @@ const ResultModal: FC<{
 
             <Typography variant="body1">{result.action.summary}</Typography>
             <Divider flexItem />
-            {result.done ? <ErrorBoundary>
-              {result.format === 'markdown' && <Markdown md={result.output} />}
-              {result.format === 'json' && <JSONViewer data={result.output} collapse forceCompact />}
-            </ErrorBoundary> : <CircularProgress />}
+            {result.done ? (
+              <ErrorBoundary>
+                {result.format === 'markdown' && <Markdown md={result.output} />}
+                {result.format === 'json' ? (
+                  <JSONViewer data={result.output} collapse forceCompact />
+                ) : (
+                  <JSONViewer data={result} collapse forceCompact /> // on failure
+                )}
+              </ErrorBoundary>
+            ) : (
+              <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>
+                {result.summary && <Typography variant="caption">{result.summary}</Typography>}
+                <LinearProgress sx={{ width: '100%', borderRadius: theme => theme.shape.borderRadius }} />
+              </Stack>
+            )}
 
             <div style={{ flex: 1 }} />
             <Stack direction="row" spacing={1}>

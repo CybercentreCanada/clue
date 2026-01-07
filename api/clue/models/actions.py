@@ -69,6 +69,10 @@ class ActionContextInformation(BaseModel):
 ActionContextInformationType = TypeVar("ActionContextInformationType", bound=ActionContextInformation)
 
 
+class ActionStatusRequest(BaseModel):
+    task_id: str = Field(description="The celery task id to get the status for.")
+
+
 class ExecuteRequest(BaseModel):
     context: ActionContextInformation | None = Field(
         description="Contextual information on where the action is being executed (if provided)", default=None
@@ -131,8 +135,6 @@ class ActionBase(BaseModel):
     extra_schema: Any | None = Field(
         description="Extra key values for the form schema. These will overwrite default behaviour", default={}
     )
-
-
 
     @field_validator("id")
     @classmethod
@@ -256,6 +258,7 @@ class ActionResult(BaseModel, Generic[DATA]):
         default=None,
     )
     link: Url | None = Field(description="Link to more information on the outcome of the action", default=None)
+    task_id: str | None = Field(description="The celery task id if the action is pending.", default=None)
 
     @model_validator(mode="after")
     def validate_model(self: Self, info: ValidationInfo) -> Self:  # noqa: C901
@@ -267,8 +270,8 @@ class ActionResult(BaseModel, Generic[DATA]):
         Returns:
             Self: The validated model.
         """
-        if not self.format and self.outcome != "failure":
-            raise ClueValueError("You must set a format if outcome is not failure.")
+        if not self.format and self.outcome == "success":
+            raise ClueValueError("You must set a format if outcome is success.")
 
         if self.format == "pivot" and (not self.output or not isinstance(self.output, Url)):
             if isinstance(self.output, str):

@@ -12,6 +12,33 @@ export const get = (config?: AxiosRequestConfig): Promise<ActionDefinitionsRespo
   return hget(uri(), null, config);
 };
 
+export const getStatus = (
+  actionId: string,
+  taskId: string,
+  options: {
+    timeout?: number;
+  } = { timeout: null },
+  config?: AxiosRequestConfig
+) => {
+  const searchParams: string[] = [];
+
+  searchParams.push(`task_id=${taskId}`);
+
+  if (!isNil(options.timeout)) {
+    searchParams.push(`max_timeout=${options.timeout}`);
+  }
+
+  return hget(
+    joinUri(
+      joinUri(uri(), 'status'),
+      actionId.replace('.', '/'),
+      searchParams.length > 0 ? new URLSearchParams(searchParams.join('&')) : null
+    ),
+    null,
+    config
+  );
+};
+
 export const post = (
   actionId: string,
   selectors: Selector | Selector[],

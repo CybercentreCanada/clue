@@ -8,7 +8,7 @@ List and execute actions
 
 from flask_cors import CORS
 
-from clue.api import internal_error, make_subapi_blueprint, not_found, ok
+from clue.api import internal_error, make_subapi_blueprint, not_found, ok, request
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
@@ -86,6 +86,43 @@ def execute_action(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
     """
     try:
         return ok(action_service.execute_action(plugin_id, action_id, kwargs["user"]))
+    except NotFoundException as err:
+        return not_found(err=err.message)
+    except ClueException as err:
+        return internal_error(err=err.message)
+
+@generate_swagger_docs(responses={200: "Successful lookup to selected plugins"})
+@actions_api.route("/status/<plugin_id>/<action_id>", methods=["GET"])
+@api_login()
+def get_action_status(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
+    """Search other services for additional information related to the provided data.
+
+    Variables:
+    plugin_id (str): the ID of the plugin who owns the action to execute
+    action_id (str): the ID of the action to execute
+
+    Arguments:
+    None
+
+    Data Block:
+    {
+        type: "ip",
+        value: "127.0.0.1",
+        ...
+    }
+
+    Result Example:
+    {
+        "outcome": "success | failure", # was this execution a success or failure?
+        "format": "link", # What format is the output in?
+        "output": "http://example.com" # The output of the action. Can be any data structure.
+    }
+    """
+    try:
+        task_id = request.args.get("task_id", None)
+        if not task_id:
+            return internal_error(err="no task_id found in url params. task_id is required for this request.")
+        return ok(action_service.get_action_status(plugin_id, action_id, task_id, kwargs["user"]))
     except NotFoundException as err:
         return not_found(err=err.message)
     except ClueException as err:

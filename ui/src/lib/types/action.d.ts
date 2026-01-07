@@ -21,12 +21,13 @@ export interface ActionDefinition {
 }
 
 export interface ActionResult<T = any> {
-  outcome: 'success' | 'failure';
+  outcome: 'success' | 'failure' | 'pending';
   summary?: string;
   output?: T;
   format?: string;
   link?: string;
-  done?: boolean
+  done?: boolean;
+  task_id?: string;
 }
 
 export type ActionDefinitionsResponse = { [type: string]: ActionDefinition };

@@ -200,12 +200,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   );
 
 
-  const sleep = (ms: number) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  };
-
-
-
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
       const { forceMenu, onComplete, skipMenu, timeout, includeContext, extraContext } = {
@@ -334,7 +328,8 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
                 </Stack>
               ),
               timeout: actionResult.link ? null : 5000,
-              level: actionResult.outcome === 'success' ? 'success' : 'error',
+              level:
+                actionResult.outcome === 'success' ? 'success' : actionResult.outcome === 'pending' ? 'info' : 'error',
               options: {
                 style: {
                   minWidth: 0
@@ -351,6 +346,11 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
         if (actionResult.outcome === 'success') {
           setRunningActionData(null);
+        }
+
+        if (actionResult.outcome === 'pending') {
+          setLastResult({ ...actionResult, actionId, action: actionToRun });
+          setShowResultModal(true);
         }
 
         if (actionResult.format) {
