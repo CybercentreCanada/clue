@@ -1166,7 +1166,7 @@ class CluePlugin:
         self: Self,
         action_id: str,
     ):
-        """Executes the specified action.
+        """Retrieves the status of the specified action.
 
         Args:
             action_id (str): The ID of the action to get the status for
