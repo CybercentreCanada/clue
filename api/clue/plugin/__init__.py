@@ -54,7 +54,7 @@ OVERRIDABLE_FUNCTIONS = [
     "liveness",  # Kubernetes liveness probe endpoint
     "readiness",  # Kubernetes readiness probe endpoint
     "run_action",  # Function to execute plugin actions
-    "get_status",  # Funtion to check the status or result of a pending action
+    "get_status",  # Function to check the status or result of a pending action
     "run_fetcher",  # Function to execute plugin fetchers
     "setup_actions",  # Runtime action definition generation
     "validate_token",  # Custom authentication token validation
