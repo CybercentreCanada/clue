@@ -1,6 +1,8 @@
 import { Icon } from '@iconify/react';
 import { Button, Divider, LinearProgress, Modal, Paper, Stack, Typography } from '@mui/material';
 import api from 'api';
+import JSONViewer from 'lib/components/display/json';
+import Markdown from 'lib/components/display/markdown';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
@@ -8,8 +10,6 @@ import type { FC } from 'react';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import ClassificationChip from '../ClassificationChip';
-import JSONViewer from '../display/json';
-import Markdown from '../display/markdown';
 import ErrorBoundary from '../ErrorBoundary';
 
 export const useActionResult = (resultWithData: WithActionData<ActionResult>, interval = 2000) => {
