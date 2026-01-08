@@ -101,7 +101,7 @@ const ResultModal: FC<{
                 )}
               </ErrorBoundary>
             ) : (
-              <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>
+              <Stack flex={1} sx={{ pt: 2, alignItems: 'center', maxWidth: 500 }} spacing={1}>
                 {result.summary && <Typography variant="caption">{result.summary}</Typography>}
                 <LinearProgress sx={{ width: '100%', borderRadius: theme => theme.shape.borderRadius }} />
               </Stack>

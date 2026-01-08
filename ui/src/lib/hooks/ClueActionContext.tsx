@@ -61,6 +61,11 @@ export interface ClueActionContextType {
       skipMenu?: boolean;
 
       /**
+       * Should the result modal be shown?
+       */
+      skipResultModal?: boolean;
+
+      /**
        * Callback for post-execution.
        * @param result
        * @returns The action result
@@ -201,7 +206,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
-      const { forceMenu, onComplete, skipMenu, timeout, includeContext, extraContext } = {
+      const { forceMenu, onComplete, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
         forceMenu: false,
         skipMenu: false,
         onComplete: null,
@@ -349,12 +354,14 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
         if (actionResult.outcome === 'pending') {
           setLastResult({ ...actionResult, actionId, action: actionToRun });
-          setShowResultModal(true);
+          if (!skipResultModal) {
+            setShowResultModal(true);
+          }
         }
 
         if (actionResult.format) {
           setLastResult({ ...actionResult, actionId, action: actionToRun });
-          if (actionResult.format !== 'pivot') {
+          if (actionResult.format !== 'pivot' && !skipResultModal) {
             setShowResultModal(true);
           } else {
             window.open(actionResult.output, '_blank', 'noreferrer');
