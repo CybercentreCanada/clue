@@ -1226,7 +1226,7 @@ class CluePlugin:
 
             result = self.get_status(action_to_check, status_request, token)
         except json.JSONDecodeError as e:
-            self.logger.warning("JSON decoding error which getting status: %s", str(e))
+            self.logger.warning("JSON decoding error while getting status: %s", str(e))
 
             result = ActionResult(
                 outcome="failure",
