@@ -106,7 +106,11 @@ const ResultModal: FC<{
             ) : (
               <Stack flex={1} sx={{ pt: 2, alignItems: 'center', maxWidth: 500 }} spacing={1}>
                 {result.summary && <Typography variant="caption">{result.summary}</Typography>}
-                <LinearProgress sx={{ width: '100%', borderRadius: theme => theme.shape.borderRadius }} />
+                <LinearProgress
+                  variant={result.output?.progress ? 'determinate' : 'indeterminate'}
+                  value={result.output?.progress * 100}
+                  sx={{ width: '100%', borderRadius: theme => theme.shape.borderRadius }}
+                />
               </Stack>
             )}
 
