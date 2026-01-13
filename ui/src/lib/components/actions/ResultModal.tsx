@@ -97,7 +97,10 @@ const ResultModal: FC<{
                 ) : result.format === 'json' ? (
                   <JSONViewer data={result.output} collapse forceCompact />
                 ) : (
-                  <JSONViewer data={result} collapse forceCompact /> // on failure
+                  <>
+                    <Markdown md={'`' + result.format + '` is not recognized as a format in this application.'} />
+                    <JSONViewer data={result} collapse forceCompact />
+                  </>
                 )}
               </ErrorBoundary>
             ) : (
