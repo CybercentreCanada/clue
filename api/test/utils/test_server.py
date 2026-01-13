@@ -110,7 +110,10 @@ class Params(ExecuteRequest):
 class ExtraContext(ActionContextInformation):
     source: str | None = Field(default=None)
 
+
 TASK_ID = "test_task_id"
+
+
 def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
     if action.id == "test_pivot":
         query = "potato"
@@ -194,6 +197,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
 
     return ActionResult(outcome="failure", summary="We don't got a value", format="json", output={"value": None})
 
+
 def get_status(action: Action, request: ActionStatusRequest, token: str | None) -> ActionResult:
     """Get the status of a running action when requested by the central API."""
     if action.id == "test_async_action":
@@ -206,6 +210,7 @@ def get_status(action: Action, request: ActionStatusRequest, token: str | None) 
             )
         return ActionResult(outcome="failure", summary="Bad task id", format="json", output={"value": None})
     return ActionResult(outcome="failure", summary="Unsupported action id", format="json", output={"value": None})
+
 
 def setup_actions(*args, **kwargs):
     return [
