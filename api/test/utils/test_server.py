@@ -15,6 +15,7 @@ from clue.models.actions import (
     Action,
     ActionContextInformation,
     ActionResult,
+    ActionStatusRequest,
     ExecuteRequest,
 )
 from clue.models.fetchers import FetcherDefinition, FetcherResult
@@ -109,7 +110,7 @@ class Params(ExecuteRequest):
 class ExtraContext(ActionContextInformation):
     source: str | None = Field(default=None)
 
-
+TASK_ID = "test_task_id"
 def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
     if action.id == "test_pivot":
         query = "potato"
@@ -147,7 +148,8 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
                 format="json",
                 output={"context": None},
             )
-
+    if action.id == "test_async_action":
+        return ActionResult(outcome="pending", summary="Async test action started", task_id=TASK_ID)
     if action.accept_empty:
         if request.selector:
             return ActionResult(
@@ -192,6 +194,18 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
 
     return ActionResult(outcome="failure", summary="We don't got a value", format="json", output={"value": None})
 
+def get_status(action: Action, request: ActionStatusRequest, token: str | None) -> ActionResult:
+    """Get the status of a running action when requested by the central API."""
+    if action.id == "test_async_action":
+        if request.task_id == TASK_ID:
+            return ActionResult(
+                outcome="success",
+                summary="Test Async Action finished",
+                format="json",
+                output={"status": "done"},
+            )
+        return ActionResult(outcome="failure", summary="Bad task id", format="json", output={"value": None})
+    return ActionResult(outcome="failure", summary="Unsupported action id", format="json", output={"value": None})
 
 def setup_actions(*args, **kwargs):
     return [
@@ -219,6 +233,15 @@ def setup_actions(*args, **kwargs):
             name="Test Action",
             classification="TLP:CLEAR",
             summary="Tester",
+            supported_types={"ip", "port", "sha256"},
+            accept_multiple=True,
+        ),
+        Action[Params](
+            id="test_async_action",
+            action_icon="codicon:terminal",
+            name="Test Async Action",
+            classification="TLP:CLEAR",
+            summary="Test action that runs asynchronously",
             supported_types={"ip", "port", "sha256"},
             accept_multiple=True,
         ),

@@ -440,3 +440,58 @@ def test_run_action_with_context(host, access_token):
     assert response["output"]["context"]["list_field"] == [1, 2, 3]
     assert response["output"]["context"]["null_field"] is None
     assert response["output"]["context"]["nested"]["key"] == "value"
+
+
+def test_get_async_action_status(host, access_token):
+    """Test that the get action status endpoint responds"""
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    # first run the action
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_async_action",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"selector": {"type": "ip", "value": "127.0.0.1"}, "other_choice": "b"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "pending"
+    assert response["summary"] == "Async test action started"
+
+    task_id = response["task_id"]
+    assert task_id
+
+    # check the status of the action
+    res = requests.get(
+        f"{host}/api/v1/actions/get_status/test/test_async_action?task_id={task_id}",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "success"
+    assert response["summary"] == "Test Async Action finished"
+
+
+def test_get_status_with_bad_task_id(host, access_token):
+    """Test that the get action status endpoint responds properly when the task_id does not exist"""
+    # check the status of the action
+    res = requests.get(
+        f"{host}/api/v1/actions/get_status/test/test_async_action?task_id=fake_task_id",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "failure"
+    assert response["summary"] == "Bad task id"
