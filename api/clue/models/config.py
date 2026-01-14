@@ -242,7 +242,8 @@ class Logging(BaseModel):
     log_to_console: bool = Field(description="Should we log to console?", default=True)
     log_to_file: bool = Field(description="Should we log to files on the server?", default=False)
     log_directory: str = Field(
-        description="If `log_to_file: true`, what is the directory to store logs?", default="/var/log/clue/"
+        default_factory=lambda: os.getenv("CLUE_LOG_DIR", "/var/log/clue"),
+        description="If `log_to_file: true`, what is the directory to store logs?",
     )
     log_to_syslog: bool = Field(description="Should logs be sent to a syslog server?", default=False)
     syslog_host: str = Field(
