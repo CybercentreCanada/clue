@@ -70,7 +70,7 @@ ActionContextInformationType = TypeVar("ActionContextInformationType", bound=Act
 
 
 class ActionStatusRequest(BaseModel):
-    task_id: str = Field(description="The celery task id to get the status for.")
+    task_id: str = Field(description="The task id to get the status for.")
 
 
 class ExecuteRequest(BaseModel):
@@ -248,7 +248,7 @@ class Action(ActionBase, Generic[ER]):
 
 class ActionResult(BaseModel, Generic[DATA]):
     outcome: Union[Literal["success"], Literal["failure"], Literal["pending"]] = Field(
-        description="Did the action succeed or fail or is it pending?"
+        description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
     output: DATA | Url | None = Field(description="The output of the action.", default=None)

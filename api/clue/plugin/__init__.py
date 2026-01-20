@@ -136,7 +136,7 @@ def build_default_logger() -> logging.Logger:
 config: Config = Config()
 
 
-def create_app(app_name: str, enable_celery: bool = False, tasks: List[str] | None = None):
+def create_app(app_name: str, enable_celery: bool = False, tasks: list[str] | None = None):
     """helper function to create the flask app and set up the celery config if enabled
 
     Args:

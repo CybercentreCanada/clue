@@ -28,7 +28,7 @@ export const useActionResult = (resultWithData: WithActionData<ActionResult>, in
     const poll = async () => {
       const res = await api.actions.getStatus(actionId, taskId);
 
-      if ((res.outcome === 'success' || res.outcome === 'failure') && !res.output?.task_id) {
+      if ((res.outcome === 'success' || res.outcome === 'failure') && !res.task_id) {
         setResult({ ...res, done: true });
       } else {
         if (cancelled) return;
