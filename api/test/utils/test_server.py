@@ -308,6 +308,7 @@ plugin = CluePlugin(
     validate_token=validate_token,
     setup_actions=setup_actions,
     run_action=run_action,
+    get_status=get_status,
     fetchers=[
         FetcherDefinition(
             id="json",
