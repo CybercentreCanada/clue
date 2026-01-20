@@ -13,9 +13,8 @@ services:
     build:
       context: ./keycloak
       dockerfile: Dockerfile
-      no_cache: true
     environment:
-      KC_HEALTH_ENABLED: true
+      KC_HEALTH_ENABLED: "true"
     ports:
       - "9100:8080"
     expose:
