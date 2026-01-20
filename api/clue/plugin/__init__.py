@@ -315,6 +315,9 @@ class CluePlugin:
     readiness: Callable[[], Response]
     "A readiness probe for kubernetes implementations of clue."
 
+    enable_celery: bool
+    "Flag to enable celery in plugin"
+
     def __init__(
         self: Self,
         app_name: str,
@@ -431,20 +434,15 @@ class CluePlugin:
         self.logger = logger if logger else build_default_logger()
 
         self.enrich = enrich
+        self.enable_celery = enable_celery
         self.run_action = run_action
-        # get_status is required when enable_celery is true
-        if enable_celery and not get_status:
-            raise ClueValueError("get_status() must be implemented when celery is enabled (enable_celery == True)")
-        elif (not enable_celery) and get_status:
-            raise ClueValueError(
-                "get_status() is implemented but celery is disabled (enable_celery == False)."
-                "Did you mean to enable it?"
-            )
         self.get_status = get_status
         self.validate_token = validate_token
 
         self.fetchers = fetchers
         self.run_fetcher = run_fetcher
+
+        self.__validate_plugin()
 
         self.__init_routes()
 
@@ -505,6 +503,17 @@ class CluePlugin:
                 caller_frame.f_globals["app"] = self.app
 
         self.logger.debug("Initialization complete!")
+
+    def __validate_plugin(self) -> bool:
+        # get_status is required when enable_celery is true
+        if self.enable_celery and not self.get_status:
+            raise ClueValueError("get_status() must be implemented when celery is enabled (enable_celery == True)")
+        elif (not self.enable_celery) and self.get_status:
+            raise ClueValueError(
+                "get_status() is implemented but celery is disabled (enable_celery == False)."
+                "Did you mean to enable it?"
+            )
+        return True
 
     def __check_actions(self) -> list[Action] | None:
         """Validate token and retrieve dynamic actions if setup_actions is configured.
