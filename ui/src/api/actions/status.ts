@@ -21,13 +21,8 @@ export const get = (
   }
 
   return hget<WithActionData<ActionResult>>(
-    joinUri(
-      parentUri(),
-      `${actionId.replace('.', '/')}/status/${taskId}`,
-      searchParams.length > 0 ? new URLSearchParams(searchParams.join('&')) : null
-    ),
-
-    null,
+    joinUri(parentUri(), `${actionId.replace('.', '/')}/status/${taskId}`),
+    searchParams.length > 0 ? new URLSearchParams(searchParams.join('&')) : null,
     config
   );
 };

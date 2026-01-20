@@ -393,8 +393,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
             }
           })
         );
-      } finally {
-        return undefined;
       }
     },
     [requestConfig]
