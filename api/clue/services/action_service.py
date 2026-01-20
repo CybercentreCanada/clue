@@ -222,13 +222,11 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
     try:
-        req_url = urljoin(plugin.url, f"actions/{action_id}")
-        params = {"task_id": task_id}
+        req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")
         logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
 
         response = requests.get(
             req_url,
-            params=params,
             headers=headers,
             timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
         )

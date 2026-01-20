@@ -9,13 +9,11 @@ export const uri = () => {
   return joinUri(parentUri(), 'actions');
 };
 
-export const get = (config?: AxiosRequestConfig): Promise<ActionDefinitionsResponse> => {
+const get = (config?: AxiosRequestConfig): Promise<ActionDefinitionsResponse> => {
   return hget(uri(), null, config);
 };
 
-export { status };
-
-export const post = (
+const post = (
   actionId: string,
   selectors: Selector | Selector[],
   params: { [index: string]: any },
@@ -54,3 +52,5 @@ export const post = (
     config
   );
 };
+
+export { get, post, status };

@@ -157,6 +157,7 @@ def create_app(app_name: str, enable_celery: bool = False, tasks: list[str] | No
                 broker_url=redis_url,
                 result_backend=redis_url,
                 result_backend_transport_options={"global_keyprefix": app_name + "_results"},
+                result_expires=3600,  # expire results after one hour
             ),
         )
         celery_init_app(app, tasks)
@@ -442,8 +443,6 @@ class CluePlugin:
         self.fetchers = fetchers
         self.run_fetcher = run_fetcher
 
-        self.__validate_plugin()
-
         self.__init_routes()
 
         # Initialize Application Performance Monitoring if enabled
@@ -503,17 +502,6 @@ class CluePlugin:
                 caller_frame.f_globals["app"] = self.app
 
         self.logger.debug("Initialization complete!")
-
-    def __validate_plugin(self) -> bool:
-        # get_status is required when enable_celery is true
-        if self.enable_celery and not self.get_status:
-            raise ClueValueError("get_status() must be implemented when celery is enabled (enable_celery == True)")
-        elif (not self.enable_celery) and self.get_status:
-            raise ClueValueError(
-                "get_status() is implemented but celery is disabled (enable_celery == False)."
-                "Did you mean to enable it?"
-            )
-        return True
 
     def __check_actions(self) -> list[Action] | None:
         """Validate token and retrieve dynamic actions if setup_actions is configured.
@@ -723,7 +711,10 @@ class CluePlugin:
             "/actions/<action_id>/", self.execute_action.__name__, self.execute_action, methods=["POST"]
         )
         self.app.add_url_rule(
-            "/actions/<action_id>/", self.get_action_status.__name__, self.get_action_status, methods=["GET"]
+            "/actions/<action_id>/status/<task_id>",
+            self.get_action_status.__name__,
+            self.get_action_status,
+            methods=["GET"],
         )
         self.app.add_url_rule("/fetchers/", self.get_fetchers.__name__, self.get_fetchers, methods=["GET"])
         self.app.add_url_rule(
@@ -1179,10 +1170,7 @@ class CluePlugin:
 
         return self.make_api_response(result)
 
-    def get_action_status(  # noqa: C901
-        self: Self,
-        action_id: str,
-    ):
+    def get_action_status(self: Self, action_id: str, task_id: str):  # noqa: C901
         """Retrieves the status of the specified action.
 
         Args:
@@ -1192,11 +1180,9 @@ class CluePlugin:
         Returns:
             Response: A Response object with an ActionResult as the body.
         """
-        task_id = request.args.get("task_id", None)
-
         if not task_id:
             return self.make_api_response(
-                {}, err="task id not found in url params. task id is required for this request.", status_code=400
+                {}, err="task id not provided. task id is required for this request.", status_code=400
             )
 
         if not self.get_status:

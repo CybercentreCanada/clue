@@ -108,6 +108,13 @@ export interface ClueActionContextType {
   getActionResults: (type: string, value: string, classification?: string) => WithActionData<ActionResult>[];
 
   /**
+   * Get the status of an ongoing action
+   * @param actionId The ID of the action to get the status of
+   * @param taskId The task id to get the status of
+   */
+  getActionStatus: (actionId: string, taskId: string) => Promise<WithActionData<ActionResult>>;
+
+  /**
    * Is there currently an action executing?
    */
   loading: boolean;
@@ -165,20 +172,19 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   // Initialize the sources and type detection for the user
   const [availableActions, setAvailableActions] = useState<ActionDefinitionsResponse>({});
 
-  const refreshActions: ClueActionContextType['refreshActions'] = useCallback(async () => {
-    if (!ready) {
-      return;
-    }
-
+  const requestConfig = useMemo(() => {
     const headers: AxiosRequestConfig['headers'] = {};
     const token = getToken?.();
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    const baseConfig = { baseURL, headers };
+    return onNetworkCall ? onNetworkCall(baseConfig) : { baseURL, headers };
+  }, [baseURL, getToken, onNetworkCall]);
 
-    let requestConfig: AxiosRequestConfig = { baseURL, headers };
-    if (onNetworkCall) {
-      requestConfig = onNetworkCall(requestConfig);
+  const refreshActions: ClueActionContextType['refreshActions'] = useCallback(async () => {
+    if (!ready) {
+      return;
     }
 
     const _actions = await api.actions.get(requestConfig);
@@ -188,7 +194,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     }
 
     return _actions;
-  }, [baseURL, getToken, onNetworkCall, ready]);
+  }, [ready, requestConfig]);
 
   useEffect(() => {
     refreshActions();
@@ -215,12 +221,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         extraContext: null,
         ...options
       };
-
-      const headers: AxiosRequestConfig['headers'] = {};
-      const token = getToken?.();
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
 
       if (!Object.keys(availableActions).includes(actionId)) {
         throw new Error('Invalid action id');
@@ -286,10 +286,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       }
 
       try {
-        let requestConfig: AxiosRequestConfig = { baseURL, headers };
-        if (onNetworkCall) {
-          requestConfig = onNetworkCall(requestConfig);
-        }
         const actionResult = await api.actions.post(
           actionId,
           stringifiedSelectors,
@@ -380,17 +376,28 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         setLoading(false);
       }
     },
-    [
-      availableActions,
-      baseURL,
-      defaultIncludeContext,
-      getHashKey,
-      getToken,
-      i18n?.language,
-      onNetworkCall,
-      runningActionData?.id,
-      t
-    ]
+    [availableActions, defaultIncludeContext, getHashKey, i18n?.language, requestConfig, runningActionData?.id, t]
+  );
+
+  const getActionStatus: ClueActionContextType['getActionStatus'] = useCallback(
+    async (actionId, taskId) => {
+      try {
+        const res = await api.actions.status.get(actionId, taskId, {}, requestConfig);
+        return res;
+      } catch (e) {
+        safeDispatchEvent(
+          new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
+            detail: {
+              message: e.toString(),
+              level: 'error'
+            }
+          })
+        );
+      } finally {
+        return undefined;
+      }
+    },
+    [requestConfig]
   );
 
   const cancelAction: ClueActionContextType['cancelAction'] = useCallback(() => {
@@ -408,11 +415,13 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       availableActions,
       executeAction,
       cancelAction,
+      getActionStatus,
       getActionResults,
+
       loading,
       refreshActions
     }),
-    [availableActions, cancelAction, executeAction, getActionResults, loading, refreshActions]
+    [availableActions, cancelAction, executeAction, getActionResults, getActionStatus, loading, refreshActions]
   );
 
   return (
