@@ -7,7 +7,7 @@ Extensions can register new API routes, add custom data types, integrate authent
 initialization tasks when the application starts.
 
 Extensions are loaded dynamically at startup based on the configuration and can seamlessly integrate with Clue's
-Wexisting infrastructure.
+existing infrastructure.
 
 ## Key Features
 
