@@ -133,14 +133,14 @@ app.register_blueprint(static_api)
 
 
 logger.info("Checking extensions for additional routes")
-for extensions in get_extensions():
-    if extensions.modules.init:
-        extensions.modules.init(flask_app=app)
+for extension in get_extensions():
+    if extension.modules.init:
+        extension.modules.init(flask_app=app)
 
-    if not extensions.modules.routes:
+    if not extension.modules.routes:
         continue
 
-    for route in cast(list[Blueprint], extensions.modules.routes):
+    for route in cast(list[Blueprint], extension.modules.routes):
         logger.info("Enabling additional endpoint: %s", route.url_prefix)
         app.register_blueprint(route)
 
