@@ -14,6 +14,7 @@ from flask import Flask, Response, jsonify, make_response, request
 from flask.globals import _cv_request
 from gevent import Greenlet
 from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic_core import PydanticSerializationError
 
 from clue.cache import Cache
 from clue.common.exceptions import (
@@ -821,11 +822,17 @@ class CluePlugin:
             self.logger.exception("Unknown internal exception")
             return self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
 
+        try:
+            serialized_reult = TypeAdapter(list[QueryEntry]).dump_python(results, mode="json", exclude_none=True)
+        except PydanticSerializationError:
+            self.logger.exception("Pydantic failed to serialize plugin response:")
+            return self.make_api_response(None, err="Serialization error in plugin response", status_code=500)
+
         if self.cache:
             self.cache.set(type_name, value, params, results)
 
         return self.make_api_response(
-            TypeAdapter(list[QueryEntry]).dump_python(results, mode="json", exclude_none=True),
+            serialized_reult,
             status_code=200,
         )
 
@@ -981,9 +988,15 @@ class CluePlugin:
             else:
                 self.logger.debug(f"Deadline met, {round(variance * 1000)}ms to spare")
 
-        return self.make_api_response(
-            TypeAdapter(dict[str, dict[str, BulkEntry]]).dump_python(bulk_result, mode="json", exclude_none=True)
-        )
+        try:
+            serialized_reult = TypeAdapter(dict[str, dict[str, BulkEntry]]).dump_python(
+                bulk_result, mode="json", exclude_none=True
+            )
+        except PydanticSerializationError:
+            self.logger.exception("Pydantic failed to serialize plugin response:")
+            return self.make_api_response(None, err="Serialization error in plugin response", status_code=500)
+
+        return self.make_api_response(serialized_reult)
 
     def get_actions(self: Self) -> Response:
         """Gets all the possible actions for this plugin.

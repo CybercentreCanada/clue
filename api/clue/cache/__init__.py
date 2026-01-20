@@ -83,7 +83,7 @@ class Cache:
 
                 self.__redis_cache.set(key, serialized_data)
         except Exception:
-            logger.exception("Error on retrieval")
+            logger.exception("Error on cache set")
             return None
 
     def get(self: Self, type_name: str, value: str, params: "Params") -> list[QueryEntry] | None:
