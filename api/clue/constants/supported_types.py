@@ -1,3 +1,4 @@
+from clue.common.logging import get_logger
 from clue.common.regex import (
     DOMAIN_ONLY_REGEX,
     EMAIL_PATH_REGEX,
@@ -12,6 +13,8 @@ from clue.common.regex import (
     URI_ONLY,
     UUID4_REGEX,
 )
+
+logger = get_logger(__file__)
 
 SUPPORTED_TYPES = {
     "ipv4": IPV4_ONLY_REGEX,
@@ -36,5 +39,33 @@ SUPPORTED_TYPES = {
     "hostname": None,
     "tenant-id": UUID4_REGEX,
 }
+
+
+def add_supported_type(type: str, regex: str | None = None, namespace: str | None = None):
+    r"""Add a supported type to the SUPPORTED_TYPES registry.
+
+    This function registers a new type with an optional regex pattern for validation.
+    The type can be added to either the default namespace or a custom namespace.
+
+    Args:
+        type (str): The name of the type to be added.
+        regex (str | None, optional): A regex pattern for validating the type. Defaults to None.
+        namespace (str | None, optional): The namespace for the type. If None, adds to default namespace.
+            Defaults to None.
+
+    Returns:
+        None
+
+    Examples:
+        >>> add_supported_type("email", r"^[\w\.-]+@[\w\.-]+\.\w+$")
+        >>> add_supported_type("custom_id", r"^\d{5}$", namespace="myapp")
+    """
+    if not namespace:
+        logger.info("Adding new type %s to the default namespace with regex %s", type, regex)
+        SUPPORTED_TYPES[type] = regex
+    else:
+        logger.info("Adding type %s to namespace %s with regex %s", type, namespace, regex)
+        SUPPORTED_TYPES[f"{namespace}/{type}"] = regex
+
 
 CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]
