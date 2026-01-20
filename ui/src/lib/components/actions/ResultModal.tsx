@@ -54,19 +54,19 @@ const ResultModal: FC<{
                 ) : result.format === 'json' ? (
                   <JSONViewer data={result.output} collapse forceCompact />
                 ) : (
-                  <>
+                  <Stack sx={{ overflowY: 'auto' }}>
                     <Markdown md={'`' + result.format + '` is not recognized as a format in this application.'} />
                     <JSONViewer data={result} collapse forceCompact />
-                  </>
+                  </Stack>
                 )}
               </ErrorBoundary>
             ) : (
-              <Stack flex={1} sx={{ pt: 2, alignItems: 'center', maxWidth: 500 }} spacing={1}>
+              <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>
                 {result.summary && <Typography variant="caption">{result.summary}</Typography>}
                 <LinearProgress
                   variant={result.output?.progress ? 'determinate' : 'indeterminate'}
                   value={result.output?.progress * 100}
-                  sx={{ width: '100%', borderRadius: theme => theme.shape.borderRadius }}
+                  sx={{ maxWidth: 500, width: '100%', borderRadius: theme => theme.shape.borderRadius }}
                 />
               </Stack>
             )}
