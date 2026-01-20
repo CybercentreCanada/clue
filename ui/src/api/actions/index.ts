@@ -5,7 +5,6 @@ import type { ActionContextInformation, ActionDefinitionsResponse, ActionResult 
 import type { Selector } from 'lib/types/lookup';
 import isNil from 'lodash-es/isNil';
 
-
 export const uri = () => {
   return joinUri(parentUri(), 'actions');
 };
