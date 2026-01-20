@@ -8,7 +8,7 @@ List and execute actions
 
 from flask_cors import CORS
 
-from clue.api import internal_error, make_subapi_blueprint, not_found, ok, request
+from clue.api import internal_error, make_subapi_blueprint, not_found, ok
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
@@ -93,14 +93,15 @@ def execute_action(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
 
 
 @generate_swagger_docs(responses={200: "Successfully fetched status of action"})
-@actions_api.route("/status/<plugin_id>/<action_id>", methods=["GET"])
+@actions_api.route("/<plugin_id>/<action_id>/status/<task_id>", methods=["GET"])
 @api_login()
-def get_action_status(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
+def get_action_status(plugin_id: str, action_id: str, task_id: str, **kwargs) -> ActionResult:
     """Get the status or result of a running action.
 
     Variables:
     plugin_id (str): the ID of the plugin who owns the action to execute
     action_id (str): the ID of the action to execute
+    task_id (str): the ID of the specific task to get the status of
 
     Arguments:
     task_id (str): the celery task id to get the status of
@@ -115,9 +116,8 @@ def get_action_status(plugin_id: str, action_id: str, **kwargs) -> ActionResult:
     }
     """
     try:
-        task_id = request.args.get("task_id", None)
         if not task_id:
-            return internal_error(err="no task_id found in url params. task_id is required for this request.")
+            return internal_error(err="no task_id found in url. task_id is required for this request.")
         return ok(action_service.get_action_status(plugin_id, action_id, task_id, kwargs["user"]))
     except NotFoundException as err:
         return not_found(err=err.message)

@@ -273,6 +273,9 @@ class ActionResult(BaseModel, Generic[DATA]):
         if not self.format and self.outcome == "success":
             raise ClueValueError("You must set a format if outcome is success.")
 
+        if not self.task_id and self.outcome == "pending":
+            raise ClueValueError("task_id must be set if outcome is pending.")
+
         if self.format == "pivot" and (not self.output or not isinstance(self.output, Url)):
             if isinstance(self.output, str):
                 try:

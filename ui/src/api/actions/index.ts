@@ -1,8 +1,10 @@
 import { hget, hpost, joinUri, uri as parentUri } from 'api';
+import * as status from 'api/actions/status';
 import type { AxiosRequestConfig } from 'axios';
 import type { ActionContextInformation, ActionDefinitionsResponse, ActionResult } from 'lib/types/action';
 import type { Selector } from 'lib/types/lookup';
 import isNil from 'lodash-es/isNil';
+
 
 export const uri = () => {
   return joinUri(parentUri(), 'actions');
@@ -12,32 +14,7 @@ export const get = (config?: AxiosRequestConfig): Promise<ActionDefinitionsRespo
   return hget(uri(), null, config);
 };
 
-export const getStatus = (
-  actionId: string,
-  taskId: string,
-  options: {
-    timeout?: number;
-  } = { timeout: null },
-  config?: AxiosRequestConfig
-) => {
-  const searchParams: string[] = [];
-
-  searchParams.push(`task_id=${taskId}`);
-
-  if (!isNil(options.timeout)) {
-    searchParams.push(`max_timeout=${options.timeout}`);
-  }
-
-  return hget(
-    joinUri(
-      joinUri(uri(), 'status'),
-      actionId.replace('.', '/'),
-      searchParams.length > 0 ? new URLSearchParams(searchParams.join('&')) : null
-    ),
-    null,
-    config
-  );
-};
+export { status };
 
 export const post = (
   actionId: string,

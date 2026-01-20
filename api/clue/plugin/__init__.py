@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import time
-from typing import Any, Callable, List, Literal, Self, Union, cast
+from typing import Any, Callable, Literal, Self, Union, cast
 from urllib import parse as ul
 
 import gevent
@@ -432,6 +432,14 @@ class CluePlugin:
 
         self.enrich = enrich
         self.run_action = run_action
+        # get_status is required when enable_celery is true
+        if enable_celery and not get_status:
+            raise ClueValueError("get_status() must be implemented when celery is enabled (enable_celery == True)")
+        elif (not enable_celery) and get_status:
+            raise ClueValueError(
+                "get_status() is implemented but celery is disabled (enable_celery == False)."
+                "Did you mean to enable it?"
+            )
         self.get_status = get_status
         self.validate_token = validate_token
 
