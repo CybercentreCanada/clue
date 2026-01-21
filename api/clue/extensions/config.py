@@ -21,6 +21,7 @@ logger.addHandler(console)
 class Modules(BaseModel):
     "A list of components exposed for use in Clue by this plugin."
 
+    init: ImportString | None = None
     routes: list[ImportString] = []
     obo_module: ImportString | None = None
 

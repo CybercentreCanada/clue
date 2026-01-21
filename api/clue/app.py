@@ -1,3 +1,5 @@
+import warnings
+
 from gevent import monkey
 
 monkey.patch_all()
@@ -10,16 +12,25 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# We append the plugin directory for howler to the python part
-PLUGIN_PATH = Path(os.environ.get("CLUE_PLUGIN_DIRECTORY", "/etc/clue/plugins"))
-sys.path.insert(0, str(PLUGIN_PATH))
+# We append the extension directory for howler to the python part
+EXTENSION_PATH = Path(
+    os.environ.get("CLUE_EXTENSION_PATH", os.environ.get("CLUE_PLUGIN_DIRECTORY", "/etc/clue/extensions"))
+)
+if not EXTENSION_PATH.exists():
+    if "CLUE_EXTENSION_PATH" not in os.environ and "CLUE_PLUGIN_DIRECTORY" not in os.environ:
+        warnings.warn(
+            f"{EXTENSION_PATH} doesn't exist, using legacy extension path /etc/clue/plugins", DeprecationWarning
+        )
+        EXTENSION_PATH = Path("/etc/clue/plugins")
+
+sys.path.insert(0, str(EXTENSION_PATH))
 
 from clue.config import DEBUG, SECRET_KEY, cache, config
 
-if config.api.debug and PLUGIN_PATH.exists():
-    for _plugin in PLUGIN_PATH.iterdir():
+if config.api.debug and EXTENSION_PATH.exists():
+    for _extension in EXTENSION_PATH.iterdir():
         sys.path.append(
-            str(Path(os.path.realpath(_plugin)) / f"../.venv/lib/python3.{sys.version_info.minor}/site-packages")
+            str(Path(os.path.realpath(_extension)) / f"../.venv/lib/python3.{sys.version_info.minor}/site-packages")
         )
 
 import logging
@@ -121,12 +132,15 @@ app.register_blueprint(registration_api)
 app.register_blueprint(static_api)
 
 
-logger.info("Checking plugins for additional routes")
-for plugin in get_extensions():
-    if not plugin.modules.routes:
+logger.info("Checking extensions for additional routes")
+for extension in get_extensions():
+    if extension.modules.init:
+        extension.modules.init(flask_app=app)
+
+    if not extension.modules.routes:
         continue
 
-    for route in cast(list[Blueprint], plugin.modules.routes):
+    for route in cast(list[Blueprint], extension.modules.routes):
         logger.info("Enabling additional endpoint: %s", route.url_prefix)
         app.register_blueprint(route)
 
