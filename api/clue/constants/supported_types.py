@@ -38,6 +38,7 @@ SUPPORTED_TYPES = {
     "howler_id": None,
     "hostname": None,
     "tenant-id": UUID4_REGEX,
+    "alfred/incident": None,
 }
 
 
