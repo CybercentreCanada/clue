@@ -184,3 +184,61 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
         raise ClueException(
             f"Something went wrong when retrieving the result from plugin '{plugin_id}': {err.__class__.__name__}."
         )
+
+
+def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[str, Any]) -> ActionResult:
+    """Gets the status of a specified action with task_id.
+
+    Args:
+        plugin_id (str): The ID of the plugin.
+        action_id (str): The ID of the action to run.
+        task_id (str): The celery task id to fetch the status for
+        user (dict[str, Any]): The user dict of the user running the action.
+
+    Raises:
+        NotFoundException: Raised whenever the plugin or the action doesn't exist.
+        ClueException: Raised whenever an error is returned by the plugin endpoint.
+
+    Returns:
+        ActionResult: The result of the action.
+    """
+    plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
+
+    if not plugin:
+        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+
+    access_token = request.headers.get("Authorization", type=str)
+    if access_token:
+        access_token = access_token.split(" ")[1]
+
+    obo_access_token = None
+    if access_token:
+        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
+
+        if error:
+            logger.error("%s: %s", plugin.name, error)
+            return ActionResult(outcome="failure", summary="Invalid token provided.")
+
+    headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+
+    try:
+        req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")
+        logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
+
+        response = requests.get(
+            req_url,
+            headers=headers,
+            timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
+        )
+
+        result = response.json()
+
+        if not response.ok:
+            raise ClueException(result["api_error_message"])
+
+        return ActionResult.model_validate(result["api_response"])
+    except (JSONDecodeError, exceptions.ConnectionError) as err:
+        logger.exception(f"Something went wrong when retrieving the status from plugin '{plugin_id}'")
+        raise ClueException(
+            f"Something went wrong when retrieving the status from plugin '{plugin_id}': {err.__class__.__name__}."
+        )
