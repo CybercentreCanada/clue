@@ -32,11 +32,14 @@ from clue.models.actions import (
     ActionBase,
     ActionResult,
     ActionSpec,
+    ActionStatusRequest,
     ExecuteRequest,
 )
+from clue.models.config import Config
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.network import QueryEntry
 from clue.models.selector import Selector
+from clue.plugin.celery_app import celery_init_app
 from clue.plugin.helpers.token import get_username
 from clue.plugin.models import BulkEntry
 from clue.plugin.utils import Params
@@ -52,6 +55,7 @@ OVERRIDABLE_FUNCTIONS = [
     "liveness",  # Kubernetes liveness probe endpoint
     "readiness",  # Kubernetes readiness probe endpoint
     "run_action",  # Function to execute plugin actions
+    "get_status",  # Function to check the status or result of a pending action
     "run_fetcher",  # Function to execute plugin fetchers
     "setup_actions",  # Runtime action definition generation
     "validate_token",  # Custom authentication token validation
@@ -128,6 +132,37 @@ def build_default_logger() -> logging.Logger:
     logger.addHandler(console)
 
     return logger
+
+
+config: Config = Config()
+
+
+def create_app(app_name: str, enable_celery: bool = False, tasks: list[str] | None = None):
+    """helper function to create the flask app and set up the celery config if enabled
+
+    Args:
+        enable_celery (bool): whether or not to enable celery
+
+    Returns:
+        _type_: flask app
+    """
+    app = Flask(__name__.split(".")[0])
+    if enable_celery:
+        redis_url = (
+            f"redis://:{config.core.redis.password}@{config.core.redis.host}:{config.core.redis.port}"
+            if config.core.redis.password
+            else f"redis://{config.core.redis.host}:{config.core.redis.port}"
+        )
+        app.config.from_mapping(
+            CELERY=dict(
+                broker_url=redis_url,
+                result_backend=redis_url,
+                result_backend_transport_options={"global_keyprefix": app_name + "_results"},
+                result_expires=3600,  # expire results after one hour
+            ),
+        )
+        celery_init_app(app, tasks)
+    return app
 
 
 class CluePlugin:
@@ -259,6 +294,13 @@ class CluePlugin:
     user parameters) that instance will be passed instead, and casting the argument will be necessary.
     """
 
+    get_status: Callable[[Action, ActionStatusRequest, str | None], ActionResult] | None
+    """The function to get the status and result of running actions.
+
+    Accepts the selected action definition as well as an ActionStatusRequest instance which contains the
+    specific task id to check the status of.
+    """
+
     fetchers: list[FetcherDefinition] | None
     "A list of fetcher definitions this plugin supports."
 
@@ -275,6 +317,9 @@ class CluePlugin:
     readiness: Callable[[], Response]
     "A readiness probe for kubernetes implementations of clue."
 
+    enable_celery: bool
+    "Flag to enable celery in plugin"
+
     def __init__(
         self: Self,
         app_name: str,
@@ -284,6 +329,7 @@ class CluePlugin:
         classification: str | None = os.environ.get("CLASSIFICATION", None),
         enable_apm: bool = False,
         enable_cache: Union[bool, Literal["redis"], Literal["local"]] = True,
+        enable_celery: bool = False,
         enrich: Callable[[str, str, Params, str | None], Union[list[QueryEntry], QueryEntry]] | None = None,
         fetchers: list[FetcherDefinition] | None = None,
         liveness: Callable[[], Response] = default_liveness,
@@ -291,6 +337,7 @@ class CluePlugin:
         logger: logging.Logger | None = None,
         readiness: Callable[[], Response] = default_readiness,
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
+        get_status: Callable[[Action, ActionStatusRequest, str | None], ActionResult] | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
         supported_types: set[str] | str | None = None,
@@ -360,7 +407,7 @@ class CluePlugin:
         """
         self.alternate_bulk_lookup = alternate_bulk_lookup
         # Create Flask app using the module name (before first dot) as app name
-        self.app = Flask(__name__.split(".")[0])
+        self.app = create_app(app_name, enable_celery)
         self.app_name = app_name
 
         # Classification is required for security - must be specified via env var or parameter
@@ -389,7 +436,9 @@ class CluePlugin:
         self.logger = logger if logger else build_default_logger()
 
         self.enrich = enrich
+        self.enable_celery = enable_celery
         self.run_action = run_action
+        self.get_status = get_status
         self.validate_token = validate_token
 
         self.fetchers = fetchers
@@ -661,6 +710,12 @@ class CluePlugin:
         self.app.add_url_rule("/actions/", self.get_actions.__name__, self.get_actions, methods=["GET"])
         self.app.add_url_rule(
             "/actions/<action_id>/", self.execute_action.__name__, self.execute_action, methods=["POST"]
+        )
+        self.app.add_url_rule(
+            "/actions/<action_id>/status/<task_id>",
+            self.get_action_status.__name__,
+            self.get_action_status,
+            methods=["GET"],
         )
         self.app.add_url_rule("/fetchers/", self.get_fetchers.__name__, self.get_fetchers, methods=["GET"])
         self.app.add_url_rule(
@@ -1125,6 +1180,88 @@ class CluePlugin:
             self.logger.info("Execution finished.")
 
         self.logger.info("Action result: %s", result.outcome)
+
+        return self.make_api_response(result)
+
+    def get_action_status(self: Self, action_id: str, task_id: str):  # noqa: C901
+        """Retrieves the status of the specified action.
+
+        Args:
+            action_id (str): The ID of the action to get the status for
+            task_id (str): The celery task id to get the result from
+
+        Returns:
+            Response: A Response object with an ActionResult as the body.
+        """
+        if not task_id:
+            return self.make_api_response(
+                {}, err="task id not provided. task id is required for this request.", status_code=400
+            )
+
+        if not self.get_status:
+            return self.make_api_response(
+                {}, err=f"{self.app_name} does not support the get action status functions.", status_code=400
+            )
+
+        try:
+            actions = self.__check_actions()
+        except Exception:
+            self.logger.exception("Exception on setup actions:")
+
+            return self.make_api_response({}, err="Error on action setup.", status_code=500)
+
+        if actions is None:
+            actions = self.actions or []
+
+        action_to_check = next((action for action in actions if action.id == action_id), None)
+        if not action_to_check:
+            return self.make_api_response({}, err="Action does not exist", status_code=404)
+
+        token: str | None = None
+        if self.validate_token:
+            self.logger.debug("Executing plugin-provided token validator")
+
+            token, error = self.validate_token()
+
+            if error:
+                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
+
+            self.logger.debug("Token is valid")
+        else:
+            self.logger.warning("No token validation provided. The access token will not be provided to the action.")
+
+        try:
+            # Validate request body against the action's parameter schema
+            status_request = ActionStatusRequest(task_id=task_id)
+
+            self.logger.info(
+                "Getting status for Action '%s' with task_id: %s",
+                action_id,
+                task_id,
+            )
+
+            result = self.get_status(action_to_check, status_request, token)
+        except json.JSONDecodeError as e:
+            self.logger.warning("JSON decoding error while getting status: %s", str(e))
+
+            result = ActionResult(
+                outcome="failure",
+                summary=f"Invalid request format. Request body must be valid JSON. Error: {str(e)}",
+            )
+        except ValidationError as err:
+            self.logger.warning("Validation error during execution: %s", str(err))
+
+            result = ActionResult(outcome="failure", summary=f"Validation error: {str(err)}")
+        except ClueException as e:
+            self.logger.exception("ClueException during execution:")
+
+            result = ActionResult(outcome="failure", summary=f"Error encountered during execution: {e.message}")
+        except Exception as e:
+            self.logger.exception("%s during execution:", e.__class__.__name__)
+
+            result = ActionResult(outcome="failure", summary=f"An unknown error occurred during execution: {str(e)}")
+
+        self.logger.info("Action status: %s", result.outcome)
 
         return self.make_api_response(result)
 

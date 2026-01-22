@@ -69,6 +69,10 @@ class ActionContextInformation(BaseModel):
 ActionContextInformationType = TypeVar("ActionContextInformationType", bound=ActionContextInformation)
 
 
+class ActionStatusRequest(BaseModel):
+    task_id: str = Field(description="The task id to get the status for.")
+
+
 class ExecuteRequest(BaseModel):
     context: ActionContextInformation | None = Field(
         description="Contextual information on where the action is being executed (if provided)", default=None
@@ -123,6 +127,7 @@ class ActionBase(BaseModel):
     )
     accept_empty: bool = Field(description="Does this action support execution with no selectors?", default=False)
     accept_multiple: bool = Field(description="Does this action support multiple values?", default=False)
+    async_result: bool = Field(description="Does this action run asynchronously?", default=False)
     format: str | None = Field(
         description="What is the format of the output, if known?",
         default=None,
@@ -242,7 +247,9 @@ class Action(ActionBase, Generic[ER]):
 
 
 class ActionResult(BaseModel, Generic[DATA]):
-    outcome: Union[Literal["success"], Literal["failure"]] = Field(description="Did the action succeed or fail?")
+    outcome: Union[Literal["success"], Literal["failure"], Literal["pending"]] = Field(
+        description="Did the action succeed/fail, or is it pending?"
+    )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
     output: DATA | Url | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(
@@ -251,6 +258,7 @@ class ActionResult(BaseModel, Generic[DATA]):
         default=None,
     )
     link: Url | None = Field(description="Link to more information on the outcome of the action", default=None)
+    task_id: str | None = Field(description="The celery task id if the action is pending.", default=None)
 
     @model_validator(mode="after")
     def validate_model(self: Self, info: ValidationInfo) -> Self:  # noqa: C901
@@ -262,8 +270,11 @@ class ActionResult(BaseModel, Generic[DATA]):
         Returns:
             Self: The validated model.
         """
-        if not self.format and self.outcome != "failure":
-            raise ClueValueError("You must set a format if outcome is not failure.")
+        if not self.format and self.outcome == "success":
+            raise ClueValueError("You must set a format if outcome is success.")
+
+        if not self.task_id and self.outcome == "pending":
+            raise ClueValueError("task_id must be set if outcome is pending.")
 
         if self.format == "pivot" and (not self.output or not isinstance(self.output, Url)):
             if isinstance(self.output, str):

@@ -1,4 +1,5 @@
 import { hget, hpost, joinUri, uri as parentUri } from 'api';
+import * as status from 'api/actions/status';
 import type { AxiosRequestConfig } from 'axios';
 import type { ActionContextInformation, ActionDefinitionsResponse, ActionResult } from 'lib/types/action';
 import type { Selector } from 'lib/types/lookup';
@@ -8,11 +9,11 @@ export const uri = () => {
   return joinUri(parentUri(), 'actions');
 };
 
-export const get = (config?: AxiosRequestConfig): Promise<ActionDefinitionsResponse> => {
+const get = (config?: AxiosRequestConfig): Promise<ActionDefinitionsResponse> => {
   return hget(uri(), null, config);
 };
 
-export const post = (
+const post = (
   actionId: string,
   selectors: Selector | Selector[],
   params: { [index: string]: any },
@@ -51,3 +52,5 @@ export const post = (
     config
   );
 };
+
+export { get, post, status };

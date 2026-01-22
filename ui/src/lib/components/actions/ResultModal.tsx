@@ -1,8 +1,9 @@
 import { Icon } from '@iconify/react';
-import { Button, Divider, Modal, Paper, Stack, Typography } from '@mui/material';
+import { Button, Divider, LinearProgress, Modal, Paper, Stack, Typography } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
+import { useActionResult } from 'lib/hooks/useActionResult';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import type { FC } from 'react';
@@ -18,8 +19,10 @@ const ResultModal: FC<{
   show?: boolean;
   result: WithActionData<ActionResult>;
   onClose?: () => void;
-}> = ({ result, onClose, show = false }) => {
+}> = ({ result: _result, onClose, show = false }) => {
   const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
+
+  const result = useActionResult(_result);
 
   if (!result) {
     return null;
@@ -44,10 +47,30 @@ const ResultModal: FC<{
 
             <Typography variant="body1">{result.action.summary}</Typography>
             <Divider flexItem />
-            <ErrorBoundary>
-              {result.format === 'markdown' && <Markdown md={result.output} />}
-              {result.format === 'json' && <JSONViewer data={result.output} collapse forceCompact />}
-            </ErrorBoundary>
+            {result.done ? (
+              <ErrorBoundary>
+                {result.format === 'markdown' ? (
+                  <Markdown md={result.output} />
+                ) : result.format === 'json' ? (
+                  <JSONViewer data={result.output} collapse forceCompact />
+                ) : (
+                  <Stack sx={{ overflowY: 'auto' }}>
+                    <Markdown md={'`' + result.format + '` is not recognized as a format in this application.'} />
+                    <JSONViewer data={result} collapse forceCompact />
+                  </Stack>
+                )}
+              </ErrorBoundary>
+            ) : (
+              <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>
+                {result.summary && <Typography variant="caption">{result.summary}</Typography>}
+                <LinearProgress
+                  variant={result.output?.progress ? 'determinate' : 'indeterminate'}
+                  value={result.output?.progress * 100}
+                  sx={{ maxWidth: 500, width: '100%', borderRadius: theme => theme.shape.borderRadius }}
+                />
+              </Stack>
+            )}
+
             <div style={{ flex: 1 }} />
             <Stack direction="row" spacing={1}>
               <div style={{ flex: 1 }} />
