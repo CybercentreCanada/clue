@@ -3,7 +3,6 @@ from clue.common.regex import (
     DOMAIN_ONLY_REGEX,
     EMAIL_PATH_REGEX,
     EMAIL_REGEX,
-    HBS_AGENT_ID_REGEX,
     IPV4_ONLY_REGEX,
     IPV6_ONLY_REGEX,
     MD5_REGEX,
@@ -32,10 +31,7 @@ SUPPORTED_TYPES = {
     "md5": MD5_REGEX,
     "sha1": SHA1_REGEX,
     "sha256": SHA256_REGEX,
-    "hbs_oid": None,
-    "hbs_agent_id": HBS_AGENT_ID_REGEX,
     "telemetry": None,
-    "howler_id": None,
     "hostname": None,
     "tenant-id": UUID4_REGEX,
 }

@@ -40,5 +40,3 @@ URI_ONLY = f"^{URI_REGEX}$"
 UUID4_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
 
 EMAIL_PATH_REGEX = r"^[A-Z]+_EMAIL://.*"
-HBS_AGENT_ID_REGEX = r"[0-9a-fA-F]{1,4}\.[0-9a-fA-F]{1,4}\.[0-9a-fA-F]{1,4}\.[0-9a-fA-F]{1,4}"
-HBS_AGENT_ID_ONLY_REGEX = f"^{HBS_AGENT_ID_REGEX}$"
