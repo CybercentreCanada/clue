@@ -1,10 +1,10 @@
 extra:
   alternate:
     - lang: en
-      link: /
+      link: /clue/
       name: English
     - lang: fr
-      link: /fr/
+      link: /clue/fr/
       name: Français
 
 extra_css:
