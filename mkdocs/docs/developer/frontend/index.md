@@ -22,7 +22,8 @@ cd clue/ui
 
 ### 2. Install Node/NPM using NVM
 
-If you don't have NPM installed, follow the [official installation guide](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating).
+If you don't have NPM installed, follow the
+[official installation guide](https://github.com/nvm-sh/nvm?tab=readme-ov-file#installing-and-updating).
 
 Verify NPM installation:
 
@@ -32,7 +33,8 @@ npm --version
 
 ### 3. Install PNPM using NPM
 
-This project uses PNPM to manage dependencies, since it's faster than the default NPM (and corporate proxy networks can be quite slow).
+This project uses PNPM to manage dependencies, since it's faster than the default NPM (and corporate proxy networks can
+be quite slow).
 
 PNPM can simply be installed using NPM:
 ```bash

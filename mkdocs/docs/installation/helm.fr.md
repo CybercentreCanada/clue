@@ -1,95 +1,94 @@
-# Kubernetes Deployment Guide (using Helm)
+# Guide de déploiement Kubernetes (utilisant Helm)
 
-This document provides guidance for deploying and managing Clue on a Kubernetes cluster.
+Ce document fournit des conseils pour le déploiement et la gestion de Clue sur un cluster Kubernetes.
 
-## Overview
+## Aperçu
 
-In this repository, a helm chart is provided that will allow you to deploy Clue to a Kubernetes cluster.
+Dans ce référentiel, un chart Helm est fourni qui vous permettra de déployer Clue sur un cluster Kubernetes.
 
-## Requirements
+## Exigences
 
-In order to deploy Clue to a Kubernetes cluster, you'll need to install
-[kubectl](https://kubernetes.io/docs/reference/kubectl/) as well as [helm](https://helm.sh/) to install the
-provided helm chart.
+Pour déployer Clue sur un cluster Kubernetes, vous devrez installer [kubectl](https://kubernetes.io/docs/reference/kubectl/)
+ainsi que [helm](https://helm.sh/) pour installer le chart Helm fourni.
 
-### Installing Kubectl
+### Installation de Kubectl
 
-If you don't have Kubectl installed, follow the
-[official installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
+Si vous n'avez pas Kubectl installé, suivez le
+[guide d'installation officiel](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
 
-Verify kubectl installation:
+Vérifier l'installation de kubectl :
 
 ```bash
 kubectl version
 ```
 
-### Installing Helm and Helm-diff
+### Installation de Helm et Helm-diff
 
-If you don't have Helm installed, follow the [official installation guide](https://helm.sh/docs/intro/install).
+Si vous n'avez pas Helm installé, suivez le [guide d'installation officiel](https://helm.sh/docs/intro/install).
 
-Verify helm installation:
+Vérifier l'installation de helm :
 
 ```bash
 helm version
 ```
 
-It's also recommended (but not mandatory) to use helm-diff, follow the
-[official installation guide](https://github.com/databus23/helm-diff?tab=readme-ov-file#install)
+Il est également recommandé (mais pas obligatoire) d'utiliser helm-diff, suivez le
+[guide d'installation officiel](https://github.com/databus23/helm-diff?tab=readme-ov-file#install)
 
 
-Verify helm-diff installation:
+Vérifier l'installation de helm-diff :
 
 ```bash
 helm diff version
 ```
 
-## Deployment
+## Déploiement
 
-Here are the steps to deploying Clue to your own cluster:
+Voici les étapes pour déployer Clue sur votre propre cluster :
 
-### 1. Creating the clue namespace
+### 1. Création de l'espace de noms clue
 
-You'll probably want to install Clue in it's own namespace, and so before installing the chart, you'll need to create
-the namespace using kubectl.
-Here we're creating a namespace called `clue`
+Vous voudrez probablement installer Clue dans son propre espace de noms, et donc avant d'installer le chart, vous
+devrez créer l'espace de noms en utilisant kubectl. Ici, nous créons un espace de noms appelé `clue`
 
 ```bash
 kubectl create namespace clue
 ```
 
-### 2. Creating required secrets
+### 2. Création des secrets requis
 
-You'll need to generate and store some secrets in the cluster:
+Vous devrez générer et stocker des secrets dans le cluster :
  - flask-secret-key
  - clue-apikeys
 
-First, the `flask-secret-key` secret is a randomly generated password, here's a command to generate a 32 character
-password:
+Premièrement, le secret `flask-secret-key` est un mot de passe généré aléatoirement, voici une commande pour générer
+un mot de passe de 32 caractères :
 ```bash
 tr -dc 'A-Za-z0-9!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~' < /dev/urandom | head -c 32
 ```
-As for the `clue-apikeys`, it expects a json object containing the API Keys that will allow plugins to connect to the
-core API. Here's what that would look like:
+Quant au `clue-apikeys`, il attend un objet json contenant les clés API qui permettront aux plugins de se connecter à
+l'API principale. Voici à quoi cela ressemblerait :
 ```json
 {
   "my_plugin": "some_api_key"
 }
 ```
-If you don't need any API Keys, you can simply insert an empty json object `{}`.
+Si vous n'avez pas besoin de clés API, vous pouvez simplement insérer un objet json vide `{}`.
 
-Here's the command to create those secrets using kubectl:
+Voici la commande pour créer ces secrets en utilisant kubectl :
 ```bash
 kubectl create secret generic flask-secret-key -n clue --from-literal=key=<generated-password>
 kubectl create secret generic clue-apikeys -n clue --from-literal=data={}
 ```
 
-### 3. Creating your deployment-specific values file
+### 3. Création de votre fichier de valeurs spécifique au déploiement
 
-In order to have deployment specific values, you'll need to create a new values-\<deployment>.yaml file. This file
-doesn't necessarily need to live in this repo, but it needs to be accessible to helm.
+Afin d'avoir des valeurs spécifiques au déploiement, vous devrez créer un nouveau fichier
+values-\<deployment>.yaml. Ce fichier n'a pas nécessairement besoin de se trouver dans ce dépôt, mais il doit être
+accessible à helm.
 
-In this file, you'll be able to override values from the values.yaml file by keeping the same structure. For example,
-if you want to use a different image tag for the UI and API deployments:
+Dans ce fichier, vous pourrez remplacer les valeurs du fichier values.yaml en conservant la même structure. Par
+exemple, si vous souhaitez utiliser une balise d'image différente pour les déploiements UI et API :
 ```yaml
 images:
   ui:
@@ -98,51 +97,52 @@ images:
     tag: <your-tag-here>
 ```
 
-### 4. Installing the helm chart
+### 4. Installation du chart helm
 
-Here's a command that will install the helm chart, using `clue` as the deployment name, and deploying to the `clue`
-namespace:
+Voici une commande qui installera le chart Helm, en utilisant `clue` comme nom de déploiement, et en déployant dans
+l'espace de noms `clue` :
 
 ```bash
 # helm install <deployment-name> -n <namespace> <path-to-chart-directory> --values <path-to-deployment-specific-values>
 helm install clue -n clue helm/ --values helm/values/values.yaml --values helm/values/values-deployment.yaml
 ```
 
-### 5. Updating the deployment
+### 5. Mise à jour du déploiement
 
-Once the chart is installed, if you need to change anything in the deployment, you can run the same command, replacing
-the `install` option with `upgrade`.
+Une fois le chart installé, si vous devez modifier quoi que ce soit dans le déploiement, vous pouvez exécuter la même
+commande, en remplaçant l'option `install` par `upgrade`.
 
 ```bash
 helm upgrade clue -n clue helm/ --values helm/values/values.yaml --values helm/values/values-deployment.yaml
 ```
 
-## Pre-deployment Verification
+## Vérification avant le déploiement
 
-Before deploying changes, it is recommended to verify that your local repository state matches the live cluster
-configuration using `helm diff`:
+Avant de déployer des modifications, il est recommandé de vérifier que l'état de votre dépôt local correspond à la
+configuration du cluster en direct en utilisant `helm diff` :
 
 ```bash
-# the -C 3 option limits the output to 3 lines on each side of each diff. Remove the option to see the entire file
+# l'option -C 3 limite la sortie à 3 lignes de chaque côté de chaque diff. Supprimez l'option pour voir le fichier entier
 helm diff upgrade clue -C 3 -n clue helm/ --values helm/values/values.yaml --values helm/values/values-deployment.yaml
 ```
 
-If the diff shows unintended changes, review and revert them before proceeding with deployment.
+Si le diff montre des modifications non intentionnelles, examinez-les et annulez-les avant de procéder au déploiement.
 
-## Expected Diff Output
+## Sortie de diff attendue
 
-### Normal TLS Certificate Changes
+### Modifications normales des certificats TLS
 
-When running diffs, you may notice changes to TLS certificates for the Elasticsearch APM server. These changes are
-expected and can be safely ignored as they do not affect API functionality.
+Lors de l'exécution de diffs, vous pouvez remarquer des modifications apportées aux certificats TLS pour le serveur
+APM Elasticsearch. Ces modifications sont attendues et peuvent être ignorées en toute sécurité car elles n'affectent
+pas les fonctionnalités de l'API.
 
-The following example demonstrates a typical diff output:
+L'exemple suivant illustre une sortie de diff typique :
 
 ```bash
 helm diff upgrade clue -C 3 -n clue helm/ --values helm/values/values.yaml --values helm/values/values-deployment.yaml
 ```
 
-Sample output:
+Exemple de sortie :
 
 ```diff
 clue, clue-elasticsearch-coordinating, StatefulSet (apps) has changed:
@@ -253,11 +253,12 @@ clue, tree-viewer, Deployment (apps) has changed:
           - containerPort: 5000
 ```
 
-### Interpreting Diff Results
+### Interprétation des résultats du diff
 
-The most important section to review in the diff output is the final portion showing actual deployment changes. In the
-example above, note the image tag change from `develop` to `0.12.2_main` for the `tree-viewer` deployment. This
-indicates that only the specified pod is being updated, which is the expected behavior for plugin deployments.
+La section la plus importante à examiner dans la sortie du diff est la partie finale montrant les modifications réelles
+du déploiement. Dans l'exemple ci-dessus, notez le changement de balise d'image de `develop` à `0.12.2_main` pour le
+déploiement `tree-viewer`. Cela indique que seul le pod spécifié est mis à jour, ce qui est le comportement attendu
+pour les déploiements de plugins.
 
-All other changes shown in the diff (particularly TLS certificate rotations for Elasticsearch components) are routine
-infrastructure updates and do not require intervention.
+Toutes les autres modifications affichées dans le diff (en particulier les rotations de certificats TLS pour les
+composants Elasticsearch) sont des mises à jour d'infrastructure de routine et ne nécessitent pas d'intervention.
