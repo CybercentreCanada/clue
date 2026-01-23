@@ -2,6 +2,8 @@ import warnings
 
 from gevent import monkey
 
+from clue.constants.supported_types import SUPPORTED_TYPES
+
 monkey.patch_all()
 
 import os
@@ -132,7 +134,8 @@ app.register_blueprint(registration_api)
 app.register_blueprint(static_api)
 
 
-logger.info("Checking extensions for additional routes")
+logger.info("Checking extensions for initialization and additional routes")
+num_buildin_types = len(SUPPORTED_TYPES)
 for extension in get_extensions():
     if extension.modules.init:
         extension.modules.init(flask_app=app)
@@ -143,6 +146,8 @@ for extension in get_extensions():
     for route in cast(list[Blueprint], extension.modules.routes):
         logger.info("Enabling additional endpoint: %s", route.url_prefix)
         app.register_blueprint(route)
+
+logger.info("%s types configured (%s custom types)", len(SUPPORTED_TYPES), len(SUPPORTED_TYPES) - num_buildin_types)
 
 # Setup OAuth providers
 if config.auth.oauth.enabled:
