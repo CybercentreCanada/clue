@@ -450,11 +450,13 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              S'intègre avec la plateforme d'analyse de malware AssemblyLine pour fournir des résultats d'analyse
-              détaillés et de la threat intelligence pour les échantillons de fichiers.
+              S'intègre de manière transparente avec la plateforme d'analyse de logiciels malveillants AssemblyLine.
+              Corrèle automatiquement les indicateurs (IP, domaines, hachages) avec les résultats d'analyses passées,
+              offrant une visibilité immédiate sur les menaces déjà analysées et leurs verdicts.
             {%else%}
-              Integrates with AssemblyLine malware analysis platform to provide detailed analysis results and threat
-              intelligence for file samples.
+              Seamlessly integrates with the AssemblyLine malware analysis platform. Automatically correlates indicators
+              (IPs, domains, hashes) against past analysis results, providing immediate visibility into previously
+              analyzed threats and their verdicts.
             {%endif%}
           </span>
         </div>
@@ -471,10 +473,13 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Recherche les certificats SSL/TLS pour les domaines en utilisant la base de données des journaux de
-              Transparence des Certificats crt.sh.
+              Exploite la base de données crt.sh pour découvrir l'historique des certificats SSL/TLS des domaines. Aide
+              les analystes à suivre l'émission de certificats, à identifier les infrastructures de hameçonnage
+              potentielles et à identifier les domaines associés.
             {%else%}
-              Looks up SSL/TLS certificates for domains using the crt.sh Certificate Transparency logs database.
+              Leverages the crt.sh database to uncover SSL/TLS certificate history for domains. Helps analysts track
+              certificate issuance, identify potential phishing infrastructure, and map related domains through
+              Certificate Transparency logs.
             {%endif%}
           </span>
         </div>
@@ -491,10 +496,13 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Un modèle de plugin d'exemple qui démontre comment créer des plugins Clue personnalisés pour les
-              développeurs.
+              Une implémentation de référence complète pour les développeurs. Illustre le cycle de vie complet d'un
+              plugin, incluant la logique d'enrichissement, les actions personnalisées et le formatage des données,
+              servant de point de départ idéal pour créer des intégrations internes personnalisées.
             {%else%}
-              A sample plugin template that demonstrates how to create custom Clue plugins for developers.
+              A comprehensive reference implementation for developers. Demonstrates the complete plugin lifecycle,
+              including enrichment logic, custom actions, and data formatting, serving as a perfect starting point for
+              building custom internal integrations.
             {%endif%}
           </span>
         </div>
@@ -511,11 +519,13 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              S'intègre avec la plateforme de triage d'alertes Howler pour vérifier si les sélecteurs (indicateurs) sont
-              présents dans les alertes de sécurité, aidant les analystes à identifier les menaces et les cibles.
+              Se connecte directement à la plateforme de triage d'alertes Howler. Vérifie instantanément si un
+              indicateur a été vu dans des alertes ou occurrences de sécurité précédentes, et fournit des fonctionnalités
+              de pivotement en un clic pour passer de l'analyse à l'investigation dans l'interface Howler.
             {%else%}
-              Integrates with Howler alert triage platform to check if selectors (indicators) are present in security
-              alerts, helping analysts identify threats and targets.
+              Connects directly with the Howler alert triage platform. Instantly verifies if an indicator has been seen
+              in previous security alerts or hits, and provides one-click pivoting features to seamlessly transition
+              from analysis to investigation within the Howler UI.
             {%endif%}
           </span>
         </div>
@@ -532,10 +542,14 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Se connecte à MalwareBazaar pour fournir de la threat intelligence sur les malwares, incluant les
-              recherches de hash et les informations d'échantillons.
+              Exploite l'intelligence communautaire de MalwareBazaar. Enrichit les hachages de fichiers (MD5, SHA1,
+              SHA256) avec des données d'attribution, des signatures de familles de logiciels malveillants et des
+              statistiques de détection des fournisseurs pour identifier rapidement les charges utiles malveillantes
+              connues.
             {%else%}
-              Connects to MalwareBazaar to provide malware intelligence, including hash lookups and sample information.
+              Taps into the MalwareBazaar community-driven intelligence. Enriches file hashes (MD5, SHA1, SHA256) with
+              attribution data, malware family signatures, and vendor detection statistics to quickly identify known
+              malicious payloads.
             {%endif%}
           </span>
         </div>
@@ -552,10 +566,13 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Fournit la correspondance entre les numéros de port et les noms de service en utilisant les assignations
-              de ports IANA et les définitions de service.
+              Fournit un contexte instantané pour les ports et services réseau. Mappe automatiquement les numéros de
+              port à partir d'entrées brutes ou d'URLs vers leurs définitions de service IANA et leurs usages courants,
+              enrichis d'icônes de service visuelles (ex. SSH, HTTP, FTP) pour une reconnaissance plus rapide.
             {%else%}
-              Provides port number to service name mapping using IANA port assignments and service definitions.
+              Provides instant context for network ports and services. Automatically maps port numbers from raw inputs
+              or URLs to their IANA service definitions and common usages, enhanced with visual service icons (e.g.,
+              SSH, HTTP, FTP) for faster recognition.
             {%endif%}
           </span>
         </div>
@@ -572,10 +589,13 @@
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              S'intègre avec l'API VirusTotal pour effectuer des vérifications de réputation sur les fichiers, URLs,
-              domaines et adresses IP.
+              Déverrouille le contexte mondial des menaces via l'API VirusTotal. Enrichit les IP, domaines, URLs et
+              hachages de fichiers avec des scores de réputation, des données de propriété géographique (ASN/Pays) et
+              des attributs détaillés de renseignement sur les menaces pour accélérer la prise de décision.
             {%else%}
-              Integrates with VirusTotal API to perform reputation checks on files, URLs, domains, and IP addresses.
+              Unlocks global threat context via the VirusTotal API. Enriches IPs, domains, URLs, and file hashes with
+              reputation scores, geographic ownership data (ASN/Country), and detailed threat intelligence attributes
+              to accelerate decision-making.
             {%endif%}
           </span>
         </div>
