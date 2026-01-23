@@ -252,19 +252,21 @@
         <h1>
           <span class="icon"> 🚀 </span>
           {%if 'fr/' in page.url %}
-            Faites Un Saut Périlleux
+            Capacités Principales
           {%else%}
-            Do A Backflip
+            Core Capabilities
           {%endif%}
         </h1>
         <p>
           {%if 'fr/' in page.url %}
-            Clue permet aux développeurs d'outils d'interconnecter leurs applications, permettant aux analystes
-            d'identifier et de croiser rapidement les indicateurs, ainsi que d'exécuter des actions prédéfinies sur ces
-            indicateurs.
+            Clue permet aux développeurs d'outils d'interconnecter leurs applications SOC en enrichissant dynamiquement
+            les indicateurs de sécurité. Les analystes peuvent identifier et corréler rapidement les indicateurs à
+            travers plusieurs outils, pivoter entre les plateformes et exécuter des actions prédéfinies directement
+            depuis l'interface utilisateur.
           {%else%}
-            Clue allows tool developers to inter-connect their apps, allowing analysts to quickly identify and
-            cross-reference indicators, as well as execute pre-defined actions on those indicators.
+            Clue enables tool developers to interconnect their SOC applications by dynamically enriching security
+            indicators. Analysts can quickly identify and correlate indicators across multiple tools, pivot between
+            platforms, and execute pre-defined actions directly from the UI.
           {%endif%}
         </p>
       </div>
@@ -276,18 +278,21 @@
           </span>
           <strong>
             {%if 'fr/' in page.url %}
-              Des données enrichies partout
+              Enrichissement Contextuel en Temps Réel
             {%else%}
-              Enriched Data Everywhere
+              Real-Time Contextual Enrichment
             {%endif%}
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Enrichissez les données partout en fournissant un indicateur visuel rapide comme une icône (⚠️) ou même
-              un drapeau, et fournissez plus de détails dans une fenêtre contextuelle lorsque vous cliquez dessus.
+              Enrichissez automatiquement les indicateurs (IPs, domaines, hachages de fichiers, ports) avec des
+              évaluations, des opinions et du contexte additionnel provenant de plusieurs sources. Les enrichissements
+              s'affichent sous forme d'icônes visuelles, de drapeaux de pays et d'info-bulles interactives contenant
+              des données détaillées de chaque plugin.
             {%else%}
-              Enrich data everywhere by providing a quick visual indicator like an icon (⚠️) or even a flag, and
-              provide more details in a popup when clicked.
+              Automatically enrich indicators (IPs, domains, file hashes, ports) with assessments, opinions, and
+              additional context from multiple sources. Enrichments display as visual icons, country flags, and
+              interactive popovers containing detailed data from each plugin.
             {%endif%}
           </span>
         </div>
@@ -297,17 +302,20 @@
           </span>
           <strong>
             {%if 'fr/' in page.url %}
-              Architecture basée sur des plugins
+              Architecture Modulaire Basée sur des Plugins
             {%else%}
-              Plugin Based Architecture
+              Modular Plugin-Based Architecture
             {%endif%}
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Grâce à l'architecture basée sur des plugins, Clue est hautement modulaire et peut s'enrichir à partir de
-              n'importe quel nombre de sources.
+              L'architecture de plugins extensible permet l'intégration avec un nombre illimité de sources de données.
+              Chaque plugin fonctionne comme un service indépendant qui communique avec le serveur API central, offrant
+              une évolutivité et une flexibilité pour s'adapter aux besoins spécifiques de votre SOC.
             {%else%}
-              Thanks to the plugin-based architecture, Clue is highly modular and can enrich from any number of sources.
+              Extensible plugin architecture enables integration with unlimited data sources. Each plugin operates as
+              an independent service communicating with the central API server, providing scalability and flexibility
+              to adapt to your SOC's specific needs.
             {%endif%}
           </span>
         </div>
@@ -317,16 +325,21 @@
           </span>
           <strong>
             {%if 'fr/' in page.url %}
-              Exécuter des actions sur-le-champs
+              Actions Exécutables Spécifiques aux Plugins
             {%else%}
-              Execute Actions On-The-Fly
+              Plugin-Specific Executable Actions
             {%endif%}
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Exécutez n’importe quelle action prédéfinie sur un indicateur à l'aide des actions d'indice.
+              Exécutez des actions prédéfinies directement sur les indicateurs sans quitter votre flux de travail.
+              Pivotez vers d'autres applications, soumettez des données pour analyse, ou déclenchez des workflows
+              automatisés. Les actions peuvent inclure des formulaires dynamiques pour capturer les paramètres
+              supplémentaires requis.
             {%else%}
-              Execute any pre-defined action on an indicator by using Clue Actions.
+              Execute pre-defined actions directly on indicators without leaving your workflow. Pivot to other
+              applications, submit data for analysis, or trigger automated workflows. Actions can include dynamic
+              forms to capture required additional parameters.
             {%endif%}
           </span>
         </div>
@@ -336,18 +349,21 @@
           </span>
           <strong>
             {%if 'fr/' in page.url %}
-              Afficher des données à l'aide de récupérateurs
+              Récupérateurs de Données Riches
             {%else%}
-              Display Data Using Fetchers
+              Rich Data Fetchers
             {%endif%}
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Grâce aux Clue Fetchers, les données peuvent être traitées et affichées dans n'importe quel format pris
-              en charge, tel que Markdown, JSON ou même des images.
+              Les Fetchers permettent aux plugins de rendre des données enrichies dans plusieurs formats, incluant
+              Markdown formaté, JSON structuré, graphiques visuels et images. Générez des rapports détaillés, visualisez
+              des relations complexes ou affichez des captures d'écran de fichiers rendus directement dans l'interface
+              Clue.
             {%else%}
-              Using Clue Fetchers, data can be processed and displayed in any support format, such as Markdown, JSON or
-              even Images.
+              Fetchers enable plugins to render enriched data in multiple formats, including formatted Markdown,
+              structured JSON, visual graphs, and images. Generate detailed reports, visualize complex relationships,
+              or display screenshots of rendered files directly within the Clue interface.
             {%endif%}
           </span>
         </div>
@@ -357,18 +373,21 @@
           </span>
           <strong>
             {%if 'fr/' in page.url %}
-              Intégration transparente
+              Intégration Simple dans l'Interface Utilisateur
             {%else%}
-              Seamless Integration
+              Simple UI Integration
             {%endif%}
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Clue est extrêmement facile à ajouter à n'importe quelle application d'interface utilisateur. Il suffit
-              d'initialiser le fournisseur et d'utiliser les composants Clue pour enrichir automatiquement vos données.
+              Intégrez Clue dans n'importe quelle application UI en important le package npm clue-ui, en initialisant
+              le ClueProvider avec l'URL du serveur API, et en utilisant les composants enrichis ou les hooks React.
+              Les enrichissements se produisent automatiquement en remplaçant les composants standards par leurs
+              équivalents enrichis.
             {%else%}
-              Clue is extremely easy to add to any UI application, simply initialize the provider and use the Clue
-              components to automatically enrich your data.
+              Integrate Clue into any UI application by importing the clue-ui npm package, initializing the
+              ClueProvider with the API server URL, and using enriched components or React hooks. Enrichments happen
+              automatically by replacing standard components with their enriched equivalents.
             {%endif%}
           </span>
         </div>
@@ -378,18 +397,21 @@
           </span>
           <strong>
             {%if 'fr/' in page.url %}
-              Écrivez vos propres plugins
+              Développement de Plugins Simplifié
             {%else%}
-              Write Your Own Plugins
+              Simplified Plugin Development
             {%endif%}
           </strong>
           <span class="description">
             {%if 'fr/' in page.url %}
-              Les plugins Clue sont faciles à écrire et vous permettent d'interroger, d'afficher et d'interagir avec
-              vos propres applications depuis n'importe quelle autre application utilisant Clue.
+              Créez des plugins personnalisés en utilisant la bibliothèque Python clue-api et le dépôt de modèles de
+              plugins. Enregistrez simplement votre plugin avec le serveur central en spécifiant son nom, les types
+              d'indicateurs pris en charge et l'URL. Développez et déployez des intégrations pour interroger, afficher
+              et interagir avec vos propres outils.
             {%else%}
-              Clue plugins are easy to write, allowing you to query, show and interact with your own apps from within
-              any other app using Clue.
+              Create custom plugins using the clue-api Python library and template plugin repository. Simply register
+              your plugin with the central server by specifying its name, supported indicator types, and URL. Develop
+              and deploy integrations to query, display, and interact with your own tools.
             {%endif%}
           </span>
         </div>
