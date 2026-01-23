@@ -67,6 +67,6 @@ def add_supported_type(
         logger.info("Adding type %s to namespace %s with regex %s", type, namespace, regex)
         new_entry = f"{namespace}/{type}"
 
-        SUPPORTED_TYPES[new_entry] = regex
-        if case_insensitive:
-            CASE_INSENSITIVE_TYPES.append(new_entry)
+    SUPPORTED_TYPES[new_entry] = regex
+    if case_insensitive:
+        CASE_INSENSITIVE_TYPES.append(new_entry)
