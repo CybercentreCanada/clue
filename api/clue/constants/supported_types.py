@@ -39,7 +39,9 @@ SUPPORTED_TYPES = {
 CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]
 
 
-def add_supported_type(type: str, regex: str | None = None, namespace: str | None = None, case_insensitive: bool=False):
+def add_supported_type(
+    type: str, regex: str | None = None, namespace: str | None = None, case_insensitive: bool = False
+):
     r"""Add a supported type to the SUPPORTED_TYPES registry.
 
     This function registers a new type with an optional regex pattern for validation.
