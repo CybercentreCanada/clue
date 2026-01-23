@@ -36,8 +36,10 @@ SUPPORTED_TYPES = {
     "tenant-id": UUID4_REGEX,
 }
 
+CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]
 
-def add_supported_type(type: str, regex: str | None = None, namespace: str | None = None):
+
+def add_supported_type(type: str, regex: str | None = None, namespace: str | None = None, case_insensitive=False):
     r"""Add a supported type to the SUPPORTED_TYPES registry.
 
     This function registers a new type with an optional regex pattern for validation.
@@ -58,10 +60,11 @@ def add_supported_type(type: str, regex: str | None = None, namespace: str | Non
     """
     if not namespace:
         logger.info("Adding new type %s to the default namespace with regex %s", type, regex)
-        SUPPORTED_TYPES[type] = regex
+        new_entry = type
     else:
         logger.info("Adding type %s to namespace %s with regex %s", type, namespace, regex)
-        SUPPORTED_TYPES[f"{namespace}/{type}"] = regex
+        new_entry = f"{namespace}/{type}"
 
-
-CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]
+        SUPPORTED_TYPES[new_entry] = regex
+        if case_insensitive:
+            CASE_INSENSITIVE_TYPES.append(new_entry)

@@ -59,6 +59,10 @@ class BaseExtensionConfig(BaseSettings):
 
             data["modules"]["routes"] = new_routes
 
+        if "init" in data["modules"]:
+            if isinstance(data["modules"]["init"], bool):
+                data["modules"]["init"] = f"{plugin_name}.init:initialize"
+
         if "obo_module" in data["modules"]:
             if isinstance(data["modules"]["obo_module"], bool):
                 data["modules"]["obo_module"] = f"{plugin_name}.obo:get_obo_token"
