@@ -7,8 +7,6 @@ from clue.common.regex import (
     DOMAIN_REGEX,
     EMAIL_PATH_REGEX,
     EMAIL_REGEX,
-    HBS_AGENT_ID_ONLY_REGEX,
-    HBS_AGENT_ID_REGEX,
     IP_ONLY_REGEX,
     IP_REGEX,
     IPV4_ONLY_REGEX,
@@ -423,56 +421,4 @@ class TestEmailPathRegex:
     )
     def test_email_path_regex(self, path, expected):
         result = bool(re.match(EMAIL_PATH_REGEX, path))
-        assert result == expected
-
-
-class TestHBSAgentIDRegex:
-    @pytest.mark.parametrize(
-        "agent_id,expected",
-        [
-            ("1234.5678.9abc.def0", True),
-            ("a.b.c.d", True),
-            ("1.2.3.4", True),
-            ("A.B.C.D", True),  # Uppercase
-            ("123.456.789.abc", True),
-            ("f.e.d.c", True),
-            # Partial Cases
-            ("1234.5678.9abc.def0.extra", True),  # Extra segment
-            ("12345.5678.9abc.def0", True),  # Segment too long
-            ("1234.5678.9abc.def0g", True),  # Invalid hex in last segment
-            ("1234.5678.9abc.defg", True),  # Invalid hex
-            # Invalid cases
-            ("", False),
-            ("abcd.efgh.1234.5678", False),
-            ("1234.5678.9abc", False),  # Missing segment
-            ("1234..9abc.def0", False),  # Empty segment
-        ],
-    )
-    def test_hbs_agent_id_regex(self, agent_id, expected):
-        result = bool(re.search(HBS_AGENT_ID_REGEX, agent_id))
-        assert result == expected
-
-    @pytest.mark.parametrize(
-        "agent_id,expected",
-        [
-            ("1234.5678.9abc.def0", True),
-            ("a.b.c.d", True),
-            ("1.2.3.4", True),
-            # Partial Cases
-            ("1234.5678.9abc.def0.extra", False),  # Extra segment
-            ("12345.5678.9abc.def0", False),  # Segment too long
-            ("1234.5678.9abc.def0g", False),  # Invalid hex in last segment
-            ("1234.5678.9abc.defg", False),  # Invalid hex
-            # Invalid cases
-            ("", False),
-            ("1234.5678.9abc", False),  # Missing segment
-            ("12345.5678.9abc.def0", False),  # Segment too long
-            ("1234..9abc.def0", False),  # Empty segment
-            ("1234.5678.9abc.def0g", False),  # Invalid hex in last segment
-            ("1234.5678.9abc.defg", False),  # Invalid hex
-            ("abcd.efgh.1234.5678", False),
-        ],
-    )
-    def test_hbs_agent_id_only_regex(self, agent_id, expected):
-        result = bool(re.search(HBS_AGENT_ID_ONLY_REGEX, agent_id))
         assert result == expected
