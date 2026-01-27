@@ -79,7 +79,17 @@ const AnnotationBody: FC<{
           {annotation.type}:
         </Typography>
       )}
-      <Typography variant="body2">{annotation.value}</Typography>
+      {typeof annotation.value !== 'string' ? (
+        <Typography variant="body2">{annotation.value}</Typography>
+      ) : (
+        <Stack spacing={0.5}>
+          {annotation.value.split('\n').map(line => (
+            <Typography variant="body2" key={line}>
+              {line}
+            </Typography>
+          ))}
+        </Stack>
+      )}
     </Stack>
   );
 };

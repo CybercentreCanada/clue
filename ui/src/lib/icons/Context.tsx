@@ -39,7 +39,10 @@ const ContextIcon: FC<
     [annotations, ubiquitous]
   );
 
-  const additionalIcons = useMemo(() => contextAnnotations.filter(annotation => annotation.icon), [contextAnnotations]);
+  const additionalIcons = useMemo(
+    () => contextAnnotations.filter(annotation => annotation.icon || annotation.analytic_icon),
+    [contextAnnotations]
+  );
 
   useEffect(() => {
     if (disableTooltip) {
@@ -55,40 +58,41 @@ const ContextIcon: FC<
   const icons: ReactNode[] = [];
 
   if (additionalIcons.length) {
-    Object.entries(groupBy(additionalIcons, 'icon')).forEach(([icon, _annotations]) =>
-      icons.push(
-        <span
-          key={icon}
-          ref={anchorRef}
-          style={{ display: 'flex' }}
-          onMouseOver={
-            disableTooltip
-              ? undefined
-              : () =>
-                  showInfo('context', anchorRef.current, value, {
-                    content: (
-                      <Stack
-                        onClick={e => e.stopPropagation()}
-                        spacing={1}
-                        divider={<Divider flexItem orientation="horizontal" />}
-                      >
-                        {_annotations.map(annotation => (
-                          <AnnotationEntry key={JSON.stringify(annotation)} annotation={annotation} />
-                        ))}
-                      </Stack>
-                    )
-                  })
-          }
-          onMouseLeave={disableTooltip ? undefined : () => closeInfo('context', value)}
-        >
-          <Icon
-            icon={icon}
-            fontSize={otherProps.fontSize ?? '1.25em'}
-            style={{ filter: 'drop-shadow(0px 0px 1px rgb(0 0 0 / 0.4))', ...(otherProps.style ?? {}) }}
-            {...otherProps}
-          />
-        </span>
-      )
+    Object.entries(groupBy(additionalIcons, annotation => annotation.icon || annotation.analytic_icon)).forEach(
+      ([icon, _annotations]) =>
+        icons.push(
+          <span
+            key={icon}
+            ref={anchorRef}
+            style={{ display: 'flex' }}
+            onMouseOver={
+              disableTooltip
+                ? undefined
+                : () =>
+                    showInfo('context', anchorRef.current, value, {
+                      content: (
+                        <Stack
+                          onClick={e => e.stopPropagation()}
+                          spacing={1}
+                          divider={<Divider flexItem orientation="horizontal" />}
+                        >
+                          {_annotations.map(annotation => (
+                            <AnnotationEntry key={JSON.stringify(annotation)} annotation={annotation} />
+                          ))}
+                        </Stack>
+                      )
+                    })
+            }
+            onMouseLeave={disableTooltip ? undefined : () => closeInfo('context', value)}
+          >
+            <Icon
+              icon={icon}
+              fontSize={otherProps.fontSize ?? '1.25em'}
+              style={{ filter: 'drop-shadow(0px 0px 1px rgb(0 0 0 / 0.4))', ...(otherProps.style ?? {}) }}
+              {...otherProps}
+            />
+          </span>
+        )
     );
   }
 

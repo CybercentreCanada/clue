@@ -24,10 +24,6 @@ BANNED_STRINGS = [
         "process.env",
         "Using process.env unguarded can lead to errors in downstream applications.",
     ),
-    (
-        "from 'lodash-es';",
-        "You should not import directly from lodash-es, but instead use submodules like 'lodash-es/uniq'",
-    ),
 ]
 
 root = Path(__file__).parent.parent

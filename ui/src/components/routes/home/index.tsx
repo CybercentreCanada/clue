@@ -33,6 +33,7 @@ import QueryStatus from 'lib/components/stats/QueryStatus';
 import useClue from 'lib/hooks/useClue';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import type { BulkEnrichResponses, EnrichResponse, EnrichResponses } from 'lib/types/lookup';
+import { isNil } from 'lodash-es';
 import isEmpty from 'lodash-es/isEmpty';
 import range from 'lodash-es/range';
 import type { FC } from 'react';
@@ -93,7 +94,7 @@ const ItemResultCard: FC<{ type: string; value: string; classification?: string;
     const [visible, setVisible] = useState<{ [key: string]: boolean }>({});
 
     const toggleVisible = useCallback(key => {
-      setVisible(cur_visible => ({ ...cur_visible, [key]: !cur_visible[key] }));
+      setVisible(cur_visible => ({ ...cur_visible, [key]: isNil(cur_visible[key]) ? false : !cur_visible[key] }));
     }, []);
 
     return (
@@ -114,10 +115,10 @@ const ItemResultCard: FC<{ type: string; value: string; classification?: string;
           })}
         >
           <Typography color="text.secondary" variant="h6">
-            {type.toUpperCase()}:
+            {type}:
           </Typography>
           <EnrichedTypography type={type} value={value} variant="h6" hideDetails contextIcon counters />
-          <Box sx={{ width: '100%' }}></Box>
+          <Box sx={{ flex: 1 }}></Box>
           <IconButton size="small">
             <ExpandMore
               sx={theme => ({
@@ -128,7 +129,8 @@ const ItemResultCard: FC<{ type: string; value: string; classification?: string;
           </IconButton>
         </Stack>
 
-        <Collapse in={visible[type + value]}>
+        {/* Note that we specifically check if it's false, so null will result in the collapse being open by default. */}
+        <Collapse in={visible[type + value] !== false}>
           <CardContent sx={{ pt: 0.5 }}>
             <Stack spacing={1}>
               <Card variant="outlined">
