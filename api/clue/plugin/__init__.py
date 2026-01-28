@@ -977,28 +977,23 @@ class CluePlugin:
 
         token: str | None = None
         if self.validate_token:
-            if self.logger:
-                self.logger.debug("Executing plugin-provided token validator")
+            self.logger.debug("Executing plugin-provided token validator")
 
             token, error = self.validate_token()
 
             if error:
                 return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
 
-            if self.logger:
-                self.logger.debug("Token is valid")
+            self.logger.debug("Token is valid")
         else:
-            if self.logger:
-                self.logger.debug("No token validator provided")
+            self.logger.warning("No token validator provided")
 
         # All results were cached
         if len(remaining_items) == 0:
-            if self.logger:
-                self.logger.info("All values retrieved from cache")
+            self.logger.info("All values retrieved from cache")
         # Alternate bulk lookup is provided
         elif self.alternate_bulk_lookup:
-            if self.logger:
-                self.logger.debug("Executing plugin-provided alternate bulk lookup script")
+            self.logger.debug("Executing plugin-provided alternate bulk lookup script")
 
             try:
                 alternate_results = self.alternate_bulk_lookup(remaining_items, params)
@@ -1015,21 +1010,18 @@ class CluePlugin:
             except UnprocessableException as e:
                 return self.make_api_response(None, e.message, 422)
             except Exception as e:
-                if self.logger:
-                    self.logger.exception("Unknown internal exception")
+                self.logger.exception("Unknown internal exception")
                 return self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
 
             if self.cache and len(remaining_items) > 0:
-                if self.logger:
-                    self.logger.info("Caching results for %s selectors", len(remaining_items))
+                self.logger.info("Caching results for %s selectors", len(remaining_items))
 
                 for entry in remaining_items:
                     try:
                         items = bulk_result[entry["type"]][entry["value"]].items
                         self.cache.set(entry["type"], entry["value"], params, items)
                     except KeyError:
-                        if self.logger:
-                            self.logger.warning("Selector not present in bulk result, skipping cache step")
+                        self.logger.warning("Selector not present in bulk result, skipping cache step")
         # Default bulk lookup
         else:
             self.__default_bulk_lookup(bulk_result, remaining_items, params, token)
@@ -1037,11 +1029,10 @@ class CluePlugin:
         # Calculate how close we came to the deadline (positive = time remaining, negative = overrun)
         variance = params.deadline - time.time()
 
-        if self.logger:
-            if variance < 0:
-                self.logger.warning(f"Deadline missed by {-round(variance * 1000)}ms")
-            else:
-                self.logger.debug(f"Deadline met, {round(variance * 1000)}ms to spare")
+        if variance < 0:
+            self.logger.warning(f"Deadline missed by {-round(variance * 1000)}ms")
+        else:
+            self.logger.debug(f"Deadline met, {round(variance * 1000)}ms to spare")
 
         try:
             serialized_reult = TypeAdapter(dict[str, dict[str, BulkEntry]]).dump_python(
@@ -1326,6 +1317,8 @@ class CluePlugin:
                 return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
 
             self.logger.debug("Token is valid")
+        else:
+            self.logger.warning("No token validation provided. The access token will not be provided to the fetcher.")
 
         status_code = 200
         try:
