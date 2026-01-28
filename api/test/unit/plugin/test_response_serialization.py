@@ -71,6 +71,39 @@ def plugin_with_non_serializable_response(mock_requests_response):
 
 
 @pytest.fixture
+def plugin_with_custom_type():
+    """Create a CluePlugin that handle custom types."""
+
+    def enrich_something(type_name: str, value: str, params, token):
+        """Enrich function that returns anything"""
+        return QueryEntry(
+            count=1,
+            classification="TLP:CLEAR",
+            link=Url("https://example.com/data"),
+            annotations=[
+                Annotation(
+                    analytic="test_analytic",
+                    type="opinion",
+                    value="malicious",
+                    confidence=0.9,
+                    summary="Test annotation with non-serializable raw data",
+                )
+            ]
+        )
+
+    plugin = CluePlugin(
+        app_name="test_custom_type_plugin",
+        classification="TLP:CLEAR",
+        supported_types="namespace/type",
+        enrich=enrich_something,
+        logger=logging.getLogger("test_custom_type"),
+        enable_cache=False,  # Disable cache to ensure we hit the enrich function
+    )
+
+    return plugin
+
+
+@pytest.fixture
 def plugin_with_custom_non_serializable():
     """Create a CluePlugin that returns QueryEntry with custom non-serializable object."""
 
@@ -94,6 +127,16 @@ def plugin_with_custom_non_serializable():
 
     return plugin
 
+
+def test_custom_type_response(plugin_with_custom_type):
+    """Test that custom type following the namespace/type standards works."""
+    plugin = plugin_with_custom_type
+
+    with plugin.app.test_request_context():
+        client = plugin.app.test_client()
+        response = client.get("/lookup/namespace%252Ftype/custom_data/")
+
+        assert response.status_code != 422
 
 def test_single_lookup_with_non_serializable_response(plugin_with_non_serializable_response):
     """Test that single lookup with non-serializable raw_data returns 500 error."""

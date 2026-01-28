@@ -832,6 +832,8 @@ class CluePlugin:
 
         # Double URL decode the value (required by API specification)
         value = ul.unquote(ul.unquote(value))
+        # Support namespace/type
+        type_name = ul.unquote(ul.unquote(type_name))
         # Validate that the requested type is supported by this plugin
         if type_name not in self.supported_types:
             return self.make_api_response(
