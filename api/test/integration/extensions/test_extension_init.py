@@ -96,7 +96,7 @@ def test_init_can_add_namespaced_type(caplog):
     test_type = "custom_id"
     test_namespace = "test-extension"
     test_regex = r"^\d{10}$"
-    expected_key = f"{test_namespace}/{test_type}"
+    expected_key = f"{test_namespace}_{test_type}"
 
     # Remove test type if it exists from previous runs
     if expected_key in SUPPORTED_TYPES:
@@ -136,7 +136,7 @@ def test_init_can_add_multiple_types(caplog):
 
     # Remove test types if they exist from previous runs
     for type_name, _, namespace in test_types:
-        key = f"{namespace}/{type_name}" if namespace else type_name
+        key = f"{namespace}_{type_name}" if namespace else type_name
         if key in SUPPORTED_TYPES:
             del SUPPORTED_TYPES[key]
 
@@ -153,11 +153,11 @@ def test_init_can_add_multiple_types(caplog):
 
     # Verify all types were added
     for type_name, regex, namespace in test_types:
-        key = f"{namespace}/{type_name}" if namespace else type_name
+        key = f"{namespace}_{type_name}" if namespace else type_name
         assert key in SUPPORTED_TYPES, f"Type '{key}' should have been added to SUPPORTED_TYPES"
         assert SUPPORTED_TYPES[key] == regex, f"Regex for '{key}' should match"
 
     # Cleanup
     for type_name, _, namespace in test_types:
-        key = f"{namespace}/{type_name}" if namespace else type_name
+        key = f"{namespace}_{type_name}" if namespace else type_name
         del SUPPORTED_TYPES[key]
