@@ -5,6 +5,8 @@ export interface DatabaseConfig {
   storageType?: 'memory' | 'sessionStorage';
   testing?: boolean;
   devMode?: boolean;
+  replicate?: boolean;
+  baseURL?: string;
 }
 
 export interface SelectorDocType {
@@ -22,6 +24,8 @@ export interface SelectorDocType {
   documentation_link?: string;
   latency: number;
   annotations: Annotation[];
+  lastUpdated: number;
+  _deleted: boolean;
 }
 
 export type SelectorDocMethods = {

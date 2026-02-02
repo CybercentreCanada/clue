@@ -87,10 +87,12 @@ const statusStatics: StatusCollectionMethods = {
 };
 
 const buildDatabase = async (_config: DatabaseConfig = {}) => {
-  const config = {
+  const config: DatabaseConfig = {
     storageType: 'sessionStorage',
     testing: IS_VITEST,
     devMode: !import.meta.env.PROD,
+    replicate: false,
+    baseURL: null,
     ..._config
   };
 
