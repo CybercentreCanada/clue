@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clue
+      POSTGRES_PASSWORD: clue
+      POSTGRES_DB: clue
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clue"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clue-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - clue-network
+
+  clue-api:
+    image: cccs/clue-api:latest
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Database Connection
+      CLUE_DATABASE_URL: postgresql://clue:clue@postgres:5432/clue
+
+      # Redis Connection
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+
+      # Application Settings
+      API__SECRET_KEY: dev-secret-key
+      API__DEBUG: "true"
+
+      # Plugin Discovery
+      # Configuring the Port Lookup plugin as an external source
+      API__EXTERNAL_SOURCES: '[{"name": "port-lookup", "url": "http://port-lookup:5000", "classification": "TLP:CLEAR"}]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - clue-network
+
+  clue-ui:
+    image: cccs/clue-ui:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - clue-network
+
+  port-lookup:
+    image: cccs/clue-plugin-port-lookup:latest
+    restart: unless-stopped
+    environment:
+      APP_NAME: port-lookup
+      CLASSIFICATION: TLP:CLEAR
+      # Redis for the plugin (optional, but good practice if it uses cache)
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+    networks:
+      - clue-network
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - clue-api
+      - clue-ui
+    networks:
+      - clue-network
+
+networks:
+  clue-network:
+    name: clue-network
