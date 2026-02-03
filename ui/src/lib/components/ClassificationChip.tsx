@@ -1,4 +1,4 @@
-import type { ChipProps } from '@mui/material';
+import type { ChipOwnProps, ChipProps } from '@mui/material';
 import { Chip, Tooltip } from '@mui/material';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import { getParts, normalizedClassification } from 'lib/utils/classificationParser';
@@ -31,11 +31,11 @@ const ClassificationChip: FC<EnrichedChipProps & Exclude<ChipProps, 'label'>> = 
       return normalizedClassification(parts, config.c12nDef, 'short', true);
     }, [classification, config.c12nDef, parts]);
 
-    const chipProps = useMemo(() => {
+    const chipProps: ChipProps = useMemo(() => {
       const definedColor = config.c12nDef?.levels_styles_map[config.c12nDef?.levels_map[parts.lvlIdx]]?.color;
 
       if (THEME_TYPES.includes(definedColor)) {
-        return { color: definedColor };
+        return { color: definedColor as ChipOwnProps['color'] };
       }
 
       if (definedColor) {
