@@ -11,7 +11,7 @@ export const adaptSchema = (_schema: JSONSchema7): JSONSchema7 => {
     ...schema,
     properties: Object.fromEntries(
       Object.entries(schema.properties ?? {})
-        .filter(([name]) => !['raw_data', 'selector', 'selectors'].includes(name))
+        .filter(([name]) => !['raw_data', 'selector', 'selectors', 'context'].includes(name))
         .map(([name, def]) => {
           requiredFields.push(name);
 
@@ -41,13 +41,15 @@ export const adaptSchema = (_schema: JSONSchema7): JSONSchema7 => {
           // Pydantic uses allOf for enums, let's fix this.
           if (def.allOf?.length > 0) {
             if (typeof def.allOf[0] !== 'boolean' && def.allOf[0].$ref) {
-              def = {
+              const newDef = {
                 ...def,
                 ...get(schema, def.allOf[0].$ref.replace('#/', '').replaceAll('/', '.')),
                 title: def.title
               };
 
-              delete def.allOf;
+              delete newDef.allOf;
+
+              return [name, newDef];
             }
           }
 
