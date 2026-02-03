@@ -148,7 +148,7 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
         <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
           <ModalProvider>
             <LocalStorageProvider>
-              <ClueDatabaseProvider>
+              <ClueDatabaseProvider databaseConfig={{ storageType: 'memory' }}>
                 <ClueEnrichProvider publicIconify={false} skipConfigCall>
                   <ClueFetcherProvider>
                     <ClueActionProvider>
