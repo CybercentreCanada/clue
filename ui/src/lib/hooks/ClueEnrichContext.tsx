@@ -348,6 +348,10 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   );
 
   const enrichFailedEnrichments = useCallback(async () => {
+    if (!database?.selectors || database.selectors.closed) {
+      return;
+    }
+
     const failedEnrichments = await database.selectors.find({ selector: { error: { $exists: true } } }).exec();
 
     const byClassification = groupBy(failedEnrichments, 'classification');
