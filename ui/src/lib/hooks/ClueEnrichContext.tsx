@@ -482,6 +482,11 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       return;
     }
 
+    if (database?.status.closed) {
+      console.warn('Status collection is closed');
+      return;
+    }
+
     const observer = database.status
       .find({
         selector: {
@@ -497,7 +502,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         console.warn(e);
       }
     };
-  }, [enabled, isReady, database, debugLogging, enrichQueued]);
+  }, [enabled, isReady, database, debugLogging, enrichQueued, database?.status?.closed]);
 
   const queueEnrich: ClueEnrichContextType['queueEnrich'] = useCallback(
     async (type, value, classification) => {
