@@ -108,10 +108,7 @@ ignore = [
   "TRY003",
   "TRY300",
 ]
-exclude = [
-  "plugins/assemblyline_lookup/app.py",
-  "plugins/**/test*.py",
-]
+exclude = ["plugins/assemblyline_lookup/app.py", "plugins/**/test*.py"]
 
 [tool.ruff.lint.flake8-annotations]
 ignore-fully-untyped = true
@@ -142,7 +139,7 @@ log_cli_level = "WARN"
 [tool.poetry]
 package-mode = true
 name = "clue-api"
-version = "1.3.2"
+version = "1.4.0"
 description = "Clue distributed enrichment service"
 authors = ["Canadian Centre for Cyber Security <contact@cyber.gc.ca>"]
 license = "MIT"
