@@ -22,7 +22,7 @@ const Contributing: FC = () => {
       try {
         const _info = (
           await Promise.all([
-            dispatchApi(api._static.documentation.get('api/CONTRIBUTING.' + textLanguage + '.md')),
+            dispatchApi(api._static.documentation.get('api/development.' + textLanguage + '.md')),
             new Promise(res => setTimeout(res, 200))
           ])
         )[0];
