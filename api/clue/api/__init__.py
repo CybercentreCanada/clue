@@ -1,9 +1,10 @@
 from sys import exc_info
 from traceback import format_tb
-from typing import Any, Union
+from typing import Any, Union, cast
 
 from flask import Blueprint, Response, make_response, request
 from prometheus_client import Counter
+from pydantic import BaseModel
 
 from clue.common.forge import APP_NAME
 from clue.common.logging import get_logger, log_with_traceback
@@ -32,6 +33,11 @@ def _make_api_response(
         trace = exc_info()[2]
         err = "".join(["\n"] + format_tb(trace) + ["%s: %s\n" % (err.__class__.__name__, str(err))]).rstrip("\n")
         log_with_traceback(trace, "Exception", is_exception=True)
+
+    if isinstance(data, BaseModel):
+        data = data.model_dump(mode="json")
+    elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], BaseModel):
+        data = [entry.model_dump(mode="json") for entry in cast(list[BaseModel], data)]
 
     resp = make_response(
         ClueResponse(response=data, error_message=err, warning=warnings, status_code=status_code).model_dump(

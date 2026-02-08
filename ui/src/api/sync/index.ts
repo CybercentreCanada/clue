@@ -9,15 +9,20 @@ const uri = () => {
 
 const get = (
   collection: 'selector' | 'status',
+  id: string,
   timestamp: number,
   config?: AxiosRequestConfig
 ): Promise<SyncResponse> => {
   const params = new URLSearchParams();
   if (!isNil(timestamp)) {
-    params.set('timestamp', timestamp.toString());
+    params.set('updated_at', timestamp.toString());
   }
 
-  return hget(joinAllUri(uri(), collection), params, config);
+  if (!isNil(id)) {
+    params.set('id', id.toString());
+  }
+
+  return hget(joinAllUri(uri(), 'pull', collection), params, config);
 };
 
 const post = <T>(
@@ -25,7 +30,7 @@ const post = <T>(
   payload: PushPayload<T>,
   config?: AxiosRequestConfig
 ): Promise<PushPayload<T>> => {
-  return hpost(joinAllUri(uri(), collection), payload, config);
+  return hpost(joinAllUri(uri(), 'push', collection), payload, config);
 };
 
 export { get, post, uri };

@@ -5,6 +5,7 @@ import { getRxStorageLocalstorage } from 'rxdb/plugins/storage-localstorage';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+import { replicateSelectorCollection } from './replication';
 import selectorSchema from './selector.schema.json';
 import statusSchema from './status.schema.json';
 import type {
@@ -141,6 +142,8 @@ const buildDatabase = async (_config: DatabaseConfig = {}) => {
       statics: statusStatics
     }
   });
+
+  replicateSelectorCollection(database.selectors);
 
   try {
     await database.status.find({ selector: { status: 'in-progress' } }).remove();

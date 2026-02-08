@@ -27,9 +27,9 @@ exclude_also = [
   "logger.",
 ]
 
-########################
+##################
 # isort settings #
-########################
+##################
 [tool.isort]
 profile = "black"
 
@@ -123,6 +123,8 @@ suppress-none-returning = true
 "test/*" = ["C901", "D", "ANN", "S", "N818"]
 "build_scripts/*" = ["D", "ANN", "S", "N818", "T201"]
 "clue/app.py" = ["E402"]
+"clue/config.py" = ["E402"]
+"clue/services/mongo_service.py" = ["E402"]
 "clue/api/v1/auth.py" = ["TRY301"]
 "clue/common/classification.py" = ["D", "ANN", "C901", "TRY301", "T203"]
 "clue/remote/datatypes/*" = ["D", "ANN", "C901"]
@@ -205,6 +207,7 @@ flask-cors = { version = ">=4.0.1,<7.0.0", optional = true }
 flasgger = { version = "^0.9.7.1", optional = true }
 trino = "^0.336.0"
 celery = "^5.6.2"
+pymongo = "^4.16.0"
 
 [tool.poetry.extras]
 server = [
@@ -221,6 +224,7 @@ server = [
   "authlib",
   "flask-cors",
   "flasgger",
+  "pymongo"
 ]
 
 [[tool.poetry.source]]

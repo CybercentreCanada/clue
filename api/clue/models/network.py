@@ -319,8 +319,7 @@ class QueryEntry(BaseModel):
         """
         return validate_classification(classification)
 
-
-class QueryResult(BaseModel):
+class ResultMetadata(BaseModel):
     type: str = Field(
         description="The type of the value represented by this result", examples=list(SUPPORTED_TYPES.keys())
     )
@@ -334,7 +333,6 @@ class QueryResult(BaseModel):
         default=None,
         examples=["An error occurred when enriching the data.", None],
     )
-    items: list[QueryEntry] = Field(description="List of results from the source", default=[])
     maintainer: Optional[str] = Field(
         description="Email contact in the RFC-5322 format 'Full Name <email_address>'.",
         default=None,
@@ -355,6 +353,32 @@ class QueryResult(BaseModel):
         default=0,
         examples=sorted([i * 10 for i in randbytes(5)]),  # noqa: S311
     )
+
+    model_config = ConfigDict(validate_assignment=True)
+
+    @field_validator("maintainer")
+    @classmethod
+    def validate_maintainer(cls, maintainer: Optional[str]) -> Optional[str]:  # noqa: ANN102
+        """Validates the maintainer field.
+
+        Args:
+            maintainer (Optional[str]): The maintainer field to validate. If None, it will be passed through.
+
+        Raises:
+            AssertionError: Raised whenever the field is in an invalid format.
+
+        Returns:
+            Optional[str]: The validated maintainer field.
+        """
+        if maintainer:
+            parsed_addr = parseaddr(maintainer)
+            if not (all(parsed_addr) and "@" in parsed_addr[1]):
+                raise AssertionError("Maintainer string must be in RFC-5322 format.")
+
+        return maintainer
+
+class QueryResult(ResultMetadata):
+    items: list[QueryEntry] = Field(description="List of results from the source", default=[])
 
     model_config = ConfigDict(validate_assignment=True)
 
