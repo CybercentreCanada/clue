@@ -47,7 +47,7 @@ def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
         - limit (int): Maximum number of records to return per batch. Defaults to 10.
     """
     if not user:
-        return forbidden(err="You must we logged in as a valid user.")
+        return forbidden(err="You must be logged in as a valid user.")
 
     updated_at = request.args.get("updated_at", 0, type=int)
     id: str | None = request.args.get("id", None)
