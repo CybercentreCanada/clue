@@ -1,4 +1,8 @@
+
 from dotenv import load_dotenv
+
+from clue.models.config import ExternalSource
+from clue.models.selector import Selector
 
 load_dotenv()
 
@@ -61,6 +65,11 @@ def push(user: str, change_rows: list[ChangeRow]) -> list[SelectorDocument]:
     Returns:
         list[SelectorDocument]: List of conflicting documents encountered during the push.
     """
+    logger.info(
+        "Pushing records from mongodb for user %s (%s records)",
+        user,
+        len(change_rows),
+    )
     conflicts: list[SelectorDocument] = []
 
     # TODO: Implement the pullStream
@@ -81,7 +90,14 @@ def push(user: str, change_rows: list[ChangeRow]) -> list[SelectorDocument]:
                 conflicts.append(existing_selector)
                 continue
 
-        user_collection.update_one({"id": row.new_document_state.id}, row.new_document_state.model_dump())
+        user_collection.replace_one(
+            {"id": row.new_document_state.id},
+            row.new_document_state.model_dump(mode="json", by_alias=True),
+            upsert=True,
+        )
+
+    if len(conflicts) > 0:
+        logger.info("Returning %s conflicts")
 
     return conflicts
 
@@ -94,6 +110,14 @@ def pull(user: str, id: str | None, updated_at: int, batch_size: int):
         id (str): The record portion of the checkpoint.
         updated_at (int): The last updated time of the checkpoint.
     """
+    logger.info(
+        "Pulling records from mongodb for user %s (checkpoint: id=%s, updated_at=%s) limit %s",
+        user,
+        id,
+        updated_at,
+        batch_size,
+    )
+
     query_result = (
         collection(user)
         .find(
@@ -113,7 +137,46 @@ def pull(user: str, id: str | None, updated_at: int, batch_size: int):
 
     models: list[SelectorDocument] = [SelectorDocument.model_validate(record) for record in query_result]
 
+    logger.info("Returning %s documents", len(models))
+
     return models
+
+
+def existing_results(user: str, selectors: list[Selector], external_sources: list[ExternalSource]):
+    """Check if a document with the specified criteria exists in the user's collection.
+
+    Args:
+        user (str): The username to use as the collection name.
+        type_name (str): The type of the document to search for.
+        value (str): The value of the document to search for.
+        source (str): The source of the document to search for.
+
+    Returns:
+        bool: True if a matching document exists, False otherwise.
+    """
+    types = [selector.type for selector in selectors]
+    values = [selector.value for selector in selectors]
+    sources = [source.name for source in external_sources]
+
+    raw_result = (
+        collection(user)
+        .aggregate(
+            [
+                {
+                    "$match": {
+                        "type": {"$in": types},
+                        "value": {"$in": values},
+                        "source": {"$in": sources},
+                        "_deleted": False,
+                    }
+                },
+                {"$group": {"_id": "$source", "records": {"$push": {"type": "$type", "value": "$value"}}}},
+            ]
+        )
+        .to_list()
+    )
+
+    return {entry["_id"]: entry["records"] for entry in raw_result}
 
 
 if __name__ == "__main__":
@@ -123,6 +186,8 @@ if __name__ == "__main__":
         SelectorDocument(type="ip", value="1.1.1.1", source="test"),
     ]
 
-    collection("goose").insert_many((record.model_dump(mode="json") for record in records), ordered=False)
+    collection("goose").insert_many(
+        (record.model_dump(mode="json", by_alias=True) for record in records), ordered=False
+    )
 
-    print(pull("goose", records[0].id, 0, batch_size=2))
+    print(pull("goose", records[0].id, 0, batch_size=2))  # noqa: T201

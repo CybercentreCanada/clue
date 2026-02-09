@@ -1,5 +1,8 @@
 {
-  "indexes": ["type", "value"],
+  "indexes": [
+    "type",
+    "value"
+  ],
   "keyCompression": true,
   "primaryKey": "id",
   "properties": {
@@ -52,7 +55,13 @@
             "type": "string"
           },
           "type": {
-            "enum": ["opinion", "frequency", "assessment", "mitigation", "context"],
+            "enum": [
+              "opinion",
+              "frequency",
+              "assessment",
+              "mitigation",
+              "context"
+            ],
             "type": "string"
           },
           "ubiquitous": {
@@ -75,7 +84,12 @@
             "type": "string"
           }
         },
-        "required": ["type", "value", "confidence", "summary"],
+        "required": [
+          "type",
+          "value",
+          "confidence",
+          "summary"
+        ],
         "type": "object"
       },
       "type": "array"
@@ -106,9 +120,6 @@
       "maxLength": 64,
       "type": "string"
     },
-    "lastUpdated": {
-      "type": "number"
-    },
     "latency": {
       "type": "number"
     },
@@ -128,12 +139,24 @@
       "maxLength": 255,
       "type": "string"
     },
+    "updated_at": {
+      "type": "number"
+    },
     "value": {
       "maxLength": 2048,
       "type": "string"
     }
   },
-  "required": ["latency", "id", "type", "value", "classification", "count", "annotations"],
+  "required": [
+    "latency",
+    "id",
+    "type",
+    "value",
+    "classification",
+    "count",
+    "annotations",
+    "_deleted"
+  ],
   "type": "object",
   "version": 0
 }

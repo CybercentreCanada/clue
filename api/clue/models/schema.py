@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 from pydantic import BaseModel
@@ -84,10 +85,12 @@ def get_bson_schema(model: type[BaseModel]) -> dict:
     # Generate schema without $defs (inline all references)
     # This works in Pydantic v2 by using the model_json_schema method
     # with the 'validation' mode.
-    raw_schema = model.model_json_schema(mode="validation")
+    raw_schema = model.model_json_schema(mode="validation", by_alias=True)
 
     nested_schema = remove_defs_and_refs(raw_schema)
 
     cleaned_schema = cleanup_for_mongodb(nested_schema)
+
+    print(json.dumps(cleaned_schema, indent=2))
 
     return {"$jsonSchema": cleaned_schema}

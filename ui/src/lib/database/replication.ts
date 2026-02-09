@@ -1,35 +1,51 @@
 import api from 'api';
 import { last } from 'lodash-es';
+import type { ReplicationPullHandlerResult } from 'rxdb';
 import { replicateRxCollection } from 'rxdb/plugins/replication';
-import { SyncResponse } from './sync';
-import { SelectorCollection, SelectorDocType } from './types';
+import type { Checkpoint } from './sync';
+import type { SelectorCollection, SelectorDocType } from './types';
 
 export const replicateSelectorCollection = async (collection: SelectorCollection) => {
-  return replicateRxCollection<SelectorDocType, SyncResponse['checkpoint']>({
+  const replicationState = replicateRxCollection<SelectorDocType, Checkpoint>({
     collection,
     replicationIdentifier: `clue-replication-${collection.name}`,
+    live: true,
+    retryTime: 5000,
+    waitForLeadership: false,
     push: {
-      handler: async docs => api.sync.post<SelectorDocType>('selector', docs),
-      batchSize: 50
+      batchSize: 50,
+      handler: async docs => {
+        console.log(`Synchronizing ${docs.length} docs`);
+
+        return api.sync.post<SelectorDocType>('selector', docs);
+      }
     },
     pull: {
-      handler: async lastCheckpoint => {
+      batchSize: 250,
+      handler: async (
+        lastCheckpoint: Checkpoint
+      ): Promise<ReplicationPullHandlerResult<SelectorDocType, Checkpoint>> => {
         const id = lastCheckpoint ? lastCheckpoint.id : null;
-        const minTimestamp = lastCheckpoint ? lastCheckpoint.lastUpdated : 0;
+        const minTimestamp = lastCheckpoint ? lastCheckpoint.last_updated : 0;
 
-        const result = await api.sync.get('selector', id, minTimestamp);
+        const result = await api.sync.get<SelectorDocType>('selector', id, minTimestamp);
 
         return {
-          documents: result.documents,
+          documents: result,
           checkpoint:
-            result.documents.length < 1
-              ? lastCheckpoint
+            result.length < 1
+              ? null
               : {
-                  id: last(result.documents).id,
-                  lastUpdated: last(result.documents).lastUpdated
+                  id: last(result).id,
+                  last_updated: last(result).updated_at
                 }
         };
       }
     }
   });
+
+  // eslint-disable-next-line no-console
+  replicationState.error$.subscribe(err => console.error(err));
+
+  return replicationState;
 };

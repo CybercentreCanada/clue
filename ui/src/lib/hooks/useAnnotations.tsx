@@ -87,6 +87,8 @@ const useAnnotations = (
       return;
     }
 
+    // database.selectors.exportJSON().then(console.log);
+
     const observable = database.selectors
       .find({
         selector: {

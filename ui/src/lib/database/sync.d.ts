@@ -1,11 +1,11 @@
-import { SelectorDocType } from './types';
+import type { WithLastUpdated } from 'lib/database/types';
+import type { RxReplicationWriteToMasterRow, WithDeleted } from 'rxdb';
 
-export interface SyncResponse {
-  documents: SelectorDocType[];
-  checkpoint: {
-    id: string;
-    lastUpdated: number;
-  };
+export type SyncResponse<T> = WithDeleted<WithLastUpdated<T>>[];
+
+export interface Checkpoint {
+  id: string;
+  last_updated: number;
 }
 
 export type PushPayload<T> = RxReplicationWriteToMasterRow<T>[];

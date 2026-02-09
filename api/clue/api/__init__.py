@@ -35,9 +35,11 @@ def _make_api_response(
         log_with_traceback(trace, "Exception", is_exception=True)
 
     if isinstance(data, BaseModel):
-        data = data.model_dump(mode="json")
+        data = data.model_dump(mode="json", by_alias=True, exclude_none=True)
     elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], BaseModel):
-        data = [entry.model_dump(mode="json") for entry in cast(list[BaseModel], data)]
+        data = [
+            entry.model_dump(mode="json", by_alias=True, exclude_none=True) for entry in cast(list[BaseModel], data)
+        ]
 
     resp = make_response(
         ClueResponse(response=data, error_message=err, warning=warnings, status_code=status_code).model_dump(

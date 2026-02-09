@@ -1,7 +1,8 @@
 from datetime import datetime
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import AliasGenerator, BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 from clue.models.network import QueryEntry, ResultMetadata
 
@@ -29,7 +30,9 @@ class SelectorDocument(QueryEntry, ResultMetadata):
 
     id: str = Field(description="The ID of the selector", default_factory=generate_uuid)
     updated_at: int = Field(description="The last updated time of this record", default_factory=generate_updated_at)
-    deleted: bool = Field(description="Is this row 'deleted' by rxdb?", default=False, alias="_deleted")
+    deleted: bool = Field(
+        description="Is this row 'deleted' by rxdb?", default=False, alias="_deleted", serialization_alias="_deleted"
+    )
 
 
 class ChangeRow(BaseModel):
@@ -43,5 +46,10 @@ class ChangeRow(BaseModel):
     new_document_state: SelectorDocument
     "The new state of the document from RxDB"
 
-    assumed_master_state: SelectorDocument | None
+    assumed_master_state: SelectorDocument | None = None
     "The optional assumed state of the document when responding to conflicts"
+
+    model_config = ConfigDict(
+        alias_generator=AliasGenerator(validation_alias=to_camel, serialization_alias=to_camel),
+        validate_assignment=True,
+    )

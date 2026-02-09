@@ -5,11 +5,12 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parseaddr
 from math import floor
 from random import randbytes, sample
-from typing import Any, Literal, Optional, Union
+from typing import Annotated, Any, Literal, Optional, Union
 
 from pydantic import (
     AliasGenerator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     ValidationInfo,
@@ -27,6 +28,19 @@ from clue.models.validators import validate_classification
 
 logger = get_logger(__file__)
 
+def parse_datetime(v):
+    """Parse a datetime string or return the input if already a datetime object.
+
+    Args:
+        v: A datetime string or datetime object.
+
+    Returns:
+        datetime: A datetime object with timezone information.
+    """
+    if isinstance(v, str):
+        # Manually handle the Z if needed or just parse
+        return datetime.fromisoformat(v.replace("Z", "+00:00"))
+    return v
 
 class ClueResponse(BaseModel):
     model_config = ConfigDict(
@@ -39,41 +53,59 @@ class ClueResponse(BaseModel):
     server_version: str = get_version()
     status_code: int
 
-
-class Annotation(BaseModel):
-    analytic: Optional[str] = Field(
-        description="Identifier for the analytic producing the knowledge. Mutually exclusive with author.",
-        default=None,
-        examples=["Howler", "Assemblyline", None],
-    )
-    analytic_icon: Optional[str] = Field(
-        description="Formatted string to present an icon for this analytic on the UI using iconify/react format: "
-        "https://iconify.design/docs/icon-components/react/. External icons not yet supported",
-        default=None,
-        examples=["material-symbols:sound-detection-dog-barking", None],
-    )
-    author: Optional[str] = Field(
-        description="The author providing the annotation. Mutually exclusive with analytic.",
-        default=None,
-        examples=["John Smith", None],
-    )
-    quantity: int = Field(
-        description="Number of times this annotation was generated for the given indicator",
-        default=1,
-        examples=[1, 10, 25],
-    )
-    version: Optional[str] = Field(
-        description="The version of the API for the analytic that produced the knowledge",
-        default=None,
-        examples=["v0.0.1", "1.0.0", None],
-    )
-    timestamp: Optional[datetime] = Field(
+Timestamp = Annotated[
+    datetime,
+    BeforeValidator(parse_datetime),
+    Field(
         description="A timestamp describing when the knowledge was generated.",
         default_factory=lambda: datetime.now(timezone.utc),
         examples=[datetime.now(timezone.utc), datetime.now(timezone.utc) - timedelta(weeks=2)],
-    )
-    type: Literal["opinion", "frequency", "assessment", "mitigation", "context"] = Field(
-        description=textwrap.dedent("""
+    ),
+]
+
+
+class Annotation(BaseModel):
+    analytic: Annotated[
+        str | None,
+        Field(
+            description="Identifier for the analytic producing the knowledge. Mutually exclusive with author.",
+            examples=["Howler", "Assemblyline", None],
+        ),
+    ] = None
+    analytic_icon: Annotated[
+        str | None,
+        Field(
+            description="Formatted string to present an icon for this analytic on the UI using iconify/react format: "
+            "https://iconify.design/docs/icon-components/react/. External icons not yet supported",
+            examples=["material-symbols:sound-detection-dog-barking", None],
+        ),
+    ] = None
+    author: Annotated[
+        str | None,
+        Field(
+            description="The author providing the annotation. Mutually exclusive with analytic.",
+            examples=["John Smith", None],
+        ),
+    ] = None
+    quantity: Annotated[
+        int,
+        Field(
+            description="Number of times this annotation was generated for the given indicator",
+            examples=[1, 10, 25],
+        ),
+    ] = 1
+    version: Annotated[
+        str | None,
+        Field(
+            description="The version of the API for the analytic that produced the knowledge",
+            examples=["v0.0.1", "1.0.0", None],
+        ),
+    ] = None
+    timestamp: Timestamp
+    type: Annotated[
+        Literal["opinion", "frequency", "assessment", "mitigation", "context"],
+        Field(
+            description=textwrap.dedent("""
                                     What type of annotation is this?
                                     Opinion (What type of activity is the selector associated with?):
                                         benign - authorized or harmless activity
@@ -118,68 +150,90 @@ class Annotation(BaseModel):
                                         not-blockable - Selector cannot be blocked
                                         not-shareable - Selector cannot be shared with partners/collaborators
                                     """),
-        examples=["opinion", "frequency", "assessment", "mitigation", "context"],
-    )
-    value: Union[str, float, int] = Field(
-        description="The value associated with the type.",
-        examples=[
-            "benign",
-            "suspect",
-            "malicious",
-            "obscure",
-            "IP Located in Canada",
-            "Involved in Operation Cat",
-            11,
-            42.0,
-        ],
-    )
-    confidence: float = Field(
-        description="Self-reported confidence level of the annotation. 0.0 = not confident at all, 1.0 = absolute fact",
-        ge=0.0,
-        le=1.0,
-        examples=[0.0, 0.5, 1.0],
-    )
-    severity: Optional[float] = Field(
-        description="Severity of the annotation, if accurate. 0.0 = not severe at all, 1.0 = extremely important",
-        ge=0.0,
-        le=1.0,
-        default=None,
-        examples=[0.0, 0.5, 1.0, None],
-    )
-    priority: Optional[float] = Field(
-        description=(
-            "What priority to assign to this annotation. Higher priority = more likely to be shown to analysts. "
-            "Optional. If not provided, calculated based on confidence, severity and reliability."
+            examples=["opinion", "frequency", "assessment", "mitigation", "context"],
         ),
-        default=None,
-        examples=[1.0, 50.0, 1000.0, None],
-    )
-    summary: str = Field(
-        description="A plaintext summary of the annotation.",
-        examples=["Example summary of the information in this Annotation"],
-    )
-    details: Optional[str] = Field(
-        description="detailed description of the annotation. Supports markdown formatting.",
-        default=None,
-        examples=["# Here's some annotation details\n\nIt's very interesting", None],
-    )
-    link: Optional[Url] = Field(
-        description="Link for more information about this specific annotation",
-        default=None,
-        examples=[Url("https://example.com/annotation"), None],
-    )
-    icon: Optional[str] = Field(
-        description="Formatted string to present an icon for this annotation on the UI using iconify/react format: "
-        "https://iconify.design/docs/icon-components/react/. External icons not yet supported",
-        default=None,
-        examples=["material-symbols:sound-detection-dog-barking", None],
-    )
-    ubiquitous: bool = Field(
-        description="Does this annotation show up on the vast majority of selectors (i.e. asset provenance, "
-        "organization ownership/non-ownership of IP address)",
-        default=False,
-        examples=[True, False],
-    )
+    ]
+    value: Annotated[
+        Union[str, float, int],
+        Field(
+            description="The value associated with the type.",
+            examples=[
+                "benign",
+                "suspect",
+                "malicious",
+                "obscure",
+                "IP Located in Canada",
+                "Involved in Operation Cat",
+                11,
+                42.0,
+            ],
+        ),
+    ]
+    confidence: Annotated[
+        float,
+        Field(
+            description="Self-reported confidence level of the annotation. 0.0 = not confident at all, 1.0 = absolute fact",
+            ge=0.0,
+            le=1.0,
+            examples=[0.0, 0.5, 1.0],
+        ),
+    ]
+    severity: Annotated[
+        Optional[float],
+        Field(
+            description="Severity of the annotation, if accurate. 0.0 = not severe at all, 1.0 = extremely important",
+            ge=0.0,
+            le=1.0,
+            examples=[0.0, 0.5, 1.0, None],
+        ),
+    ] = None
+    priority: Annotated[
+        Optional[float],
+        Field(
+            description=(
+                "What priority to assign to this annotation. Higher priority = more likely to be shown to analysts. "
+                "Optional. If not provided, calculated based on confidence, severity and reliability."
+            ),
+            examples=[1.0, 50.0, 1000.0, None],
+        ),
+    ] = None
+    summary: Annotated[
+        str,
+        Field(
+            description="A plaintext summary of the annotation.",
+            examples=["Example summary of the information in this Annotation"],
+        ),
+    ]
+    details: Annotated[
+        str | None,
+        Field(
+            description="detailed description of the annotation. Supports markdown formatting.",
+            examples=["# Here's some annotation details\n\nIt's very interesting", None],
+        ),
+    ] = None
+    link: Annotated[
+        Url | None,
+        Field(
+            description="Link for more information about this specific annotation",
+            examples=[Url("https://example.com/annotation"), None],
+        ),
+    ] = None
+    icon: Annotated[
+        str | None,
+        Field(
+            description="Formatted string to present an icon for this annotation on the UI using iconify/react format: "
+            "https://iconify.design/docs/icon-components/react/. External icons not yet supported",
+            examples=["material-symbols:sound-detection-dog-barking", None],
+        ),
+    ] = None
+    ubiquitous: Annotated[
+        bool,
+        Field(
+            description="Does this annotation show up on the vast majority of selectors (i.e. asset provenance, "
+            "organization ownership/non-ownership of IP address)",
+            examples=[True, False],
+        ),
+    ] = False
 
     @computed_field  # type: ignore[misc]
     @property
@@ -279,27 +333,35 @@ class Annotation(BaseModel):
 
 
 class QueryEntry(BaseModel):
-    classification: str = Field(
-        description="Classification of results by the enrichment",
-        default="TLP:CLEAR",
-        examples=sample(sorted(CLASSIFICATION.list_all_classification_combinations()), k=5),
-    )
-    count: int = Field(
-        description="Number of matches from the search",
-        default=1,
-        examples=sorted([floor(i / 10) for i in randbytes(5)]),  # noqa: S311
-    )
-    link: Optional[Url] = Field(
-        description="Link to more information", default=None, examples=[Url("https://example.com/moreinfo"), None]
-    )
-    annotations: list[Annotation] = Field(
-        description="A list of annotations returned from the service for this entry", default=[]
-    )
-    raw_data: Any = Field(
-        description="The raw records associated with the generated annotations.",
-        default=None,
-        examples=[{"id": 1, "raw_field": "some_data"}, [{"id": 1, "other_data": "example", "other_row": 45}]],
-    )
+    classification: Annotated[
+        str,
+        Field(
+            description="Classification of results by the enrichment",
+            examples=sample(sorted(CLASSIFICATION.list_all_classification_combinations()), k=5),
+        ),
+    ] = "TLP:CLEAR"
+    count: Annotated[
+        int,
+        Field(
+            description="Number of matches from the search",
+            examples=sorted([floor(i / 10) for i in randbytes(5)]),  # noqa: S311
+        ),
+    ] = 1
+    link: Annotated[
+        Optional[Url],
+        Field(description="Link to more information", examples=[Url("https://example.com/moreinfo"), None]),
+    ] = None
+    annotations: Annotated[
+        list[Annotation],
+        Field(description="A list of annotations returned from the service for this entry"),
+    ] = []
+    raw_data: Annotated[
+        Any,
+        Field(
+            description="The raw records associated with the generated annotations.",
+            examples=[{"id": 1, "raw_field": "some_data"}, [{"id": 1, "other_data": "example", "other_row": 45}]],
+        ),
+    ] = None
 
     model_config = ConfigDict(validate_assignment=True)
 
@@ -320,39 +382,62 @@ class QueryEntry(BaseModel):
         return validate_classification(classification)
 
 class ResultMetadata(BaseModel):
-    type: str = Field(
-        description="The type of the value represented by this result", examples=list(SUPPORTED_TYPES.keys())
-    )
-    value: str = Field(
-        description="The value represented by this result",
-        examples=["127.0.0.1", "email@example.com", hashlib.sha256("example".encode()).hexdigest()],
-    )
-    source: str = Field(description="The name of the plugin providing this result", examples=["example_plugin"])
-    error: Optional[str] = Field(
-        description="Error message returned by data source",
-        default=None,
-        examples=["An error occurred when enriching the data.", None],
-    )
-    maintainer: Optional[str] = Field(
-        description="Email contact in the RFC-5322 format 'Full Name <email_address>'.",
-        default=None,
-        examples=["maintainer@example.com", None],
-    )
-    datahub_link: Optional[Url] = Field(
-        description="Link to datahub entry on this enrichment",
-        default=None,
-        examples=[Url("https://example.com/datahub"), None],
-    )
-    documentation_link: Optional[Url] = Field(
-        description="Link to documentation on this enrichment",
-        default=None,
-        examples=[Url("https://example.com/documentation"), None],
-    )
-    latency: float = Field(
-        description="Total duration (in milliseconds) taken to resolve this result",
-        default=0,
-        examples=sorted([i * 10 for i in randbytes(5)]),  # noqa: S311
-    )
+    type: Annotated[
+        str,
+        Field(description="The type of the value represented by this result", examples=list(SUPPORTED_TYPES.keys())),
+    ]
+
+    value: Annotated[
+        str,
+        Field(
+            description="The value represented by this result",
+            examples=["127.0.0.1", "email@example.com", hashlib.sha256("example".encode()).hexdigest()],
+        ),
+    ]
+
+    source: Annotated[
+        str, Field(description="The name of the plugin providing this result", examples=["example_plugin"])
+    ]
+
+    error: Annotated[
+        Optional[str],
+        Field(
+            description="Error message returned by data source",
+            examples=["An error occurred when enriching the data.", None],
+        ),
+    ] = None
+
+    maintainer: Annotated[
+        Optional[str],
+        Field(
+            description="Email contact in the RFC-5322 format 'Full Name <email_address>'.",
+            examples=["maintainer@example.com", None],
+        ),
+    ] = None
+
+    datahub_link: Annotated[
+        Optional[Url],
+        Field(
+            description="Link to datahub entry on this enrichment",
+            examples=[Url("https://example.com/datahub"), None],
+        ),
+    ] = None
+
+    documentation_link: Annotated[
+        Optional[Url],
+        Field(
+            description="Link to documentation on this enrichment",
+            examples=[Url("https://example.com/documentation"), None],
+        ),
+    ] = None
+
+    latency: Annotated[
+        float,
+        Field(
+            description="Total duration (in milliseconds) taken to resolve this result",
+            examples=sorted([i * 10 for i in randbytes(5)]),  # noqa: S311
+        ),
+    ] = 0
 
     model_config = ConfigDict(validate_assignment=True)
 
@@ -378,7 +463,7 @@ class ResultMetadata(BaseModel):
         return maintainer
 
 class QueryResult(ResultMetadata):
-    items: list[QueryEntry] = Field(description="List of results from the source", default=[])
+    items: Annotated[list[QueryEntry], Field(description="List of results from the source")] = []
 
     model_config = ConfigDict(validate_assignment=True)
 

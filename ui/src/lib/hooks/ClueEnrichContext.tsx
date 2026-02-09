@@ -148,9 +148,9 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         for (const item of items) {
           const { classification, count, link, annotations } = item;
 
-          await database.selectors.find({ selector: { type, value, source, classification } }).incrementalRemove();
+          await database.selectors.find({ selector: { type, value, source } }).incrementalRemove();
 
-          const record = {
+          const record: SelectorDocType = {
             id: uuid(),
             source,
             type,
@@ -462,12 +462,12 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   );
 
   useEffect(() => {
-    if (!database || import.meta.env.PROD) {
+    if (!database || import.meta.env.PROD || !database.status || database.status.closed) {
       return;
     }
 
     const observer = database.status
-      .count({ selector: { $or: [{ status: 'pending' }, { status: 'in-progress' }] } })
+      ?.count({ selector: { $or: [{ status: 'pending' }, { status: 'in-progress' }] } })
       .$.subscribe(count => clueDebugLogger(`Outstanding requests: ${count}`, debugLogging));
 
     return () => {
@@ -574,7 +574,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       setDefaultClassification,
       setReady: setIsReady,
       defaultClassification,
-      ready: isReady && !!database && !!clueConfig.config?.c12nDef
+      ready: isReady && !!database && !!clueConfig.config?.c12nDef && database.selectors.synced
     }),
     [
       bulkEnrich,

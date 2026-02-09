@@ -9,6 +9,10 @@ export interface DatabaseConfig {
   baseURL?: string;
 }
 
+export type WithLastUpdated<T> = T & {
+  updated_at: number;
+};
+
 export interface SelectorDocType {
   id: string;
   source: string;
@@ -24,8 +28,6 @@ export interface SelectorDocType {
   documentation_link?: string;
   latency: number;
   annotations: Annotation[];
-  lastUpdated: number;
-  _deleted: boolean;
 }
 
 export type SelectorDocMethods = {

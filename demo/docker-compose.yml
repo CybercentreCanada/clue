@@ -77,8 +77,8 @@ services:
       # Configuring the Port Lookup plugin as an external source
       API__EXTERNAL_SOURCES: |
         [
-          {"name": "port-lookup", "url": "http://port-lookup:5000", "classification": "TLP:CLEAR"},
-          {"name": "crt-sh", "url": "http://crtsh:5000", "classification": "TLP:CLEAR"}
+          {"name": "port-lookup", "url": "http://port-lookup:5100", "classification": "TLP:CLEAR"},
+          {"name": "crt-sh", "url": "http://crtsh:5101", "classification": "TLP:CLEAR"}
         ]
 
     depends_on:
@@ -100,11 +100,13 @@ services:
   port-lookup:
     image: cccs/clue-plugin-port-lookup:latest
     restart: unless-stopped
+    ports:
+      - "5100:5100"
     environment:
       APP_NAME: port-lookup
       CLASSIFICATION: TLP:CLEAR
       WORKERS: 1
-      PORT: 5000
+      PORT: 5100
       # Redis for the plugin (optional, but good practice if it uses cache)
       CORE__REDIS__HOST: redis
       CORE__REDIS__PORT: 6379
@@ -114,11 +116,13 @@ services:
   crtsh:
     image: cccs/clue-plugin-crtsh:latest
     restart: unless-stopped
+    ports:
+      - "5101:5101"
     environment:
       APP_NAME: crtsh
       CLASSIFICATION: TLP:CLEAR
       WORKERS: 1
-      PORT: 5000
+      PORT: 5101
       # Redis for the plugin (optional, but good practice if it uses cache)
       CORE__REDIS__HOST: redis
       CORE__REDIS__PORT: 6379
