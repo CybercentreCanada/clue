@@ -33,7 +33,8 @@ logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
-logger.addHandler(console)
+if not logger.handlers:
+    logger.addHandler(console)
 
 
 class PasswordRequirement(BaseModel):
