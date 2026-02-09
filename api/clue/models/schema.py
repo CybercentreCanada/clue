@@ -1,4 +1,3 @@
-import json
 from typing import Any
 
 from pydantic import BaseModel
@@ -90,7 +89,5 @@ def get_bson_schema(model: type[BaseModel]) -> dict:
     nested_schema = remove_defs_and_refs(raw_schema)
 
     cleaned_schema = cleanup_for_mongodb(nested_schema)
-
-    print(json.dumps(cleaned_schema, indent=2))
 
     return {"$jsonSchema": cleaned_schema}

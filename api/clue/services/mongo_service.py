@@ -1,5 +1,8 @@
+import json
 
 from dotenv import load_dotenv
+from flask import Response
+from redis.client import PubSub
 
 from clue.models.config import ExternalSource
 from clue.models.selector import Selector
@@ -13,9 +16,9 @@ from pymongo.synchronous.collection import Collection
 
 from clue.common.exceptions import ClueRuntimeError
 from clue.common.logging import get_logger
-from clue.config import config
-from clue.models.mongodb import ChangeRow, SelectorDocument
+from clue.config import config, get_redis
 from clue.models.schema import get_bson_schema
+from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocument
 
 logger = get_logger(__file__)
 
@@ -49,10 +52,49 @@ def collection(user: str) -> Collection[dict[str, Any]]:
 
     database = SERVER[config.core.mongodb.database]
 
-    if user not in database.list_collection_names():
-        database.create_collection(user, validator=get_bson_schema(SelectorDocument))
+    collection_name = f"{user}-selectors"
+    if collection_name not in database.list_collection_names():
+        database.create_collection(collection_name, validator=get_bson_schema(SelectorDocument))
 
-    return database[user]
+    return database[collection_name]
+
+
+def build_pubsub() -> PubSub:
+    """Build and return a Redis PubSub client.
+
+    Returns:
+        PubSub: A Redis PubSub client instance.
+    """
+    client = get_redis()
+    return client.pubsub()
+
+
+def event_stream(user: str) -> Response:
+    """Stream selector events for a user via Server-Sent Events.
+
+    Args:
+        user (str): The username to stream events for.
+
+    Returns:
+        Response: A Flask response with text/event-stream mimetype for SSE.
+    """
+    pubsub = build_pubsub()
+    pubsub.subscribe(f"{user}-selectors")
+
+    def stream():
+        event_id = 0
+        for message in pubsub.listen():
+            if message["type"] != "message":
+                continue
+
+            event = {"id": event_id, **json.loads(message["data"].decode())}
+
+            event_id = event_id + 1
+
+            logger.info("Writing event (id:%s)", event_id)
+            yield json.dumps(event) + "\n"
+
+    return Response(stream(), mimetype="text/event-stream")
 
 
 def push(user: str, change_rows: list[ChangeRow]) -> list[SelectorDocument]:
@@ -71,8 +113,7 @@ def push(user: str, change_rows: list[ChangeRow]) -> list[SelectorDocument]:
         len(change_rows),
     )
     conflicts: list[SelectorDocument] = []
-
-    # TODO: Implement the pullStream
+    event = PublishEvent()
 
     user_collection = collection(user)
 
@@ -90,11 +131,18 @@ def push(user: str, change_rows: list[ChangeRow]) -> list[SelectorDocument]:
                 conflicts.append(existing_selector)
                 continue
 
+        data = row.new_document_state.model_dump(mode="json", by_alias=True)
         user_collection.replace_one(
             {"id": row.new_document_state.id},
-            row.new_document_state.model_dump(mode="json", by_alias=True),
+            data,
             upsert=True,
         )
+        event.documents.append(row.new_document_state)
+        event.checkpoint = Checkpoint(id=row.new_document_state.id, updated_at=row.new_document_state.updated_at)
+
+    if len(event.documents) > 0:
+        logger.info("Publishing event")
+        get_redis().publish(f"{user}-selectors", event.model_dump_json(by_alias=True, exclude_none=True))
 
     if len(conflicts) > 0:
         logger.info("Returning %s conflicts")
@@ -168,6 +216,7 @@ def existing_results(user: str, selectors: list[Selector], external_sources: lis
                         "value": {"$in": values},
                         "source": {"$in": sources},
                         "_deleted": False,
+                        "error": None,
                     }
                 },
                 {"$group": {"_id": "$source", "records": {"$push": {"type": "$type", "value": "$value"}}}},

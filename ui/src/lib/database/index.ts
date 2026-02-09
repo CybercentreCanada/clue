@@ -158,8 +158,6 @@ const buildDatabase = async (_config: DatabaseConfig = {}) => {
 
   const selectorReplication = await replicateSelectorCollection(database.selectors);
   await selectorReplication.awaitInSync();
-  database.selectors.synced = true;
-  console.log(await database.selectors.exportJSON());
 
   try {
     if (database.status && !database.status.closed) {

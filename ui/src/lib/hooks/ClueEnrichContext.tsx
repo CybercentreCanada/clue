@@ -574,7 +574,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       setDefaultClassification,
       setReady: setIsReady,
       defaultClassification,
-      ready: isReady && !!database && !!clueConfig.config?.c12nDef && database.selectors.synced
+      ready: isReady && !!database && !!clueConfig.config?.c12nDef && database.selectors?.synced
     }),
     [
       bulkEnrich,

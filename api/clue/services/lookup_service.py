@@ -315,21 +315,6 @@ def parse_bulk_response(
                 # This allows plugins to overwrite the default values if they want
                 data = {**data, **api_response[type][value], "latency": latency or 0.0}
 
-                logger.debug(
-                    "Validating bulk response from source %s (%s), returning %s annotations in %s items, using user %s",
-                    source.name,
-                    "production" if source.production else "not production",
-                    len(
-                        list(
-                            itertools.chain.from_iterable(
-                                entry.get("annotations", []) for entry in data.get("items", [])
-                            )
-                        )
-                    ),
-                    len(data.get("items", [])),
-                    user.get("uname", user.get("email", None)),
-                )
-
                 if source.production:
                     bulk_result[type][value] = QueryResult.model_construct(**data)
                 else:

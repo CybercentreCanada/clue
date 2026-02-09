@@ -23,7 +23,6 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
     if (_database) {
       setDatabase(_database);
     } else {
-      console.warn('Building custom database', databaseConfig);
       buildDatabase(databaseConfig).then(setDatabase);
     }
   }, [_database, databaseConfig]);

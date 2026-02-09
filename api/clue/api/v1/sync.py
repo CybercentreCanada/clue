@@ -8,7 +8,7 @@ from clue.api import forbidden, make_subapi_blueprint, ok
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
-from clue.models.mongodb import ChangeRow
+from clue.models.sync import ChangeRow
 from clue.security import api_login
 from clue.services import mongo_service
 
@@ -25,19 +25,26 @@ logger = get_logger(__file__)
 @sync_api.route("/<collection>", methods=["GET"])
 @api_login()
 def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[str, str]:
-    """Returns all documentation or filtered documentation if given a url param of a file name or a path
+    """Pull replicated changes from a collection since a specified timestamp.
 
-    Variables:
-    None
+    Args:
+        collection (str): The name of the collection to pull from.
+        user (dict[str, Any] | None, optional): The authenticated user information. Defaults to None.
+        **kwargs: Additional keyword arguments.
 
-    Arguments:
-    None
+    Returns:
+        dict[str, str]: A dictionary containing the replicated data with the following structure:
+            - On success: Contains the pulled changes from the database.
+            - On error: Contains an error message if the user is not authenticated.
 
-    Result Example:
-    URL Link: /api/v1/static/docs?filter="howler"
+    Raises:
+        None: Returns a forbidden response if user is not authenticated.
 
-    {"howler-docs.md": "Markdown documentation of howler-docs.md"}
-
+    Note:
+        Query parameters:
+        - updated_at (int): Timestamp to filter changes since this update time. Defaults to 0.
+        - id (str, optional): Optional document ID to filter results. Defaults to None.
+        - limit (int): Maximum number of records to return per batch. Defaults to 10.
     """
     if not user:
         return forbidden(err="You must we logged in as a valid user.")
@@ -50,22 +57,48 @@ def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
 
 
 @generate_swagger_docs()
+@sync_api.route("/<collection>/stream", methods=["GET"])
+@api_login()
+def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
+    """Stream replicated changes from a collection as server-sent events.
+
+    Args:
+        collection (str): The name of the collection to stream from.
+        user (dict[str, Any] | None, optional): The authenticated user information. Defaults to None.
+        **kwargs: Additional keyword arguments.
+
+    Returns:
+        Server-sent event stream containing replicated changes for the authenticated user.
+
+    Raises:
+        None: Returns a forbidden response if user is not authenticated.
+    """
+    if not user:
+        return forbidden(err="You must we logged in as a valid user.")
+
+    logger.info("Initializing event source stream")
+
+    return mongo_service.event_stream(user["uname"])
+
+
+@generate_swagger_docs()
 @sync_api.route("/<collection>", methods=["POST"])
 @api_login()
 def push(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[str, str]:
-    """Returns all documentation or filtered documentation if given a url param of a file name or a path
+    """Push replicated changes to a collection.
 
-    Variables:
-    None
+    Args:
+        collection (str): The name of the collection to push to.
+        user (dict[str, Any] | None, optional): The authenticated user information. Defaults to None.
+        **kwargs: Additional keyword arguments.
 
-    Arguments:
-    None
+    Returns:
+        dict[str, str]: A dictionary containing the push result with the following structure:
+            - On success: Contains the result of the push operation.
+            - On error: Contains an error message if the user is not authenticated.
 
-    Result Example:
-    URL Link: /api/v1/static/docs?filter="howler"
-
-    {"howler-docs.md": "Markdown documentation of howler-docs.md"}
-
+    Raises:
+        None: Returns a forbidden response if user is not authenticated.
     """
     if not user:
         return forbidden(err="You must we logged in as a valid user.")

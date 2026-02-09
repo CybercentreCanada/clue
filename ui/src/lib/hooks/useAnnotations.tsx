@@ -48,8 +48,8 @@ const useAnnotations = (
   const [annotations, setAnnotations] = useState<WithExtra<Annotation>[]>([]);
   // Memoized readiness check to ensure all required parameters are valid
   const ready = useMemo(
-    () => enrichReady && !!type && !!value && !!classification,
-    [classification, enrichReady, type, value]
+    () => enrichReady && !!type && !!value && !!classification && !!database?.selectors && !database.selectors.closed,
+    [classification, database?.selectors, enrichReady, type, value]
   );
 
   useEffect(() => {
@@ -87,10 +87,8 @@ const useAnnotations = (
       return;
     }
 
-    // database.selectors.exportJSON().then(console.log);
-
     const observable = database.selectors
-      .find({
+      ?.find({
         selector: {
           // Use regex instead of exact value for case-insensitivity
           value: { $regex: `^${value}$`, $options: 'i' }

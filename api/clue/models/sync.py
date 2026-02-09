@@ -53,3 +53,33 @@ class ChangeRow(BaseModel):
         alias_generator=AliasGenerator(validation_alias=to_camel, serialization_alias=to_camel),
         validate_assignment=True,
     )
+
+
+class Checkpoint(BaseModel):
+    """A checkpoint for RxDB replication tracking.
+
+    Attributes:
+        id: The ID of the checkpoint.
+        updated_at: The timestamp when the checkpoint was last updated.
+    """
+
+    id: str
+    "The ID of the checkpoint"
+
+    updated_at: int
+    "The timestamp when the checkpoint was last updated"
+
+
+class PublishEvent(BaseModel):
+    """A publish event for RxDB replication.
+
+    Attributes:
+        documents: The list of documents to publish.
+        checkpoint: The optional checkpoint for tracking replication progress.
+    """
+
+    documents: list[SelectorDocument] = []
+    "The list of documents to publish"
+
+    checkpoint: Checkpoint | None = None
+    "The optional checkpoint for tracking replication progress"
