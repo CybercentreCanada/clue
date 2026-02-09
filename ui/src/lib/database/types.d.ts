@@ -5,7 +5,13 @@ export interface DatabaseConfig {
   storageType?: 'memory' | 'sessionStorage';
   testing?: boolean;
   devMode?: boolean;
+  replicate?: boolean;
+  baseURL?: string;
 }
+
+export type WithLastUpdated<T> = T & {
+  updated_at: number;
+};
 
 export interface SelectorDocType {
   id: string;

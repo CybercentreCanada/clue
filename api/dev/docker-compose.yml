@@ -9,6 +9,17 @@ services:
       timeout: 10s
       retries: 3
 
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
   keycloak:
     build:
       context: ./keycloak

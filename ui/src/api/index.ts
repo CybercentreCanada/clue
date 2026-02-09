@@ -4,6 +4,7 @@ import * as configs from 'api/configs';
 import * as fetchers from 'api/fetchers';
 import * as lookup from 'api/lookup';
 import * as _static from 'api/static';
+import * as sync from 'api/sync';
 import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 import type { ClueResponse } from 'lib/types/network';
 import { StorageKey } from 'lib/utils/constants';
@@ -33,6 +34,7 @@ const api = {
   lookup,
   actions,
   fetchers,
+  sync,
   _static
 };
 

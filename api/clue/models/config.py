@@ -28,6 +28,13 @@ DEFAULT_USER_NAME_FIELDS = ["name", "displayName"]
 APP_NAME = default_string_value(env_name="APP_NAME", default="clue").replace("-dev", "")  # type: ignore[union-attr]
 CLASSIFICATION = forge.get_classification()
 
+logger = logging.getLogger("clue.models.config")
+logger.setLevel(logging.INFO)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
+logger.addHandler(console)
+
 
 class PasswordRequirement(BaseModel):
     lower: bool = Field(description="Password must contain lowercase letters", default=False)
@@ -213,7 +220,23 @@ class APMServer(BaseModel):
 class Metrics(BaseModel):
     apm_server: APMServer = APMServer()
     export_interval: int = Field(description="How often should we be exporting metrics?", default=5)
-    redis: RedisServer = RedisServer()
+
+
+class MongoDB(BaseModel):
+    host: str | None = Field(description="Hostname of the MongoDB instance", default="mongodb")
+    port: int | None = Field(description="Hostname of the MongoDB instance", default=27017, ge=1, le=65535)
+    user: str | None = Field(description="Username to use to connect to the MongoDB instance", default=None)
+    password: str | None = Field(description="Password to use to connect to the MongoDB instance", default=None)
+    database: str = Field(description="The database to use in the mongodb instance", default="clue")
+
+    def __repr__(self):
+        auth = ""
+        if self.user and self.password:
+            auth = f"{self.user}:{self.password}@"
+        else:
+            logger.warning("No authentication used for mongodb.")
+
+        return f"mongodb://{auth}{self.host}:{self.port}"
 
 
 class Core(BaseModel):
@@ -224,6 +247,9 @@ class Core(BaseModel):
 
     redis: RedisServer = RedisServer()
     "Configuration for Redis instances"
+
+    mongodb: MongoDB = MongoDB()
+    "Configuration for MongoDB instance"
 
 
 class LogLevel(str, Enum):
@@ -363,6 +389,7 @@ class OBOService(BaseModel):
 
 class UI(BaseModel):
     cors_origins: list[str] = Field(default=[], description="List of valid deployments")
+    replication: bool = Field(default=True, description="Should server-side replication be enabled?")
 
 
 class API(BaseModel):
