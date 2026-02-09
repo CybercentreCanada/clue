@@ -14,7 +14,7 @@ const uri = () => {
 
 const get = <T>(
   collection: 'selector' | 'status',
-  id: string,
+  id: string | null,
   timestamp: number,
   config?: AxiosRequestConfig
 ): Promise<SyncResponse<T>> => {
