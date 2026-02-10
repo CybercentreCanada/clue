@@ -36,7 +36,7 @@ SUPPORTED_TYPES = {
     "tenant-id": UUID4_REGEX,
 }
 
-CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]
+CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id"]
 
 
 def add_supported_type(
