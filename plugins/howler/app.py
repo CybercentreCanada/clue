@@ -175,7 +175,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                 annotations.append(
                     Annotation(
                         analytic=analytic,
-                        analytic_icon="material-symbols:sound-detection-dog-barking",
+                        analytic_icon="howler:howler-simple",
                         version=None,
                         timestamp=timestamp,
                         type="context",
@@ -204,7 +204,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                         annotations.append(
                             Annotation(
                                 analytic=analytic,
-                                analytic_icon="material-symbols:sound-detection-dog-barking",
+                                analytic_icon="howler:howler-simple",
                                 version=None,
                                 timestamp=timestamp,
                                 type="assessment",
@@ -226,7 +226,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                         annotations.append(
                             Annotation(
                                 analytic=analytic,
-                                analytic_icon="material-symbols:sound-detection-dog-barking",
+                                analytic_icon="howler:howler-simple",
                                 version=None,
                                 timestamp=timestamp,
                                 type="opinion",
@@ -247,7 +247,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                         annotations.append(
                             Annotation(
                                 analytic=analytic,
-                                analytic_icon="material-symbols:sound-detection-dog-barking",
+                                analytic_icon="howler:howler-simple",
                                 version=None,
                                 timestamp=timestamp,
                                 type="opinion",
@@ -269,7 +269,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                     annotations.append(
                         Annotation(
                             analytic=analytic,
-                            analytic_icon="material-symbols:sound-detection-dog-barking",
+                            analytic_icon="howler:howler-simple",
                             version=None,
                             timestamp=timestamp,
                             type="opinion",
