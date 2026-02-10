@@ -34,11 +34,11 @@ SUPPORTED_TYPES = {
     "sha256": SHA256_REGEX,
     "telemetry": None,
     "hostname": None,
-    "tenant-id": UUID4_REGEX,
+    "tenant_id": UUID4_REGEX,
     "mac_address": MAC_ADDRESS_REGEX,
 }
 
-CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "mac_address"]
+CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant_id", "mac_address"]
 
 
 def add_supported_type(

@@ -33,9 +33,7 @@ import QueryStatus from 'lib/components/stats/QueryStatus';
 import useClue from 'lib/hooks/useClue';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import type { BulkEnrichResponses, EnrichResponse, EnrichResponses } from 'lib/types/lookup';
-import { isNil } from 'lodash-es';
-import isEmpty from 'lodash-es/isEmpty';
-import range from 'lodash-es/range';
+import { isEmpty, isNil, range } from 'lodash-es';
 import type { FC } from 'react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -246,7 +244,10 @@ const Home: FC = () => {
         <Stack direction="row" spacing={0.5}>
           {loading && isEmpty(supportedTypes)
             ? range(0, 3).map(v => <Skeleton key={v} variant="rounded" height="24px" width="50px" />)
-            : supportedTypes.sort().map(type => <Chip key={type} size="small" label={type} />)}
+            : supportedTypes
+                .slice()
+                .sort()
+                .map(type => <Chip key={type} size="small" label={type} />)}
         </Stack>
         <LinearProgress sx={theme => ({ transition: theme.transitions.create('opacity'), opacity: +loading })} />
         <Stack position="relative">
