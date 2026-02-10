@@ -19,6 +19,12 @@ const QueryStatus: FC = () => {
       return;
     }
 
+    if (database?.status?.closed) {
+      // eslint-disable-next-line no-console
+      console.warn('Status collection is closed');
+      return;
+    }
+
     const observables = [
       database.status.count({ selector: { status: 'pending' } }).$.subscribe(setPendingCount),
       database.status.count({ selector: { status: 'in-progress' } }).$.subscribe(setInProgressCount),

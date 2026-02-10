@@ -57,6 +57,12 @@ const useAnnotations = (
       return;
     }
 
+    if (database?.status.closed) {
+      // eslint-disable-next-line no-console
+      console.warn('Status collection is closed');
+      return;
+    }
+
     // Monitor the status database for in-progress requests
     const observable = database.status
       .count({ selector: { type, value, classification, status: 'in-progress' } })

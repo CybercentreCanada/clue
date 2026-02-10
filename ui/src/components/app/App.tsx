@@ -1,3 +1,4 @@
+import { loader } from '@monaco-editor/react';
 import api from 'api';
 import type { AppPreferenceConfigs, AppSiteMapConfigs, AppThemeConfigs } from 'commons/components/app/AppConfigs';
 import AppProvider from 'commons/components/app/AppProvider';
@@ -40,6 +41,7 @@ import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
 import { StorageKey } from 'lib/utils/constants';
 import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
+import * as monaco from 'monaco-editor';
 import type { FC, PropsWithChildren } from 'react';
 import { useEffect } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
@@ -47,6 +49,8 @@ import { BrowserRouter, Route } from 'react-router-dom';
 import AppContainer from './AppContainer';
 import LocalStorageProvider from './providers/LocalStorageProvider';
 import ModalProvider from './providers/ModalProvider';
+
+loader.config({ monaco });
 
 // Your application's initialization flow.
 const MyApp: FC = () => {
@@ -148,7 +152,7 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
         <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
           <ModalProvider>
             <LocalStorageProvider>
-              <ClueDatabaseProvider>
+              <ClueDatabaseProvider databaseConfig={{ storageType: 'memory' }}>
                 <ClueEnrichProvider publicIconify={false} skipConfigCall>
                   <ClueFetcherProvider>
                     <ClueActionProvider>
