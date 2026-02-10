@@ -1,11 +1,13 @@
 import api from 'api';
 import type { AxiosRequestConfig } from 'axios';
+import type { SnackbarEvents } from 'lib/main';
+import { SNACKBAR_EVENT_ID, useClue } from 'lib/main';
 import type { FetcherDefinition, FetcherResult } from 'lib/types/fetcher';
 import type { Selector } from 'lib/types/lookup';
+import { safeDispatchEvent } from 'lib/utils/window';
 import type { FC, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createContext } from 'use-context-selector';
-import useClue from './useClue';
 import useClueConfig from './useClueConfig';
 
 export interface ClueFetcherContextProps {
@@ -35,6 +37,7 @@ export interface ClueFetcherContextProps {
 
 export type ClueFetcherContextType = {
   fetchSelector: (fetcherId: string, selector: Selector) => Promise<FetcherResult>;
+  getFetcherStatus: (fetcherId: string, taskId: string) => Promise<FetcherResult>;
   fetchers: { [index: string]: FetcherDefinition };
   fetchCompleted: boolean;
 };
@@ -57,6 +60,16 @@ export const ClueFetcherProvider: FC<PropsWithChildren<ClueFetcherContextProps>>
 
   const fetchRequests = useRef<{ [fetcherId: string]: { [hashKey: string]: Promise<FetcherResult> } }>({});
 
+  const requestConfig = useMemo(() => {
+    const headers: AxiosRequestConfig['headers'] = {};
+    const token = getToken?.();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    const baseConfig = { baseURL, headers };
+    return onNetworkCall ? onNetworkCall(baseConfig) : { baseURL, headers };
+  }, [baseURL, getToken, onNetworkCall]);
+
   /**
    * Return a JSON string containing the type, value and classification of the request being made.
    */
@@ -73,16 +86,6 @@ export const ClueFetcherProvider: FC<PropsWithChildren<ClueFetcherContextProps>>
       }
 
       try {
-        const headers: AxiosRequestConfig['headers'] = {};
-        const token = getToken?.();
-        if (token) {
-          headers.Authorization = `Bearer ${token}`;
-        }
-
-        let requestConfig: AxiosRequestConfig = { baseURL, headers };
-        if (onNetworkCall) {
-          requestConfig = onNetworkCall(requestConfig);
-        }
         const result = api.fetchers.post(fetcherId, selector, requestConfig);
 
         if (!fetchRequests.current[fetcherId]) {
@@ -92,11 +95,37 @@ export const ClueFetcherProvider: FC<PropsWithChildren<ClueFetcherContextProps>>
         fetchRequests.current[fetcherId][getHashKey(selector)] = result;
 
         return await result;
-      } catch {
-        return null;
+      } catch (e) {
+        safeDispatchEvent(
+          new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
+            detail: {
+              message: e.toString(),
+              level: 'error'
+            }
+          })
+        );
       }
     },
-    [baseURL, getHashKey, getToken, onNetworkCall]
+    [getHashKey, requestConfig]
+  );
+
+  const getFetcherStatus: ClueFetcherContextType['getFetcherStatus'] = useCallback(
+    async (fetcherId, taskId) => {
+      try {
+        const res = await api.fetchers.status.get(fetcherId, taskId, {}, requestConfig);
+        return res;
+      } catch (e) {
+        safeDispatchEvent(
+          new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
+            detail: {
+              message: e.toString(),
+              level: 'error'
+            }
+          })
+        );
+      }
+    },
+    [requestConfig]
   );
 
   useEffect(() => {
@@ -110,17 +139,6 @@ export const ClueFetcherProvider: FC<PropsWithChildren<ClueFetcherContextProps>>
       return;
     }
 
-    const headers: AxiosRequestConfig['headers'] = {};
-    const token = getToken?.();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    let requestConfig: AxiosRequestConfig = { baseURL, headers };
-    if (onNetworkCall) {
-      requestConfig = onNetworkCall(requestConfig);
-    }
-
     api.fetchers
       .get(requestConfig)
       .then(setFetchers)
@@ -131,10 +149,11 @@ export const ClueFetcherProvider: FC<PropsWithChildren<ClueFetcherContextProps>>
   const context = useMemo(
     () => ({
       fetchSelector,
+      getFetcherStatus,
       fetchers,
       fetchCompleted
     }),
-    [fetchCompleted, fetchSelector, fetchers]
+    [fetchCompleted, fetchSelector, fetchers, getFetcherStatus]
   );
 
   return <ClueFetcherContext.Provider value={context}>{children}</ClueFetcherContext.Provider>;

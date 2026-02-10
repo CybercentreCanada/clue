@@ -92,3 +92,48 @@ def run_fetcher(plugin_id: str, fetcher_id: str, **kwargs):
 
         logger.warning("Unknown error from fetcher %s.%s: %s", plugin_id, fetcher_id, err.message)
         return bad_gateway(err=err.message)
+
+
+@generate_swagger_docs(responses={200: "Successfully fetched status of fetcher"})
+@fetchers_api.route("/<plugin_id>/<fetcher_id>/status/<task_id>", methods=["GET"])
+@api_login()
+def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, **kwargs):
+    """Get the status or result of a fetcher
+
+    Variables:
+    plugin_id (str): the ID of the plugin who owns the action to execute
+    fetcher_id (str): the ID of the action to execute
+    task_id (str): the ID of the specific task to get the status of
+
+    Arguments:
+    None
+
+    Data Block:
+    {
+        type: "ip",
+        value: "127.0.0.1",
+        ...
+    }
+
+    Result Example:
+    {
+        "outcome": "success | failure", # was this execution a success or failure?
+        "format": "link", # What format is the output in?
+        "output": "http://example.com" # The output of the action. Can be any data structure.
+    }
+    """
+    try:
+        return ok(fetcher_service.get_fetcher_status(plugin_id, fetcher_id, task_id, kwargs["user"]))
+    except NotFoundException as err:
+        return not_found(err=err.message)
+    except ClueException as err:
+        if err.status_code == 400:
+            logger.warning(
+                "Bad request from fetcher %s.%s with task_id: %s: %s", plugin_id, fetcher_id, task_id, err.message
+            )
+            return bad_request(err=err.message)
+
+        logger.warning(
+            "Unknown error from fetcher %s.%s with task_id: %s: %s", plugin_id, fetcher_id, task_id, err.message
+        )
+        return bad_gateway(err=err.message)

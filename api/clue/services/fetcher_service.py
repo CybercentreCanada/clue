@@ -201,3 +201,71 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
         raise ClueException(
             f"Something went wrong when running fetcher from plugin '{plugin_id}': {err.__class__.__name__}."
         ) from err
+
+
+def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict[str, Any]) -> FetcherResult:
+    """Executes a specified fetcher.
+
+    Args:
+        plugin_id (str): The ID of the plugin.
+        fetcher_id (str): The ID of the action to run.
+        task_id (str): The task id to fetch the status for
+        user (dict[str, Any]): The user dict of the user running the action.
+
+    Raises:
+        NotFoundException: Raised whenever the plugin or the action doesn't exist.
+        ClueException: Raised whenever an error is returned by the plugin endpoint.
+
+    Returns:
+        ActionResult: The result of the action.
+    """
+    plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
+
+    if not plugin:
+        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+
+    access_token = request.headers.get("Authorization", type=str)
+    if access_token:
+        access_token = access_token.split(" ")[1]
+
+    obo_access_token = None
+    if access_token:
+        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
+
+        if error:
+            logger.error("%s: %s", plugin.name, error)
+            raise AuthenticationException("Invalid token provided for this enrichment.")
+
+    headers = {"Accept": "application/json"}
+    if obo_access_token or access_token:
+        headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
+
+    try:
+        req_url = urljoin(plugin.url, f"fetchers/{fetcher_id}/status/{task_id}")
+        logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
+
+        response = requests.get(
+            req_url,
+            headers=headers,
+            timeout=request.args.get("max_timeout", 60.0, type=float),
+        )
+
+        result = response.json()
+
+        if not response.ok:
+            raise ClueException(
+                result["api_error_message"] or result["api_response"].get("error", ""), status_code=response.status_code
+            )
+
+        return FetcherResult.model_validate(result["api_response"], context={"is_response": True})
+    except ValidationError as err:
+        logger.exception("Invalid Request Body:")
+        raise ClueValueError(
+            "Validation error encountered on response body.",
+            status_code=400,
+        ) from err
+    except (JSONDecodeError, exceptions.ConnectionError) as err:
+        logger.exception(f"Something went wrong when getting the status of the fetcher from plugin '{plugin_id}'")
+        raise ClueException(
+            f"Something went wrong getting the status of fetcher from plugin '{plugin_id}': {err.__class__.__name__}."
+        ) from err
