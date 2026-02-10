@@ -5,6 +5,7 @@ from clue.common.regex import (
     EMAIL_REGEX,
     IPV4_ONLY_REGEX,
     IPV6_ONLY_REGEX,
+    MAC_ADDRESS_REGEX,
     MD5_REGEX,
     PORT_REGEX,
     SHA1_REGEX,
@@ -34,9 +35,10 @@ SUPPORTED_TYPES = {
     "telemetry": None,
     "hostname": None,
     "tenant-id": UUID4_REGEX,
+    "mac_address": MAC_ADDRESS_REGEX,
 }
 
-CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id"]
+CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "mac_address"]
 
 
 def add_supported_type(
