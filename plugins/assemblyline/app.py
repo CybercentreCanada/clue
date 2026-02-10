@@ -518,6 +518,7 @@ def results_for_safebad_list(data, qhash, annotate, is_safe, raw, tag):
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - {source.capitalize()}",
+                analytic_icon="assemblyline:assemblyline-simple",
                 type="opinion",
                 value=verdict,
                 quantity=count,
@@ -607,6 +608,7 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - Alerts",
+                analytic_icon="assemblyline:assemblyline-simple",
                 type="opinion",
                 value=verdict,
                 quantity=count,
@@ -751,6 +753,7 @@ def results_for_result(data, result_query, annotate, sha256=None, raw=False, tag
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - Services",
+                analytic_icon="assemblyline:assemblyline-simple",
                 type="opinion",
                 value=verdict,
                 quantity=len(services),
