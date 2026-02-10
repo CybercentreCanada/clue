@@ -30,7 +30,7 @@ const QueryInput: FC<QueryEditorProps> = ({
   const theme = useTheme();
   const myTheme = useMyTheme();
   const monaco = useMonaco();
-  const { typesDetection, guessType } = useClue();
+  const { guessType, supportedTypes } = useClue();
 
   const editor = useRef<editor.IStandaloneCodeEditor>(null);
   const collection = useRef<editor.IEditorDecorationsCollection>(null);
@@ -148,7 +148,7 @@ const QueryInput: FC<QueryEditorProps> = ({
               return null;
             }
 
-            const matchedKey = Object.keys(typesDetection).find(key => line.trimStart().startsWith(key + ':'));
+            const matchedKey = supportedTypes.find(key => line.trimStart().startsWith(key + ':'));
 
             if (matchedKey) {
               return {
@@ -165,7 +165,7 @@ const QueryInput: FC<QueryEditorProps> = ({
           .filter(decoration => !!decoration)
       );
     },
-    [guessType, monaco, typesDetection]
+    [guessType, monaco, supportedTypes]
   );
 
   const options: editor.IStandaloneEditorConstructionOptions = useMemo(
@@ -211,7 +211,7 @@ const QueryInput: FC<QueryEditorProps> = ({
             content: '"unknown"'
           }
         },
-        ...Object.keys(typesDetection).map(_type => ({ [`& .${_type}::after`]: { content: `"${_type}"` } }))
+        ...supportedTypes.map(_type => ({ [`& .${_type}::after`]: { content: `"${_type}"` } }))
       ]}
     >
       <Editor

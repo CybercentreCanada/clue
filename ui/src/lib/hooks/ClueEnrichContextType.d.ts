@@ -85,6 +85,11 @@ export interface ClueEnrichContextType {
   typesDetection: { [type: string]: RegExp };
 
   /**
+   * A list of types supported by clue that have plugins with information about those types
+   */
+  supportedTypes: string[];
+
+  /**
    * A helper function that automatically returns the clue type (or null if the type can't be inferred) of a given value
    * @param value The value whose type we should infer
    * @returns the inferred type
