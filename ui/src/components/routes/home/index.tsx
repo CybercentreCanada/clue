@@ -193,7 +193,7 @@ const Home: FC = () => {
     const _errors = [];
     for (const value of enrichQuery.split('\n')) {
       if (value) {
-        const trimmedValue = value.replaceAll(' ', '');
+        const trimmedValue = value.trim();
         const matchedKey = supportedTypes.find(key => trimmedValue.startsWith(key + ':'));
         const detectedType = matchedKey ? trimmedValue.slice(0, matchedKey.length) : guessType(trimmedValue);
 
