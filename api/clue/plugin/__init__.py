@@ -36,7 +36,7 @@ from clue.models.actions import (
     ExecuteRequest,
 )
 from clue.models.config import Config
-from clue.models.fetchers import FetcherDefinition, FetcherResult
+from clue.models.fetchers import FetcherDefinition, FetcherResult, FetcherStatusRequest
 from clue.models.network import QueryEntry
 from clue.models.selector import Selector
 from clue.plugin.celery_app import celery_init_app
@@ -55,7 +55,8 @@ OVERRIDABLE_FUNCTIONS = [
     "liveness",  # Kubernetes liveness probe endpoint
     "readiness",  # Kubernetes readiness probe endpoint
     "run_action",  # Function to execute plugin actions
-    "get_status",  # Function to check the status or result of a pending action
+    "get_action_status",  # Function to check the status or result of a pending action
+    "get_fetcher_status",  # Function to check the status or result of a pending fetcher
     "run_fetcher",  # Function to execute plugin fetchers
     "setup_actions",  # Runtime action definition generation
     "validate_token",  # Custom authentication token validation
@@ -294,7 +295,13 @@ class CluePlugin:
     user parameters) that instance will be passed instead, and casting the argument will be necessary.
     """
 
-    get_status: Callable[[Action, ActionStatusRequest, str | None], ActionResult] | None
+    get_action_status: Callable[[Action, ActionStatusRequest, str | None], ActionResult] | None
+    """The function to get the status and result of running actions.
+
+    Accepts the selected action definition as well as an ActionStatusRequest instance which contains the
+    specific task id to check the status of.
+    """
+    get_fetcher_status: Callable[[FetcherDefinition, FetcherStatusRequest, str | None], FetcherResult] | None
     """The function to get the status and result of running actions.
 
     Accepts the selected action definition as well as an ActionStatusRequest instance which contains the
@@ -337,7 +344,9 @@ class CluePlugin:
         logger: logging.Logger | None = None,
         readiness: Callable[[], Response] = default_readiness,
         run_action: Callable[[Action, ExecuteRequest, str | None], ActionResult] | None = None,
-        get_status: Callable[[Action, ActionStatusRequest, str | None], ActionResult] | None = None,
+        get_action_status: Callable[[Action, ActionStatusRequest, str | None], ActionResult] | None = None,
+        get_fetcher_status: Callable[[FetcherDefinition, FetcherStatusRequest, str | None], FetcherResult]
+        | None = None,
         run_fetcher: Callable[[FetcherDefinition, Selector, str | None], FetcherResult] | None = None,
         setup_actions: Callable[[list[Action], str | None], list[Action]] | None = None,
         supported_types: set[str] | str | None = None,
@@ -438,7 +447,8 @@ class CluePlugin:
         self.enrich = enrich
         self.enable_celery = enable_celery
         self.run_action = run_action
-        self.get_status = get_status
+        self.get_action_status = get_action_status
+        self.get_fetcher_status = get_fetcher_status
         self.validate_token = validate_token
 
         self.fetchers = fetchers
@@ -713,13 +723,19 @@ class CluePlugin:
         )
         self.app.add_url_rule(
             "/actions/<action_id>/status/<task_id>",
-            self.get_action_status.__name__,
-            self.get_action_status,
+            self.action_status.__name__,
+            self.action_status,
             methods=["GET"],
         )
         self.app.add_url_rule("/fetchers/", self.get_fetchers.__name__, self.get_fetchers, methods=["GET"])
         self.app.add_url_rule(
             "/fetchers/<fetcher_id>", self.execute_fetcher.__name__, self.execute_fetcher, methods=["POST"]
+        )
+        self.app.add_url_rule(
+            "/fetchers/<fetcher_id>/status/<task_id>",
+            self.fetcher_status.__name__,
+            self.fetcher_status,
+            methods=["GET"],
         )
         self.app.add_url_rule("/types/", self.get_type_names.__name__, self.get_type_names, methods=["GET"])
         self.app.add_url_rule("/lookup/<type_name>/<value>/", self.lookup.__name__, self.lookup, methods=["GET"])
@@ -1176,7 +1192,7 @@ class CluePlugin:
 
         return self.make_api_response(result)
 
-    def get_action_status(self: Self, action_id: str, task_id: str):  # noqa: C901
+    def action_status(self: Self, action_id: str, task_id: str):  # noqa: C901
         """Retrieves the status of the specified action.
 
         Args:
@@ -1191,7 +1207,7 @@ class CluePlugin:
                 {}, err="task id not provided. task id is required for this request.", status_code=400
             )
 
-        if not self.get_status:
+        if not self.get_action_status:
             return self.make_api_response(
                 {}, err=f"{self.app_name} does not support the get action status functions.", status_code=400
             )
@@ -1233,7 +1249,7 @@ class CluePlugin:
                 task_id,
             )
 
-            result = self.get_status(action_to_check, status_request, token)
+            result = self.get_action_status(action_to_check, status_request, token)
         except json.JSONDecodeError as e:
             self.logger.warning("JSON decoding error while getting status: %s", str(e))
 
@@ -1360,6 +1376,89 @@ class CluePlugin:
         except Exception as e:
             self.logger.exception("%s during execution:", e.__class__.__name__)
 
+            status_code = 500
+            result = FetcherResult(
+                outcome="failure", format="error", error=f"An unknown error occurred during execution: {str(e)}"
+            )
+        finally:
+            self.logger.info("Fetcher completed.")
+
+        self.logger.info("Fetcher outcome: %s", result.outcome)
+
+        if result.error:
+            self.logger.info("Error Message: %s", result.error)
+
+        return self.make_api_response(result, status_code=status_code)
+
+    def fetcher_status(self: Self, fetcher_id: str, task_id: str):  # noqa: C901
+        """Gets the status of a pending fetcher with the specified task_id
+
+        Args:
+            fetcher_id (str): The ID of the fetcher to get the status of
+            task_id (str): The ID of the pending task
+
+        Returns:
+            Response: A Response object with a FetcherResult as the body.
+        """
+        if not task_id:
+            return self.make_api_response(
+                {}, err="task id not provided. task id is required for this request.", status_code=400
+            )
+
+        if not self.get_fetcher_status:
+            return self.make_api_response(
+                {}, err=f"{self.app_name} does not support the get fetcher status functions.", status_code=400
+            )
+
+        if not self.fetchers:
+            return self.make_api_response({}, err=f"{self.app_name} does not support any fetchers.", status_code=400)
+
+        # Find the requested fetcher by ID
+        fetcher = next((fetcher for fetcher in self.fetchers if fetcher.id == fetcher_id), None)
+        if not fetcher:
+            return self.make_api_response({}, err=f"Fetcher {fetcher_id} does not exist", status_code=404)
+
+        token: str | None = None
+        if self.validate_token:
+            self.logger.debug("Executing plugin-provided token validator")
+
+            token, error = self.validate_token()
+
+            if error:
+                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
+
+            self.logger.debug("Token is valid")
+        else:
+            self.logger.warning("No token validation provided. The access token will not be provided to the fetcher.")
+
+        status_code = 200
+        try:
+            status_request = FetcherStatusRequest(task_id=task_id)
+
+            self.logger.info("Getting status for fetcher '%s'", fetcher_id)
+
+            result = self.get_fetcher_status(fetcher, status_request, token)
+        except json.JSONDecodeError as e:
+            self.logger.warning("JSON decoding error during execution: %s", str(e))
+
+            status_code = 400
+            result = FetcherResult(
+                outcome="failure",
+                format="error",
+                error=f"Invalid request format. Response body must be valid JSON. Error: {str(e)}",
+            )
+        except ValidationError as err:
+            self.logger.warning("Validation error during execution: %s", str(err))
+            status_code = 400
+            result = FetcherResult(outcome="failure", format="error", error=str(err))
+        except ClueException as e:
+            self.logger.exception("ClueException during execution:")
+            status_code = 500
+            result = FetcherResult(
+                outcome="failure", format="error", error=f"Error encountered during execution: {e.message}"
+            )
+        except Exception as e:
+            self.logger.exception("%s during execution:", e.__class__.__name__)
             status_code = 500
             result = FetcherResult(
                 outcome="failure", format="error", error=f"An unknown error occurred during execution: {str(e)}"

@@ -107,9 +107,10 @@ class FetcherResult(BaseModel, Generic[DATA]):
     )
     data: DATA | None = Field(description="The output of the fetcher.", default=None)
     error: str | None = Field(description="If the fetcher failed, contains the relevant error message.", default=None)
-    format: str = Field(
+    format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
+        default=None,
     )
     link: Optional[Url] = Field(description="Link to more information on the fetcher", default=None)
     task_id: str | None = Field(description="The task id if the fetcher result is pending.", default=None)
@@ -140,7 +141,7 @@ class FetcherResult(BaseModel, Generic[DATA]):
         elif self.error:
             raise ClueValueError("Errors can only be specified if the outcome is failure.")
 
-        self.data = validate_result(self.format, self.data, info)
+        self.data = validate_result(self.format, self.data, info) if self.format else None
 
         return self
 
