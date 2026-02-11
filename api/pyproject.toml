@@ -108,10 +108,7 @@ ignore = [
   "TRY003",
   "TRY300",
 ]
-exclude = [
-  "plugins/assemblyline_lookup/app.py",
-  "plugins/**/test*.py",
-]
+exclude = ["plugins/assemblyline_lookup/app.py", "plugins/**/test*.py"]
 
 [tool.ruff.lint.flake8-annotations]
 ignore-fully-untyped = true

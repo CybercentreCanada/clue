@@ -83,7 +83,7 @@ const useAnnotations = (
 
   useEffect(() => {
     // Fetch and update annotations in real-time using RxDB observables
-    if (!ready) {
+    if (!ready || !database?.selectors || database.selectors.closed) {
       return;
     }
 

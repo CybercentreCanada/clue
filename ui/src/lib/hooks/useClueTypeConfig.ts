@@ -1,6 +1,7 @@
 import * as lookup from 'api/lookup';
 import type { AxiosRequestConfig } from 'axios';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
+import { uniq } from 'lodash-es';
 import isEmpty from 'lodash-es/isEmpty';
 import { useEffect, useState } from 'react';
 
@@ -19,11 +20,12 @@ const useClueTypeConfig = (
   debugLogging: boolean,
   getToken?: () => string,
   onNetworkCall?: (config: AxiosRequestConfig) => AxiosRequestConfig
-): { availableSources: Array<string>; typesDetection: { [type: string]: RegExp } } => {
+): { availableSources: Array<string>; typesDetection: { [type: string]: RegExp }; supportedTypes: string[] } => {
   // Initialize the sources and type detection for the user
   const [availableSources, setAvailableSources] = useState<string[]>([]);
 
   const [typesDetection, setTypesDetection] = useState<{ [type: string]: RegExp }>({});
+  const [supportedTypes, setSupportedTypes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!ready) {
@@ -55,6 +57,7 @@ const useClueTypeConfig = (
 
       if (_typesPerSource) {
         setAvailableSources(Object.keys(_typesPerSource));
+        setSupportedTypes(uniq(Object.values(_typesPerSource).flat()));
       }
 
       if (_typesDetections) {
@@ -74,7 +77,8 @@ const useClueTypeConfig = (
 
   return {
     availableSources,
-    typesDetection
+    typesDetection,
+    supportedTypes
   };
 };
 

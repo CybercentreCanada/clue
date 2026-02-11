@@ -22,7 +22,7 @@ const useErrors = (value: string): { source: string; message: string }[] => {
   const [errors, setErrors] = useState<{ source: string; message: string }[]>([]);
 
   useEffect(() => {
-    if (!ready || !value) {
+    if (!ready || !value || !database?.selectors || database.selectors.closed) {
       return;
     }
 
