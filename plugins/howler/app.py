@@ -32,6 +32,7 @@ logger = get_logger(__file__)
 with open(Path(__file__).parent / "type_mapping.json", "r") as json_file:
     TYPE_MAPPING = json.load(json_file)
 
+ICON = os.environ.get("ICON", "material-symbols:sound-detection-dog-barking")
 
 ACTIONS = [
     Action[SearchPivotRequest](
@@ -175,7 +176,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                 annotations.append(
                     Annotation(
                         analytic=analytic,
-                        analytic_icon="howler:howler-simple",
+                        analytic_icon=ICON,
                         version=None,
                         timestamp=timestamp,
                         type="context",
@@ -204,7 +205,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                         annotations.append(
                             Annotation(
                                 analytic=analytic,
-                                analytic_icon="howler:howler-simple",
+                                analytic_icon=ICON,
                                 version=None,
                                 timestamp=timestamp,
                                 type="assessment",
@@ -226,7 +227,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                         annotations.append(
                             Annotation(
                                 analytic=analytic,
-                                analytic_icon="howler:howler-simple",
+                                analytic_icon=ICON,
                                 version=None,
                                 timestamp=timestamp,
                                 type="opinion",
@@ -247,7 +248,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                         annotations.append(
                             Annotation(
                                 analytic=analytic,
-                                analytic_icon="howler:howler-simple",
+                                analytic_icon=ICON,
                                 version=None,
                                 timestamp=timestamp,
                                 type="opinion",
@@ -269,7 +270,7 @@ def enrich(type_name: str, value: str, params: Params, token: Optional[str]) -> 
                     annotations.append(
                         Annotation(
                             analytic=analytic,
-                            analytic_icon="howler:howler-simple",
+                            analytic_icon=ICON,
                             version=None,
                             timestamp=timestamp,
                             type="opinion",
