@@ -33,9 +33,7 @@ import QueryStatus from 'lib/components/stats/QueryStatus';
 import useClue from 'lib/hooks/useClue';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import type { BulkEnrichResponses, EnrichResponse, EnrichResponses } from 'lib/types/lookup';
-import { isNil } from 'lodash-es';
-import isEmpty from 'lodash-es/isEmpty';
-import range from 'lodash-es/range';
+import { isEmpty, isNil, range } from 'lodash-es';
 import type { FC } from 'react';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -177,7 +175,7 @@ const EnrichmentResults: FC<{ queryResults: BulkEnrichResponses; classification?
 const Home: FC = () => {
   const { isDark } = useAppTheme();
   const { t } = useTranslation('clue');
-  const { bulkEnrich, typesDetection, guessType } = useClue();
+  const { bulkEnrich, guessType, supportedTypes } = useClue();
   const { config } = useClueConfig();
 
   const [queryResults, setQueryResults] = useState<BulkEnrichResponses>({});
@@ -196,7 +194,7 @@ const Home: FC = () => {
     for (const value of enrichQuery.split('\n')) {
       if (value) {
         const trimmedValue = value.replaceAll(' ', '');
-        const matchedKey = Object.keys(typesDetection).find(key => trimmedValue.startsWith(key + ':'));
+        const matchedKey = supportedTypes.find(key => trimmedValue.startsWith(key + ':'));
         const detectedType = matchedKey ? trimmedValue.slice(0, matchedKey.length) : guessType(trimmedValue);
 
         if (detectedType && matchedKey) {
@@ -221,15 +219,15 @@ const Home: FC = () => {
       setErrors(_errors);
       setLoading(false);
     }
-  }, [enrichQuery, typesDetection, guessType, bulkEnrich, customTimeout, timeout, includeRaw, noCache, classification]);
+  }, [enrichQuery, supportedTypes, guessType, bulkEnrich, customTimeout, timeout, includeRaw, noCache, classification]);
 
   useEffect(() => {
-    if (Object.keys(typesDetection).length === 0) {
+    if (supportedTypes.length === 0) {
       setLoading(true);
     } else {
       setLoading(false);
     }
-  }, [typesDetection]);
+  }, [supportedTypes]);
 
   return (
     <PageCenter textAlign="left" height="100%" width="100%" maxWidth="1500px">
@@ -244,9 +242,10 @@ const Home: FC = () => {
           {t('page.home.types')}:
         </Typography>
         <Stack direction="row" spacing={0.5}>
-          {loading && isEmpty(Object.keys(typesDetection))
+          {loading && isEmpty(supportedTypes)
             ? range(0, 3).map(v => <Skeleton key={v} variant="rounded" height="24px" width="50px" />)
-            : Object.keys(typesDetection)
+            : supportedTypes
+                .slice()
                 .sort()
                 .map(type => <Chip key={type} size="small" label={type} />)}
         </Stack>
