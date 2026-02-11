@@ -70,7 +70,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   const [sources, setSources] = useState<string[]>([]);
 
   // Initialize the sources and type detection for the user
-  const { availableSources, typesDetection } = useClueTypeConfig(
+  const { availableSources, typesDetection, supportedTypes } = useClueTypeConfig(
     enabled && isReady,
     baseURL,
     debugLogging,
@@ -571,6 +571,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       sources,
       setSources,
       typesDetection,
+      supportedTypes,
       availableSources,
       guessType,
       queueEnrich,
@@ -586,6 +587,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       enrichFailedEnrichments,
       sources,
       typesDetection,
+      supportedTypes,
       availableSources,
       guessType,
       queueEnrich,
