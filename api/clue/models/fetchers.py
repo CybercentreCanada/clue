@@ -150,5 +150,6 @@ class FetcherResult(BaseModel, Generic[DATA]):
         "Helper function to generate a failed fetcher result"
         return FetcherResult(outcome="failure", format="error", error=err)
 
+
 class FetcherStatusRequest(BaseModel):
     task_id: str = Field(description="The task id to get the status for.")
