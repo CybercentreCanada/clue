@@ -315,7 +315,7 @@ def test_get_status_with_bad_task_id(host, access_token):
     """Test that the get action status endpoint responds properly when the task_id does not exist"""
     # check the status of the action
     res = requests.get(
-        f"{host}/api/v1/fetchers/test/test_async_fetchers/status/fake_task_id",
+        f"{host}/api/v1/fetchers/test/test_async_fetcher/status/fake_task_id",
         params={"max_timeout": 2.0},
         headers={"Authorization": f"Bearer {access_token}"},
     )

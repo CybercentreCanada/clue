@@ -211,6 +211,7 @@ def get_action_status(action: Action, request: ActionStatusRequest, access_token
         return ActionResult(outcome="failure", summary="Bad task id", format="json", output={"value": None})
     return ActionResult(outcome="failure", summary="Unsupported action id", format="json", output={"value": None})
 
+
 def setup_actions(*args, **kwargs):
     return [
         Action[ExecuteRequest](
@@ -298,6 +299,7 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
         outcome="success", format="image", data=ImageResult(image="https://example.com", alt="Alt Text")
     )
 
+
 def get_fetcher_status(fetcher: FetcherDefinition, request: FetcherStatusRequest, access_token: str | None):
     """Get the status of a running action when requested by the central API."""
     if fetcher.id == "test_async_fetcher":
@@ -307,8 +309,11 @@ def get_fetcher_status(fetcher: FetcherDefinition, request: FetcherStatusRequest
                 format="json",
                 data={"status": "done"},
             )
+
         return FetcherResult(outcome="failure", error="Bad task id", format="error")
-    return FetcherResult(outcome="failure", error="unkown fetcher id", format="error")
+
+    return FetcherResult(outcome="failure", error="unknown fetcher id", format="error")
+
 
 plugin = CluePlugin(
     app_name="test_server",
