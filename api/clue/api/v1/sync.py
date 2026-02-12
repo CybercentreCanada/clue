@@ -2,9 +2,9 @@ from typing import Any
 
 from flask import request
 from flask_cors import CORS
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 
-from clue.api import forbidden, make_subapi_blueprint, ok
+from clue.api import bad_request, forbidden, make_subapi_blueprint, ok
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
@@ -52,8 +52,11 @@ def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
     updated_at = request.args.get("updated_at", 0, type=int)
     id: str | None = request.args.get("id", None)
     limit = request.args.get("limit", 10, type=int)
+    omit_deleted = "omit_deleted" in request.args
 
-    return ok(mongo_service.pull(user["uname"], id, updated_at, batch_size=limit))
+    return ok(
+        mongo_service.pull(user["uname"], collection, id, updated_at, batch_size=limit, omit_deleted=omit_deleted)
+    )
 
 
 @generate_swagger_docs()
@@ -74,11 +77,11 @@ def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
         None: Returns a forbidden response if user is not authenticated.
     """
     if not user:
-        return forbidden(err="You must we logged in as a valid user.")
+        return forbidden(err="You must be logged in as a valid user.")
 
     logger.info("Initializing event source stream")
 
-    return mongo_service.event_stream(user["uname"])
+    return mongo_service.event_stream(user["uname"], collection)
 
 
 @generate_swagger_docs()
@@ -101,8 +104,12 @@ def push(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
         None: Returns a forbidden response if user is not authenticated.
     """
     if not user:
-        return forbidden(err="You must we logged in as a valid user.")
+        return forbidden(err="You must be logged in as a valid user.")
 
-    change_rows = TypeAdapter(list[ChangeRow]).validate_python(request.json, strict=True, by_alias=True)
+    try:
+        change_rows = TypeAdapter(list[ChangeRow]).validate_python(request.json, strict=True, by_alias=True)
+    except ValidationError:
+        logger.exception("Validation exception on push")
+        return bad_request(err="Invalid replication data.")
 
-    return ok(mongo_service.push(user["uname"], change_rows))
+    return ok(mongo_service.push(user["uname"], collection, change_rows))

@@ -3,6 +3,7 @@ import { addAPIProvider } from '@iconify/react';
 import api from 'api';
 import * as lookup from 'api/lookup';
 import type { AxiosRequestConfig } from 'axios';
+import { REPLICATORS } from 'lib/database/globals';
 import type { SelectorDocType, StatusDocType } from 'lib/database/types';
 import type { EnrichResponse, EnrichResponses, Selector } from 'lib/types/lookup';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
@@ -97,6 +98,15 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     api.configs.get(requestConfig).then(clueConfig.setConfig);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseURL, onNetworkCall, skipConfigCall, isReady]);
+
+  useEffect(() => {
+    if (isReady) {
+      Object.values(REPLICATORS).forEach(replicator => {
+        replicator.reSync();
+        replicator.start();
+      });
+    }
+  }, [isReady]);
 
   const [customIconify, setCustomIconify] = useState(_customIconify);
   useEffect(() => {
@@ -219,7 +229,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         classification: options.classification
       };
 
-      let statusRecord = await database.status?.findOne({ selector: { ...selector } }).exec();
+      let statusRecord = await database.status.findOne({ selector: { ...selector } }).exec();
 
       if (!statusRecord) {
         statusRecord = await database.status?.insert({

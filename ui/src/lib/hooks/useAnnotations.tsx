@@ -49,7 +49,8 @@ const useAnnotations = (
   // Memoized readiness check to ensure all required parameters are valid
   const ready = useMemo(
     () => enrichReady && !!type && !!value && !!classification && !!database?.selectors && !database.selectors.closed,
-    [classification, database?.selectors, enrichReady, type, value]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [classification, database?.selectors, database?.selectors?.closed, enrichReady, type, value]
   );
 
   useEffect(() => {
@@ -88,7 +89,7 @@ const useAnnotations = (
     }
 
     const observable = database.selectors
-      ?.find({
+      .find({
         selector: {
           $or: [
             {

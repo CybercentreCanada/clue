@@ -22,13 +22,14 @@ from pydantic_core import Url
 from typing_extensions import Self
 
 from clue.common.logging import get_logger
-from clue.config import CLASSIFICATION, DEBUG, get_version
+from clue.config import CLASSIFICATION, DEBUG, config, get_version
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.models.validators import validate_classification
 
 logger = get_logger(__file__)
 
-def parse_datetime(v):
+
+def parse_datetime(v: str | datetime | None) -> datetime | None:
     """Parse a datetime string or return the input if already a datetime object.
 
     Args:
@@ -39,8 +40,26 @@ def parse_datetime(v):
     """
     if isinstance(v, str):
         # Manually handle the Z if needed or just parse
-        return datetime.fromisoformat(v.replace("Z", "+00:00"))
+        try:
+            return datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except ValueError:
+            logger.exception("Error on parse_datetime")
+            return None
+
     return v
+
+
+def generate_expiry() -> datetime | None:
+    """Generate an expiry datetime based on retention configuration.
+
+    Returns:
+        datetime | None: Expiry datetime if retention is enabled, None otherwise.
+    """
+    if not config.retention.enabled:
+        return None
+
+    return datetime.now(timezone.utc) + timedelta(seconds=config.retention.default_ttl)
+
 
 class ClueResponse(BaseModel):
     model_config = ConfigDict(
@@ -52,6 +71,7 @@ class ClueResponse(BaseModel):
     warning: list[str] = []
     server_version: str = get_version()
     status_code: int
+
 
 Timestamp = Annotated[
     datetime,
@@ -172,7 +192,9 @@ class Annotation(BaseModel):
     confidence: Annotated[
         float,
         Field(
-            description="Self-reported confidence level of the annotation. 0.0 = not confident at all, 1.0 = absolute fact",
+            description=(
+                "Self-reported confidence level of the annotation. 0.0 = not confident at all, 1.0 = absolute fact"
+            ),
             ge=0.0,
             le=1.0,
             examples=[0.0, 0.5, 1.0],
@@ -363,6 +385,10 @@ class QueryEntry(BaseModel):
         ),
     ] = None
 
+    expiry: Annotated[
+        datetime | None, Field(description="When should this record expire?", default_factory=generate_expiry)
+    ] = None
+
     model_config = ConfigDict(validate_assignment=True)
 
     @field_validator("classification")
@@ -380,6 +406,7 @@ class QueryEntry(BaseModel):
             str: The validated classification.
         """
         return validate_classification(classification)
+
 
 class ResultMetadata(BaseModel):
     type: Annotated[
@@ -461,6 +488,7 @@ class ResultMetadata(BaseModel):
                 raise AssertionError("Maintainer string must be in RFC-5322 format.")
 
         return maintainer
+
 
 class QueryResult(ResultMetadata):
     items: Annotated[list[QueryEntry], Field(description="List of results from the source")] = []

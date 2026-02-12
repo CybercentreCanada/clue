@@ -50,6 +50,7 @@ const AnnotationDetails: FC<{
   const [filter, setFilter] = useState<string>('all');
 
   const enrich = useClueEnrichSelector(state => state.enrich);
+  const ready = useClueEnrichSelector(state => state.ready);
 
   const [annotations, loading] = useAnnotations(
     enrichRequest?.type,
@@ -104,7 +105,7 @@ const AnnotationDetails: FC<{
             <div style={{ flex: 1 }} />
             <Tooltip title={t('refresh')}>
               <Box sx={{ alignSelf: 'center', m: -1 }}>
-                <IconButton onClick={() => forceEnrich()} disabled={loading}>
+                <IconButton onClick={() => forceEnrich()} disabled={loading || !ready}>
                   {loading ? (
                     <CircularProgress variant="indeterminate" size={20} />
                   ) : (

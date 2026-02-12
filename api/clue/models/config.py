@@ -4,7 +4,7 @@ import os
 from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
-from typing import Self
+from typing import Annotated, Any, Self
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -224,8 +224,8 @@ class Metrics(BaseModel):
 
 
 class MongoDB(BaseModel):
-    host: str | None = Field(description="Hostname of the MongoDB instance", default="mongodb")
-    port: int | None = Field(description="Hostname of the MongoDB instance", default=27017, ge=1, le=65535)
+    host: str = Field(description="Hostname of the MongoDB instance", default="mongodb")
+    port: int = Field(description="Hostname of the MongoDB instance", default=27017, ge=1, le=65535)
     user: str | None = Field(description="Username to use to connect to the MongoDB instance", default=None)
     password: str | None = Field(description="Password to use to connect to the MongoDB instance", default=None)
     database: str = Field(description="The database to use in the mongodb instance", default="clue")
@@ -233,11 +233,26 @@ class MongoDB(BaseModel):
     def __repr__(self):
         auth = ""
         if self.user and self.password:
-            auth = f"{self.user}:{self.password}@"
+            auth = f"{self.user}:***@"
+
+        return f"mongodb://{auth}{self.host}:{self.port}"
+
+    def connection(self) -> dict[str, Any]:
+        """Generate MongoDB connection string and authentication parameters.
+
+        Returns:
+            tuple[str, dict[str, str]]: A tuple containing the MongoDB connection URL
+                and a dictionary of connection parameters (username and password if available).
+        """
+        params: dict[str, str | int] = {"host": self.host, "port": self.port}
+
+        if self.user and self.password:
+            params["username"] = self.user
+            params["password"] = self.password
         else:
             logger.warning("No authentication used for mongodb.")
 
-        return f"mongodb://{auth}{self.host}:{self.port}"
+        return params
 
 
 class Core(BaseModel):
@@ -414,6 +429,13 @@ class API(BaseModel):
     )
 
 
+class Retention(BaseModel):
+    enabled: Annotated[bool, Field(description="Should records be cached for users?")] = True
+    default_ttl: Annotated[
+        int, Field(description="The number of seconds a record with no set expiry should be cached")
+    ] = 3600
+
+
 root_path = Path("/etc") / APP_NAME
 
 config_locations = [
@@ -464,6 +486,7 @@ class Config(BaseSettings):
     auth: Auth = Auth()
     core: Core = Core()
     logging: Logging = Logging()
+    retention: Retention = Retention()
 
     model_config = SettingsConfigDict(
         yaml_file=config_locations,

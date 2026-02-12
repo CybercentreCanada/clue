@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from pydantic import AliasGenerator, BaseModel, ConfigDict, Field
@@ -22,17 +22,20 @@ def generate_updated_at():
     Returns:
         int: The current timestamp as a unix epoch.
     """
-    return int(datetime.now().timestamp())
+    return int(datetime.now(tz=timezone.utc).timestamp())
 
 
 class SelectorDocument(QueryEntry, ResultMetadata):
     """The document used for validating records in the rxdb replication context."""
 
-    id: str = Field(description="The ID of the selector", default_factory=generate_uuid)
-    updated_at: int = Field(description="The last updated time of this record", default_factory=generate_updated_at)
-    deleted: bool = Field(
-        description="Is this row 'deleted' by rxdb?", default=False, alias="_deleted", serialization_alias="_deleted"
-    )
+    id: str = Field(default_factory=generate_uuid)
+    "The ID of the selector"
+
+    updated_at: int = Field(default_factory=generate_updated_at)
+    "The last updated time of this record"
+
+    deleted: bool = Field(default=False, alias="_deleted", serialization_alias="_deleted")
+    "Is this row 'deleted' by rxdb?"
 
 
 class ChangeRow(BaseModel):

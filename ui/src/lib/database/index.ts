@@ -6,8 +6,10 @@ import { getRxStorageLocalstorage } from 'rxdb/plugins/storage-localstorage';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
-import { replicateSelectorCollection } from './replication';
 
+import { RxDBStatePlugin } from 'rxdb/plugins/state';
+import { REPLICATORS } from './globals';
+import { replicateSelectorCollection } from './replication';
 import selectorSchema from './selector.schema.json';
 import statusSchema from './status.schema.json';
 import type {
@@ -55,14 +57,10 @@ const statusMethods: StatusDocMethods = {
 
 const queuedValues: StatusDocType[] = [];
 const listeners: ((doc: StatusDocument[]) => void)[] = [];
-let timeout: any = null;
 const _process = throttle(
   async (_collection: StatusCollection) => {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-
     if (_collection.closed) {
+      // eslint-disable-next-line no-console
       console.warn(_collection.name, 'is closed');
       return;
     }
@@ -101,16 +99,18 @@ const statusStatics: StatusCollectionMethods = {
 
 const buildDatabase = async (_config: DatabaseConfig = {}) => {
   const config: DatabaseConfig = {
-    storageType: 'sessionStorage',
+    storageType: 'memory',
     testing: IS_VITEST,
     devMode: !import.meta.env.PROD,
-    replicate: false,
+    replicate: !import.meta.env.PROD,
     baseURL: null,
+    getToken: null,
     ..._config
   };
 
   addRxPlugin(RxDBUpdatePlugin);
   addRxPlugin(RxDBJsonDumpPlugin);
+  addRxPlugin(RxDBStatePlugin);
 
   /* v8 ignore next 10 -- @preserve */
   if (config.devMode) {
@@ -156,8 +156,10 @@ const buildDatabase = async (_config: DatabaseConfig = {}) => {
     }
   });
 
-  const selectorReplication = await replicateSelectorCollection(database.selectors);
-  await selectorReplication.awaitInSync();
+  if (config.replicate) {
+    const id = Date.now().toString();
+    REPLICATORS[id] = await replicateSelectorCollection(id, database.selectors, config);
+  }
 
   try {
     if (database.status && !database.status.closed) {

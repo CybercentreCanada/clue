@@ -10,6 +10,9 @@ def cleanup_for_mongodb(schema_item: Any) -> Any:
     elif not isinstance(schema_item, dict):
         return schema_item
 
+    if schema_item.get("format", None) == "date-time":
+        schema_item["type"] = "date"
+
     # 1. Strip extraneous metadata MongoDB doesn't like
     for key in ["title", "description", "default", "format", "examples"]:
         schema_item.pop(key, None)
