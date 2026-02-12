@@ -43,6 +43,7 @@ PLUGIN_PORT = os.environ.get("PLUGIN_PORT", 8000)
 ENABLED_SOURCES = set(os.environ.get("ENABLED_SOURCES", "result|alert|safelist|badlist").split("|"))
 DEPLOYMENT_NAME = os.environ.get("DEPLOYMENT_NAME", "Assemblyline")
 ACTIONS_ENABLED = os.environ.get("ACTIONS_ENABLED", "true").lower().strip() == "true"
+ICON = os.environ.get("ICON", "mdi:assembly")
 
 # verify can be boolean or path to CA file
 verify: Union[str, bool] = str(os.environ.get("VERIFY", "true")).lower()
@@ -518,6 +519,7 @@ def results_for_safebad_list(data, qhash, annotate, is_safe, raw, tag):
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - {source.capitalize()}",
+                analytic_icon=ICON,
                 type="opinion",
                 value=verdict,
                 quantity=count,
@@ -607,6 +609,7 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - Alerts",
+                analytic_icon=ICON,
                 type="opinion",
                 value=verdict,
                 quantity=count,
@@ -751,6 +754,7 @@ def results_for_result(data, result_query, annotate, sha256=None, raw=False, tag
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - Services",
+                analytic_icon=ICON,
                 type="opinion",
                 value=verdict,
                 quantity=len(services),
