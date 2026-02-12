@@ -108,13 +108,6 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, **kwargs):
     Arguments:
     None
 
-    Data Block:
-    {
-        type: "ip",
-        value: "127.0.0.1",
-        ...
-    }
-
     Result Example:
     {
         "outcome": "success | failure", # was this execution a success or failure?
