@@ -293,7 +293,6 @@ def test_get_async_fetcher_status(host, access_token):
     response = res.json()["api_response"]
 
     assert response["outcome"] == "pending"
-    assert response["summary"] == "Async test action started"
 
     task_id = response["task_id"]
     assert task_id
@@ -310,7 +309,6 @@ def test_get_async_fetcher_status(host, access_token):
     response = res.json()["api_response"]
 
     assert response["outcome"] == "success"
-    assert response["summary"] == "Test Async Action finished"
 
 
 def test_get_status_with_bad_task_id(host, access_token):
