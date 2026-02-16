@@ -1,7 +1,7 @@
 import { Button, Divider, Stack, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material';
 import Iconified from 'lib/components/display/icons/Iconified';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
-import { ActionResult } from 'lib/types/action';
+import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
