@@ -7,7 +7,7 @@ import { useActionResult } from 'lib/hooks/useActionResult';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import type { FC } from 'react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import ClassificationChip from '../ClassificationChip';
 import ErrorBoundary from '../ErrorBoundary';
@@ -23,6 +23,11 @@ const ResultModal: FC<{
   const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
 
   const result = useActionResult(_result);
+
+  const resultFinished = useMemo(
+    () => result?.outcome === 'success' || result?.outcome === 'failure' || result?.done,
+    [result?.done, result?.outcome]
+  );
 
   if (!result) {
     return null;
@@ -47,7 +52,7 @@ const ResultModal: FC<{
 
             <Typography variant="body1">{result.action.summary}</Typography>
             <Divider flexItem />
-            {result.done ? (
+            {resultFinished ? (
               <ErrorBoundary>
                 {result.format === 'markdown' ? (
                   <Markdown md={result.output} />
