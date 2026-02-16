@@ -15,11 +15,12 @@ const JSONViewer: FC<{
   data: object;
   collapse?: boolean;
   forceCompact?: boolean;
+  hideSearch?: boolean;
   slotProps?: {
     stack?: StackProps;
     json?: Partial<ReactJsonViewProps>;
   };
-}> = ({ data, collapse = true, forceCompact = false, slotProps }) => {
+}> = ({ data, collapse = true, hideSearch = false, forceCompact = false, slotProps }) => {
   const theme = useTheme();
 
   const [compact] = useMyLocalStorageItem<boolean>(StorageKey.COMPACT_JSON);
@@ -71,14 +72,16 @@ const JSONViewer: FC<{
         ...(Array.isArray(slotProps?.stack?.sx) ? slotProps?.stack?.sx : [slotProps?.stack?.sx])
       }}
     >
-      <TuiPhrase
-        value={query}
-        onChange={setQuery}
-        size="small"
-        error={hasError}
-        label={t('json.viewer.search.label')}
-        placeholder={t('json.viewer.search.prompt')}
-      />
+      {!hideSearch && (
+        <TuiPhrase
+          value={query}
+          onChange={setQuery}
+          size="small"
+          error={hasError}
+          label={t('json.viewer.search.label')}
+          placeholder={t('json.viewer.search.prompt')}
+        />
+      )}
       {ReactJson && (
         <ReactJson
           src={searchedData}
