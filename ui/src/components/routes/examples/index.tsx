@@ -16,7 +16,7 @@ import {
   Typography
 } from '@mui/material';
 import PageCenter from 'commons/components/pages/PageCenter';
-import FileResult, { type File } from 'lib/components/actions/formats/FileResult';
+import FileResult, { type ActionFileResult } from 'lib/components/actions/formats/FileResult';
 import Graph from 'lib/components/display/graph';
 import JSONViewer from 'lib/components/display/json';
 import EnrichedCard from 'lib/components/EnrichedCard';
@@ -362,7 +362,7 @@ const Examples: FC = () => {
         <Graph sx={{ minHeight: '750px' }} graph={process_vertical as any} />
 
         <Card sx={{ p: 2 }}>
-          <FileResult result={file_result as WithActionData<ActionResult<File>>} />
+          <FileResult result={file_result as WithActionData<ActionResult<ActionFileResult>>} />
         </Card>
       </Stack>
     </PageCenter>

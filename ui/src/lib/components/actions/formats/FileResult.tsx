@@ -7,7 +7,7 @@ import type { FC } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 
-export interface File {
+export interface ActionFileResult {
   data: string;
   mime_type: string;
   file_name: string;
@@ -46,7 +46,7 @@ const formatBytes = (bytes: number): string => {
 /**
  * Create a browser download from a server-provided file payload.
  */
-const saveFileFromServer = (output: File): void => {
+const saveFileFromServer = (output: ActionFileResult): void => {
   const byteArray = decodeBase64ToBytes(output.data);
 
   // Build a Blob from the decoded bytes and trigger an anchor download.
@@ -67,7 +67,7 @@ const saveFileFromServer = (output: File): void => {
 /**
  * Render a file action result with metadata, hash statistics, and download support.
  */
-const FileResult: FC<{ result: WithActionData<ActionResult<File>> }> = ({ result }) => {
+const FileResult: FC<{ result: WithActionData<ActionResult<ActionFileResult>> }> = ({ result }) => {
   const { t } = useContextSelector(ClueComponentContext, ctx => ctx?.i18next);
 
   const [sha256Hash, setSha256Hash] = useState<string>('');
