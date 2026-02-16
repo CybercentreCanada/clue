@@ -115,7 +115,7 @@ const ItemResultCard: FC<{ type: string; value: string; classification?: string;
           <Typography color="text.secondary" variant="h6">
             {type}:
           </Typography>
-          <EnrichedTypography type={type} value={value} variant="h6" hideDetails contextIcon counters />
+          <EnrichedTypography type={type} value={value} variant="h6" skipEnrichment hideDetails contextIcon counters />
           <Box sx={{ flex: 1 }}></Box>
           <IconButton size="small">
             <ExpandMore
