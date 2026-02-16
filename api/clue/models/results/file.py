@@ -20,4 +20,4 @@ class FileResult(Result):
         description="The mime-type of the returned file (optional, defaults to application/octet-stream)",
         default="application/octet-stream",
     )
-    file_name: str = Field(description="The file name")
+    file_name: str | None = Field(description="The file name", default=None)

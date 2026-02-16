@@ -1,8 +1,11 @@
+from pathlib import Path
+
 import pytest
 import requests
 
+from clue.common.bytes_utils import to_base64
 from test.utils.oauth_credentials import get_token
-from test.utils.test_server import Params
+from test.utils.test_server import FileParams, Params
 
 
 @pytest.fixture()
@@ -28,6 +31,11 @@ def test_get_types(host, access_token):
     assert response["test.test_action"]["name"] == "Test Action"
     assert response["test.test_action"]["classification"] == "TLP:CLEAR"
     assert response["test.test_action"]["params"] == Params.model_json_schema()
+
+    assert "test.test_file_action" in response
+    assert response["test.test_file_action"]["name"] == "Test File Action"
+    assert response["test.test_file_action"]["classification"] == "TLP:CLEAR"
+    assert response["test.test_file_action"]["params"] == FileParams.model_json_schema()
 
 
 def test_run_action(host, access_token):
@@ -202,6 +210,29 @@ def test_run_action_multiple_not_supported(host, access_token):
 
     assert response["outcome"] == "failure"
     assert response["summary"] == "We don't got a value"
+
+
+def test_run_action_file(host, access_token):
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    res = requests.post(
+        f"{host}/api/v1/actions/execute/test/test_file_action",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"selector": {"type": "ip", "value": "127.0.0.1"}, "file_name": "custom_name.txt"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    expected_data = to_base64((Path(__file__).parents[2] / "utils" / "example.txt").read_bytes())
+    assert response["outcome"] == "success"
+    assert response["summary"] == "Returning file"
+    assert response["output"]["file_name"] == "custom_name.txt"
+    assert response["output"]["mime_type"] == "text/plain"
+    assert response["output"]["data"] == expected_data
 
 
 def test_run_pivot(host, access_token):
