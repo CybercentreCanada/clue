@@ -72,7 +72,7 @@ const FileResult: FC<{ result: WithActionData<ActionResult<File>> }> = ({ result
 
   const [sha256Hash, setSha256Hash] = useState<string>('');
 
-  const actionName = result.action?.name ?? t('actions.file_result.unknown');
+  const actionName = result.action?.name ?? t('actions.result.file.unknown');
 
   const outputBytes = useMemo(() => {
     if (!result.output?.data) {
