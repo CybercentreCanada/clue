@@ -103,30 +103,53 @@ const ExecutePopover: FC<{
         <Paper onClick={() => setShowExecuteMenu(false)}>
           <Stack divider={<Divider flexItem orientation="horizontal" />}>
             {Object.entries(actions).map(([actionId, action]) => (
-              <Box
+              <Stack
                 key={actionId}
                 sx={{
-                  px: 3,
+                  pl: 3,
+                  pr: 2,
                   py: 1,
                   cursor: 'pointer',
                   transition: theme.transitions.create('background-color'),
                   '&:hover': { backgroundColor: theme.palette.background.default }
                 }}
-                onClick={() => executeAction(actionId, selectors)}
+                onClick={ev => {
+                  if (!ev.isPropagationStopped()) {
+                    executeAction(actionId, selectors);
+                  }
+                }}
+                direction="row"
+                spacing={1}
+                alignItems="center"
               >
-                <Stack>
+                <Stack flex={1}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     {action.action_icon && <Icon icon={action.action_icon} />}
                     <Typography variant="body1">{action.name}</Typography>
                     <ClassificationChip size="small" classification={action.classification} />
                   </Stack>
                   {action.summary && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" maxWidth="300px">
                       {action.summary}
                     </Typography>
                   )}
                 </Stack>
-              </Box>
+                <Box
+                  sx={{ pl: 1 }}
+                  onClick={ev => {
+                    ev.stopPropagation();
+                  }}
+                >
+                  <Tooltip title={t('actions.execute.menu')}>
+                    <IconButton
+                      size="small"
+                      onClick={() => executeAction(actionId, selectors, null, { forceMenu: true })}
+                    >
+                      <Iconified icon="ic:baseline-settings" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Stack>
             ))}
           </Stack>
         </Paper>

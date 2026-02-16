@@ -2,6 +2,7 @@
   "action.available": "Available Actions",
   "action.data": "Action Data",
   "actions.execute": "Execute",
+  "actions.execute.menu": "Execute with options",
   "actions.executing": "Executing",
   "actions.json.hide": "Hide JSON",
   "actions.json.show": "Show JSON",
