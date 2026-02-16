@@ -1,4 +1,4 @@
-from ..bytes_utils import to_base64
+from clue.common.bytes_utils import to_base64
 
 
 class TestToBase64:
