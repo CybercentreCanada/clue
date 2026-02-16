@@ -279,6 +279,9 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
     if fetcher.id == "graph":
         return FetcherResult(outcome="success", format="graph", data=GraphResult.model_validate(PROCESS_TREE))
 
+    if fetcher.id == "file":
+        return FetcherResult(outcome="success", format="file", data=GraphResult.model_validate(PROCESS_TREE))
+
     if fetcher.id == "status":
         return FetcherResult(
             outcome="success",
@@ -336,6 +339,13 @@ plugin = CluePlugin(
             classification=os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
             description="test fetcher graph",
             format="status",
+            supported_types={"ipv4", "ipv6", "port", "sha256"},
+        ),
+        FetcherDefinition(
+            id="file",
+            classification=os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
+            description="test fetcher file",
+            format="file",
             supported_types={"ipv4", "ipv6", "port", "sha256"},
         ),
     ],

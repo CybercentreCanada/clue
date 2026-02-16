@@ -24,6 +24,7 @@ def validate_result(_format: str, data: DATA | None, info: ValidationInfo) -> DA
         isinstance(data, _type) for _type in FORMAT_MAPPINGS_REVERSE[_format]
     ):
         resolved = False
+        expected_type = None
         for expected_type in FORMAT_MAPPINGS_REVERSE[_format]:
             if info.context and info.context.get("is_response", False) and issubclass(expected_type, BaseModel):
                 data = cast(DATA, cast(BaseModel, expected_type).model_validate(data))
