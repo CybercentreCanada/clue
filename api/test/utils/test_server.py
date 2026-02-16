@@ -157,13 +157,13 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
                 format="json",
                 output={"context": None},
             )
+
     if action.id == "test_async_action":
         return ActionResult(outcome="pending", summary="Async test action started", task_id=TASK_ID)
+
     if action.id == "test_file_action":
         if not isinstance(request, FileParams):
-            return ActionResult(
-                outcome="failure", summary="Invalid action request type", format="json", output={"value": None}
-            )
+            return ActionResult(outcome="failure", summary="Invalid action request type")
 
         return ActionResult(
             outcome="success",
@@ -175,6 +175,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
                 mime_type="text/plain",
             ),
         )
+
     if action.accept_empty:
         if request.selector:
             return ActionResult(

@@ -28,7 +28,7 @@ class TestToBase64:
         """Test encoding binary data."""
         binary_data = bytes([0, 1, 2, 255, 254, 253])
         result = to_base64(binary_data)
-        assert result == "AAEC/v79"
+        assert result == "AAEC//79"
 
     def test_to_base64_utf8_encoding(self):
         """Test with explicit UTF-8 encoding."""

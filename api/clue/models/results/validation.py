@@ -41,7 +41,7 @@ def validate_result(_format: str, data: DATA | None, info: ValidationInfo) -> DA
 
         if not resolved:
             raise ClueValueError(
-                f"data should be of type {getattr(expected_type, '__name__', str(expected_type))}, "
+                f"Data should be of type {getattr(expected_type, '__name__', str(expected_type))}, "
                 f"but is set to {data.__class__.__name__}"
             )
 

@@ -178,7 +178,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
         if not response.ok:
             raise ClueException(result["api_error_message"])
 
-        return ActionResult.model_validate(result["api_response"])
+        return ActionResult.model_validate(result["api_response"], context={"is_response": True})
     except (JSONDecodeError, exceptions.ConnectionError) as err:
         logger.exception(f"Something went wrong when retrieving the result from plugin '{plugin_id}'")
         raise ClueException(
