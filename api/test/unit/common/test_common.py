@@ -19,7 +19,7 @@ from clue.common.uid import LONG, MEDIUM, SHORT, TINY, get_id_from_data, get_ran
 
 
 def test_classification():
-    yml_config = Path(__file__).parent.parent.parent / "classification.yml"
+    yml_config = Path(__file__).parents[2] / "classification.yml"
 
     cl_engine = forge.get_classification(yml_config=str(yml_config))
 

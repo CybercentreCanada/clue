@@ -30,7 +30,7 @@ from clue.plugin import CluePlugin
 
 logger = get_logger(__file__)
 
-with open(Path(__file__).parent.parent / "graphs" / "process.json", "r") as json_file:
+with open(Path(__file__).parents[1] / "graphs" / "process.json", "r") as json_file:
     PROCESS_TREE = json.load(json_file)
 
 

@@ -9,7 +9,7 @@ from clue.models.results.graph import GraphResult
 
 
 def read_graph(graph_name: str):
-    return json.loads((Path(__file__).parent.parent.parent / "graphs" / f"{graph_name}.json").read_text())
+    return json.loads((Path(__file__).parents[2] / "graphs" / f"{graph_name}.json").read_text())
 
 
 @pytest.mark.parametrize(
