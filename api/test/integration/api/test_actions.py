@@ -1,3 +1,5 @@
+import subprocess
+from base64 import b64decode
 from pathlib import Path
 
 import pytest
@@ -212,7 +214,7 @@ def test_run_action_multiple_not_supported(host, access_token):
     assert response["summary"] == "We don't got a value"
 
 
-def test_run_action_file(host, access_token):
+def test_run_action_file(host, access_token, tmp_path):
     if not access_token:
         pytest.skip("Could not connect to keycloak.")
 
@@ -233,6 +235,18 @@ def test_run_action_file(host, access_token):
     assert response["output"]["file_name"] == "custom_name.txt"
     assert response["output"]["mime_type"] == "text/plain"
     assert response["output"]["data"] == expected_data
+
+    expected_file = Path(__file__).parents[2] / "utils" / "example.txt"
+    actual_file = tmp_path / "returned_file.txt"
+    actual_file.write_bytes(b64decode(response["output"]["data"]))
+
+    diff_result = subprocess.run(
+        ["diff", "-u", str(expected_file), str(actual_file)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert diff_result.returncode == 0, diff_result.stdout or diff_result.stderr
 
 
 def test_run_pivot(host, access_token):
