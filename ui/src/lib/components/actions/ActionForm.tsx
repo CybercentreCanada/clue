@@ -103,6 +103,7 @@ const ActionForm: FC<{
     runningActionData?.selectors,
     runningActionData?.onComplete,
     runningActionData?.timeout,
+    runningActionData?.skipResultModal,
     formData
   ]);
 
