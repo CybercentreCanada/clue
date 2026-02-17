@@ -354,6 +354,8 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           setLastResult({ ...actionResult, actionId, action: actionToRun });
           if (!skipResultModal) {
             setShowResultModal(true);
+          } else {
+            setRunningActionData(null);
           }
         }
 
@@ -417,7 +419,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       cancelAction,
       getActionStatus,
       getActionResults,
-
       loading,
       refreshActions
     }),
