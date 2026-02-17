@@ -86,6 +86,10 @@ const ActionForm: FC<{
         options.timeout = runningActionData?.timeout;
       }
 
+      if (runningActionData?.skipResultModal) {
+        options.skipResultModal = runningActionData?.skipResultModal;
+      }
+
       await executeAction(runningActionData?.id, runningActionData?.selectors, formData, options);
     } catch (e) {
       // eslint-disable-next-line no-console

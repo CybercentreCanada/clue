@@ -214,6 +214,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     async (actionId, selectors, params, options) => {
       const { forceMenu, onComplete, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
         forceMenu: false,
+        skipResultModal: false,
         skipMenu: false,
         onComplete: null,
         timeout: null,
@@ -278,6 +279,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           action: actionToRun,
           selectors: selectors,
           params: validatedParams ?? {},
+          skipResultModal: skipResultModal,
           context,
           onComplete,
           timeout
