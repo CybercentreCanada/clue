@@ -1,7 +1,5 @@
 import { Icon } from '@iconify/react';
 import { Button, Divider, LinearProgress, Modal, Paper, Stack, Typography } from '@mui/material';
-import JSONViewer from 'lib/components/display/json';
-import Markdown from 'lib/components/display/markdown';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import { useActionResult } from 'lib/hooks/useActionResult';
 import type { ActionResult } from 'lib/types/action';
@@ -11,6 +9,7 @@ import { memo, useMemo } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import ClassificationChip from '../ClassificationChip';
 import ErrorBoundary from '../ErrorBoundary';
+import Result from './formats';
 
 /**
  * The Annotation Popover is for showing a permanent popover on click with interactivity. For showing data on hover, use Annotation Popper.
@@ -54,16 +53,7 @@ const ResultModal: FC<{
             <Divider flexItem />
             {resultFinished ? (
               <ErrorBoundary>
-                {result.format === 'markdown' ? (
-                  <Markdown md={result.output} />
-                ) : result.format === 'json' ? (
-                  <JSONViewer data={result.output} collapse forceCompact />
-                ) : (
-                  <Stack sx={{ overflowY: 'auto' }}>
-                    <Markdown md={'`' + result.format + '` is not recognized as a format in this application.'} />
-                    <JSONViewer data={result} collapse forceCompact />
-                  </Stack>
-                )}
+                <Result result={result} />
               </ErrorBoundary>
             ) : (
               <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>

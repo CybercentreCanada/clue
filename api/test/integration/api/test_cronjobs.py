@@ -61,7 +61,7 @@ def test_job_scheduler(host):
     if scheduler.state == 1:
         scheduler.remove_all_jobs()
 
-    root_dir = Path(__file__).parent.parent.parent.parent
+    root_dir = Path(__file__).parents[3]
     module_path = root_dir / "clue" / "cronjobs"
     modules_to_import = [
         _file for _file in module_path.iterdir() if _file.suffix == ".py" and _file.name != "__init__.py"

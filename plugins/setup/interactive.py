@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-PLUGINS_PATH = Path(__file__).parent.parent.resolve()
-CLUE_PATH = Path(__file__).parent.parent.parent / "api"
+PLUGINS_PATH = Path(__file__).parents[1].resolve()
+CLUE_PATH = Path(__file__).parents[2] / "api"
 CLUE_VENV_PATH = CLUE_PATH / ".venv/lib/python3.12/site-packages"
 sys.path.append(str(PLUGINS_PATH))
 sys.path.append(str(CLUE_PATH))
@@ -156,7 +156,7 @@ def main():  # noqa: C901
 
     while plugin_name is None:
         plugin_name = input("What plugin do you want to interact with?\n> ")
-        if not (Path(__file__).parent.parent.parent / "plugins" / plugin_name).exists():
+        if not (Path(__file__).parents[2] / "plugins" / plugin_name).exists():
             error(f"Plugin {plugin_name} does not exist.")
             plugin_name = None
 

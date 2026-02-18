@@ -2,6 +2,7 @@
 import {
   Box,
   Button,
+  Card,
   Checkbox,
   Divider,
   Drawer,
@@ -15,6 +16,7 @@ import {
   Typography
 } from '@mui/material';
 import PageCenter from 'commons/components/pages/PageCenter';
+import FileResult, { type ActionFileResult } from 'lib/components/actions/formats/FileResult';
 import Graph from 'lib/components/display/graph';
 import JSONViewer from 'lib/components/display/json';
 import EnrichedCard from 'lib/components/EnrichedCard';
@@ -23,11 +25,14 @@ import EnrichedTypography from 'lib/components/EnrichedTypography';
 import Entry from 'lib/components/group/Entry';
 import Group from 'lib/components/group/Group';
 import RetryFailedEnrichments from 'lib/components/RetryFailedEnrichments';
+import type { ActionResult } from 'lib/types/action';
+import type { WithActionData } from 'lib/types/WithActionData';
 import { dayjs } from 'lib/utils/time';
 import range from 'lodash-es/range';
 import type { FC } from 'react';
 import { useMemo, useState } from 'react';
 import { v4 } from 'uuid';
+import file_result from './file_result.json';
 import process from './process.json';
 import process_vertical from './process_vertical.json';
 import tree from './tree.json';
@@ -355,6 +360,10 @@ const Examples: FC = () => {
         <Graph sx={{ minHeight: '750px' }} graph={process as any} />
 
         <Graph sx={{ minHeight: '750px' }} graph={process_vertical as any} />
+
+        <Card sx={{ p: 2 }}>
+          <FileResult result={file_result as WithActionData<ActionResult<ActionFileResult>>} />
+        </Card>
       </Stack>
     </PageCenter>
   );
