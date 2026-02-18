@@ -517,7 +517,7 @@ def results_for_safebad_list(data, qhash, annotate, is_safe, raw, tag):
             summary = f"{DEPLOYMENT_NAME}'s {source}  flagged this file as {verdict} in {count} sources(s): "
         summary = summary + ", ".join(verdict_sources)
 
-        timestamp_str = data.get("updated") or data.get("added")
+        timestamp_str = data.get("updated", data.get("added"))
         timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else None
 
         annotations.append(
