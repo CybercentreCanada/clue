@@ -59,7 +59,7 @@ def get_supported_actions(
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception("Unable to connect: %s", url)
             return {}
-        except (requests.exceptions.JSONDecodeError, KeyError, JSONDecodeError) as err:
+        except (requests.exceptions.JSONDecodeError, KeyError, JSONDecodeError):
             logger.exception(
                 "External API did not return expected format. Full data:\n\n%s\n\nStack Trace:",
                 rsp.text if rsp else "None",
