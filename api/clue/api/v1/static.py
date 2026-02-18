@@ -17,9 +17,7 @@ static_api._doc = "Fetch static documentation"
 
 CORS(static_api, origins=config.ui.cors_origins, supports_credentials=True)
 
-DOCUMENTATION_FOLDER = (
-    Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path(__file__).parent.parent.parent.parent.parent)) / "docs"
-).resolve()
+DOCUMENTATION_FOLDER = (Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path(__file__).parents[4])) / "docs").resolve()
 
 logger = get_logger(__file__)
 

@@ -259,7 +259,7 @@ class Action(ActionBase, Generic[ER]):
 
 
 class ActionResult(BaseModel, Generic[DATA]):
-    outcome: Union[Literal["success"], Literal["failure"], Literal["pending"]] = Field(
+    outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
