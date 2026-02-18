@@ -11,6 +11,7 @@ import hashlib
 import os
 import time
 from contextlib import contextmanager
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Callable, Union, cast
 from urllib import parse as ul
 
@@ -516,6 +517,9 @@ def results_for_safebad_list(data, qhash, annotate, is_safe, raw, tag):
             summary = f"{DEPLOYMENT_NAME}'s {source}  flagged this file as {verdict} in {count} sources(s): "
         summary = summary + ", ".join(verdict_sources)
 
+        timestamp_str = data.get("updated") or data.get("added")
+        timestamp = datetime.fromisoformat(timestamp_str) if timestamp_str else None
+
         annotations.append(
             Annotation(
                 analytic=f"{DEPLOYMENT_NAME} - {source.capitalize()}",
@@ -526,10 +530,11 @@ def results_for_safebad_list(data, qhash, annotate, is_safe, raw, tag):
                 summary=summary,
                 confidence=1,
                 link=Url(f"{AL_URL_BASE}/manage/{'safelist' if is_safe else 'badlist'}/{qhash}"),
+                timestamp=timestamp,
             )
         )
 
-    raw_data = data["items"] if raw else None
+    raw_data = data if raw else None
 
     logger.debug("%s opinion annotations returned", len(annotations))
     return QueryEntry(
