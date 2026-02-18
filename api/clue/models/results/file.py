@@ -3,10 +3,7 @@
 
 from pydantic import Field
 
-from clue.common.logging import get_logger
 from clue.models.results.base import Result
-
-logger = get_logger(__file__)
 
 
 class FileResult(Result):
