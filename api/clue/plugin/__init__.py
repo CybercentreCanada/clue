@@ -231,7 +231,7 @@ class CluePlugin:
             A readiness probe for kubernetes implementations of clue.
     """
 
-    alternate_bulk_lookup: Callable[[list[dict[str, str]], Params], dict[str, dict[str, BulkEntry]]] | None
+    alternate_bulk_lookup: Callable[[list[dict[str, str]], Params, str | None], dict[str, dict[str, BulkEntry]]] | None
     """Provides an alternative implementation for bulk enrichment.
 
     By default, clue plugins will split bulk enrichments into many parallel threads, allowing the plugin to
@@ -324,7 +324,8 @@ class CluePlugin:
         self: Self,
         app_name: str,
         actions: list[Action] = [],
-        alternate_bulk_lookup: Callable[[list[dict[str, str]], Params], dict[str, dict[str, BulkEntry]]] | None = None,
+        alternate_bulk_lookup: Callable[[list[dict[str, str]], Params, str | None], dict[str, dict[str, BulkEntry]]]
+        | None = None,
         cache_timeout: int = 5 * 60,  # five minute timeout
         classification: str | None = os.environ.get("CLASSIFICATION", None),
         enable_apm: bool = False,
@@ -998,7 +999,7 @@ class CluePlugin:
             self.logger.debug("Executing plugin-provided alternate bulk lookup script")
 
             try:
-                alternate_results = self.alternate_bulk_lookup(remaining_items, params)
+                alternate_results = self.alternate_bulk_lookup(remaining_items, params, token)
 
                 for _type, _values in alternate_results.items():
                     for _value, _result in _values.items():
