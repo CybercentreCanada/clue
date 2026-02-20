@@ -4,6 +4,7 @@ from typing import Any, TypeVar
 from pydantic import BaseModel
 
 from clue.models.results.base import Result
+from clue.models.results.file import FileResult
 from clue.models.results.graph import GraphResult
 from clue.models.results.image import ImageResult
 from clue.models.results.status import StatusResult
@@ -17,6 +18,7 @@ FORMAT_MAPPINGS: dict[type[BaseModel] | type[dict] | type[list] | type[str], str
     ImageResult: ImageResult.format(),
     StatusResult: StatusResult.format(),
     GraphResult: GraphResult.format(),
+    FileResult: FileResult.format(),
 }
 FORMAT_MAPPINGS_REVERSE: dict[str, list[type[BaseModel] | type[dict] | type[list] | type[str]]] = {}
 

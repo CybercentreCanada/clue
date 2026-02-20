@@ -26,7 +26,7 @@ BANNED_STRINGS = [
     ),
 ]
 
-root = Path(__file__).parent.parent
+root = Path(__file__).parents[1]
 
 lib_dir = root / "src" / "lib"
 

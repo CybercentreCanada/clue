@@ -37,7 +37,7 @@ else:
     new_version = base_version
 
 # TODO: Figure out versioning for plugins
-# for plugin in (Path(__file__).parent.parent / "plugins").resolve().iterdir():
+# for plugin in (Path(__file__).parents[1] / "plugins").resolve().iterdir():
 #     requirements_file = plugin / "requirements.txt"
 #     if not requirements_file.exists():
 #         continue

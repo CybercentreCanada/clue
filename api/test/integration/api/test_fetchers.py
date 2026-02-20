@@ -1,9 +1,11 @@
 import os
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 import requests
 
+from clue.common.bytes_utils import to_base64
 from clue.models.graph import VisualConfig
 from clue.models.results.status import StatusLabel, StatusResult
 from test.utils.oauth_credentials import get_token
@@ -107,6 +109,23 @@ def test_run_fetcher(host, access_token, process_tree):
 
     assert response["outcome"] == "success"
     assert response["data"] == process_tree
+
+    res = requests.post(
+        f"{host}/api/v1/fetchers/test/file",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"type": "ip", "value": "127.0.0.1"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    expected_data = to_base64((Path(__file__).parents[2] / "utils" / "example.txt").read_bytes())
+    assert response["outcome"] == "success"
+    assert response["data"]["file_name"] == "example.txt"
+    assert response["data"]["mime_type"] == "text/plain"
+    assert response["data"]["data"] == expected_data
 
     # status
     res = requests.post(
