@@ -73,6 +73,12 @@ export interface ClueActionContextType {
       onComplete?: (result: WithActionData<ActionResult>) => void;
 
       /**
+       * Callback for when the action is cancelled
+       * @returns void
+       */
+      onCancel?: () => void;
+
+      /**
        * how long should the action have to respond?
        */
       timeout?: number;
@@ -212,11 +218,12 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
-      const { forceMenu, onComplete, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
+      const { forceMenu, onComplete, onCancel, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
         forceMenu: false,
         skipResultModal: false,
         skipMenu: false,
         onComplete: null,
+        onCancel: null,
         timeout: null,
         includeContext: defaultIncludeContext ?? false,
         extraContext: null,
@@ -282,6 +289,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           skipResultModal: skipResultModal,
           context,
           onComplete,
+          onCancel,
           timeout
         });
         return;
@@ -297,7 +305,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           requestConfig
         );
 
-        const actionResultWithData = { ...actionResult, actionId, action: actionToRun };
+        const actionResultWithData = { ...actionResult, actionId, action: actionToRun, params: validatedParams };
 
         onComplete?.(actionResultWithData);
 
@@ -403,6 +411,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   );
 
   const cancelAction: ClueActionContextType['cancelAction'] = useCallback(() => {
+    runningActionData?.onCancel();
     setRunningActionData(null);
     setLoading(false);
   }, []);

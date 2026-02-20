@@ -10,6 +10,7 @@ interface RunningActionData {
   context?: ActionContextInformation;
   skipResultModal?: boolean;
   onComplete?: (result: WithActionData<ActionResult>) => void;
+  onCancel?: () => void;
   timeout?: number;
 }
 
