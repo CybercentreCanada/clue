@@ -336,6 +336,7 @@ def test_detailed(test_client, server):
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Safelist",
+                        "analytic_icon": "mdi:assembly",
                         "confidence": 1.0,
                         "link": "https://assemblyline-ui/manage/safelist/9cffecf270e3553f45f5d702c204883"
                         "d01906d91c1d22dfa5d56868abcd7ff2c",
@@ -357,6 +358,7 @@ def test_detailed(test_client, server):
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Badlist",
+                        "analytic_icon": "mdi:assembly",
                         "confidence": 1.0,
                         "link": "https://assemblyline-ui/manage/badlist/9cffecf270e3553f45f5d702c204883d0190"
                         "6d91c1d22dfa5d56868abcd7ff2c",
@@ -398,6 +400,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Services",
+                        "analytic_icon": "mdi:assembly",
                         "quantity": 1,
                         "confidence": 1.0,
                         "summary": "1 Assemblyline service(s) flagged this file as malicious: ConfigExtractor",
@@ -416,6 +419,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Safelist",
+                        "analytic_icon": "mdi:assembly",
                         "confidence": 1.0,
                         "link": "https://assemblyline-ui/manage/safelist/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                         "quantity": 1,
@@ -435,6 +439,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Badlist",
+                        "analytic_icon": "mdi:assembly",
                         "confidence": 1.0,
                         "link": "https://assemblyline-ui/manage/badlist/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                         "quantity": 1,

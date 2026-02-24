@@ -1,16 +1,15 @@
 import { Icon } from '@iconify/react';
 import { Button, Divider, LinearProgress, Modal, Paper, Stack, Typography } from '@mui/material';
-import JSONViewer from 'lib/components/display/json';
-import Markdown from 'lib/components/display/markdown';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import { useActionResult } from 'lib/hooks/useActionResult';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import type { FC } from 'react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import ClassificationChip from '../ClassificationChip';
 import ErrorBoundary from '../ErrorBoundary';
+import Result from './formats';
 
 /**
  * The Annotation Popover is for showing a permanent popover on click with interactivity. For showing data on hover, use Annotation Popper.
@@ -23,6 +22,11 @@ const ResultModal: FC<{
   const { t } = useContextSelector(ClueComponentContext, ctx => ctx.i18next);
 
   const result = useActionResult(_result);
+
+  const resultFinished = useMemo(
+    () => result?.outcome === 'success' || result?.outcome === 'failure' || result?.done,
+    [result?.done, result?.outcome]
+  );
 
   if (!result) {
     return null;
@@ -47,18 +51,9 @@ const ResultModal: FC<{
 
             <Typography variant="body1">{result.action.summary}</Typography>
             <Divider flexItem />
-            {result.done ? (
+            {resultFinished ? (
               <ErrorBoundary>
-                {result.format === 'markdown' ? (
-                  <Markdown md={result.output} />
-                ) : result.format === 'json' ? (
-                  <JSONViewer data={result.output} collapse forceCompact />
-                ) : (
-                  <Stack sx={{ overflowY: 'auto' }}>
-                    <Markdown md={'`' + result.format + '` is not recognized as a format in this application.'} />
-                    <JSONViewer data={result} collapse forceCompact />
-                  </Stack>
-                )}
+                <Result result={result} />
               </ErrorBoundary>
             ) : (
               <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>

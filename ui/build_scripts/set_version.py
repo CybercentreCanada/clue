@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-with open(Path(__file__).parent.parent / "package.json") as package_json:
+with open(Path(__file__).parents[1] / "package.json") as package_json:
     version = json.load(package_json)["version"]
     base_version = re.sub(r"-dev.+", "", version)
     print(f"Current version: {base_version}")

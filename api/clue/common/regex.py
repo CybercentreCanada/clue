@@ -40,3 +40,8 @@ URI_ONLY = f"^{URI_REGEX}$"
 UUID4_REGEX = r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
 
 EMAIL_PATH_REGEX = r"^[A-Z]+_EMAIL://.*"
+MAC_ADDRESS_REGEX = r"^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
+COMMUNITY_ID_REGEX = r"^1:[A-Za-z0-9+/]{27}=$"
+JA3_REGEX = r"^[0-9a-fA-F]{32}$"
+JA4_REGEX = r"^[a-zA-Z0-9]+(?:_[a-zA-Z0-9-]+)+$"
+ZEEK_ID_REGEX = r"^[A-Za-z0-9]{15,22}$"

@@ -1,16 +1,21 @@
 from clue.common.logging import get_logger
 from clue.common.regex import (
+    COMMUNITY_ID_REGEX,
     DOMAIN_ONLY_REGEX,
     EMAIL_PATH_REGEX,
     EMAIL_REGEX,
     IPV4_ONLY_REGEX,
     IPV6_ONLY_REGEX,
+    JA3_REGEX,
+    JA4_REGEX,
+    MAC_ADDRESS_REGEX,
     MD5_REGEX,
     PORT_REGEX,
     SHA1_REGEX,
     SHA256_REGEX,
     URI_ONLY,
     UUID4_REGEX,
+    ZEEK_ID_REGEX,
 )
 
 logger = get_logger(__file__)
@@ -33,10 +38,17 @@ SUPPORTED_TYPES = {
     "sha256": SHA256_REGEX,
     "telemetry": None,
     "hostname": None,
-    "tenant-id": UUID4_REGEX,
+    "tenant_id": UUID4_REGEX,
+    "mac_address": MAC_ADDRESS_REGEX,
+    "command_line": None,
+    "community_id": COMMUNITY_ID_REGEX,
+    "ja3": JA3_REGEX,
+    "ja4": JA4_REGEX,
+    "zeek_id": ZEEK_ID_REGEX,
 }
 
-CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant-id", "hbs_oid", "hbs_agent_id"]
+
+CASE_INSENSITIVE_TYPES = ["ip", "domain", "port", "tenant_id", "mac_address"]
 
 
 def add_supported_type(
