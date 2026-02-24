@@ -88,7 +88,7 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
         filename = filename + ".md"
 
     if is_path_traversal(DOCUMENTATION_FOLDER, docs_path):
-        return not_found(err="The file does not exist or is typed incorrectly.")
+        return not_found(err="The file does not exist or is typed incorrectly. - path")
 
     if docs_path.exists():
         content = docs_path.read_text(encoding="utf-8")
@@ -96,4 +96,4 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
         return ok({"markdown": content})
 
     logger.info("File %s does not exist", docs_path)
-    return not_found(err="The file does not exist or is typed incorrectly.")
+    return not_found(err="The file does not exist or is typed incorrectly. - not found")
