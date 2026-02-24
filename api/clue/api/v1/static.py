@@ -83,11 +83,7 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-    docs_path = (DOCUMENTATION_FOLDER / filename).resolve()
-
-    if not docs_path.suffix:
-        # Assume it's markdown
-        filename = filename + ".md"
+    docs_path = (DOCUMENTATION_FOLDER / filename / "README.md").resolve()
 
     if is_path_traversal(DOCUMENTATION_FOLDER, docs_path):
         return not_found(err="The file does not exist or is typed incorrectly.")
