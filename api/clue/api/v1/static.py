@@ -80,7 +80,6 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-
     documentation_folder = Path.cwd() / "docs" / filename
 
     if documentation_folder.exists():
