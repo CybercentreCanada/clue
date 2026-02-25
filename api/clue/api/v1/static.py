@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from flask import request
@@ -15,8 +14,6 @@ static_api = make_subapi_blueprint(SUB_API, api_version=1)
 static_api._doc = "Fetch static documentation"
 
 CORS(static_api, origins=config.ui.cors_origins, supports_credentials=True)
-
-DOCUMENTATION_FOLDER = (Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path(__file__).parents[4])) / "docs").resolve()
 
 logger = get_logger(__file__)
 
