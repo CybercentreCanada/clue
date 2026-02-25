@@ -414,7 +414,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     runningActionData?.onCancel();
     setRunningActionData(null);
     setLoading(false);
-  }, []);
+  }, [runningActionData?.onCancel]);
 
   const getActionResults: ClueActionContextType['getActionResults'] = useCallback(
     (type, value, classification) => actionResults[getHashKey(type, value, classification)] ?? [],
