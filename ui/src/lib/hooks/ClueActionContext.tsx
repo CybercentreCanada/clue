@@ -411,7 +411,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   );
 
   const cancelAction: ClueActionContextType['cancelAction'] = useCallback(() => {
-    runningActionData?.onCancel();
+    runningActionData?.onCancel?.();
     setRunningActionData(null);
     setLoading(false);
   }, [runningActionData?.onCancel]);
