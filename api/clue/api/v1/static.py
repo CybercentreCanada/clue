@@ -80,12 +80,8 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-    # docs_path = (DOCUMENTATION_FOLDER / filename).resolve()
 
     documentation_folder = Path.cwd() / "docs" / filename
-
-    # if is_path_traversal(documentation_folder, docs_path):
-    #     return not_found(err="The file does not exist or is typed incorrectly.")
 
     if documentation_folder.exists():
         content = documentation_folder.read_text(encoding="utf-8")
