@@ -9,7 +9,6 @@ from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
 from clue.security import api_login
-from clue.security.utils import is_path_traversal
 
 SUB_API = "static"
 static_api = make_subapi_blueprint(SUB_API, api_version=1)
@@ -81,15 +80,13 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-    docs_path = (DOCUMENTATION_FOLDER / filename / "README.md").resolve()
 
-    if is_path_traversal(DOCUMENTATION_FOLDER, docs_path):
-        return not_found(err="The file does not exist or is typed incorrectly.")
+    documentation_folder = Path.cwd() / "docs" / filename
 
-    if docs_path.exists():
-        content = docs_path.read_text(encoding="utf-8")
+    if documentation_folder.exists():
+        content = documentation_folder.read_text(encoding="utf-8")
 
         return ok({"markdown": content})
 
-    logger.info("File %s does not exist", docs_path)
+    logger.info("File %s does not exist", documentation_folder)
     return not_found(err="The file does not exist or is typed incorrectly.")
