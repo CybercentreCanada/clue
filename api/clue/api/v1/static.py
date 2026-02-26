@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from clue.security.utils import is_path_traversal
 from flask import request
 from flask_cors import CORS
 
@@ -9,6 +8,7 @@ from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
 from clue.security import api_login
+from clue.security.utils import is_path_traversal
 
 SUB_API = "static"
 static_api = make_subapi_blueprint(SUB_API, api_version=1)
@@ -78,7 +78,6 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-
     documentation_folder = (Path.cwd() / "docs").resolve()
 
     docs_path = (documentation_folder / filename).resolve()
