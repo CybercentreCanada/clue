@@ -84,7 +84,7 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     docs_path = (documentation_folder / filename).resolve()
 
     if is_path_traversal(documentation_folder, docs_path):
-        return not_found(err="The file does not exist or is typed incorrectly.")
+        return not_found(err="The file does not exist or is typed incorrectly within the relative path.")
 
     if documentation_folder.exists():
         content = documentation_folder.read_text(encoding="utf-8")
