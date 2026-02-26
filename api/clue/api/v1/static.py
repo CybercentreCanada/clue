@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from clue.security.utils import is_path_traversal
 from flask import request
 from flask_cors import CORS
 
@@ -77,7 +78,13 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-    documentation_folder = Path.cwd() / "docs" / filename
+
+    documentation_folder = (Path.cwd() / "docs").resolve()
+
+    docs_path = (documentation_folder / filename).resolve()
+
+    if is_path_traversal(documentation_folder, docs_path):
+        return not_found(err="The file does not exist or is typed incorrectly.")
 
     if documentation_folder.exists():
         content = documentation_folder.read_text(encoding="utf-8")
