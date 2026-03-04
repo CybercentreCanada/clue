@@ -26,7 +26,7 @@ from clue.models.results.graph import GraphResult
 from clue.models.results.image import ImageResult
 from clue.models.results.status import StatusLabel, StatusResult
 from clue.models.selector import Selector
-from clue.plugin import CluePlugin
+from clue.plugin import CluePlugin, FetcherStatusRequest
 
 logger = get_logger(__file__)
 
@@ -221,7 +221,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
     return ActionResult(outcome="failure", summary="We don't got a value", format="json", output={"value": None})
 
 
-def get_status(action: Action, request: ActionStatusRequest, token: str | None) -> ActionResult:
+def get_action_status(action: Action, request: ActionStatusRequest, access_token: str | None) -> ActionResult:
     """Get the status of a running action when requested by the central API."""
     if action.id == "test_async_action":
         if request.task_id == TASK_ID:
@@ -335,9 +335,27 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
             ),
         )
 
+    if fetcher.id == "test_async_fetcher":
+        return FetcherResult(outcome="pending", task_id=TASK_ID)
+
     return FetcherResult(
         outcome="success", format="image", data=ImageResult(image="https://example.com", alt="Alt Text")
     )
+
+
+def get_fetcher_status(fetcher: FetcherDefinition, request: FetcherStatusRequest, access_token: str | None):
+    """Get the status of a running action when requested by the central API."""
+    if fetcher.id == "test_async_fetcher":
+        if request.task_id == TASK_ID:
+            return FetcherResult(
+                outcome="success",
+                format="json",
+                data={"status": "done"},
+            )
+
+        return FetcherResult(outcome="failure", error="Bad task id", format="error")
+
+    return FetcherResult(outcome="failure", error="unknown fetcher id", format="error")
 
 
 plugin = CluePlugin(
@@ -351,7 +369,8 @@ plugin = CluePlugin(
     validate_token=validate_token,
     setup_actions=setup_actions,
     run_action=run_action,
-    get_status=get_status,
+    get_action_status=get_action_status,
+    get_fetcher_status=get_fetcher_status,
     fetchers=[
         FetcherDefinition(
             id="json",
@@ -380,6 +399,13 @@ plugin = CluePlugin(
             description="test fetcher graph",
             format="status",
             supported_types={"ipv4", "ipv6", "port", "sha256"},
+        ),
+        FetcherDefinition(
+            id="test_async_fetcher",
+            classification=os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
+            description="test async fetcher",
+            format="json",
+            supported_types={"ipv4"},
         ),
         FetcherDefinition(
             id="file",

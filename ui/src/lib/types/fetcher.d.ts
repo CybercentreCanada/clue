@@ -9,10 +9,12 @@ export interface FetcherDefinition {
 }
 
 interface BaseFetcherResult {
-  outcome: 'success' | 'failure';
-  error: string;
-  link: string;
-  format: string;
+  outcome: 'success' | 'failure' | 'pending';
+  error?: string;
+  link?: string;
+  format?: string;
+  done?: boolean;
+  task_id?: string;
 }
 
 export interface FetcherImageResult extends BaseFetcherResult {
@@ -39,14 +41,23 @@ export interface FetcherGraphResult extends BaseFetcherResult {
 }
 
 export interface FetcherStatusResult extends BaseFetcherResult {
-  data: {
+  data?: {
     empty: boolean;
     labels: { language: string; label: string }[];
     link?: string;
     icon?: string;
     color?: string;
   };
-  format: 'status';
+  format?: 'status';
+}
+
+export interface GetFetcherStatusResult extends BaseFetcherResult {
+  task_id: string;
+  outcome: 'pending';
+  data?: {
+    summary?: string;
+    progress?: number;
+  };
 }
 
 export type FetcherResult =
@@ -54,6 +65,7 @@ export type FetcherResult =
   | FetcherJsonResult
   | FetcherGraphResult
   | FetcherMarkdownResult
-  | FetcherStatusResult;
+  | FetcherStatusResult
+  | GetFetcherStatusResult;
 
 export type FetcherDefinitionsResponse = { [type: string]: FetcherDefinition };
