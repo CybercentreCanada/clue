@@ -52,13 +52,11 @@ const AnnotatonEntry: FC<{
         {annotation.classification && <ClassificationChip size="small" classification={annotation.classification} />}
       </Stack>
       <AnnotationBody annotation={annotation} />
-      <Typography variant="caption" color="text.secondary">
-        {annotation.summary.split('\n').map(line => (
-          <Typography variant="body2" key={line}>
-            {line}
-          </Typography>
-        ))}
-      </Typography>
+      {annotation.summary.split('\n').map(line => (
+        <Typography variant="caption" color="text.secondary" key={line}>
+          {line}
+        </Typography>
+      ))}
       <Stack direction="row">
         <Typography variant="caption" color="text.secondary" fontSize="10px">
           {twitterShort(annotation.timestamp)}
