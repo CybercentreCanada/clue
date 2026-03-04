@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from flask import request
@@ -9,14 +8,13 @@ from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
 from clue.security import api_login
+from clue.security.utils import is_path_traversal
 
 SUB_API = "static"
 static_api = make_subapi_blueprint(SUB_API, api_version=1)
 static_api._doc = "Fetch static documentation"
 
 CORS(static_api, origins=config.ui.cors_origins, supports_credentials=True)
-
-DOCUMENTATION_FOLDER = (Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path(__file__).parents[4])) / "docs").resolve()
 
 logger = get_logger(__file__)
 
@@ -80,12 +78,12 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-    # docs_path = (DOCUMENTATION_FOLDER / filename).resolve()
+    documentation_folder = (Path.cwd() / "docs").resolve()
 
-    documentation_folder = Path.cwd() / "docs" / filename
+    docs_path = (documentation_folder / filename).resolve()
 
-    # if is_path_traversal(documentation_folder, docs_path):
-    #     return not_found(err="The file does not exist or is typed incorrectly.")
+    if is_path_traversal(documentation_folder, docs_path):
+        return not_found(err="The file does not exist or is typed incorrectly within the relative path.")
 
     if documentation_folder.exists():
         content = documentation_folder.read_text(encoding="utf-8")
