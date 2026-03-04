@@ -18,7 +18,7 @@ const Documentation = () => {
     async (fileName: string) => {
       const fetchedDoc = (
         await Promise.all([
-          dispatchApi(api._static.documentation.get(fileName)),
+          dispatchApi(api._static.documentation.get(`${fileName}.md`)),
           new Promise(res => setTimeout(res, 200))
         ])
       )[0];
