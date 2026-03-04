@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-PLUGINS_FOLDER = Path(__file__).parent.parent.resolve()
-CLUE_PATH = Path(__file__).parent.parent.parent / "api"
+PLUGINS_FOLDER = Path(__file__).parents[1].resolve()
+CLUE_PATH = Path(__file__).parents[2] / "api"
 CLUE_VENV_PATH = CLUE_PATH / ".venv/lib/python3.12/site-packages"
 sys.path.append(str(CLUE_PATH))
 sys.path.append(str(CLUE_VENV_PATH))

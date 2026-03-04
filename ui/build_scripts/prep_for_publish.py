@@ -4,7 +4,7 @@ from pathlib import Path
 
 print("Step 1: Copy Files")
 
-ui_path = Path(__file__).parent.parent
+ui_path = Path(__file__).parents[1]
 lib_path = ui_path / "src" / "lib"
 
 if not (ui_path / "dist" / ".npmrc").exists():
