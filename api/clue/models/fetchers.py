@@ -30,6 +30,7 @@ class FetcherDefinition(BaseModel):
     description: str = Field(description="A basic description of the fetcher's usage.")
     format: str = Field(description="The output format of the fetcher's result.")
     supported_types: set[str] = Field(description="A list of types this fetcher supports.")
+    async_result: bool = Field(description="Does this fetcher run asynchronously?", default=False)
     extra_data: Optional[Dict[str, JsonValue]] = Field(
         default=None, description="Extra data you want to define for a fetcher"
     )
@@ -101,14 +102,18 @@ class FetcherDefinition(BaseModel):
 
 
 class FetcherResult(BaseModel, Generic[DATA]):
-    outcome: Literal["success", "failure"] = Field(description="Did the fetcher succeed or fail?")
+    outcome: Literal["success", "failure", "pending"] = Field(
+        description="Did the fetcher succeed or fail, or is it pending?"
+    )
     data: DATA | None = Field(description="The output of the fetcher.", default=None)
     error: str | None = Field(description="If the fetcher failed, contains the relevant error message.", default=None)
-    format: str = Field(
+    format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
+        default=None,
     )
     link: Optional[Url] = Field(description="Link to more information on the fetcher", default=None)
+    task_id: str | None = Field(description="The task id if the fetcher result is pending.", default=None)
 
     @model_validator(mode="after")
     def validate_model(self: Self, info: ValidationInfo) -> Self:  # noqa: C901
@@ -123,6 +128,9 @@ class FetcherResult(BaseModel, Generic[DATA]):
         if self.outcome == "success" and self.data is None:
             raise ClueValueError("Successful fetcher results must return data.")
 
+        if not self.task_id and self.outcome == "pending":
+            raise ClueValueError("task_id must be set if outcome is pending.")
+
         if self.outcome == "failure":
             if self.data is not None:
                 raise ClueValueError("Failed fetcher results cannot return data.")
@@ -133,7 +141,7 @@ class FetcherResult(BaseModel, Generic[DATA]):
         elif self.error:
             raise ClueValueError("Errors can only be specified if the outcome is failure.")
 
-        self.data = validate_result(self.format, self.data, info)
+        self.data = validate_result(self.format, self.data, info) if self.format else None
 
         return self
 
@@ -141,3 +149,7 @@ class FetcherResult(BaseModel, Generic[DATA]):
     def error_result(err: str) -> "FetcherResult":
         "Helper function to generate a failed fetcher result"
         return FetcherResult(outcome="failure", format="error", error=err)
+
+
+class FetcherStatusRequest(BaseModel):
+    task_id: str = Field(description="The task id to get the status for.")

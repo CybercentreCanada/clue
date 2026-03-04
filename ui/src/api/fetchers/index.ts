@@ -1,4 +1,5 @@
 import { hget, hpost, joinAllUri, joinUri, uri as parentUri } from 'api';
+import * as status from 'api/fetchers/status';
 import type { AxiosRequestConfig } from 'axios';
 import type { FetcherDefinitionsResponse, FetcherResult } from 'lib/types/fetcher';
 import type { Selector } from 'lib/types/lookup';
@@ -14,4 +15,4 @@ const post = (fetcherId: string, selector: Selector, config?: AxiosRequestConfig
   return hpost(joinAllUri(uri(), fetcherId.replace('.', '/')), selector, config);
 };
 
-export { get, post, uri };
+export { get, post, status, uri };

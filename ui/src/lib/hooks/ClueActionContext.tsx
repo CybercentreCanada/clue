@@ -215,6 +215,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       const { forceMenu, onComplete, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
         forceMenu: false,
         skipMenu: false,
+        skipResultModal: false,
         onComplete: null,
         timeout: null,
         includeContext: defaultIncludeContext ?? false,
