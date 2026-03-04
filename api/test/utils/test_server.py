@@ -10,6 +10,7 @@ from flask import request
 from pydantic import Field
 from pydantic_core import Url
 
+from clue.common.bytes_utils import to_base64
 from clue.common.logging import get_logger
 from clue.models.actions import (
     Action,
@@ -20,6 +21,7 @@ from clue.models.actions import (
 )
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.network import Annotation, QueryEntry
+from clue.models.results.file import FileResult
 from clue.models.results.graph import GraphResult
 from clue.models.results.image import ImageResult
 from clue.models.results.status import StatusLabel, StatusResult
@@ -28,7 +30,7 @@ from clue.plugin import CluePlugin, FetcherStatusRequest
 
 logger = get_logger(__file__)
 
-with open(Path(__file__).parent.parent / "graphs" / "process.json", "r") as json_file:
+with open(Path(__file__).parents[1] / "graphs" / "process.json", "r") as json_file:
     PROCESS_TREE = json.load(json_file)
 
 
@@ -107,6 +109,10 @@ class Params(ExecuteRequest):
     other_choice: ChoiceEnum = Field(description="Another choice for you with no default")
 
 
+class FileParams(ExecuteRequest):
+    file_name: str = Field(description="Name of the file to return")
+
+
 class ExtraContext(ActionContextInformation):
     source: str | None = Field(default=None)
 
@@ -151,8 +157,25 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
                 format="json",
                 output={"context": None},
             )
+
     if action.id == "test_async_action":
         return ActionResult(outcome="pending", summary="Async test action started", task_id=TASK_ID)
+
+    if action.id == "test_file_action":
+        if not isinstance(request, FileParams):
+            return ActionResult(outcome="failure", summary="Invalid action request type")
+
+        return ActionResult(
+            outcome="success",
+            summary="Returning file",
+            format="file",
+            output=FileResult(
+                file_name=request.file_name,
+                data=to_base64((Path(__file__).parent / "example.txt").read_bytes()),
+                mime_type="text/plain",
+            ),
+        )
+
     if action.accept_empty:
         if request.selector:
             return ActionResult(
@@ -269,6 +292,15 @@ def setup_actions(*args, **kwargs):
             accept_multiple=False,
             accept_empty=True,
         ),
+        Action[FileParams](
+            id="test_file_action",
+            action_icon="codicon:file",
+            name="Test File Action",
+            classification="TLP:CLEAR",
+            summary="Return a file",
+            supported_types={"ip", "port", "sha256"},
+            accept_multiple=False,
+        ),
     ]
 
 
@@ -278,6 +310,17 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
 
     if fetcher.id == "graph":
         return FetcherResult(outcome="success", format="graph", data=GraphResult.model_validate(PROCESS_TREE))
+
+    if fetcher.id == "file":
+        return FetcherResult(
+            outcome="success",
+            format="file",
+            data=FileResult(
+                file_name="example.txt",
+                data=to_base64((Path(__file__).parent / "example.txt").read_bytes()),
+                mime_type="text/plain",
+            ),
+        )
 
     if fetcher.id == "status":
         return FetcherResult(
@@ -363,6 +406,13 @@ plugin = CluePlugin(
             description="test async fetcher",
             format="json",
             supported_types={"ipv4"},
+        ),
+        FetcherDefinition(
+            id="file",
+            classification=os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
+            description="test fetcher file",
+            format="file",
+            supported_types={"ipv4", "ipv6", "port", "sha256"},
         ),
     ],
     run_fetcher=run_fetcher,

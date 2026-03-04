@@ -1,0 +1,18 @@
+{
+  "action": {
+    "classification": "TLP:CLEAR",
+    "id": "file",
+    "name": "Download File",
+    "params": {}
+  },
+  "actionId": "file",
+  "error": null,
+  "format": "file",
+  "link": null,
+  "outcome": "success",
+  "output": {
+    "data": "aGVsbG8hIFRoaXMgaXMgYSB0ZXN0IHRleHQgZmlsZSBmb3IgZmlsZSByZXN1bHRzLgoKSGF2ZSBhIGdyZWF0IGRheSEhIQo=",
+    "file_name": "example.txt",
+    "mime_type": "text/plain"
+  }
+}

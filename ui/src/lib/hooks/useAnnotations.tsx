@@ -90,8 +90,15 @@ const useAnnotations = (
     const observable = database.selectors
       .find({
         selector: {
-          // Use regex instead of exact value for case-insensitivity
-          value: { $regex: `^${value}$`, $options: 'i' }
+          $or: [
+            {
+              // Use regex instead of exact value for case-insensitivity
+              value: { $regex: `^${value}$`, $options: 'i' }
+            },
+            {
+              value
+            }
+          ]
         }
       })
       .$.subscribe(result =>

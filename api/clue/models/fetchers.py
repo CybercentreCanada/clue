@@ -1,6 +1,6 @@
 # ruff: noqa: D101
 import re
-from typing import Dict, Generic, Literal, Optional, Self, Union
+from typing import Dict, Generic, Literal, Optional, Self
 
 from pydantic import (
     BaseModel,
@@ -102,7 +102,7 @@ class FetcherDefinition(BaseModel):
 
 
 class FetcherResult(BaseModel, Generic[DATA]):
-    outcome: Union[Literal["success"], Literal["failure"], Literal["pending"]] = Field(
+    outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the fetcher succeed or fail, or is it pending?"
     )
     data: DATA | None = Field(description="The output of the fetcher.", default=None)

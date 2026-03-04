@@ -130,7 +130,7 @@ def main():  # noqa: C901
                 print("Markdown result:")
                 print(markdown_output)
 
-                (Path(__file__).parent.parent / "test-results.md").write_text(markdown_output)
+                (Path(__file__).parents[1] / "test-results.md").write_text(markdown_output)
 
             raise subprocess.CalledProcessError(return_code, pytest.args, output=output, stderr=None)  # noqa: TRY301
 
@@ -144,7 +144,7 @@ def main():  # noqa: C901
 
         print("Coverage server is down, combining coverage files")
 
-        workdir = Path(__file__).parent.parent
+        workdir = Path(__file__).parents[1]
         if not (workdir / ".coverage.server").exists():
             print("WARN: .coverage.server file missing!")
 

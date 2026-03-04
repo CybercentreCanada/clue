@@ -1,13 +1,13 @@
 import api from 'api';
 import type { AxiosRequestConfig } from 'axios';
-import type { SnackbarEvents } from 'lib/main';
-import { SNACKBAR_EVENT_ID, useClue } from 'lib/main';
+import { SNACKBAR_EVENT_ID, type SnackbarEvents } from 'lib/data/event';
 import type { FetcherDefinition, FetcherResult } from 'lib/types/fetcher';
 import type { Selector } from 'lib/types/lookup';
 import { safeDispatchEvent } from 'lib/utils/window';
 import type { FC, PropsWithChildren } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createContext } from 'use-context-selector';
+import useClue from './useClue';
 import useClueConfig from './useClueConfig';
 
 export interface ClueFetcherContextProps {
