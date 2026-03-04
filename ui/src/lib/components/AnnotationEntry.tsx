@@ -53,7 +53,11 @@ const AnnotatonEntry: FC<{
       </Stack>
       <AnnotationBody annotation={annotation} />
       <Typography variant="caption" color="text.secondary">
-        {annotation.summary}
+        {annotation.summary.split('\n').map(line => (
+          <Typography variant="body2" key={line}>
+            {line}
+          </Typography>
+        ))}
       </Typography>
       <Stack direction="row">
         <Typography variant="caption" color="text.secondary" fontSize="10px">
