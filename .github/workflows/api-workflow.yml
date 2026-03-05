@@ -137,12 +137,26 @@ jobs:
           sudo chmod a+rw /var/log/clue
           cp build_scripts/classification.yml /etc/clue/conf/classification.yml
           cp test/unit/config.yml /etc/clue/conf/config.yml
+
       - name: Install Dependencies
         run: |
           poetry install --all-extras -vvv --with test
-      - name: Ensure keycloak is healthy
+
+      - name: Ensure docker compose is healthy
         run: |
           poetry run python build_scripts/docker_health.py
+
+      - name: Docker compose log dump on failure
+        if: failure()
+        run: |
+          echo "Status:"
+          docker compose ls
+          docker compose ps
+
+          echo "Logs:"
+          docker compose logs
+        working-directory: api/dev
+
       - name: Run tests
         id: tests
         continue-on-error: true
