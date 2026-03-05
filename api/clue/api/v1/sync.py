@@ -4,7 +4,7 @@ from flask import request
 from flask_cors import CORS
 from pydantic import TypeAdapter, ValidationError
 
-from clue.api import bad_request, forbidden, make_subapi_blueprint, ok
+from clue.api import bad_request, forbidden, internal_error, make_subapi_blueprint, ok
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
@@ -112,4 +112,7 @@ def push(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
         logger.exception("Validation exception on push")
         return bad_request(err="Invalid replication data.")
 
-    return ok(mongo_service.push(user["uname"], collection, change_rows))
+    try:
+        return ok(mongo_service.push(user["uname"], collection, change_rows))
+    except Exception:
+        return internal_error(err="Failed to process replication data.")

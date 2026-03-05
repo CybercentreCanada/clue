@@ -38,10 +38,10 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
   const stream$ = new Subject<EventStreamEntry | 'RESYNC'>();
   const MAX_RETRY_DELAY = 60000; // Cap at 60 seconds
 
-  let lastProcessedIndex = 0;
   const loggedEvents: number[] = [];
 
   const connect = (timeout = 1000) => {
+    let lastProcessedIndex = 0;
     const _xhr = new XMLHttpRequest();
 
     const reconnect = () => {
@@ -74,7 +74,6 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
     }
 
     _xhr.onload = () => {
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
       reconnect();
       if (collection.synced) {
         stream$.next('RESYNC');

@@ -25,12 +25,26 @@ logger = get_logger(__file__)
 SERVER: MongoClient | None = None
 INITIALIZED_COLLECTIONS: set[str] = set()
 
+REDIS_EVENT_ID_KEY = "clue:event_id"
+
+
+def _get_event_id() -> int:
+    """Return a monotonically increasing event ID backed by Redis INCR.
+
+    Using Redis ensures the counter is shared across all Flask workers and pods.
+
+    Returns:
+        int: A unique, monotonically increasing event ID.
+    """
+    return int(get_redis().incr(REDIS_EVENT_ID_KEY))
+
 
 def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
     """Get or create a MongoDB collection for the specified user.
 
     Args:
-        user (str): The username to use as the collection name.
+        user (str): The username to use as the first portion of the collection name.
+        collection (str): The username to use as the second portion of the collection name.
 
     Returns:
         Collection: The MongoDB collection for the user.
@@ -88,15 +102,13 @@ def event_stream(user: str, collection: str) -> Response:
     pubsub.subscribe(f"{user}-{collection}")
 
     def stream():
-        event_id = 0
         try:
             for message in pubsub.listen():
                 if message["type"] != "message":
                     continue
 
+                event_id = _get_event_id()
                 event = {"id": event_id, **json.loads(message["data"].decode())}
-
-                event_id = event_id + 1
 
                 logger.info("Writing event (id:%s)", event_id)
                 yield json.dumps(event) + "\n"
@@ -129,34 +141,40 @@ def push(user: str, collection: str, change_rows: list[ChangeRow]) -> list[Selec
 
     with user_collection.database.client.start_session() as session:
         with session.start_transaction():
-            for row in change_rows:
-                existing_record = user_collection.find_one({"id": row.new_document_state.id}, session=session)
+            try:
+                for row in change_rows:
+                    existing_record = user_collection.find_one({"id": row.new_document_state.id}, session=session)
 
-                existing_selector: SelectorDocument | None = None
-                if existing_record:
-                    existing_selector = SelectorDocument.model_validate(existing_record)
+                    existing_selector: SelectorDocument | None = None
+                    if existing_record:
+                        existing_selector = SelectorDocument.model_validate(existing_record)
 
-                    if not row.assumed_master_state:
-                        conflicts.append(existing_selector)
-                        continue
-                    elif (
-                        row.assumed_master_state and existing_selector.updated_at != row.assumed_master_state.updated_at
-                    ):
-                        conflicts.append(existing_selector)
-                        continue
+                        if not row.assumed_master_state:
+                            conflicts.append(existing_selector)
+                            continue
+                        elif (
+                            row.assumed_master_state
+                            and existing_selector.updated_at != row.assumed_master_state.updated_at
+                        ):
+                            conflicts.append(existing_selector)
+                            continue
 
-                data = row.new_document_state.model_dump(mode="json", by_alias=True)
-                user_collection.replace_one(
-                    {"id": row.new_document_state.id},
-                    data,
-                    upsert=True,
-                    session=session,
-                )
-                event.documents.append(row.new_document_state)
-                event.checkpoint = Checkpoint(
-                    id=row.new_document_state.id,
-                    updated_at=row.new_document_state.updated_at,
-                )
+                    data = row.new_document_state.model_dump(mode="json", by_alias=True)
+                    user_collection.replace_one(
+                        {"id": row.new_document_state.id},
+                        data,
+                        upsert=True,
+                        session=session,
+                    )
+                    event.documents.append(row.new_document_state)
+                    event.checkpoint = Checkpoint(
+                        id=row.new_document_state.id,
+                        updated_at=row.new_document_state.updated_at,
+                    )
+            except Exception:
+                logger.exception("Exception on push transacation to %s-%s", user, collection)
+                session.abort_transaction()
+                raise
 
     if len(event.documents) > 0:
         logger.info("Publishing event")
@@ -256,17 +274,3 @@ def existing_results(user: str, collection: str, selectors: list[Selector], exte
     )
 
     return {entry["_id"]: entry["records"] for entry in raw_result}
-
-
-if __name__ == "__main__":
-    records = [
-        SelectorDocument(type="ip", value="1.1.1.1", source="test"),
-        SelectorDocument(type="ip", value="1.1.1.1", source="test"),
-        SelectorDocument(type="ip", value="1.1.1.1", source="test"),
-    ]
-
-    _get_collection("goose", "selectors").insert_many(
-        (record.model_dump(mode="json", by_alias=True) for record in records), ordered=False
-    )
-
-    print(pull("goose", "selectors", records[0].id, 0, batch_size=2))  # noqa: T201
