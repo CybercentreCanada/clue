@@ -25,26 +25,27 @@ logger = get_logger(__file__)
 @sync_api.route("/<collection>", methods=["GET"])
 @api_login()
 def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[str, str]:
-    """Pull replicated changes from a collection since a specified timestamp.
+    """Pull replicated changes from a collection since a specified checkpoint.
 
-    Args:
-        collection (str): The name of the collection to pull from.
-        user (dict[str, Any] | None, optional): The authenticated user information. Defaults to None.
-        **kwargs: Additional keyword arguments.
+    Variables:
+    collection => The name of the collection to pull from.
 
-    Returns:
-        dict[str, str]: A dictionary containing the replicated data with the following structure:
-            - On success: Contains the pulled changes from the database.
-            - On error: Contains an error message if the user is not authenticated.
+    Optional Arguments:
+    updated_at: int     => Timestamp of the last checkpoint. [Default: 0]
+    id: string          => Document ID of the last checkpoint for pagination.
+    limit: int          => Maximum number of records to return per batch. [Default: 10]
+    omit_deleted        => If present, omit deleted records from the results.
 
-    Raises:
-        None: Returns a forbidden response if user is not authenticated.
-
-    Note:
-        Query parameters:
-        - updated_at (int): Timestamp to filter changes since this update time. Defaults to 0.
-        - id (str, optional): Optional document ID to filter results. Defaults to None.
-        - limit (int): Maximum number of records to return per batch. Defaults to 10.
+    Result Example:
+    [   # List of SelectorDocument records since the given checkpoint
+        {
+            "id": "<document id>",
+            "updated_at": 1234567890,
+            "_deleted": false,
+            ...
+        },
+        ...
+    ]
     """
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
@@ -68,16 +69,15 @@ def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
 def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
     """Stream replicated changes from a collection as server-sent events.
 
-    Args:
-        collection (str): The name of the collection to stream from.
-        user (dict[str, Any] | None, optional): The authenticated user information. Defaults to None.
-        **kwargs: Additional keyword arguments.
+    Variables:
+    collection => The name of the collection to stream from.
 
-    Returns:
-        Server-sent event stream containing replicated changes for the authenticated user.
+    Arguments:
+    None
 
-    Raises:
-        None: Returns a forbidden response if user is not authenticated.
+    Result Example:
+    # A continuous text/event-stream (SSE) of JSON-encoded change events:
+    {"id": "<event id>", "documents": [{...}, ...], "checkpoint": {"id": "<id>", "updated_at": 1234567890}}
     """
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
@@ -96,18 +96,40 @@ def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
 def push(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[str, str]:
     """Push replicated changes to a collection.
 
-    Args:
-        collection (str): The name of the collection to push to.
-        user (dict[str, Any] | None, optional): The authenticated user information. Defaults to None.
-        **kwargs: Additional keyword arguments.
+    Variables:
+    collection => The name of the collection to push to.
 
-    Returns:
-        dict[str, str]: A dictionary containing the push result with the following structure:
-            - On success: Contains the result of the push operation.
-            - On error: Contains an error message if the user is not authenticated.
+    Arguments:
+    None
 
-    Raises:
-        None: Returns a forbidden response if user is not authenticated.
+    Data Block:
+    [   # List of change rows for RxDB replication
+        {
+            "newDocumentState": {   # Required. The new state of the document.
+                "id": "<document id>",
+                "updated_at": 1234567890,
+                "_deleted": false,
+                ...
+            },
+            "assumedMasterState": { # Optional. The assumed current server state for conflict detection.
+                "id": "<document id>",
+                "updated_at": 1234567890,
+                ...
+            }
+        },
+        ...
+    ]
+
+    Result Example:
+    [   # List of conflicting SelectorDocuments that were not applied
+        {
+            "id": "<document id>",
+            "updated_at": 1234567890,
+            "_deleted": false,
+            ...
+        },
+        ...
+    ]
     """
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
