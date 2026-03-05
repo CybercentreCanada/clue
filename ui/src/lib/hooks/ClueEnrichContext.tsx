@@ -7,6 +7,7 @@ import { REPLICATORS } from 'lib/database/globals';
 import type { SelectorDocType, StatusDocType } from 'lib/database/types';
 import type { EnrichResponse, EnrichResponses, Selector } from 'lib/types/lookup';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
+import { isEmpty } from 'lodash-es';
 import chunk from 'lodash-es/chunk';
 import debounce from 'lodash-es/debounce';
 import groupBy from 'lodash-es/groupBy';
@@ -595,7 +596,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       setDefaultClassification,
       setReady: setIsReady,
       defaultClassification,
-      ready: isReady && !!database && !!clueConfig.config?.c12nDef && database.selectors?.synced
+      ready:
+        isReady && !!database && !!clueConfig.config?.c12nDef && (isEmpty(REPLICATORS) || database.selectors?.synced)
     }),
     [
       bulkEnrich,

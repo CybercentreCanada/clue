@@ -279,8 +279,8 @@ const handlers = [
     })
   ),
 
-  http.get('http://localhost:5000/api/v1/sync/selectors/stream', streamHandler),
-  http.get('https://custom.api.com/api/v1/sync/selectors/stream', streamHandler)
+  http.get('http://localhost:5000/api/v1/sync/:collection/stream', streamHandler),
+  http.get('https://custom.api.com/api/v1/sync/:collection/stream', streamHandler)
 ];
 
 export { handlers };

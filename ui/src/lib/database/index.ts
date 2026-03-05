@@ -103,7 +103,7 @@ const buildDatabase = async (_config: DatabaseConfig = {}) => {
     storageType: 'memory',
     testing: IS_VITEST,
     devMode: !import.meta.env.PROD,
-    replicate: REPLICATE,
+    replicate: REPLICATE && !IS_VITEST,
     baseURL: undefined,
     getToken: undefined,
     ..._config

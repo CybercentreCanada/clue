@@ -172,7 +172,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   // Initialize the sources and type detection for the user
   const [availableActions, setAvailableActions] = useState<ActionDefinitionsResponse>({});
 
-  const requestConfig = useMemo(() => {
+  const requestConfig = useCallback(() => {
     const headers: AxiosRequestConfig['headers'] = {};
     const token = getToken?.();
     if (token) {
@@ -187,7 +187,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       return;
     }
 
-    const _actions = await api.actions.get(requestConfig);
+    const _actions = await api.actions.get(requestConfig());
 
     if (_actions) {
       setAvailableActions(_actions);
@@ -292,7 +292,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           validatedParams ?? {},
           context,
           { timeout },
-          requestConfig
+          requestConfig()
         );
 
         const actionResultWithData = { ...actionResult, actionId, action: actionToRun };
@@ -382,7 +382,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   const getActionStatus: ClueActionContextType['getActionStatus'] = useCallback(
     async (actionId, taskId) => {
       try {
-        const res = await api.actions.status.get(actionId, taskId, {}, requestConfig);
+        const res = await api.actions.status.get(actionId, taskId, {}, requestConfig());
         return res;
       } catch (e) {
         safeDispatchEvent(

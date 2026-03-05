@@ -38,11 +38,10 @@ export default class AxiosClient {
       retries: 3,
       retryCondition: err => {
         return (
-          !err.request?.responseURL?.includes('/api/v1/sync') &&
-          (isNetworkError(err) ||
-            // Don't retry 502s, as we assume the server handles retries in those cases
-            (err?.response?.status >= 500 && err?.response?.status !== 502) ||
-            err?.response?.status === 429)
+          // Don't retry 502s, as we assume the server handles retries in those cases
+          isNetworkError(err) ||
+          (err?.response?.status >= 500 && err?.response?.status !== 502) ||
+          err?.response?.status === 429
         );
       },
       retryDelay: exponentialDelay
