@@ -142,7 +142,7 @@ jobs:
           poetry install --all-extras -vvv --with test
       - name: Ensure keycloak is healthy
         run: |
-          poetry run python build_scripts/keycloak_health.py
+          poetry run python build_scripts/docker_health.py
       - name: Run tests
         id: tests
         continue-on-error: true
