@@ -77,7 +77,7 @@ def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
 
     Result Example:
     {
-        # A continuous text/event-stream (SSE) of JSON-encoded change events:
+        # A continuous text/event-stream (SSE) of JSON-encoded change events
         "id": "<event id>",
         "documents": [{...}, ...],
         "checkpoint": {
