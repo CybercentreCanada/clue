@@ -85,6 +85,10 @@ api:
       scope: test
       quota: 3
 
+core:
+  mongodb:
+    host: localhost
+
 ui:
   cors_origins:
     - .*localhost.*
