@@ -106,6 +106,12 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         replicator.start();
       });
     }
+
+    return () => {
+      Object.values(REPLICATORS).forEach(replicator => {
+        replicator.pause();
+      });
+    };
   }, [isReady]);
 
   const [customIconify, setCustomIconify] = useState(_customIconify);

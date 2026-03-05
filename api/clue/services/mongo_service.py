@@ -23,6 +23,7 @@ from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocume
 logger = get_logger(__file__)
 
 SERVER: MongoClient | None = None
+INITIALIZED_COLLECTIONS: set[str] = set()
 
 
 def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
@@ -52,12 +53,14 @@ def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
     database = SERVER[config.core.mongodb.database]
 
     collection_name = f"{user}-{collection}"
-    if collection_name not in database.list_collection_names():
+    if collection_name not in INITIALIZED_COLLECTIONS and collection_name not in database.list_collection_names():
         database.create_collection(collection_name, validator=get_bson_schema(SelectorDocument))
 
         # indexes to help speed up rxdb-related pulls.
         database[collection_name].create_index([("updated_at", DESCENDING)], name="rxdb::updated_at")
         database[collection_name].create_index([("updated_at", DESCENDING), "id"], name="rxdb::updated_at+id")
+
+        INITIALIZED_COLLECTIONS.add(collection_name)
 
     return database[collection_name]
 

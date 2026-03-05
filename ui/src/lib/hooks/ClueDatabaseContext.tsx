@@ -72,9 +72,17 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
 
   useEffect(() => {
     if (!_database) {
+      let _createdDatabase: ClueDatabase = null;
       // eslint-disable-next-line no-console
       console.warn('It is heavily suggested to initialize the database outside of the React component tree.');
-      buildDatabase(databaseConfig ?? { getToken: getTokenRef.current }).then(setDatabase);
+      buildDatabase(databaseConfig ?? { getToken: getTokenRef.current }).then(_db => {
+        _createdDatabase = _db;
+        setDatabase(_db);
+      });
+
+      return () => {
+        _createdDatabase.close();
+      };
     }
     // getToken is intentionally omitted from deps — reads from getTokenRef instead.
   }, [_database, databaseConfig]);

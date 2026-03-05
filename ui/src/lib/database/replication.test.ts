@@ -20,10 +20,6 @@ vi.mock('api/sync', () => ({
   uri: () => '/api/v1/sync'
 }));
 
-vi.mock('utils/localStorage', () => ({
-  getStored: vi.fn()
-}));
-
 vi.mock('lodash-es', () => ({
   last: <T>(arr: T[]): T | undefined => arr[arr.length - 1]
 }));
@@ -45,7 +41,6 @@ vi.mock('rxdb/plugins/replication', () => ({
 // ── Lazy imports (must come after vi.mock) ───────────────────────────────────
 
 const getApi = async () => (await import('api')).default;
-const getGetStored = async () => (await import('utils/localStorage')).getStored as Mock;
 const getReplicate = async () => (await import('rxdb/plugins/replication')).replicateRxCollection as Mock;
 const getReplicateSelectorCollection = async () => (await import('./replication')).replicateSelectorCollection;
 
@@ -88,7 +83,6 @@ const DUMMY_ID = 'dummy id';
 
 describe('replicateSelectorCollection', () => {
   let api: Awaited<ReturnType<typeof getApi>>;
-  let getStoredMock: Mock;
   let replicateRxCollectionMock: Mock;
   let replicateSelectorCollection: Awaited<ReturnType<typeof getReplicateSelectorCollection>>;
 
@@ -98,12 +92,8 @@ describe('replicateSelectorCollection', () => {
     capturedConfig = null;
 
     api = await getApi();
-    getStoredMock = await getGetStored();
     replicateRxCollectionMock = await getReplicate();
     replicateSelectorCollection = await getReplicateSelectorCollection();
-
-    // Default: no stored token (stream won't fire, keeps tests focused)
-    getStoredMock.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -341,29 +331,26 @@ describe('replicateSelectorCollection', () => {
       globalThis.XMLHttpRequest = OriginalXHR;
     });
 
-    it('should not open connection when no auth token is stored', async () => {
-      getStoredMock.mockReturnValue(null);
+    it('should open connection without auth header when getToken is undefined', async () => {
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ getToken: undefined }));
 
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
-
-      expect(xhrInstances).toHaveLength(0);
+      expect(xhrInstances).toHaveLength(1);
+      const xhr = xhrInstances[0];
+      expect(xhr.setRequestHeader).not.toHaveBeenCalledWith('Authorization', expect.any(String));
     });
 
     it('should open connection with correct URL and auth header', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection({ name: 'selectors' } as any), buildMockConfig());
 
       expect(xhrInstances).toHaveLength(1);
       const xhr = xhrInstances[0];
-      expect(xhr.open).toHaveBeenCalledWith('GET', '/api/v1/sync/selectors/stream', true);
+      expect(xhr.open).toHaveBeenCalledWith('GET', 'http://localhost:5000/api/v1/sync/selectors/stream', true);
       expect(xhr.setRequestHeader).toHaveBeenCalledWith('Accept', 'text/event-stream');
-      expect(xhr.setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer stored-token');
+      expect(xhr.setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer test-token');
       expect(xhr.send).toHaveBeenCalled();
     });
 
     it('should register an abort handler on collection.onClose', async () => {
-      getStoredMock.mockReturnValue('stored-token');
       const collection = buildMockCollection();
 
       await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
@@ -377,7 +364,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should reconnect on load event', async () => {
-      getStoredMock.mockReturnValue('stored-token');
       const collection = buildMockCollection();
 
       await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
@@ -396,7 +382,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should reconnect on error event', async () => {
-      getStoredMock.mockReturnValue('stored-token');
       const collection = buildMockCollection();
 
       await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
@@ -412,7 +397,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should not reconnect when collection is closed', async () => {
-      getStoredMock.mockReturnValue('stored-token');
       const collection = buildMockCollection();
 
       await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
@@ -430,8 +414,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should use exponential backoff for reconnections capped at 60 seconds', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       // First connection
@@ -458,8 +440,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should parse and emit events from progress data', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];
@@ -480,8 +460,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should deduplicate events with the same id', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];
@@ -500,8 +478,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should handle malformed JSON gracefully', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];
@@ -512,8 +488,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should reset timeout to 1000ms when data is received', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];
@@ -539,8 +513,6 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should only process new text on progress', async () => {
-      getStoredMock.mockReturnValue('stored-token');
-
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];

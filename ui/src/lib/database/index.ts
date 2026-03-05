@@ -7,6 +7,7 @@ import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
 
+import { REPLICATE } from 'lib/utils/constants';
 import { RxDBStatePlugin } from 'rxdb/plugins/state';
 import { REPLICATORS } from './globals';
 import { replicateSelectorCollection } from './replication';
@@ -102,9 +103,9 @@ const buildDatabase = async (_config: DatabaseConfig = {}) => {
     storageType: 'memory',
     testing: IS_VITEST,
     devMode: !import.meta.env.PROD,
-    replicate: !import.meta.env.PROD,
-    baseURL: null,
-    getToken: null,
+    replicate: REPLICATE,
+    baseURL: undefined,
+    getToken: undefined,
     ..._config
   };
 
