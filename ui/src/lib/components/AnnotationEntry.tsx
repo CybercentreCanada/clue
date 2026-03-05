@@ -52,7 +52,7 @@ const AnnotatonEntry: FC<{
         {annotation.classification && <ClassificationChip size="small" classification={annotation.classification} />}
       </Stack>
       <AnnotationBody annotation={annotation} />
-      {annotation.summary.split('\n').map(line => (
+      {annotation.summary?.split('\n').map(line => (
         <Typography variant="caption" color="text.secondary" key={line}>
           {line}
         </Typography>
