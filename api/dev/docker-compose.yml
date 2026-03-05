@@ -8,6 +8,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - clue-network
 
   mongodb:
     image: mongo:7
@@ -21,6 +23,8 @@ services:
       timeout: 5s
       retries: 15
       start_period: 10s
+    networks:
+      - clue-network
 
   keycloak:
     build:
@@ -37,3 +41,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 15
+    networks:
+      - clue-network
+
+networks:
+  clue-network:
+    name: clue-network
