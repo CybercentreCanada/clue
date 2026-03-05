@@ -76,8 +76,15 @@ def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
     None
 
     Result Example:
-    # A continuous text/event-stream (SSE) of JSON-encoded change events:
-    {"id": "<event id>", "documents": [{...}, ...], "checkpoint": {"id": "<id>", "updated_at": 1234567890}}
+    {
+        # A continuous text/event-stream (SSE) of JSON-encoded change events:
+        "id": "<event id>",
+        "documents": [{...}, ...],
+        "checkpoint": {
+            "id": "<id>",
+            "updated_at": 1234567890
+        }
+    }
     """
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
