@@ -20,8 +20,11 @@ def cleanup_for_mongodb(schema_item: Any) -> Any:
     # 2. Convert 'type' to 'bsonType'
     if "type" in schema_item:
         val = schema_item.pop("type")
-        # Handle JSON 'integer' to BSON 'int' conversion
-        type_map = {"integer": "int", "boolean": "bool"}
+        # Map JSON types to BSON types.
+        # Accept both 'int' (32-bit) and 'long' (64-bit) for JSON integers so
+        # that pymongo can store small values as int32 and large ones (e.g.
+        # timestamps beyond 2038) as int64 without failing schema validation.
+        type_map = {"integer": ["int", "long"], "boolean": "bool"}
         schema_item["bsonType"] = type_map.get(val, val)
 
     # 3. Recurse through properties or array items

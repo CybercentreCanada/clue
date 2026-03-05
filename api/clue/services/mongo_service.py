@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime
 
 from dotenv import load_dotenv
 from flask import Response
@@ -23,6 +24,25 @@ from clue.models.schema import get_bson_schema
 from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocument
 
 logger = get_logger(__file__)
+
+
+def _to_mongo_doc(obj: Any) -> Any:
+    """Prepare a Pydantic model_dump(mode='python') value for MongoDB storage.
+
+    Keeps datetime objects intact so pymongo encodes them as BSON dates (required
+    by the collection's $jsonSchema validator). Converts any remaining non-primitive
+    types (e.g. pydantic Url objects) to their string representation.
+    """
+    if isinstance(obj, dict):
+        return {k: _to_mongo_doc(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_mongo_doc(v) for v in obj]
+    if isinstance(obj, datetime):
+        return obj
+    if not isinstance(obj, (str, int, float, bool, type(None))):
+        return str(obj)
+    return obj
+
 
 MONGO_CLIENT: MongoClient | None = None
 ALLOWED_COLLECTIONS: frozenset[str] = frozenset(["selectors"])
@@ -207,7 +227,7 @@ def push(user: str, collection: str, change_rows: list[ChangeRow]) -> list[Selec
                             conflicts.append(existing_selector)
                             continue
 
-                    data = row.new_document_state.model_dump(mode="json", by_alias=True)
+                    data = _to_mongo_doc(row.new_document_state.model_dump(mode="python", by_alias=True))
                     user_collection.replace_one(
                         {"id": row.new_document_state.id},
                         data,

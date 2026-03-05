@@ -28,6 +28,8 @@ def generate_updated_at():
 class SelectorDocument(QueryEntry, ResultMetadata):
     """The document used for validating records in the rxdb replication context."""
 
+    model_config = ConfigDict(validate_assignment=True, populate_by_name=True)
+
     id: str = Field(default_factory=generate_uuid)
     "The ID of the selector"
 

@@ -235,6 +235,9 @@ class MongoDB(BaseModel):
     connect_timeout: int = Field(
         description="Controls how long (in milliseconds) to wait when connecting a new socket", default=3000
     )
+    server_selection_timeout: int = Field(
+        description="Controls how long (in milliseconds) to wait for a suitable server to be found", default=3000
+    )
 
     def __repr__(self):
         auth = ""
@@ -250,7 +253,12 @@ class MongoDB(BaseModel):
             tuple[str, dict[str, str]]: A tuple containing the MongoDB connection URL
                 and a dictionary of connection parameters (username and password if available).
         """
-        params: dict[str, str | int] = {"host": self.host, "port": self.port, "connectTimeoutMS": self.connect_timeout}
+        params: dict[str, str | int] = {
+            "host": self.host,
+            "port": self.port,
+            "connectTimeoutMS": self.connect_timeout,
+            "serverSelectionTimeoutMS": self.server_selection_timeout,
+        }
 
         if self.user and self.password:
             params["username"] = self.user
