@@ -151,7 +151,7 @@ describe('replicateSelectorCollection', () => {
       const result = await capturedConfig.push.handler(docs);
 
       expect(api.sync.post).toHaveBeenCalledWith(
-        'selector',
+        'selectors',
         docs,
         expect.objectContaining({
           baseURL: 'http://localhost:5000',
@@ -306,6 +306,8 @@ describe('replicateSelectorCollection', () => {
     let OriginalXHR: typeof XMLHttpRequest;
 
     beforeEach(() => {
+      vi.clearAllTimers();
+
       xhrInstances = [];
       OriginalXHR = globalThis.XMLHttpRequest;
 
@@ -366,7 +368,13 @@ describe('replicateSelectorCollection', () => {
     it('should reconnect on load event', async () => {
       const collection = buildMockCollection();
 
+      console.log(xhrInstances.length);
+      console.log('-----');
+
       await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+
+      console.log(xhrInstances.length);
+      console.log('-----');
 
       expect(xhrInstances).toHaveLength(1);
       const xhr = xhrInstances[0];
@@ -376,6 +384,8 @@ describe('replicateSelectorCollection', () => {
 
       // Advance through reconnect timeout
       await vi.advanceTimersByTimeAsync(1000);
+
+      console.log(xhrInstances.length);
 
       // Should have opened a second connection
       expect(xhrInstances).toHaveLength(2);

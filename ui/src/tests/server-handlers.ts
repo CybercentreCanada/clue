@@ -62,6 +62,20 @@ export const MOCK_RESPONSES = {
   }
 };
 
+const streamHandler = () => {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(JSON.stringify({ id: 0, documents: [], checkpoint: null }) + '\n'));
+      // Do NOT call controller.close() — a real SSE endpoint keeps the connection open.
+      // Closing immediately would trigger XHR onload → reconnect cascades under fake timers.
+    }
+  });
+  return new HttpResponse(stream, {
+    headers: { 'Content-Type': 'text/event-stream' }
+  });
+};
+
 const handlers = [
   ...Object.entries(MOCK_RESPONSES).map(([path, data]) =>
     http.all(path, async () => HttpResponse.json({ api_response: data }))
@@ -263,7 +277,10 @@ const handlers = [
       api_server_version: '1.0.0',
       api_status_code: 200
     })
-  )
+  ),
+
+  http.get('http://localhost:5000/api/v1/sync/selectors/stream', streamHandler),
+  http.get('https://custom.api.com/api/v1/sync/selectors/stream', streamHandler)
 ];
 
 export { handlers };
