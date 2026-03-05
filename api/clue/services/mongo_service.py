@@ -1,4 +1,5 @@
 import json
+import time
 
 from dotenv import load_dotenv
 from flask import Response
@@ -13,8 +14,9 @@ from typing import Any
 
 from pymongo import DESCENDING, MongoClient
 from pymongo.collection import Collection
+from pymongo.errors import ConnectionFailure
 
-from clue.common.exceptions import ClueRuntimeError
+from clue.common.exceptions import ClueRuntimeError, ClueValueError
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
 from clue.models.schema import get_bson_schema
@@ -22,10 +24,13 @@ from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocume
 
 logger = get_logger(__file__)
 
-SERVER: MongoClient | None = None
+MONGO_CLIENT: MongoClient | None = None
+ALLOWED_COLLECTIONS: frozenset[str] = frozenset(["selectors"])
 INITIALIZED_COLLECTIONS: set[str] = set()
 
 REDIS_EVENT_ID_KEY = "clue:event_id"
+_CONNECT_MAX_ATTEMPTS = 4
+_CONNECT_BACKOFF_BASE = 0.5  # seconds; delay = base * 2^attempt
 
 
 def _get_event_id() -> int:
@@ -39,6 +44,46 @@ def _get_event_id() -> int:
     return int(get_redis().incr(REDIS_EVENT_ID_KEY))
 
 
+def _connect() -> MongoClient:
+    """Return a live MongoClient, creating or replacing it as needed.
+
+    On the first call, or after a failed ping, creates a new MongoClient and
+    retries up to _CONNECT_MAX_ATTEMPTS times with exponential backoff.
+
+    Raises:
+        ClueRuntimeError: If the connection cannot be established after all retries.
+    """
+    global MONGO_CLIENT
+
+    last_exc: Exception | None = None
+    for attempt in range(_CONNECT_MAX_ATTEMPTS):
+        if MONGO_CLIENT is None or attempt > 0:
+            logger.info(
+                "Connecting to %s (attempt %s/%s)",
+                repr(config.core.mongodb),
+                attempt + 1,
+                _CONNECT_MAX_ATTEMPTS,
+            )
+            MONGO_CLIENT = MongoClient(**config.core.mongodb.connection())  # type: ignore
+
+        try:
+            MONGO_CLIENT.admin.command("ping")
+            return MONGO_CLIENT
+        except ConnectionFailure as e:
+            last_exc = e
+            if attempt < _CONNECT_MAX_ATTEMPTS - 1:
+                delay = _CONNECT_BACKOFF_BASE * (2**attempt)
+                logger.warning(
+                    "MongoDB connection failed (attempt %s/%s), retrying in %.1fs...",
+                    attempt + 1,
+                    _CONNECT_MAX_ATTEMPTS,
+                    delay,
+                )
+                time.sleep(delay)
+
+    raise ClueRuntimeError("Failed to connect to MongoDB after all retries.") from last_exc
+
+
 def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
     """Get or create a MongoDB collection for the specified user.
 
@@ -50,9 +95,12 @@ def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
         Collection: The MongoDB collection for the user.
 
     Raises:
-        ClueRuntimeError: If no MongoDB host is specified in the configuration.
+        ClueValueError: If the collection name is not in ALLOWED_COLLECTIONS.
+        ClueRuntimeError: If no MongoDB host is specified in the configuration, or if
+            reconnection after a lost connection fails.
     """
-    global SERVER
+    if collection not in ALLOWED_COLLECTIONS:
+        raise ClueValueError(f"Unknown collection: {collection}")
 
     if not config.ui.replication:
         logger.warning("Replication is not enabled - why is mongodb being initialized?")
@@ -60,13 +108,11 @@ def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
     if not config.core.mongodb.host:
         raise ClueRuntimeError("No mongodb host specified.")
 
-    if SERVER is None:
-        logger.info("Connecting to %s", repr(config.core.mongodb))
-        SERVER = MongoClient(**config.core.mongodb.connection())  # type: ignore
-
-    database = SERVER[config.core.mongodb.database]
+    client = _connect()
 
     collection_name = f"{user}-{collection}"
+
+    database = client[config.core.mongodb.database]
     if collection_name not in INITIALIZED_COLLECTIONS and collection_name not in database.list_collection_names():
         database.create_collection(collection_name, validator=get_bson_schema(SelectorDocument))
 
@@ -94,10 +140,17 @@ def event_stream(user: str, collection: str) -> Response:
 
     Args:
         user (str): The username to stream events for.
+        collection (str): The collection to stream events for.
 
     Returns:
         Response: A Flask response with text/event-stream mimetype for SSE.
+
+    Raises:
+        ClueValueError: If the collection name is not in ALLOWED_COLLECTIONS.
     """
+    if collection not in ALLOWED_COLLECTIONS:
+        raise ClueValueError(f"Unknown collection: {collection}")
+
     pubsub = build_pubsub()
     pubsub.subscribe(f"{user}-{collection}")
 

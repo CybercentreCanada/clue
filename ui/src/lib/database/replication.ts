@@ -150,7 +150,7 @@ export const replicateSelectorCollection = async (
     waitForLeadership: false,
     push: {
       batchSize: 50,
-      handler: async docs => api.sync.post<SelectorDocType>('selector', docs, buildRequestConfig(config))
+      handler: async docs => api.sync.post<SelectorDocType>(collection.name, docs, buildRequestConfig(config))
     },
     pull: {
       batchSize: PULL_BATCH_SIZE,

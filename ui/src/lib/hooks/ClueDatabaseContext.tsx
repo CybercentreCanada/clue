@@ -81,7 +81,7 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
       });
 
       return () => {
-        _createdDatabase.close();
+        _createdDatabase?.close();
       };
     }
     // getToken is intentionally omitted from deps — reads from getTokenRef instead.

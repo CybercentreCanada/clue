@@ -49,6 +49,9 @@ def pull(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
 
+    if collection not in mongo_service.ALLOWED_COLLECTIONS:
+        return bad_request(err=f"Unknown collection: {collection}")
+
     updated_at = request.args.get("updated_at", 0, type=int)
     id: str | None = request.args.get("id", None)
     limit = request.args.get("limit", 10, type=int)
@@ -79,6 +82,9 @@ def stream(collection: str, user: dict[str, Any] | None = None, **kwargs):
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
 
+    if collection not in mongo_service.ALLOWED_COLLECTIONS:
+        return bad_request(err=f"Unknown collection: {collection}")
+
     logger.info("Initializing event source stream")
 
     return mongo_service.event_stream(user["uname"], collection)
@@ -106,13 +112,15 @@ def push(collection: str, user: dict[str, Any] | None = None, **kwargs) -> dict[
     if not user:
         return forbidden(err="You must be logged in as a valid user.")
 
+    if collection not in mongo_service.ALLOWED_COLLECTIONS:
+        return bad_request(err=f"Unknown collection: {collection}")
+
     try:
         change_rows = TypeAdapter(list[ChangeRow]).validate_python(request.json, strict=True, by_alias=True)
+
+        return ok(mongo_service.push(user["uname"], collection, change_rows))
     except ValidationError:
         logger.exception("Validation exception on push")
         return bad_request(err="Invalid replication data.")
-
-    try:
-        return ok(mongo_service.push(user["uname"], collection, change_rows))
     except Exception:
         return internal_error(err="Failed to process replication data.")
