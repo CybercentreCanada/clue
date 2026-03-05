@@ -303,27 +303,31 @@ def existing_results(user: str, collection: str, selectors: list[Selector], exte
     if not config.ui.replication:
         return {}
 
-    types = [selector.type for selector in selectors]
-    values = [selector.value for selector in selectors]
-    sources = [source.name for source in external_sources]
+    try:
+        types = [selector.type for selector in selectors]
+        values = [selector.value for selector in selectors]
+        sources = [source.name for source in external_sources]
 
-    raw_result = (
-        _get_collection(user, collection)
-        .aggregate(
-            [
-                {
-                    "$match": {
-                        "type": {"$in": types},
-                        "value": {"$in": values},
-                        "source": {"$in": sources},
-                        "_deleted": False,
-                        "error": None,
-                    }
-                },
-                {"$group": {"_id": "$source", "records": {"$push": {"type": "$type", "value": "$value"}}}},
-            ]
+        raw_result = (
+            _get_collection(user, collection)
+            .aggregate(
+                [
+                    {
+                        "$match": {
+                            "type": {"$in": types},
+                            "value": {"$in": values},
+                            "source": {"$in": sources},
+                            "_deleted": False,
+                            "error": None,
+                        }
+                    },
+                    {"$group": {"_id": "$source", "records": {"$push": {"type": "$type", "value": "$value"}}}},
+                ]
+            )
+            .to_list()
         )
-        .to_list()
-    )
 
-    return {entry["_id"]: entry["records"] for entry in raw_result}
+        return {entry["_id"]: entry["records"] for entry in raw_result}
+    except ClueRuntimeError:
+        # ClueRuntimeError if mongodb isn't functional - we'll silently fail so enrichment can continue
+        return {}
