@@ -88,6 +88,8 @@ api:
 core:
   mongodb:
     host: localhost
+    connect_timeout: 500
+    max_retries: 1
 
 ui:
   cors_origins:

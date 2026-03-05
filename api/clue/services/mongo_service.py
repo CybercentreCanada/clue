@@ -29,7 +29,6 @@ ALLOWED_COLLECTIONS: frozenset[str] = frozenset(["selectors"])
 INITIALIZED_COLLECTIONS: set[str] = set()
 
 REDIS_EVENT_ID_KEY = "clue:event_id"
-_CONNECT_MAX_ATTEMPTS = 4
 _CONNECT_BACKOFF_BASE = 0.5  # seconds; delay = base * 2^attempt
 
 
@@ -55,15 +54,11 @@ def _connect() -> MongoClient:
     """
     global MONGO_CLIENT
 
+    max_retries = config.core.mongodb.max_retries
+
     last_exc: Exception | None = None
-    for attempt in range(_CONNECT_MAX_ATTEMPTS):
+    for attempt in range(max_retries + 1):
         if MONGO_CLIENT is None or attempt > 0:
-            logger.info(
-                "Connecting to %s (attempt %s/%s)",
-                repr(config.core.mongodb),
-                attempt + 1,
-                _CONNECT_MAX_ATTEMPTS,
-            )
             MONGO_CLIENT = MongoClient(**config.core.mongodb.connection())  # type: ignore
 
         try:
@@ -71,12 +66,12 @@ def _connect() -> MongoClient:
             return MONGO_CLIENT
         except ConnectionFailure as e:
             last_exc = e
-            if attempt < _CONNECT_MAX_ATTEMPTS - 1:
+            if attempt < max_retries:
                 delay = _CONNECT_BACKOFF_BASE * (2**attempt)
                 logger.warning(
                     "MongoDB connection failed (attempt %s/%s), retrying in %.1fs...",
                     attempt + 1,
-                    _CONNECT_MAX_ATTEMPTS,
+                    max_retries + 1,
                     delay,
                 )
                 time.sleep(delay)

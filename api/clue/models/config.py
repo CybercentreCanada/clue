@@ -229,6 +229,12 @@ class MongoDB(BaseModel):
     user: str | None = Field(description="Username to use to connect to the MongoDB instance", default=None)
     password: str | None = Field(description="Password to use to connect to the MongoDB instance", default=None)
     database: str = Field(description="The database to use in the mongodb instance", default="clue")
+    max_retries: int = Field(
+        description="Controls the maximum number of retries to use when an initial connection fails", default=2
+    )
+    connect_timeout: int = Field(
+        description="Controls how long (in milliseconds) to wait when connecting a new socket", default=3000
+    )
 
     def __repr__(self):
         auth = ""
@@ -244,7 +250,7 @@ class MongoDB(BaseModel):
             tuple[str, dict[str, str]]: A tuple containing the MongoDB connection URL
                 and a dictionary of connection parameters (username and password if available).
         """
-        params: dict[str, str | int] = {"host": self.host, "port": self.port}
+        params: dict[str, str | int] = {"host": self.host, "port": self.port, "connectTimeoutMS": self.connect_timeout}
 
         if self.user and self.password:
             params["username"] = self.user
