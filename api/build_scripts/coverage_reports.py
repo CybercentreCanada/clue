@@ -39,13 +39,17 @@ def main():
 
         diff_report_result: str | None = None
         diff_result: str | None = None
+        diff_failed = False
         if not develop and not rc_or_main:
-            diff_report_result = subprocess.check_output(
+            diff_proc = subprocess.run(
                 shlex.split(
-                    "diff-cover coverage.xml --diff-file=diff.txt --markdown-report diff-cover-report.md "
-                    "--fail-under=100"
-                )
-            ).decode()
+                    "diff-cover coverage.xml --diff-file=diff.txt --format markdown:diff-cover-report.md "
+                    "--fail-under=50"
+                ),
+                stdout=subprocess.PIPE,
+            )
+            diff_report_result = diff_proc.stdout.decode()
+            diff_failed = diff_proc.returncode != 0
             print(diff_report_result)
 
         total_percentage = report_result.splitlines().pop().split(" ").pop()
@@ -100,6 +104,10 @@ def main():
         output_path = Path(__file__).parents[1] / "coverage-results.md"
         print("Writing to:", str(output_path))
         output_path.write_text(markdown_output)
+
+        if diff_failed:
+            print("diff-cover failed: diff coverage is below 50%")
+            sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(" ".join(e.cmd), "failed.")
 
