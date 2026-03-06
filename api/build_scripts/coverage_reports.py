@@ -37,9 +37,14 @@ def main():
 
         print(report_result)
 
+        diff_report_result: str | None = None
+        diff_result: str | None = None
         if not develop and not rc_or_main:
             diff_report_result = subprocess.check_output(
-                shlex.split("diff-cover coverage.xml --diff-file=diff.txt --markdown-report diff-cover-report.md")
+                shlex.split(
+                    "diff-cover coverage.xml --diff-file=diff.txt --markdown-report diff-cover-report.md "
+                    "--fail-under=100"
+                )
             ).decode()
             print(diff_report_result)
 
@@ -47,17 +52,17 @@ def main():
         total_percentage_int = int(total_percentage.replace("%", ""))
         total_color = get_color(total_percentage_int)
 
+        diff_percentage = "NA%"
+        diff_percentage_int = 0
         if not develop and not rc_or_main:
-            try:
-                diff_percentage = (
-                    [line for line in diff_report_result.splitlines() if "Coverage:" in line].pop().split(" ").pop()
-                )
-                diff_percentage_int = int(diff_percentage.replace("%", ""))
-            except IndexError:
-                diff_percentage = "NA%"
-                diff_percentage_int = 0
-
-            diff_color = get_color(diff_percentage_int)
+            if diff_report_result:
+                try:
+                    diff_percentage = (
+                        [line for line in diff_report_result.splitlines() if "Coverage:" in line].pop().split(" ").pop()
+                    )
+                    diff_percentage_int = int(diff_percentage.replace("%", ""))
+                except IndexError:
+                    pass
 
             with open("diff-cover-report.md") as diff_report:
                 diff_result = diff_report.read().replace("# ", "## ").replace("__init__.py", "\\_\\_init\\_\\_.py")
@@ -67,6 +72,7 @@ def main():
 
                 diff_result += "\n</details>"
 
+        diff_color = get_color(diff_percentage_int)
         badge = generate_badge("Diff Coverage", diff_percentage, diff_color) if (not develop and not rc_or_main) else ""
 
         newline = "\n"
@@ -77,7 +83,7 @@ def main():
         # Clue API - Coverage Results
         {generate_badge('Total Coverage', total_percentage, total_color)} {badge}
 
-{newline.join([(' ' * 8) + line for line in diff_result.splitlines()]) if (not develop and not rc_or_main) else ''}
+{newline.join([(' ' * 8) + line for line in diff_result.splitlines()]) if diff_result else ''}
 
         ## Full Coverage Report
         <details>
