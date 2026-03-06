@@ -1,26 +1,24 @@
-import json
-import time
-from datetime import datetime
-
 from dotenv import load_dotenv
-from flask import Response
-from redis.client import PubSub
-
-from clue.models.config import ExternalSource
-from clue.models.selector import Selector
 
 load_dotenv()
 
+import json
+import time
+from datetime import datetime
 from typing import Any
 
-from pymongo import DESCENDING, MongoClient
+from flask import Response
+from pymongo import ASCENDING, DESCENDING, MongoClient
 from pymongo.collection import Collection
 from pymongo.errors import ConnectionFailure
+from redis.client import PubSub
 
 from clue.common.exceptions import ClueRuntimeError, ClueValueError
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
+from clue.models.config import ExternalSource
 from clue.models.schema import get_bson_schema
+from clue.models.selector import Selector
 from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocument
 
 logger = get_logger(__file__)
@@ -135,7 +133,9 @@ def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
 
             # indexes to help speed up rxdb-related pulls.
             database[collection_name].create_index([("updated_at", DESCENDING)], name="rxdb::updated_at")
-            database[collection_name].create_index([("updated_at", DESCENDING), "id"], name="rxdb::updated_at+id")
+            database[collection_name].create_index(
+                [("updated_at", DESCENDING), ("id", ASCENDING)], name="rxdb::updated_at+id"
+            )
 
         INITIALIZED_COLLECTIONS.add(collection_name)
 
@@ -296,7 +296,13 @@ def pull(user: str, collection: str, id: str | None, updated_at: int, batch_size
     if omit_deleted:
         query["_deleted"] = False
 
-    query_result = _get_collection(user, collection).find(query).sort(["updated_at", "id"]).limit(batch_size).to_list()
+    query_result = (
+        _get_collection(user, collection)
+        .find(query)
+        .sort([("updated_at", ASCENDING), ("id", ASCENDING)])
+        .limit(batch_size)
+        .to_list()
+    )
 
     models: list[SelectorDocument] = [SelectorDocument.model_validate(record) for record in query_result]
 
@@ -305,7 +311,9 @@ def pull(user: str, collection: str, id: str | None, updated_at: int, batch_size
     return models
 
 
-def existing_results(user: str, collection: str, selectors: list[Selector], external_sources: list[ExternalSource]):
+def existing_results(
+    user: str, collection: str, selectors: list[Selector], external_sources: list[ExternalSource]
+) -> dict[str, list[dict[str, str]]]:
     """Check if documents matching the specified selectors and sources exist in the user's collection.
 
     Args:

@@ -1,7 +1,7 @@
 export const CLUE_API = import.meta.env.VITE_API;
 export const LOCAL = CLUE_API === 'MOCK';
 export const VERSION = import.meta.env.VITE_VERSION;
-export const REPLICATE = !!import.meta.env.VITE_REPLICATE;
+export const REPLICATE = (import.meta.env.VITE_REPLICATE as string)?.toLowerCase() === 'true';
 
 // A constant that will be used as prefix of all local storage keys.
 export const MY_LOCAL_STORAGE_PREFIX = 'clue.ui';

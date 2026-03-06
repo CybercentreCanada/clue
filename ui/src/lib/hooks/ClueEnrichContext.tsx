@@ -148,6 +148,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       for (const entry of entries) {
         const { latency, source, type, value, items, error } = entry;
 
+        await database.selectors.find({ selector: { type, value, source } }).incrementalRemove();
+
         if (error) {
           newRecords.push({
             id: uuid(),
@@ -164,8 +166,6 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
         for (const item of items) {
           const { classification, count, link, annotations } = item;
-
-          await database.selectors.find({ selector: { type, value, source } }).incrementalRemove();
 
           const record: SelectorDocType = {
             id: uuid(),

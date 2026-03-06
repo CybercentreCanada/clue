@@ -691,7 +691,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     pool_size = min(len(data) * len(query_sources or available_sources), int(os.environ.get("EXECUTOR_THREADS", 32)))
     thread_pool = Pool(pool_size)
 
-    existing_results: dict[str, dict[str, str]] = {}
+    existing_results: dict[str, list[dict[str, str]]] = {}
     if config.ui.replication:
         existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
 

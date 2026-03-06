@@ -40,9 +40,15 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
 
   const loggedEvents: number[] = [];
 
+  let currentXhr: XMLHttpRequest | null = null;
+  collection.onClose.push(() => {
+    currentXhr?.abort();
+  });
+
   const connect = (timeout = 1000) => {
     let lastProcessedIndex = 0;
     const _xhr = new XMLHttpRequest();
+    currentXhr = _xhr;
 
     const reconnect = () => {
       // eslint-disable-next-line no-console
@@ -61,10 +67,6 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
 
     const fullUrl = (config.baseURL ?? '') + joinAllUri(uri(), collection.name, 'stream');
     _xhr.open('GET', fullUrl, true);
-
-    collection.onClose.push(() => {
-      _xhr.abort();
-    });
 
     _xhr.setRequestHeader('Accept', 'text/event-stream');
 

@@ -15,11 +15,6 @@
             "root": "plugins"
         },
         {
-            "pythonVersion": "3.12",
-            "reportReturnType": "none",
-            "root": "api"
-        },
-        {
             "reportAttributeAccessIssue": "none",
             "root": "plugins/**/test"
         },
@@ -28,11 +23,17 @@
             "root": "plugins/**/tests"
         },
         {
+            "reportArgumentType": "none",
             "reportAttributeAccessIssue": "none",
             "reportOperatorIssue": "none",
             "reportOptionalMemberAccess": "none",
             "reportOptionalSubscript": "none",
             "root": "api/test"
+        },
+        {
+            "pythonVersion": "3.12",
+            "reportReturnType": "none",
+            "root": "api"
         }
     ],
     "reportMissingImports": "error",
