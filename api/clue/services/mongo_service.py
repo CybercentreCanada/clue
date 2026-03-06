@@ -240,7 +240,7 @@ def push(user: str, collection: str, change_rows: list[ChangeRow]) -> list[Selec
                         updated_at=row.new_document_state.updated_at,
                     )
             except Exception:
-                logger.exception("Exception on push transacation to %s-%s", user, collection)
+                logger.exception("Exception on push transaction to %s-%s", user, collection)
                 session.abort_transaction()
                 raise
 
