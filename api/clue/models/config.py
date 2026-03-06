@@ -250,8 +250,8 @@ class MongoDB(BaseModel):
         """Generate MongoDB connection string and authentication parameters.
 
         Returns:
-            tuple[str, dict[str, str]]: A tuple containing the MongoDB connection URL
-                and a dictionary of connection parameters (username and password if available).
+            dict[str, str | int]: A dictionary of connection parameters including host, port,
+                connection timeouts, and optionally username and password if available.
         """
         params: dict[str, str | int] = {
             "host": self.host,
