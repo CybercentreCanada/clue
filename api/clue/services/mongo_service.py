@@ -104,7 +104,7 @@ def _get_collection(user: str, collection: str) -> Collection[dict[str, Any]]:
 
     Args:
         user (str): The username to use as the first portion of the collection name.
-        collection (str): The username to use as the second portion of the collection name.
+        collection (str): The collection type name (e.g., "selectors") to use as the second portion of the collection name.
 
     Returns:
         Collection: The MongoDB collection for the user.
