@@ -3,7 +3,10 @@
         "**/build",
         "plugins/*/.venv",
         "**/tests",
-        "**/test"
+        "**/test",
+        "**/node_modules",
+        "**/__pycache__",
+        "**/.*"
     ],
     "executionEnvironments": [
         {
@@ -23,6 +26,13 @@
         {
             "reportAttributeAccessIssue": "none",
             "root": "plugins/**/tests"
+        },
+        {
+            "reportAttributeAccessIssue": "none",
+            "reportOperatorIssue": "none",
+            "reportOptionalMemberAccess": "none",
+            "reportOptionalSubscript": "none",
+            "root": "api/test"
         }
     ],
     "reportMissingImports": "error",
