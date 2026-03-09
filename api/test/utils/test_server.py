@@ -133,7 +133,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
             # Demonstrate accessing typed fields
             context_info = {
                 "context": context.model_extra,
-                "url": context.url,
+                "url": context.url.model_dump(mode="json") if context.url else None,
                 "timestamp": context.timestamp,
                 "language": context.language,
                 "source": context.source,

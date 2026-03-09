@@ -7,6 +7,7 @@ from clue.models.actions import (
     ActionContextInformation,
     ActionResult,
     ExecuteRequest,
+    UrlData,
 )
 from clue.models.results.base import Result
 from clue.models.results.image import ImageResult
@@ -345,16 +346,17 @@ def test_action_context_information_basic():
     """Test basic ActionContextInformation functionality"""
     # Test with known fields
     context = ActionContextInformation(
-        url="https://example.com/investigation/123", timestamp="2024-01-01T12:00:00Z", language="en"
+        url=UrlData(href="https://example.com/investigation/123"), timestamp="2024-01-01T12:00:00Z", language="en"
     )
-    assert context.url == "https://example.com/investigation/123"
+    assert context.url is not None
+    assert context.url.href == "https://example.com/investigation/123"
     assert context.timestamp == "2024-01-01T12:00:00Z"
     assert context.language == "en"
 
     # Test with arbitrary fields (extra="allow")
     context_with_extras = ActionContextInformation.model_validate(
         {
-            "url": "https://example.com",
+            "url": {"href": "https://example.com"},
             "timestamp": "2024-12-15T10:30:00Z",
             "language": "fr",
             "custom_field": "custom_value",
@@ -362,7 +364,8 @@ def test_action_context_information_basic():
             "metadata": {"version": "1.0"},
         }
     )
-    assert context_with_extras.url == "https://example.com"
+    assert context_with_extras.url is not None
+    assert context_with_extras.url.href == "https://example.com"
     assert context_with_extras.timestamp == "2024-12-15T10:30:00Z"
     assert context_with_extras.language == "fr"
     assert context_with_extras.model_extra is not None
@@ -371,8 +374,9 @@ def test_action_context_information_basic():
     assert context_with_extras.model_extra["metadata"]["version"] == "1.0"
 
     # Test with only some known fields
-    partial_context = ActionContextInformation(url="https://example.com")
-    assert partial_context.url == "https://example.com"
+    partial_context = ActionContextInformation(url=UrlData(href="https://example.com"))
+    assert partial_context.url is not None
+    assert partial_context.url.href == "https://example.com"
     assert partial_context.timestamp is None
     assert partial_context.language is None
 
@@ -394,7 +398,7 @@ def test_action_context_information_coerce_to():
     # Create a base context with known fields and extra fields
     base_context = ActionContextInformation.model_validate(
         {
-            "url": "https://example.com/case/456",
+            "url": {"href": "https://example.com/case/456"},
             "timestamp": "2024-12-15T14:00:00Z",
             "language": "en",
             "source": "ui",
@@ -411,7 +415,8 @@ def test_action_context_information_coerce_to():
     assert isinstance(custom_context, ActionContextInformation)
 
     # Verify known fields are preserved
-    assert custom_context.url == "https://example.com/case/456"
+    assert custom_context.url is not None
+    assert custom_context.url.href == "https://example.com/case/456"
     assert custom_context.timestamp == "2024-12-15T14:00:00Z"
     assert custom_context.language == "en"
 
@@ -434,17 +439,18 @@ def test_action_context_information_coerce_to_with_validation():
 
     # Create a base context with the required field
     base_context = ActionContextInformation.model_validate(
-        {"url": "https://example.com", "required_field": "value", "optional_field": "optional"}
+        {"url": {"href": "https://example.com"}, "required_field": "value", "optional_field": "optional"}
     )
 
     # Should successfully coerce
     strict_context = base_context.coerce_to(StrictContext)
     assert strict_context.required_field == "value"
     assert strict_context.optional_field == "optional"
-    assert strict_context.url == "https://example.com"
+    assert strict_context.url is not None
+    assert strict_context.url.href == "https://example.com"
 
     # Create a base context WITHOUT the required field
-    base_context_invalid = ActionContextInformation.model_validate({"url": "https://example.com"})
+    base_context_invalid = ActionContextInformation.model_validate({"url": {"href": "https://example.com"}})
 
     # Should raise ValidationError when coercing
     with pytest.raises(ValidationError) as err:
@@ -460,11 +466,12 @@ def test_action_context_information_coerce_to_preserves_none():
         custom_field: str | None = None
 
     # Create context with explicit None values
-    base_context = ActionContextInformation(url="https://example.com", timestamp=None, language=None)
+    base_context = ActionContextInformation(url=UrlData(href="https://example.com"), timestamp=None, language=None)
 
     extended_context = base_context.coerce_to(ExtendedContext)
 
-    assert extended_context.url == "https://example.com"
+    assert extended_context.url is not None
+    assert extended_context.url.href == "https://example.com"
     assert extended_context.timestamp is None
     assert extended_context.language is None
     assert extended_context.custom_field is None
@@ -474,14 +481,19 @@ def test_execute_request_with_typed_context():
     """Test ExecuteRequest with ActionContextInformation"""
     request = ExecuteRequest.model_validate(
         {
-            "context": {"url": "https://example.com", "timestamp": "2024-12-15T10:00:00Z", "custom_key": "value"},
+            "context": {
+                "url": {"href": "https://example.com"},
+                "timestamp": "2024-12-15T10:00:00Z",
+                "custom_key": "value",
+            },
             "selector": {"type": "ip", "value": "127.0.0.1"},
         }
     )
 
     assert request.context is not None
     assert isinstance(request.context, ActionContextInformation)
-    assert request.context.url == "https://example.com"
+    assert request.context.url is not None
+    assert request.context.url.href == "https://example.com"
     assert request.context.timestamp == "2024-12-15T10:00:00Z"
     assert request.context.language is None
     assert request.context.model_extra is not None

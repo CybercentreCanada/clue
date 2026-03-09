@@ -34,12 +34,24 @@ from clue.models.validators import validate_classification
 logger = get_logger(__file__)
 
 
+class UrlData(BaseModel):
+    hash: str | None = Field(default=None, description="URL fragment identifier")
+    host: str | None = Field(default=None, description="Hostname and port")
+    hostname: str | None = Field(default=None, description="Hostname without port")
+    href: str | None = Field(default=None, description="Full URL string")
+    origin: str | None = Field(default=None, description="Origin (protocol + host)")
+    pathname: str | None = Field(default=None, description="URL path")
+    port: str | None = Field(default=None, description="Port number as string")
+    protocol: str | None = Field(default=None, description="URL protocol (e.g. 'https:')")
+    search: str | None = Field(default=None, description="Query string")
+
+
 class ActionContextInformation(BaseModel):
     """Contextual information on where the action is being executed."""
 
     model_config = ConfigDict(extra="allow")
 
-    url: str | None = Field(default=None, description="URL context for the action")
+    url: UrlData | None = Field(default=None, description="URL context for the action")
     timestamp: str | None = Field(default=None, description="Timestamp when the action was initiated")
     language: str | None = Field(default=None, description="Language context for the action")
 

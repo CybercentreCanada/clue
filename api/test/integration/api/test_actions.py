@@ -316,7 +316,17 @@ def test_run_action_with_context(host, access_token):
         json={
             "selector": {"type": "ip", "value": "127.0.0.1"},
             "context": {
-                "url": "https://example.com/investigation/123",
+                "url": {
+                    "hash": "",
+                    "host": "example.com",
+                    "hostname": "example.com",
+                    "href": "https://example.com/investigation/123",
+                    "origin": "https://example.com",
+                    "pathname": "/investigation/123",
+                    "port": "",
+                    "protocol": "https:",
+                    "search": "",
+                },
                 "timestamp": "2024-01-01T12:00:00Z",
                 "language": "en",
                 "source": "ui",
@@ -333,7 +343,8 @@ def test_run_action_with_context(host, access_token):
     assert response["outcome"] == "success"
     assert response["summary"] == "Context received"
     # Test typed fields are accessible
-    assert response["output"]["url"] == "https://example.com/investigation/123"
+    assert response["output"]["url"]["href"] == "https://example.com/investigation/123"
+    assert response["output"]["url"]["pathname"] == "/investigation/123"
     assert response["output"]["timestamp"] == "2024-01-01T12:00:00Z"
     assert response["output"]["language"] == "en"
     assert response["output"]["source"] == "ui"
@@ -389,7 +400,17 @@ def test_run_action_with_context(host, access_token):
         json={
             "selector": {"type": "ip", "value": "127.0.0.1"},
             "context": {
-                "url": "https://example.com/case/456",
+                "url": {
+                    "hash": "",
+                    "host": "example.com",
+                    "hostname": "example.com",
+                    "href": "https://example.com/case/456",
+                    "origin": "https://example.com",
+                    "pathname": "/case/456",
+                    "port": "",
+                    "protocol": "https:",
+                    "search": "",
+                },
                 "timestamp": "2024-12-12T10:30:00Z",
                 # language not provided
                 "custom_field": "custom_value",
@@ -402,7 +423,8 @@ def test_run_action_with_context(host, access_token):
     response = res.json()["api_response"]
 
     assert response["outcome"] == "success"
-    assert response["output"]["url"] == "https://example.com/case/456"
+    assert response["output"]["url"]["href"] == "https://example.com/case/456"
+    assert response["output"]["url"]["pathname"] == "/case/456"
     assert response["output"]["timestamp"] == "2024-12-12T10:30:00Z"
     assert response["output"]["language"] is None
     assert response["output"]["context"]["custom_field"] == "custom_value"
