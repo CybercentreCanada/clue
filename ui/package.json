@@ -17,7 +17,7 @@
     "@jsonforms/react": "^3.6.0",
     "@microlink/react-json-view": "^1.26.2",
     "@testing-library/user-event": "^14.6.1",
-    "ajv": "^8.17.1",
+    "ajv": "^8.18.0",
     "d3": "^7.9.0",
     "dayjs": "^1.11.19",
     "fuse.js": "^7.1.0",
