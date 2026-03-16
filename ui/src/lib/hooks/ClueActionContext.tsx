@@ -362,9 +362,8 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           setLastResult({ ...actionResult, actionId, action: actionToRun });
           if (!skipResultModal) {
             setShowResultModal(true);
-          } else {
-            setRunningActionData(null);
           }
+          setRunningActionData(null);
         }
 
         if (actionResult.format) {
