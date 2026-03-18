@@ -225,7 +225,7 @@ class Metrics(BaseModel):
 
 class MongoDB(BaseModel):
     host: str = Field(description="Hostname of the MongoDB instance", default="mongodb")
-    port: int = Field(description="Hostname of the MongoDB instance", default=27017, ge=1, le=65535)
+    port: int = Field(description="Port of the MongoDB instance", default=27017, ge=1, le=65535)
     user: str | None = Field(description="Username to use to connect to the MongoDB instance", default=None)
     password: str | None = Field(description="Password to use to connect to the MongoDB instance", default=None)
     database: str = Field(description="The database to use in the mongodb instance", default="clue")
