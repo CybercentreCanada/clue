@@ -142,5 +142,6 @@
     "ui/pnpm-lock.yaml": true,
     "ui/target": true
   },
-  "makefile.configureOnOpen": false
+  "makefile.configureOnOpen": false,
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }

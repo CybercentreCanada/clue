@@ -196,7 +196,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     Args:
         plugin_id (str): The ID of the plugin.
         action_id (str): The ID of the action to run.
-        task_id (str): The celery task id to fetch the status for
+        task_id (str): The task id to fetch the status for
         user (dict[str, Any]): The user dict of the user running the action.
 
     Raises:

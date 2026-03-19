@@ -1,7 +1,18 @@
 /* eslint-disable no-console */
 import { Icon } from '@iconify/react';
 import type { ChipProps, ModalProps, PaperProps, SkeletonProps, StackProps } from '@mui/material';
-import { Box, Chip, IconButton, Paper, Skeleton, Stack, Tooltip, useTheme } from '@mui/material';
+import {
+  Box,
+  Chip,
+  IconButton,
+  LinearProgress,
+  Paper,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme
+} from '@mui/material';
 import FlexOne from 'commons/addons/flexers/FlexOne';
 import Iconified from 'lib/components/display/icons/Iconified';
 import JSONViewer from 'lib/components/display/json';
@@ -10,7 +21,7 @@ import { useClueFetcherSelector } from 'lib/hooks/selectors';
 import type { FetcherResult } from 'lib/types/fetcher';
 import type { Selector } from 'lib/types/lookup';
 import type { FC } from 'react';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import Graph from '../display/graph';
 import Markdown from '../display/markdown';
@@ -47,6 +58,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
     const theme = useTheme();
     const fetchers = useClueFetcherSelector(ctx => ctx.fetchers);
     const fetchSelector = useClueFetcherSelector(ctx => ctx.fetchSelector);
+    const getFetcherStatus = useClueFetcherSelector(ctx => ctx.getFetcherStatus);
     const fetchCompleted = useClueFetcherSelector(ctx => ctx.fetchCompleted);
 
     const { t } = useContextSelector(ClueComponentContext, ctx => ctx?.i18next);
@@ -55,12 +67,43 @@ const Fetcher: FC<FetcherProps> = React.memo(
     const [loading, setLoading] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
 
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const taskId = useMemo(() => result?.task_id, [result?.task_id]);
+
+    useEffect(() => {
+      if (result?.outcome !== 'pending' || !taskId) return;
+
+      let cancelled = false;
+
+      const poll = async () => {
+        const res = await getFetcherStatus(fetcherId, taskId);
+
+        if (!res) {
+          setResult({ outcome: 'failure', done: true, error: 'Missing result', link: '' });
+        } else if (res.outcome === 'success' || res.outcome === 'failure') {
+          setResult({ ...res, done: true });
+        } else {
+          if (cancelled) return;
+          setResult({ ...res });
+          timeoutRef.current = setTimeout(poll, 2000);
+        }
+      };
+
+      poll();
+
+      return () => {
+        cancelled = true;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+    }, [fetcherId, getFetcherStatus, result?.outcome, taskId]);
+
     useEffect(() => {
       (async () => {
         try {
           setLoading(true);
           setResult(await fetchSelector(fetcherId, { type, value, classification }));
-        } finally {
+        } catch {
           setLoading(false);
         }
       })();
@@ -114,6 +157,19 @@ const Fetcher: FC<FetcherProps> = React.memo(
           color="error"
           {...chipProps}
         />
+      );
+    }
+
+    if (result.outcome === 'pending') {
+      return (
+        <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>
+          {result.data?.summary && <Typography variant="caption">{result.data.summary}</Typography>}
+          <LinearProgress
+            variant={result.data?.progress ? 'determinate' : 'indeterminate'}
+            value={result.data?.progress * 100}
+            sx={{ maxWidth: 500, width: '100%', borderRadius: theme.shape.borderRadius }}
+          />
+        </Stack>
       );
     }
 
