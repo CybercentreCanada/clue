@@ -1,13 +1,13 @@
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import useClueActions from './useClueActions';
+import { useClueActionsSelector } from './selectors';
 
 export const useActionResult = (resultWithData: WithActionData<ActionResult>, interval = 2000) => {
   const [result, setResult] = useState<ActionResult>(resultWithData);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { getActionStatus } = useClueActions();
+  const getActionStatus = useClueActionsSelector(ctx => ctx.getActionStatus);
 
   const taskId = useMemo(() => resultWithData?.task_id, [resultWithData?.task_id]);
 

@@ -8,7 +8,9 @@ interface RunningActionData {
   selectors: Selector[];
   params: { [index: string]: any };
   context?: ActionContextInformation;
+  skipResultModal?: boolean;
   onComplete?: (result: WithActionData<ActionResult>) => void;
+  onCancel?: () => void;
   timeout?: number;
 }
 
