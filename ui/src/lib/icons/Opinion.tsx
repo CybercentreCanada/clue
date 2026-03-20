@@ -4,7 +4,6 @@ import { Chip, Divider, Grid, Stack, useTheme } from '@mui/material';
 import CountBadge from 'lib/components/CountBadge';
 import { CluePopupContext } from 'lib/hooks/CluePopupContext';
 import type { Annotation, Selector } from 'lib/types/lookup';
-import chain from 'lib/utils/chain';
 import groupBy from 'lodash-es/groupBy';
 import sortBy from 'lodash-es/sortBy';
 import sumBy from 'lodash-es/sumBy';
@@ -13,6 +12,8 @@ import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useContextSelector } from 'use-context-selector';
 
 type Opinions = 'benign' | 'suspicious' | 'malicious' | 'obscure';
+
+const SEVERITY_RANK = { malicious: 3, suspicious: 2, obscure: 1, benign: 0 };
 
 const OpinionIcon: FC<
   {
@@ -36,15 +37,12 @@ const OpinionIcon: FC<
 
   const sortedOpinions = useMemo(
     () =>
-      chain(
-        Object.entries(groupBy(opinionAnnotations, 'value')).map(([_value, _annotations]) => [
-          _value,
-          sumBy(_annotations, 'quantity')
-        ])
-      )
-        .sortBy(([__, count]) => count)
-        .reverse()
-        .value() as [Opinions, number][],
+      Object.entries(groupBy(opinionAnnotations, 'value'))
+        .map(([_value, _annotations]) => [_value, sumBy(_annotations, 'quantity')] as [Opinions, number])
+        .sort(([opinionA, countA], [opinionB, countB]) => {
+          if (countB !== countA) return countB - countA;
+          return (SEVERITY_RANK[opinionB] ?? -1) - (SEVERITY_RANK[opinionA] ?? -1);
+        }),
     [opinionAnnotations]
   );
 
@@ -72,7 +70,7 @@ const OpinionIcon: FC<
       <Stack spacing={1} onClick={e => e.stopPropagation()}>
         {opinionAnnotations.length > 1 && (
           <>
-            <Stack direction="row">
+            <Stack direction="row" spacing={1}>
               {sortedOpinions.map(([type, count]) => (
                 <Chip
                   key={type}

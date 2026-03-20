@@ -1,5 +1,9 @@
 # Clue UI Release Notes
 
+## `v1.2.1`
+
+- **Opinion Icon Tie-Breaking** *(bugfix)*: When multiple opinions are tied by count, the icon now consistently displays the highest-severity opinion (malicious > suspicious > obscure > benign) instead of depending on annotation order.
+
 ## `v1.2.0`
 
 - **Action Configuration Button** *(new feature)*: Added a configuration button to the action interface for managing action settings.
