@@ -138,9 +138,9 @@ const OpinionIcon: FC<
       ref={anchorRef}
       style={{ display: 'flex' }}
       onMouseOver={
-        disableTooltip ? undefined : () => showInfo('assessment', anchorRef.current, value, { content: tooltipContent })
+        disableTooltip ? undefined : () => showInfo('opinion', anchorRef.current, value, { content: tooltipContent })
       }
-      onMouseLeave={disableTooltip ? undefined : () => closeInfo('assessment', value)}
+      onMouseLeave={disableTooltip ? undefined : () => closeInfo('opinion', value)}
     >
       <CountBadge disabled={!counters} count={sortedOpinions[0][1]}>
         <Icon
