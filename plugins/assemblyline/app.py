@@ -563,8 +563,7 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
     classification = C12N_ENGINE.UNRESTRICTED
     opinion_given = False
     annotations: list[Annotation] = []
-    verdicts = {"malicious": 0, "suspicious": 0, "benign": 0}
-    doc_ids: list[str] = []
+    verdicts = {"malicious": [], "suspicious": [], "benign": []}
     for item in data["items"]:
         # Get the max classification
         classification = C12N_ENGINE.max_classification(classification, item["classification"])
@@ -598,16 +597,10 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
                 elif al_tag["verdict"] == "safe":
                     verdict = "benign"
                 if verdict:
-                    verdicts[verdict] += 1
-                    doc_ids.append(item["id"])
+                    verdicts[verdict].append(item["id"])
 
-    if tag and doc_ids:
-        # Query targets the exact records that contributed to the verdict for more context.
-        query = f"id:({' OR '.join(doc_ids)})"
-    else:
-        query = alert_query
-
-    for verdict, count in verdicts.items():
+    for verdict, ids in verdicts.items():
+        count = len(ids)
         if not count:
             continue
 
@@ -616,8 +609,10 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
                 f"{DEPLOYMENT_NAME} flagged this {tag[0].upper()} as {verdict} "
                 f"in {count} alerts due to its verdict value in the alert detail"
             )
+            query = f"id:({' OR '.join(ids)})"
         else:
             summary = f"{DEPLOYMENT_NAME} flagged this file as {verdict} in {count} alert(s)"
+            query = alert_query
 
         annotations.append(
             Annotation(
@@ -639,7 +634,7 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
         count=data["total"],
         annotations=annotations,
         classification=classification,
-        link=Url(f"{AL_URL_BASE}/alerts?tc=&q={ul.quote(query)}"),
+        link=Url(f"{AL_URL_BASE}/alerts?tc=&q={ul.quote(alert_query)}"),
         raw_data=raw_data,
     )
 
@@ -672,7 +667,7 @@ def results_for_result(data, result_query, annotate, sha256=None, raw=False, tag
     annotations: list[Annotation] = []
     verdicts: dict[str, set[str]] = {"malicious": set(), "suspicious": set(), "benign": set()}
     query_link = None
-    doc_ids: list[str] = []
+    verdict_to_docs: dict[str, list[str]] = {"malicious": [], "suspicious": [], "benign": []}
     for group in data["items"]:
         analytic = group["value"]
         for item in group["items"]:
@@ -724,7 +719,7 @@ def results_for_result(data, result_query, annotate, sha256=None, raw=False, tag
 
                         if verdict:
                             verdicts[verdict].add(analytic)
-                            doc_ids.append(item["id"])
+                            verdict_to_docs[verdict].append(item["id"])
                             break
 
             # Get the max classification
@@ -752,7 +747,7 @@ def results_for_result(data, result_query, annotate, sha256=None, raw=False, tag
             annotation_link = Url(f"{AL_URL_BASE}/file/detail/{sha256}")
         else:
             # Prepare query that targets the exact records that contributed to the verdict for more context.
-            query = f"id:({' OR '.join(doc_ids)})"
+            query = f"id:({' OR '.join(verdict_to_docs[verdict])})"
             query_link = Url(f"{AL_URL_BASE}/search/result?query={ul.quote(query)}")
 
             # Because the annotation link is what's displayable in the Clue UI, assign it the same value
