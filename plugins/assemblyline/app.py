@@ -563,7 +563,7 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
     classification = C12N_ENGINE.UNRESTRICTED
     opinion_given = False
     annotations: list[Annotation] = []
-    verdicts = {"malicious": [], "suspicious": [], "benign": []}
+    verdicts: dict[str, list[str]] = {"malicious": [], "suspicious": [], "benign": []}
     for item in data["items"]:
         # Get the max classification
         classification = C12N_ENGINE.max_classification(classification, item["classification"])
@@ -581,7 +581,7 @@ def results_for_alert(data, alert_query, annotate, sha256=None, raw=False, tag=N
             elif alert_score < 0:
                 verdict = "benign"
             if verdict:
-                verdicts[verdict] += 1
+                verdicts[verdict].append(item["id"])
 
         elif tag and annotate:
             tag_type, tag_value = tag
