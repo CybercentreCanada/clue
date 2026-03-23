@@ -103,7 +103,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
         try {
           setLoading(true);
           setResult(await fetchSelector(fetcherId, { type, value, classification }));
-        } catch {
+        } finally {
           setLoading(false);
         }
       })();
