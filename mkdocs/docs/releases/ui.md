@@ -1,5 +1,9 @@
 # Clue UI Release Notes
 
+## `v1.2.2`
+
+- **Fetcher Rendering Bug** *(bugfix)*: Fixed issue where successful fetcher results would never actually load.
+
 ## `v1.2.1`
 
 - **Opinion Icon Tie-Breaking** *(bugfix)*: When multiple opinions are tied by count, the icon now consistently displays the highest-severity opinion (malicious > suspicious > obscure > benign) instead of depending on annotation order.
