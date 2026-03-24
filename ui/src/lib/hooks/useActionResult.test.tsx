@@ -9,6 +9,17 @@ vi.mock('./selectors', () => ({
   useClueActionsSelector: vi.fn()
 }));
 
+// Mock use-context-selector so ClueComponentContext doesn't need a real provider.
+// The `t` function must be a stable reference so it doesn't appear as a changed
+// dependency and re-trigger the polling useEffect on every render.
+vi.mock('use-context-selector', () => {
+  const t = (k: string) => k;
+  return {
+    createContext: (defaultValue: any) => ({ _currentValue: defaultValue }),
+    useContextSelector: vi.fn((_ctx: any, selector: any) => selector({ i18next: { t } }))
+  };
+});
+
 import { useClueActionsSelector } from './selectors';
 
 // ---------------------------------------------------------------------------
@@ -87,7 +98,7 @@ describe('useActionResult', () => {
   /**
    * Pending results with a task_id should trigger polling via getActionStatus
    */
-  describe('pending outcome – polling', () => {
+  describe('pending outcome - polling', () => {
     it('calls getActionStatus with the correct actionId and taskId', async () => {
       const input = makeResult({ outcome: 'pending', task_id: 'task-abc' });
 
@@ -243,7 +254,7 @@ describe('useActionResult', () => {
       const input = makeResult({ outcome: 'pending', task_id: 'task-unmount' });
       getActionStatus.mockResolvedValue({ outcome: 'pending' });
 
-      // 10 ms interval – fast enough to accumulate visible calls if cleanup fails
+      // 10 ms interval - fast enough to accumulate visible calls if cleanup fails
       const { unmount } = renderHook(() => useActionResult(input, 10));
 
       // Wait until at least the first poll has completed

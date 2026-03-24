@@ -395,8 +395,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   const getActionStatus: ClueActionContextType['getActionStatus'] = useCallback(
     async (actionId, taskId) => {
       try {
-        const res = await api.actions.status.get(actionId, taskId, {}, requestConfig);
-        return res;
+        return await api.actions.status.get(actionId, taskId, {}, requestConfig);
       } catch (e) {
         safeDispatchEvent(
           new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
@@ -415,8 +414,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     runningActionData?.onCancel?.();
     setRunningActionData(null);
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runningActionData?.onCancel]);
+  }, [runningActionData]);
 
   const getActionResults: ClueActionContextType['getActionResults'] = useCallback(
     (type, value, classification) => actionResults[getHashKey(type, value, classification)] ?? [],
