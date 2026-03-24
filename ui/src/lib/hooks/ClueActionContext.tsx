@@ -307,7 +307,9 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
         const actionResultWithData = { ...actionResult, actionId, action: actionToRun, params: validatedParams };
 
-        onComplete?.(actionResultWithData);
+        if (actionResult.outcome !== 'pending') {
+          onComplete?.(actionResultWithData);
+        }
 
         setActionResults(_results => {
           const keys = selectors.map(value => getHashKey(value.type, value.value, value.classification));
@@ -359,7 +361,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         }
 
         if (actionResult.outcome === 'pending') {
-          setLastResult({ ...actionResult, actionId, action: actionToRun });
+          setLastResult({ ...actionResult, actionId, action: actionToRun, onComplete });
           if (!skipResultModal) {
             setShowResultModal(true);
           }
@@ -413,6 +415,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     runningActionData?.onCancel?.();
     setRunningActionData(null);
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runningActionData?.onCancel]);
 
   const getActionResults: ClueActionContextType['getActionResults'] = useCallback(

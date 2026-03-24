@@ -600,5 +600,92 @@ describe('action functionality', () => {
         expect(payload.context.url).toBe(window.location);
       });
     });
+
+    /**
+     * Tests for the onComplete callback with pending outcomes
+     * Verifies that onComplete is deferred until the async action resolves via polling
+     */
+    describe('onComplete', () => {
+      const value: Selector = { type: 'ip', value: '127.0.0.1' };
+      let hook: RenderHookResult<ClueActionContextType['executeAction'], any>;
+
+      beforeEach(async () => {
+        hook = await act(async () => {
+          return renderHook(() => useClueActionsSelector(ctx => ctx.executeAction), { wrapper: Wrapper });
+        });
+      });
+
+      /**
+       * Test that onComplete is not called immediately when the outcome is 'pending'
+       * The callback should only fire after polling determines the final outcome
+       */
+      it('should not call onComplete immediately when the outcome is pending', async () => {
+        const onComplete = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'pending', task_id: 'task-123', summary: 'processing...' })
+        );
+
+        vi.mocked(hget).mockImplementationOnce(() => Promise.resolve({ outcome: 'pending', task_id: 'task-123' }));
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete });
+        });
+
+        expect(onComplete).not.toHaveBeenCalled();
+      });
+
+      /**
+       * Test that onComplete is called once polling resolves with a success outcome
+       * Should receive the final merged result including actionId and done flag
+       */
+      it('should call onComplete with the resolved result once a pending action succeeds', async () => {
+        const onComplete = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'pending', task_id: 'task-123', summary: 'processing...' })
+        );
+
+        vi.mocked(hget).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'success', summary: 'done', output: { hello: 'world' } })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete });
+        });
+
+        await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+
+        expect(onComplete).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: 'success', done: true, actionId: 'example.action' })
+        );
+      });
+
+      /**
+       * Test that onComplete is called once polling resolves with a failure outcome
+       * Should receive the final merged result including actionId and done flag
+       */
+      it('should call onComplete with the failure result once a pending action fails', async () => {
+        const onComplete = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'pending', task_id: 'task-123', summary: 'processing...' })
+        );
+
+        vi.mocked(hget).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'failure', summary: 'something went wrong' })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete });
+        });
+
+        await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+
+        expect(onComplete).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: 'failure', done: true, actionId: 'example.action' })
+        );
+      });
+    });
   });
 });

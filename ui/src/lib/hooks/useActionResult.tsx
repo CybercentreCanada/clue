@@ -24,7 +24,9 @@ export const useActionResult = (resultWithData: WithActionData<ActionResult>, in
       if (!res) {
         setResult({ outcome: 'failure', done: true });
       } else if (res.outcome === 'success' || res.outcome === 'failure') {
-        setResult({ ...res, done: true });
+        const finalResult = { ...res, done: true };
+        setResult(finalResult);
+        resultWithData?.onComplete?.({ ...resultWithData, ...finalResult });
       } else {
         if (cancelled) return;
         setResult({ ...res });
@@ -38,7 +40,7 @@ export const useActionResult = (resultWithData: WithActionData<ActionResult>, in
       cancelled = true;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [actionId, getActionStatus, interval, resultWithData?.outcome, taskId]);
+  }, [actionId, getActionStatus, interval, resultWithData, resultWithData?.outcome, taskId]);
 
   useEffect(() => {
     setResult(resultWithData);
