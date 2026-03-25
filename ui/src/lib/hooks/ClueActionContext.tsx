@@ -222,7 +222,6 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         forceMenu: false,
         skipResultModal: false,
         skipMenu: false,
-        skipResultModal: false,
         onComplete: null,
         onCancel: null,
         timeout: null,

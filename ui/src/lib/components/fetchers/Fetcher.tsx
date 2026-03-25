@@ -63,7 +63,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
 
     const { t } = useContextSelector(ClueComponentContext, ctx => ctx?.i18next);
 
-    const [result, setResult] = useState<FetcherResult>(null);
+    const [result, setResult] = useState<FetcherResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
 
@@ -104,10 +104,12 @@ const Fetcher: FC<FetcherProps> = React.memo(
           setLoading(true);
           setResult(await fetchSelector(fetcherId, { type, value, classification }));
         } catch {
+          setResult({ outcome: 'failure', done: true, error: t('fetcher.error.unexpected') });
+        } finally {
           setLoading(false);
         }
       })();
-    }, [classification, fetchSelector, fetcherId, type, value]);
+    }, [classification, fetchSelector, fetcherId, t, type, value]);
 
     if (fetchCompleted) {
       if (!fetcherId) {
@@ -145,7 +147,9 @@ const Fetcher: FC<FetcherProps> = React.memo(
       }
     }
 
-    if (result?.outcome === 'failure' && fetchers[fetcherId].format === 'status') {
+    if (!result) return null;
+
+    if (result.outcome === 'failure' && fetchers[fetcherId].format === 'status') {
       return (
         <Chip
           icon={
@@ -173,7 +177,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
       );
     }
 
-    if (result?.format === 'status') {
+    if (result.format === 'status') {
       return <StatusChip data={result.data} {...chipProps} />;
     }
 
@@ -204,21 +208,21 @@ const Fetcher: FC<FetcherProps> = React.memo(
             }
           }}
         >
-          {result?.outcome === 'failure' && (
+          {result.outcome === 'failure' && (
             <code style={{ color: theme.palette.error.main }}>
               <pre style={{ marginTop: 0, marginBottom: 0 }}>{result.error}</pre>
             </code>
           )}
-          {result?.format === 'markdown' && <Markdown md={result.data} />}
-          {result?.format === 'image' && (
+          {result.format === 'markdown' && <Markdown md={result.data} />}
+          {result.format === 'image' && (
             <img src={result.data.image} alt={result.data.alt} {...imageProps} onClick={() => setShowPreview(true)} />
           )}
-          {result?.format === 'json' && (
+          {result.format === 'json' && (
             <Box sx={{ '.react-json-view': { backgroundColor: 'transparent !important' } }}>
               <JSONViewer data={result.data} />
             </Box>
           )}
-          {result?.format === 'graph' && <Graph graph={result.data} sx={{ minHeight: '600px' }} />}
+          {result.format === 'graph' && <Graph graph={result.data} sx={{ minHeight: '600px' }} />}
           <FlexOne />
           <Stack
             direction="row"
@@ -253,7 +257,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
             </Tooltip>
             <FlexOne />
 
-            {result?.link && (
+            {result.link && (
               <IconButton size="small" component="a" href={result.link}>
                 <Iconified icon="ic:baseline-open-in-new" fontSize="small" />
               </IconButton>
