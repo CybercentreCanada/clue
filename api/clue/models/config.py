@@ -1,5 +1,4 @@
 # ruff: noqa: D101
-import logging
 import os
 from email.utils import parseaddr
 from enum import Enum
@@ -18,7 +17,7 @@ from pydantic_settings import (
 
 from clue.common import forge
 from clue.common.exceptions import ClueValueError
-from clue.common.logging.format import CLUE_DATE_FORMAT, CLUE_LOG_FORMAT
+from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
@@ -28,13 +27,7 @@ DEFAULT_USER_NAME_FIELDS = ["name", "displayName"]
 APP_NAME = default_string_value(env_name="APP_NAME", default="clue").replace("-dev", "")  # type: ignore[union-attr]
 CLASSIFICATION = forge.get_classification()
 
-logger = logging.getLogger("clue.models.config")
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
-if not logger.handlers:
-    logger.addHandler(console)
+logger = get_module_logger("clue.models.config")
 
 
 class PasswordRequirement(BaseModel):
@@ -459,13 +452,6 @@ config_locations = [
 
 if os.getenv("AZURE_TEST_CONFIG", None) is not None:
     import re
-
-    logger = logging.getLogger("clue.models.config")
-    logger.setLevel(logging.INFO)
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
-    logger.addHandler(console)
 
     logger.info("Azure build environment detected, adding additional config path")
 

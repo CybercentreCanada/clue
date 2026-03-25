@@ -1,4 +1,3 @@
-import logging
 from typing import Any
 
 from pydantic import BaseModel, ImportString, model_validator
@@ -8,14 +7,9 @@ from pydantic_settings import (
     YamlConfigSettingsSource,
 )
 
-from clue.common.logging import CLUE_DATE_FORMAT, CLUE_LOG_FORMAT
+from clue.common.logging import get_module_logger
 
-logger = logging.getLogger("clue.extensions.config")
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
-logger.addHandler(console)
+logger = get_module_logger("clue.extensions.config")
 
 
 class Modules(BaseModel):
