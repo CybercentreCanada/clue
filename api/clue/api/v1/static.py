@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from flask import request
@@ -12,9 +13,11 @@ from clue.security.utils import is_path_traversal
 
 SUB_API = "static"
 static_api = make_subapi_blueprint(SUB_API, api_version=1)
-static_api._doc = "Fetch static documentation"
+static_api._doc = "Fetch static documentation"  # type: ignore
 
 CORS(static_api, origins=config.ui.cors_origins, supports_credentials=True)
+
+DOCUMENTATION_FOLDER = (Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path.cwd() / "docs"))).resolve()
 
 logger = get_logger(__file__)
 
@@ -39,23 +42,15 @@ def serve_documentation(**kwargs) -> dict[str, str]:
     """
     docs_filter = request.args.get("filter")
 
-    documentation_folder = Path.cwd() / "docs"
-
     returned_files = {}
 
-    if docs_filter is None:
-        for file in documentation_folder.rglob("*"):
-            if file.is_file():
-                content = file.read_text(encoding="utf-8")
-                returned_files[file.name] = content
-    else:
-        for file in documentation_folder.rglob("*"):
-            if file.is_file() and docs_filter in file.name:
-                try:
-                    content = file.read_text(encoding="utf-8")
-                    returned_files[file.name] = content
-                except FileNotFoundError:
-                    return not_found(err="The file was not found")
+    for file in DOCUMENTATION_FOLDER.rglob("*"):
+        if file.is_file():
+            if docs_filter and docs_filter not in file.name:
+                continue
+
+            content = file.read_text(encoding="utf-8")
+            returned_files[file.name] = content
 
     return ok(returned_files)
 
@@ -78,17 +73,15 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     {"markdown": "Markdown documentation of howler-docs.md"}
 
     """
-    documentation_folder = (Path.cwd() / "docs").resolve()
+    docs_path = (DOCUMENTATION_FOLDER / filename).resolve()
 
-    docs_path = (documentation_folder / filename).resolve()
-
-    if is_path_traversal(documentation_folder, docs_path):
+    if is_path_traversal(DOCUMENTATION_FOLDER, docs_path):
         return not_found(err="The file does not exist or is typed incorrectly within the relative path.")
 
-    if documentation_folder.exists():
-        content = documentation_folder.read_text(encoding="utf-8")
+    if docs_path.exists():
+        content = docs_path.read_text(encoding="utf-8")
 
         return ok({"markdown": content})
 
-    logger.info("File %s does not exist", documentation_folder)
+    logger.info("File %s does not exist", docs_path)
     return not_found(err="The file does not exist or is typed incorrectly.")

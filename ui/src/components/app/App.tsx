@@ -43,7 +43,7 @@ import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
 import * as monaco from 'monaco-editor';
 import type { FC, PropsWithChildren } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
 import { BrowserRouter, Route } from 'react-router-dom';
 import AppContainer from './AppContainer';
@@ -146,14 +146,17 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
   const myTheme: AppThemeConfigs = useMyTheme();
   const mySitemap: AppSiteMapConfigs = useMySitemap();
   const myUser: AppUserService<ClueUser> = useMyUser();
+
+  const databaseConfig = useMemo(() => ({ storageType: 'memory' as const }), []);
+
   return (
     <ClueConfigProvider>
       <ClueComponentProvider>
         <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
           <ModalProvider>
             <LocalStorageProvider>
-              <ClueDatabaseProvider databaseConfig={{ storageType: 'memory' }}>
-                <ClueEnrichProvider publicIconify={false} skipConfigCall>
+              <ClueDatabaseProvider databaseConfig={databaseConfig}>
+                <ClueEnrichProvider publicIconify={false} skipConfigCall classification="TLP:CLEAR">
                   <ClueFetcherProvider>
                     <ClueActionProvider>
                       <CluePopupProvider>{children}</CluePopupProvider>

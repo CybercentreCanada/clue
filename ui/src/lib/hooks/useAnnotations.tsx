@@ -48,8 +48,9 @@ const useAnnotations = (
   const [annotations, setAnnotations] = useState<WithExtra<Annotation>[]>([]);
   // Memoized readiness check to ensure all required parameters are valid
   const ready = useMemo(
-    () => enrichReady && !!type && !!value && !!classification,
-    [classification, enrichReady, type, value]
+    () => enrichReady && !!type && !!value && !!classification && !!database?.selectors && !database.selectors.closed,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [classification, database?.selectors, database?.selectors?.closed, enrichReady, type, value]
   );
 
   useEffect(() => {

@@ -3,7 +3,10 @@
         "**/build",
         "plugins/*/.venv",
         "**/tests",
-        "**/test"
+        "**/test",
+        "**/node_modules",
+        "**/__pycache__",
+        "**/.*"
     ],
     "executionEnvironments": [
         {
@@ -12,17 +15,25 @@
             "root": "plugins"
         },
         {
-            "pythonVersion": "3.12",
-            "reportReturnType": "none",
-            "root": "api"
-        },
-        {
             "reportAttributeAccessIssue": "none",
             "root": "plugins/**/test"
         },
         {
             "reportAttributeAccessIssue": "none",
             "root": "plugins/**/tests"
+        },
+        {
+            "reportArgumentType": "none",
+            "reportAttributeAccessIssue": "none",
+            "reportOperatorIssue": "none",
+            "reportOptionalMemberAccess": "none",
+            "reportOptionalSubscript": "none",
+            "root": "api/test"
+        },
+        {
+            "pythonVersion": "3.12",
+            "reportReturnType": "none",
+            "root": "api"
         }
     ],
     "reportMissingImports": "error",
