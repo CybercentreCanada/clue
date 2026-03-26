@@ -1,6 +1,6 @@
 from typing import Any
 
-import elasticapm
+from elasticapm.traces import capture_span
 from flask import current_app, request
 
 from clue.common.exceptions import (
@@ -17,7 +17,7 @@ from clue.remote.datatypes.user_quota_tracker import UserQuotaTracker
 logger = get_logger(__file__)
 
 
-@elasticapm.capture_span(span_type="authentication")
+@capture_span(span_type="authentication")
 def parse_user_data(
     data: dict,
     oauth_provider: str,

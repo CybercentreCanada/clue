@@ -1,10 +1,9 @@
 # ruff: noqa: D101
-import logging
 import os
 from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
-from typing import Self
+from typing import Annotated, Any, Self
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -18,7 +17,7 @@ from pydantic_settings import (
 
 from clue.common import forge
 from clue.common.exceptions import ClueValueError
-from clue.common.logging.format import CLUE_DATE_FORMAT, CLUE_LOG_FORMAT
+from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
@@ -27,6 +26,8 @@ DEFAULT_USER_FIELDS = ["uname", "preferred_username", "upn"]
 DEFAULT_USER_NAME_FIELDS = ["name", "displayName"]
 APP_NAME = default_string_value(env_name="APP_NAME", default="clue").replace("-dev", "")  # type: ignore[union-attr]
 CLASSIFICATION = forge.get_classification()
+
+logger = get_module_logger("clue.models.config")
 
 
 class PasswordRequirement(BaseModel):
@@ -213,7 +214,52 @@ class APMServer(BaseModel):
 class Metrics(BaseModel):
     apm_server: APMServer = APMServer()
     export_interval: int = Field(description="How often should we be exporting metrics?", default=5)
-    redis: RedisServer = RedisServer()
+
+
+class MongoDB(BaseModel):
+    host: str = Field(description="Hostname of the MongoDB instance", default="mongodb")
+    port: int = Field(description="Port of the MongoDB instance", default=27017, ge=1, le=65535)
+    user: str | None = Field(description="Username to use to connect to the MongoDB instance", default=None)
+    password: str | None = Field(description="Password to use to connect to the MongoDB instance", default=None)
+    database: str = Field(description="The database to use in the mongodb instance", default="clue")
+    max_retries: int = Field(
+        description="Controls the maximum number of retries to use when an initial connection fails", default=2
+    )
+    connect_timeout: int = Field(
+        description="Controls how long (in milliseconds) to wait when connecting a new socket", default=3000
+    )
+    server_selection_timeout: int = Field(
+        description="Controls how long (in milliseconds) to wait for a suitable server to be found", default=3000
+    )
+
+    def __repr__(self):
+        auth = ""
+        if self.user and self.password:
+            auth = f"{self.user}:***@"
+
+        return f"mongodb://{auth}{self.host}:{self.port}"
+
+    def connection(self) -> dict[str, Any]:
+        """Generate MongoDB connection string and authentication parameters.
+
+        Returns:
+            dict[str, str | int]: A dictionary of connection parameters including host, port,
+                connection timeouts, and optionally username and password if available.
+        """
+        params: dict[str, str | int] = {
+            "host": self.host,
+            "port": self.port,
+            "connectTimeoutMS": self.connect_timeout,
+            "serverSelectionTimeoutMS": self.server_selection_timeout,
+        }
+
+        if self.user and self.password:
+            params["username"] = self.user
+            params["password"] = self.password
+        else:
+            logger.warning("No authentication used for mongodb.")
+
+        return params
 
 
 class Core(BaseModel):
@@ -224,6 +270,9 @@ class Core(BaseModel):
 
     redis: RedisServer = RedisServer()
     "Configuration for Redis instances"
+
+    mongodb: MongoDB = MongoDB()
+    "Configuration for MongoDB instance"
 
 
 class LogLevel(str, Enum):
@@ -363,6 +412,7 @@ class OBOService(BaseModel):
 
 class UI(BaseModel):
     cors_origins: list[str] = Field(default=[], description="List of valid deployments")
+    replication: bool = Field(default=True, description="Should server-side replication be enabled?")
 
 
 class API(BaseModel):
@@ -386,6 +436,13 @@ class API(BaseModel):
     )
 
 
+class Retention(BaseModel):
+    enabled: Annotated[bool, Field(description="Should records be cached for users?")] = True
+    default_ttl: Annotated[
+        int, Field(description="The number of seconds a record with no set expiry should be cached")
+    ] = 3600
+
+
 root_path = Path("/etc") / APP_NAME
 
 config_locations = [
@@ -395,13 +452,6 @@ config_locations = [
 
 if os.getenv("AZURE_TEST_CONFIG", None) is not None:
     import re
-
-    logger = logging.getLogger("clue.models.config")
-    logger.setLevel(logging.INFO)
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
-    logger.addHandler(console)
 
     logger.info("Azure build environment detected, adding additional config path")
 
@@ -436,6 +486,7 @@ class Config(BaseSettings):
     auth: Auth = Auth()
     core: Core = Core()
     logging: Logging = Logging()
+    retention: Retention = Retention()
 
     model_config = SettingsConfigDict(
         yaml_file=config_locations,

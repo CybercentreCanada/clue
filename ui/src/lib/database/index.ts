@@ -1,10 +1,16 @@
 import throttle from 'lodash-es/throttle';
 import { addRxPlugin, createRxDatabase, type RxJsonSchema } from 'rxdb';
+import { RxDBJsonDumpPlugin } from 'rxdb/plugins/json-dump';
 import { wrappedKeyCompressionStorage } from 'rxdb/plugins/key-compression';
 import { getRxStorageLocalstorage } from 'rxdb/plugins/storage-localstorage';
 import { getRxStorageMemory } from 'rxdb/plugins/storage-memory';
 import { RxDBUpdatePlugin } from 'rxdb/plugins/update';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv';
+
+import { REPLICATE } from 'lib/utils/constants';
+import { RxDBStatePlugin } from 'rxdb/plugins/state';
+import { REPLICATORS } from './globals';
+import { replicateSelectorCollection } from './replication';
 import selectorSchema from './selector.schema.json';
 import statusSchema from './status.schema.json';
 import type {
@@ -54,6 +60,12 @@ const queuedValues: StatusDocType[] = [];
 const listeners: ((doc: StatusDocument[]) => void)[] = [];
 const _process = throttle(
   async (_collection: StatusCollection) => {
+    if (_collection.closed) {
+      // eslint-disable-next-line no-console
+      console.warn(_collection.name, 'is closed');
+      return;
+    }
+
     const _listeners = [...listeners];
     _collection
       .bulkInsert([...queuedValues])
@@ -87,14 +99,19 @@ const statusStatics: StatusCollectionMethods = {
 };
 
 const buildDatabase = async (_config: DatabaseConfig = {}) => {
-  const config = {
-    storageType: 'sessionStorage',
+  const config: DatabaseConfig = {
+    storageType: 'memory',
     testing: IS_VITEST,
     devMode: !import.meta.env.PROD,
+    replicate: REPLICATE && !IS_VITEST,
+    baseURL: undefined,
+    getToken: undefined,
     ..._config
   };
 
   addRxPlugin(RxDBUpdatePlugin);
+  addRxPlugin(RxDBJsonDumpPlugin);
+  addRxPlugin(RxDBStatePlugin);
 
   /* v8 ignore next 10 -- @preserve */
   if (config.devMode) {
@@ -140,8 +157,15 @@ const buildDatabase = async (_config: DatabaseConfig = {}) => {
     }
   });
 
+  if (config.replicate) {
+    const id = Date.now().toString();
+    REPLICATORS[id] = await replicateSelectorCollection(id, database.selectors, config);
+  }
+
   try {
-    await database.status.find({ selector: { status: 'in-progress' } }).remove();
+    if (database.status && !database.status.closed) {
+      await database.status.find({ selector: { status: 'in-progress' } }).remove();
+    }
     /* v8 ignore next 3 @preserve*/
   } catch (e) {
     // eslint-disable-next-line no-console

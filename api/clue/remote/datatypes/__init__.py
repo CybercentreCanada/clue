@@ -11,6 +11,7 @@ from packaging.version import parse
 
 from clue.common.logging import get_logger
 from clue.common.uid import get_random_id
+from clue.config import DEBUG
 from clue.constants.env import TESTING
 
 logger = get_logger(__file__)
@@ -27,6 +28,7 @@ if parse(redis.__version__) <= parse("2.10.0"):
 
 
 pool: dict[tuple[str, int], redis.ConnectionPool] = {}
+auth_warned = False
 
 
 def now_as_iso():
@@ -80,6 +82,8 @@ def _redis_ssl_kwargs(host: str) -> dict:
 
 
 def get_client(host, port, private, password=None):
+    global auth_warned
+
     # In case a structure is passed a client as host
     if isinstance(host, (redis.Redis, redis.StrictRedis)):
         return host
@@ -93,8 +97,9 @@ def get_client(host, port, private, password=None):
 
     if password:
         logger.debug("Connecting to redis with password")
-    elif "pytest" not in sys.modules and not TESTING:
+    elif not ("pytest" in sys.modules or TESTING or DEBUG or auth_warned):
         logger.warning("Connecting to redis without authentication.")
+        auth_warned = True
 
     ssl_kwargs = {}
 
