@@ -44,19 +44,13 @@ def serve_documentation(**kwargs) -> dict[str, str]:
 
     returned_files = {}
 
-    if docs_filter is None:
-        for file in DOCUMENTATION_FOLDER.rglob("*"):
-            if file.is_file():
-                content = file.read_text(encoding="utf-8")
-                returned_files[file.name] = content
-    else:
-        for file in DOCUMENTATION_FOLDER.rglob("*"):
-            if file.is_file() and docs_filter in file.name:
-                try:
-                    content = file.read_text(encoding="utf-8")
-                    returned_files[file.name] = content
-                except FileNotFoundError:
-                    return not_found(err="The file was not found")
+    for file in DOCUMENTATION_FOLDER.rglob("*"):
+        if file.is_file():
+            if docs_filter and docs_filter not in file.name:
+                continue
+
+            content = file.read_text(encoding="utf-8")
+            returned_files[file.name] = content
 
     return ok(returned_files)
 
