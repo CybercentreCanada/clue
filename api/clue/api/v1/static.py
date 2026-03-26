@@ -13,11 +13,11 @@ from clue.security.utils import is_path_traversal
 
 SUB_API = "static"
 static_api = make_subapi_blueprint(SUB_API, api_version=1)
-static_api._doc = "Fetch static documentation"
+static_api._doc = "Fetch static documentation"  # type: ignore
 
 CORS(static_api, origins=config.ui.cors_origins, supports_credentials=True)
 
-DOCUMENTATION_FOLDER = (Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path(__file__).parents[4])) / "docs").resolve()
+DOCUMENTATION_FOLDER = (Path(os.environ.get("CLUE_DOCUMENTATION_PATH", Path.cwd() / "docs"))).resolve()
 
 logger = get_logger(__file__)
 
