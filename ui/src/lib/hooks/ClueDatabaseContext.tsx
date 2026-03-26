@@ -75,7 +75,7 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
     if (!_database) {
       // eslint-disable-next-line no-console
       console.warn('It is heavily suggested to initialize the database outside of the React component tree.');
-      buildDatabase({ getToken: getTokenRef.current, ...databaseConfig }).then(_db => {
+      buildDatabase({ ...databaseConfig, getToken: getTokenRef.current }).then(_db => {
         if (!cancelled) {
           setDatabase(_db);
         }
