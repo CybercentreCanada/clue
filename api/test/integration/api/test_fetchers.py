@@ -292,3 +292,55 @@ def test_run_fetcher_email(host, access_token, process_tree):
         ],
         color="#f542f2",
     ).model_dump(mode="json", exclude_none=True)
+
+
+def test_get_async_fetcher_status(host, access_token):
+    """Test that the get action status endpoint responds"""
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    # first run the action
+    res = requests.post(
+        f"{host}/api/v1/fetchers/test/test_async_fetcher",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"type": "ip", "value": "127.0.0.1"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "pending"
+
+    task_id = response["task_id"]
+    assert task_id
+
+    # check the status of the action
+    res = requests.get(
+        f"{host}/api/v1/fetchers/test/test_async_fetcher/status/{task_id}",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "success"
+
+
+def test_get_status_with_bad_task_id(host, access_token):
+    """Test that the get action status endpoint responds properly when the task_id does not exist"""
+    # check the status of the action
+    res = requests.get(
+        f"{host}/api/v1/fetchers/test/test_async_fetcher/status/fake_task_id",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    response = res.json()["api_response"]
+
+    assert response["outcome"] == "failure"

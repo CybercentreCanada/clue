@@ -42,17 +42,15 @@ def serve_documentation(**kwargs) -> dict[str, str]:
     """
     docs_filter = request.args.get("filter")
 
-    documentation_folder = Path.cwd() / "docs"
-
     returned_files = {}
 
     if docs_filter is None:
-        for file in documentation_folder.rglob("*"):
+        for file in DOCUMENTATION_FOLDER.rglob("*"):
             if file.is_file():
                 content = file.read_text(encoding="utf-8")
                 returned_files[file.name] = content
     else:
-        for file in documentation_folder.rglob("*"):
+        for file in DOCUMENTATION_FOLDER.rglob("*"):
             if file.is_file() and docs_filter in file.name:
                 try:
                     content = file.read_text(encoding="utf-8")
@@ -83,12 +81,8 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
     """
     docs_path = (DOCUMENTATION_FOLDER / filename).resolve()
 
-    if not docs_path.suffix:
-        # Assume it's markdown
-        filename = filename + ".md"
-
     if is_path_traversal(DOCUMENTATION_FOLDER, docs_path):
-        return not_found(err="The file does not exist or is typed incorrectly.")
+        return not_found(err="The file does not exist or is typed incorrectly within the relative path.")
 
     if docs_path.exists():
         content = docs_path.read_text(encoding="utf-8")

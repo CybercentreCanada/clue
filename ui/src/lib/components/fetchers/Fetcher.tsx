@@ -1,7 +1,18 @@
 /* eslint-disable no-console */
 import { Icon } from '@iconify/react';
 import type { ChipProps, ModalProps, PaperProps, SkeletonProps, StackProps } from '@mui/material';
-import { Box, Chip, IconButton, Paper, Skeleton, Stack, Tooltip, useTheme } from '@mui/material';
+import {
+  Box,
+  Chip,
+  IconButton,
+  LinearProgress,
+  Paper,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography,
+  useTheme
+} from '@mui/material';
 import FlexOne from 'commons/addons/flexers/FlexOne';
 import Iconified from 'lib/components/display/icons/Iconified';
 import JSONViewer from 'lib/components/display/json';
@@ -10,7 +21,7 @@ import { useClueFetcherSelector } from 'lib/hooks/selectors';
 import type { FetcherResult } from 'lib/types/fetcher';
 import type { Selector } from 'lib/types/lookup';
 import type { FC } from 'react';
-import React, { memo, useEffect, useState } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
 import Graph from '../display/graph';
 import Markdown from '../display/markdown';
@@ -47,24 +58,58 @@ const Fetcher: FC<FetcherProps> = React.memo(
     const theme = useTheme();
     const fetchers = useClueFetcherSelector(ctx => ctx.fetchers);
     const fetchSelector = useClueFetcherSelector(ctx => ctx.fetchSelector);
+    const getFetcherStatus = useClueFetcherSelector(ctx => ctx.getFetcherStatus);
     const fetchCompleted = useClueFetcherSelector(ctx => ctx.fetchCompleted);
 
     const { t } = useContextSelector(ClueComponentContext, ctx => ctx?.i18next);
 
-    const [result, setResult] = useState<FetcherResult>(null);
+    const [result, setResult] = useState<FetcherResult | null>(null);
     const [loading, setLoading] = useState(true);
     const [showPreview, setShowPreview] = useState(false);
+
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const taskId = useMemo(() => result?.task_id, [result?.task_id]);
+
+    useEffect(() => {
+      if (result?.outcome !== 'pending' || !taskId) return;
+
+      let cancelled = false;
+
+      const poll = async () => {
+        const res = await getFetcherStatus(fetcherId, taskId);
+
+        if (!res) {
+          setResult({ outcome: 'failure', done: true, error: 'Missing result', link: '' });
+        } else if (res.outcome === 'success' || res.outcome === 'failure') {
+          setResult({ ...res, done: true });
+        } else {
+          if (cancelled) return;
+          setResult({ ...res });
+          timeoutRef.current = setTimeout(poll, 2000);
+        }
+      };
+
+      poll();
+
+      return () => {
+        cancelled = true;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+    }, [fetcherId, getFetcherStatus, result?.outcome, taskId]);
 
     useEffect(() => {
       (async () => {
         try {
           setLoading(true);
           setResult(await fetchSelector(fetcherId, { type, value, classification }));
+        } catch {
+          setResult({ outcome: 'failure', done: true, error: t('fetcher.error.unexpected') });
         } finally {
           setLoading(false);
         }
       })();
-    }, [classification, fetchSelector, fetcherId, type, value]);
+    }, [classification, fetchSelector, fetcherId, t, type, value]);
 
     if (fetchCompleted) {
       if (!fetcherId) {
@@ -102,7 +147,9 @@ const Fetcher: FC<FetcherProps> = React.memo(
       }
     }
 
-    if (result?.outcome === 'failure' && fetchers[fetcherId].format === 'status') {
+    if (!result) return null;
+
+    if (result.outcome === 'failure' && fetchers[fetcherId].format === 'status') {
       return (
         <Chip
           icon={
@@ -117,7 +164,20 @@ const Fetcher: FC<FetcherProps> = React.memo(
       );
     }
 
-    if (result?.format === 'status') {
+    if (result.outcome === 'pending') {
+      return (
+        <Stack flex={1} sx={{ pt: 2, alignItems: 'center' }} spacing={1}>
+          {result.data?.summary && <Typography variant="caption">{result.data.summary}</Typography>}
+          <LinearProgress
+            variant={result.data?.progress ? 'determinate' : 'indeterminate'}
+            value={result.data?.progress * 100}
+            sx={{ maxWidth: 500, width: '100%', borderRadius: theme.shape.borderRadius }}
+          />
+        </Stack>
+      );
+    }
+
+    if (result.format === 'status') {
       return <StatusChip data={result.data} {...chipProps} />;
     }
 
@@ -148,21 +208,21 @@ const Fetcher: FC<FetcherProps> = React.memo(
             }
           }}
         >
-          {result?.outcome === 'failure' && (
+          {result.outcome === 'failure' && (
             <code style={{ color: theme.palette.error.main }}>
               <pre style={{ marginTop: 0, marginBottom: 0 }}>{result.error}</pre>
             </code>
           )}
-          {result?.format === 'markdown' && <Markdown md={result.data} />}
-          {result?.format === 'image' && (
+          {result.format === 'markdown' && <Markdown md={result.data} />}
+          {result.format === 'image' && (
             <img src={result.data.image} alt={result.data.alt} {...imageProps} onClick={() => setShowPreview(true)} />
           )}
-          {result?.format === 'json' && (
+          {result.format === 'json' && (
             <Box sx={{ '.react-json-view': { backgroundColor: 'transparent !important' } }}>
               <JSONViewer data={result.data} />
             </Box>
           )}
-          {result?.format === 'graph' && <Graph graph={result.data} sx={{ minHeight: '600px' }} />}
+          {result.format === 'graph' && <Graph graph={result.data} sx={{ minHeight: '600px' }} />}
           <FlexOne />
           <Stack
             direction="row"
@@ -197,7 +257,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
             </Tooltip>
             <FlexOne />
 
-            {result?.link && (
+            {result.link && (
               <IconButton size="small" component="a" href={result.link}>
                 <Iconified icon="ic:baseline-open-in-new" fontSize="small" />
               </IconButton>

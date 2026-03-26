@@ -364,42 +364,6 @@ const Examples: FC = () => {
         <Card sx={{ p: 2 }}>
           <FileResult result={file_result as WithActionData<ActionResult<ActionFileResult>>} />
         </Card>
-
-        <Typography variant="h5">Ports (enrichment skipped, for testing replication with port-lookup)</Typography>
-        <EnrichedChip type="port" value="20" skipEnrichment />
-        <EnrichedChip type="port" value="21" skipEnrichment />
-        <EnrichedChip type="port" value="22" skipEnrichment />
-        <EnrichedChip type="port" value="23" skipEnrichment />
-        <EnrichedChip type="port" value="25" skipEnrichment />
-        <EnrichedChip type="port" value="53" skipEnrichment />
-        <EnrichedChip type="port" value="67" skipEnrichment />
-        <EnrichedChip type="port" value="68" skipEnrichment />
-        <EnrichedChip type="port" value="80" skipEnrichment />
-        <EnrichedChip type="port" value="110" skipEnrichment />
-        <EnrichedChip type="port" value="123" skipEnrichment />
-        <EnrichedChip type="port" value="143" skipEnrichment />
-        <EnrichedChip type="port" value="194" skipEnrichment />
-        <EnrichedChip type="port" value="389" skipEnrichment />
-        <EnrichedChip type="port" value="443" skipEnrichment />
-        <EnrichedChip type="port" value="464" skipEnrichment />
-        <EnrichedChip type="port" value="465" skipEnrichment />
-        <EnrichedChip type="port" value="546" skipEnrichment />
-        <EnrichedChip type="port" value="547" skipEnrichment />
-        <EnrichedChip type="port" value="554" skipEnrichment />
-        <EnrichedChip type="port" value="587" skipEnrichment />
-        <EnrichedChip type="port" value="631" skipEnrichment />
-        <EnrichedChip type="port" value="636" skipEnrichment />
-        <EnrichedChip type="port" value="691" skipEnrichment />
-        <EnrichedChip type="port" value="860" skipEnrichment />
-        <EnrichedChip type="port" value="989" skipEnrichment />
-        <EnrichedChip type="port" value="990" skipEnrichment />
-        <EnrichedChip type="port" value="993" skipEnrichment />
-        <EnrichedChip type="port" value="995" skipEnrichment />
-        <EnrichedChip type="port" value="3260" skipEnrichment />
-        <EnrichedChip type="port" value="3306" skipEnrichment />
-        <EnrichedChip type="port" value="5432" skipEnrichment />
-        <EnrichedChip type="port" value="8080" skipEnrichment />
-        <EnrichedChip type="port" value="8443" skipEnrichment />
       </Stack>
     </PageCenter>
   );

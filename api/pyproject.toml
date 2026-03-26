@@ -141,7 +141,7 @@ log_cli_level = "WARN"
 [tool.poetry]
 package-mode = true
 name = "clue-api"
-version = "1.4.0"
+version = "1.5.0"
 description = "Clue distributed enrichment service"
 authors = ["Canadian Centre for Cyber Security <contact@cyber.gc.ca>"]
 license = "MIT"
@@ -174,7 +174,7 @@ repository = "https://github.com/CybercentreCanada/clue"
 [tool.poetry.dependencies]
 python = "^3.12"
 elastic-apm = "^6.22.0"
-flask = "<3.0.0"
+flask = "<4.0.0"
 flask-caching = "^2.1.0"
 gunicorn = ">=22,<24"
 gevent = "^24.2.1"
@@ -183,7 +183,7 @@ pydantic-settings = { extras = ["yaml"], version = "^2.3.4" }
 redis = { version = "^5.0.3" }
 beautifulsoup4 = "^4.13.3"
 imgkit = "^1.2.3"
-pillow = "^11.1.0"
+pillow = ">=11.1,<13.0"
 cart = "^1.2.3"
 setuptools = "<79.0.0"
 requests = "^2.32.5"

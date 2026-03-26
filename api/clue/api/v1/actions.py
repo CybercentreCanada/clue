@@ -104,7 +104,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, **kwargs) ->
     task_id (str): the ID of the specific task to get the status of
 
     Arguments:
-    task_id (str): the celery task id to get the status of
+    None
 
 
     Result Example:
