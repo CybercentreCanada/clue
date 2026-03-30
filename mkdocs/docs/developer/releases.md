@@ -7,13 +7,15 @@ The same process applies to both; differences are called out where relevant.
 
 ## 1. Create a release branch
 
-Branch off `develop` using the naming convention `patch/<version>` (e.g. `patch/1.2.4`):
+Branch off `main` using the naming convention `patch/<version>` (e.g. `patch/1.2.4`):
 
 ```bash
-git checkout develop
+git checkout main
 git pull
 git checkout -b patch/1.2.4
 ```
+
+Larger releases must go through `develop`.
 
 ---
 
@@ -55,7 +57,7 @@ chore(docs): add v1.2.4 release notes
 
 ## 4. Open a pull request
 
-Open a PR from `patch/<version>` targeting `develop`.
+Open a PR from `patch/<version>` targeting `main`.
 Title convention: `release: ui@1.2.4` or `release: api@1.2.4`.
 
 - Ensure all CI checks pass.
@@ -65,16 +67,16 @@ Title convention: `release: ui@1.2.4` or `release: api@1.2.4`.
 
 ## 5. Merge the pull request
 
-Merge the PR into `develop` once approved. Prefer a **squash merge** for patch releases to keep the history clean, or a **merge rebase** if individual commits are meaningful.
+Merge the PR into `main` once approved. Prefer a **squash merge** for patch releases to keep the history clean, or a **merge rebase** if individual commits are meaningful.
 
 ---
 
 ## 6. Tag the release commit
 
-After merging, check out and pull `develop`, then tag the merge commit:
+After merging, check out and pull `main`, then tag the merge commit:
 
 ```bash
-git checkout develop
+git checkout main
 git pull
 git tag v1.2.4-ui       # or v1.5.0-api
 git push --tags
