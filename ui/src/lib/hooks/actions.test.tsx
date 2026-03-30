@@ -636,6 +636,26 @@ describe('action functionality', () => {
       });
 
       /**
+       * Test that onUpdate is called immediately when the outcome is 'pending'
+       * The callback should fire after each polling response
+       */
+      it('should call onUpdate immediately when the outcome is pending', async () => {
+        const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'pending', task_id: 'task-123', summary: 'processing...' })
+        );
+
+        vi.mocked(hget).mockImplementationOnce(() => Promise.resolve({ outcome: 'pending', task_id: 'task-123' }));
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onUpdate });
+        });
+
+        expect(onUpdate).toHaveBeenCalled();
+      });
+
+      /**
        * Test that onComplete is called once polling resolves with a success outcome
        * Should receive the final merged result including actionId and done flag
        */
@@ -662,6 +682,29 @@ describe('action functionality', () => {
       });
 
       /**
+       * Test that onUpdate is called at least once before or while onComplete is called with a success outcome
+       * In the case where an action is not asyncronous, we still should call onUpdate with the result of the action
+       */
+      it('should call onUpdate at least once with the result if an action succeeds', async () => {
+        const onComplete = vi.fn();
+        const onUpdate = vi.fn();
+
+        vi.mocked(hget).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'success', summary: 'done', output: { hello: 'world' } })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
+        });
+
+        await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+
+        expect(onUpdate).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: 'success', done: true, actionId: 'example.action' })
+        );
+      });
+
+      /**
        * Test that onComplete is called once polling resolves with a failure outcome
        * Should receive the final merged result including actionId and done flag
        */
@@ -683,6 +726,29 @@ describe('action functionality', () => {
         await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
 
         expect(onComplete).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: 'failure', done: true, actionId: 'example.action' })
+        );
+      });
+
+      /**
+       * Test that onUpdate is called at least once if an action recieves a failure outcome
+       *  In the case where an action is not asyncronous, we still should call onUpdate with the result of the action
+       */
+      it('should call onUpdate with the result at least once when an action fails', async () => {
+        const onComplete = vi.fn();
+        const onUpdate = vi.fn();
+
+        vi.mocked(hget).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'failure', summary: 'something went wrong' })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
+        });
+
+        await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+
+        expect(onUpdate).toHaveBeenCalledWith(
           expect.objectContaining({ outcome: 'failure', done: true, actionId: 'example.action' })
         );
       });

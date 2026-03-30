@@ -66,14 +66,23 @@ export interface ClueActionContextType {
       skipResultModal?: boolean;
 
       /**
-       * Callback for post-execution.
+       * Callback for post-execution. Will be called once the action is fully executed and has an outcome of either
+       * 'success' or 'failure'.
        * @param result
        * @returns The action result
        */
       onComplete?: (result: WithActionData<ActionResult>) => void;
 
       /**
-       * Callback for when the action is cancelled
+       * Callback for intra-execution. will be called everytime the result recieves an update and has a
+       * 'pending', 'success', or 'failure' outcome.
+       * @param result
+       * @returns The action result
+       */
+      onUpdate?: (result: WithActionData<ActionResult>) => void;
+
+      /**
+       * Callback for when the action is cancelled.
        * @returns void
        */
       onCancel?: () => void;
@@ -218,11 +227,22 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
-      const { forceMenu, onComplete, onCancel, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
+      const {
+        forceMenu,
+        onComplete,
+        onUpdate,
+        onCancel,
+        skipMenu,
+        skipResultModal,
+        timeout,
+        includeContext,
+        extraContext
+      } = {
         forceMenu: false,
         skipResultModal: false,
         skipMenu: false,
         onComplete: null,
+        onUpdate: null,
         onCancel: null,
         timeout: null,
         includeContext: defaultIncludeContext ?? false,
@@ -289,6 +309,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           skipResultModal: skipResultModal,
           context,
           onComplete,
+          onUpdate,
           onCancel,
           timeout
         });
@@ -310,6 +331,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         if (actionResult.outcome !== 'pending') {
           onComplete?.(actionResultWithData);
         }
+        onUpdate?.(actionResultWithData);
 
         setActionResults(_results => {
           const keys = selectors.map(value => getHashKey(value.type, value.value, value.classification));
