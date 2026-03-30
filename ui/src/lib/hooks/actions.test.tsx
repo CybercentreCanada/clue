@@ -723,12 +723,16 @@ describe('action functionality', () => {
       });
 
       /**
-       * Test that onUpdate is called at least once before or while onComplete is called with a success outcome
-       * In the case where an action is not asyncronous, we still should call onUpdate with the result of the action
+       * Test that onUpdate is called at each time a response is received, including the final result when onComplete
+       *  is called with a success outcome
        */
-      it('should call onUpdate at least once with the result if an action succeeds', async () => {
+      it('should call onUpdate multiple times with the result if an action succeeds', async () => {
         const onComplete = vi.fn();
         const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'pending', task_id: 'task-123', summary: 'processing...' })
+        );
 
         vi.mocked(hget).mockImplementationOnce(() =>
           Promise.resolve({ outcome: 'success', summary: 'done', output: { hello: 'world' } })
@@ -738,7 +742,10 @@ describe('action functionality', () => {
           await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
         });
 
-        await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+        await waitFor(() => {
+          expect(onComplete).toHaveBeenCalledOnce();
+          expect(onUpdate).toHaveBeenCalledTimes(2);
+        });
 
         expect(onUpdate).toHaveBeenCalledWith(
           expect.objectContaining({ outcome: 'success', done: true, actionId: 'example.action' })
@@ -746,12 +753,16 @@ describe('action functionality', () => {
       });
 
       /**
-       * Test that onUpdate is called at least once if an action recieves a failure outcome
-       *  In the case where an action is not asyncronous, we still should call onUpdate with the result of the action
+       * Test that onUpdate is called at each time a response is received, including the final result when onComplete
+       *  is called with a failure outcome
        */
-      it('should call onUpdate with the result at least once when an action fails', async () => {
+      it('should call onUpdate with the result multiple times when an action fails', async () => {
         const onComplete = vi.fn();
         const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'pending', task_id: 'task-123', summary: 'processing...' })
+        );
 
         vi.mocked(hget).mockImplementationOnce(() =>
           Promise.resolve({ outcome: 'failure', summary: 'something went wrong' })
@@ -761,10 +772,63 @@ describe('action functionality', () => {
           await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
         });
 
-        await waitFor(() => expect(onComplete).toHaveBeenCalledOnce());
+        await waitFor(() => {
+          expect(onComplete).toHaveBeenCalledOnce();
+          expect(onUpdate).toHaveBeenCalledTimes(2);
+        });
 
         expect(onUpdate).toHaveBeenCalledWith(
           expect.objectContaining({ outcome: 'failure', done: true, actionId: 'example.action' })
+        );
+      });
+
+      /**
+       * In the case when the action is not asycronous, onUpdate should be called once when the action succeeds
+       */
+      it('should call onUpdate once with the result if an action succeeds', async () => {
+        const onComplete = vi.fn();
+        const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'success', summary: 'done', output: { hello: 'world' } })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
+        });
+
+        await waitFor(() => {
+          expect(onComplete).toHaveBeenCalledOnce();
+          expect(onUpdate).toHaveBeenCalledOnce();
+        });
+
+        expect(onUpdate).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: 'success', actionId: 'example.action' })
+        );
+      });
+
+      /**
+       * In the case when the action is not asycronous, onUpdate should be called once when the action fails
+       */
+      it('should call onUpdate once with the result if an action fails', async () => {
+        const onComplete = vi.fn();
+        const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({ outcome: 'failure', summary: 'done', output: { hello: 'world' } })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
+        });
+
+        await waitFor(() => {
+          expect(onComplete).toHaveBeenCalledOnce();
+          expect(onUpdate).toHaveBeenCalledOnce();
+        });
+
+        expect(onUpdate).toHaveBeenCalledWith(
+          expect.objectContaining({ outcome: 'failure', actionId: 'example.action' })
         );
       });
     });

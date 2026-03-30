@@ -383,7 +383,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
         }
 
         if (actionResult.outcome === 'pending') {
-          setLastResult({ ...actionResult, actionId, action: actionToRun, onComplete });
+          setLastResult({ ...actionResult, actionId, action: actionToRun, onComplete, onUpdate });
           if (!skipResultModal) {
             setShowResultModal(true);
           }

@@ -38,6 +38,7 @@ export const useActionResult = (resultWithData: WithActionData<ActionResult>, in
       }
 
       setResult(_result);
+      resultWithData?.onUpdate?.({ ...resultWithData, ..._result });
       if (_result.done) {
         resultWithData?.onComplete?.({ ...resultWithData, ..._result });
       } else {
