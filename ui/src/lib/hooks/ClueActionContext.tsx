@@ -328,10 +328,10 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
         const actionResultWithData = { ...actionResult, actionId, action: actionToRun, params: validatedParams };
 
+        onUpdate?.(actionResultWithData);
         if (actionResult.outcome !== 'pending') {
           onComplete?.(actionResultWithData);
         }
-        onUpdate?.(actionResultWithData);
 
         setActionResults(_results => {
           const keys = selectors.map(value => getHashKey(value.type, value.value, value.classification));
