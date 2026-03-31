@@ -83,7 +83,7 @@ const ActionForm: FC<{
       }
 
       if (runningActionData?.onUpdate) {
-        options.onComplete = runningActionData?.onUpdate;
+        options.onUpdate = runningActionData?.onUpdate;
       }
 
       if (runningActionData?.timeout) {
