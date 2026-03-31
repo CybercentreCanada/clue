@@ -1,5 +1,9 @@
 # Clue UI Release Notes
 
+## `v1.2.6`
+
+- **onUpdate handler for actions** *(bugfix)*: The `onUpdate` callback was not included in the action options when executing the action from the form.
+
 ## `v1.2.5`
 
 - **onUpdate handler for actions** *(feature)*: Add `onUpdate` callback function to the executeAction hook for monitoring the progress of long-running actions.
