@@ -6,7 +6,7 @@ RUN passwd -l root
 
 # Upgrade packages and get required packages
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends libffi8 && \
+    apt-get install -y --no-install-recommends libffi8=3.4.8-2 && \
     rm -rf /var/lib/apt/lists/*
 
 
@@ -17,7 +17,7 @@ WORKDIR /install
 
 # Install poetry additional libraries, add poetry
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential libffi-dev libssl-dev && \
+    apt-get install -y --no-install-recommends build-essential=12.12 libffi-dev=3.4.8-2 libssl-dev=3.5.4-1~deb13u2 && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --no-warn-script-location poetry==2.2.1
 
@@ -35,7 +35,7 @@ FROM base AS release
 
 # create local user
 ARG UID=1000
-RUN useradd -m -s /bin/sh -u $UID clue
+RUN useradd -lm -s /bin/sh -u $UID clue
 
 # install app
 USER clue
