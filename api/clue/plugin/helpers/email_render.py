@@ -266,7 +266,8 @@ def process_eml(data, output_dir, load_images=False, mode="simplified"):  # noqa
                     <html>
                     <body style="background-color: #ffebee; padding: 20px; text-align: center;">
                         <h2 style="color: #c62828;">Component Too Large / Composant trop volumineux</h2>
-                        <p>This image exceeds the maximum allowed size and cannot be displayed. / Ce fichier joint dépasse la taille maximale autorisée et ne peut pas être affiché. </p>
+                        <p>This image exceeds the maximum allowed size and cannot be displayed. /
+                        Ce fichier joint dépasse la taille maximale autorisée et ne peut pas être affiché. </p>
                     </body>
                     </html>
                     """
