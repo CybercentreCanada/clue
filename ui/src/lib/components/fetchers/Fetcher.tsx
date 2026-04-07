@@ -104,7 +104,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
           setLoading(true);
           setResult(await fetchSelector(fetcherId, { type, value, classification }));
         } catch {
-          setResult({ outcome: 'failure', done: true, error: t('fetcher.error.unexpected') });
+          setResult({ outcome: 'failure', done: true, error: t('error.unexpected') });
         } finally {
           setLoading(false);
         }

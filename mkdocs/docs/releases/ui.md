@@ -1,5 +1,14 @@
 # Clue UI Release Notes
 
+## `v1.2.5`
+
+- **onUpdate handler for actions** *(feature)*: Add `onUpdate` callback function to the executeAction hook for monitoring the progress of long-running actions.
+
+## `v1.2.4`
+
+- **Async Action `onComplete` Callback** *(bugfix)*: The `onComplete` callback passed to `executeAction` is now correctly deferred for async (`pending`) actions and is called once the action resolves via polling, rather than being silently dropped.
+- **Duplicate Key in `executeAction`** *(bugfix)*: Fixed a duplicate key issue in the `executeAction` implementation.
+
 ## `v1.2.3`
 
 - **Fetcher Error Handling** *(bugfix)*: Fetcher components now display a localized error message when the fetch request throws an unexpected exception, instead of throw an uncaught exception.
