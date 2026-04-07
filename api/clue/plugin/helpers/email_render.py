@@ -108,11 +108,15 @@ def _render_simplified_part(payload: str, output_path: str, imgkit_options: dict
     </body>
     </html>
     """
-    probe_path = NamedTemporaryFile(suffix=".jpeg").name
-    imgkit.from_string(probe_html, probe_path, options=imgkit_options)
-    with Image.open(probe_path) as probe_img:
-        probe_width = probe_img.size[0]
-    os.remove(probe_path)
+    probe_fd, probe_path = tempfile.mkstemp(suffix=".jpeg")
+    os.close(probe_fd)
+    try:
+        imgkit.from_string(probe_html, probe_path, options=imgkit_options)
+        with Image.open(probe_path) as probe_img:
+            probe_width = probe_img.size[0]
+    finally:
+        if os.path.exists(probe_path):
+            os.remove(probe_path)
 
     overflows = probe_width > viewport_width
     if overflows:
@@ -126,7 +130,6 @@ def _render_simplified_part(payload: str, output_path: str, imgkit_options: dict
         "<div style='color: red; font-size: 24px;'><b>[Content truncated / Contenu tronqué]</b></div>"
         "<div style='color: red; font-size: 12px;'>Use 'Full' mode to see full content / "
         "Utilisez le mode &laquo; Full &raquo; pour afficher l'intégralité du contenu</div>"
-        "<div />"
         if overflows
         else ""
     )
@@ -257,8 +260,10 @@ def process_eml(data, output_dir, load_images=False, mode="simplified"):  # noqa
             opened_images = []
             for image_path in images_list:
                 try:
-                    img = Image.open(image_path)
-                    opened_images.append(img.convert("RGB") if img.mode != "RGB" else img)
+                    with Image.open(image_path) as img:
+                        # Force load and convert to RGB to catch decompression bombs
+                        rgb_img = img.convert("RGB")
+                        opened_images.append(rgb_img)
                 except Image.DecompressionBombError:
                     logger.warning(f"Image too large (decompression bomb): {image_path}. Creating placeholder.")
                     # Create a placeholder HTML message
@@ -274,10 +279,11 @@ def process_eml(data, output_dir, load_images=False, mode="simplified"):  # noqa
                     try:
                         placeholder_path = NamedTemporaryFile(suffix=".jpeg", delete=False).name
                         imgkit.from_string(placeholder_html, placeholder_path, options=imgkit_options)
-                        placeholder_img = Image.open(placeholder_path)
-                        opened_images.append(
-                            placeholder_img.convert("RGB") if placeholder_img.mode != "RGB" else placeholder_img
-                        )
+                        with Image.open(placeholder_path) as placeholder_img:
+                            # Force load and convert to RGB
+                            rgb_placeholder = placeholder_img.convert("RGB")
+                            opened_images.append(rgb_placeholder)
+                        # Clean up after image is closed
                         os.remove(placeholder_path)
                     except Exception:
                         logger.exception("Failed to create placeholder image")
