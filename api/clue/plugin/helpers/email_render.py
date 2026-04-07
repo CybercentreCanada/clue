@@ -93,7 +93,81 @@ def filter_elements(payload: str) -> str:
     return cast(str, soup.prettify())
 
 
-def process_eml(data, output_dir, load_images=False):  # noqa: C901
+def _render_simplified_part(payload: str, output_path: str, imgkit_options: dict, viewport_width: int) -> None:
+    "Render a text MIME part in simplified mode: no word-wrap, overflow clipped, with a truncation badge if needed."
+    probe_html = f"""
+    <html>
+    <head>
+    <style>
+        body * {{ white-space: nowrap !important; word-wrap: normal !important;
+                  word-break: normal !important; }}
+    </style>
+    </head>
+    <body>
+        {payload}
+    </body>
+    </html>
+    """
+    probe_path = NamedTemporaryFile(suffix=".jpeg").name
+    imgkit.from_string(probe_html, probe_path, options=imgkit_options)
+    with Image.open(probe_path) as probe_img:
+        probe_width = probe_img.size[0]
+    os.remove(probe_path)
+
+    overflows = probe_width > viewport_width
+    if overflows:
+        logger.warning(
+            "Payload overflowed viewport (%dpx > %dpx), adding truncation indicator",
+            probe_width,
+            viewport_width,
+        )
+    truncation_open = (
+        "<div style='border: 2px dashed red; padding: 4px;'>"
+        "<div style='color: red; font-size: 24px;'><b>[Content truncated / Contenu tronqué]</b></div>"
+        "<div style='color: red; font-size: 12px;'>Use 'Full' mode to see full content / "
+        "Utilisez le mode &laquo; Full &raquo; pour afficher l'intégralité du contenu</div>"
+        "<div />"
+        if overflows
+        else ""
+    )
+    truncation_close = "</div>" if overflows else ""
+    final_html = f"""
+    <html>
+    <head>
+    <style>
+        body * {{ max-width: {viewport_width}px !important; overflow: hidden !important;
+                  white-space: nowrap !important; word-wrap: normal !important;
+                  word-break: normal !important; }}
+    </style>
+    </head>
+    <body style="max-width: {viewport_width}px; overflow: hidden;">
+        {truncation_open}
+        {payload}
+        {truncation_close}
+    </body>
+    </html>
+    """
+    imgkit.from_string(final_html, output_path, options=imgkit_options)
+
+
+def _render_full_part(payload: str, output_path: str, imgkit_options: dict, viewport_width: int) -> None:
+    "Render a text MIME part in full mode: word-wrap enabled, no clipping."
+    html = f"""
+    <html>
+    <head>
+    <style>
+        body * {{ max-width: {viewport_width}px; word-wrap: break-word; }}
+    </style>
+    </head>
+    <body style="max-width: {viewport_width}px;">
+        {payload}
+    </body>
+    </html>
+    """
+    imgkit.from_string(html, output_path, options=imgkit_options)
+
+
+def process_eml(data, output_dir, load_images=False, mode="simplified"):  # noqa: C901
     "Process the email (bytes), extract MIME parts and useful headers. Generate a JPEG picture of the mail"
     logger.debug("Beginning eml processing")
 
@@ -105,7 +179,8 @@ def process_eml(data, output_dir, load_images=False):  # noqa: C901
         subject_field = get_header_data(msg, "Subject")
         id_field = get_header_data(msg, "Message-Id")
 
-        imgkit_options = {"load-error-handling": "skip", "no-images": None}
+        viewport_width = 2048
+        imgkit_options = {"load-error-handling": "skip", "no-images": None, "width": viewport_width}
 
         images_list = []
 
@@ -155,7 +230,10 @@ def process_eml(data, output_dir, load_images=False):  # noqa: C901
 
                 try:
                     payload_path = NamedTemporaryFile(suffix=".jpeg").name
-                    imgkit.from_string(payload, payload_path, options=imgkit_options)
+                    if mode == "simplified":
+                        _render_simplified_part(payload, payload_path, imgkit_options, viewport_width)
+                    else:
+                        _render_full_part(payload, payload_path, imgkit_options, viewport_width)
                     logger.info("Decoded %s" % payload_path)
                     images_list.append(payload_path)
                 except Exception as e:
@@ -175,8 +253,36 @@ def process_eml(data, output_dir, load_images=False):  # noqa: C901
 
         result_image = os.path.join(output_dir, "output.jpeg")
         if len(images_list) > 0:
-            images = [img.convert("RGB") if img.mode != "RGB" else img for img in map(Image.open, images_list)]
-            combo = append_images(images)
+            # Open images with decompression bomb protection
+            opened_images = []
+            for image_path in images_list:
+                try:
+                    img = Image.open(image_path)
+                    opened_images.append(img.convert("RGB") if img.mode != "RGB" else img)
+                except Image.DecompressionBombError:
+                    logger.warning(f"Image too large (decompression bomb): {image_path}. Creating placeholder.")
+                    # Create a placeholder HTML message
+                    placeholder_html = """
+                    <html>
+                    <body style="background-color: #ffebee; padding: 20px; text-align: center;">
+                        <h2 style="color: #c62828;">Component Too Large / Composant trop volumineux</h2>
+                        <p>This image exceeds the maximum allowed size and cannot be displayed. / Ce fichier joint dépasse la taille maximale autorisée et ne peut pas être affiché. </p>
+                    </body>
+                    </html>
+                    """
+                    try:
+                        placeholder_path = NamedTemporaryFile(suffix=".jpeg", delete=False).name
+                        imgkit.from_string(placeholder_html, placeholder_path, options=imgkit_options)
+                        placeholder_img = Image.open(placeholder_path)
+                        opened_images.append(
+                            placeholder_img.convert("RGB") if placeholder_img.mode != "RGB" else placeholder_img
+                        )
+                        os.remove(placeholder_path)
+                    except Exception:
+                        logger.exception("Failed to create placeholder image")
+                        # Continue without this image
+
+            combo = append_images(opened_images)
             combo.save(result_image)
             # Clean up temporary images
             for i in images_list:
@@ -189,7 +295,7 @@ def process_eml(data, output_dir, load_images=False):  # noqa: C901
         raise ClueException("Error when processing email") from e
 
 
-def render(email_path: str, cart_buffer: io.BytesIO) -> ImageResult | None:
+def render(email_path: str, cart_buffer: io.BytesIO, mode: str = "simplified") -> ImageResult | None:
     "Helper function that, given a buffer containing a carted email, returns an image rendering of it."
     cart_buffer.seek(0)
     buf = io.BytesIO()
@@ -203,6 +309,7 @@ def render(email_path: str, cart_buffer: io.BytesIO) -> ImageResult | None:
         process_eml(
             buf.read(),
             tmp_dir,
+            mode=mode,
         )
 
         error = None
