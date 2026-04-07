@@ -110,21 +110,35 @@ def _render_simplified_part(payload: str, output_path: str, imgkit_options: dict
     """
     probe_fd, probe_path = tempfile.mkstemp(suffix=".jpeg")
     os.close(probe_fd)
+    probe_width: int | None = None
+    overflows = False
     try:
         imgkit.from_string(probe_html, probe_path, options=imgkit_options)
-        with Image.open(probe_path) as probe_img:
-            probe_width = probe_img.size[0]
+        try:
+            with Image.open(probe_path) as probe_img:
+                probe_width = probe_img.size[0]
+        except Image.DecompressionBombError:
+            logger.warning(
+                "Probe image exceeded PIL decompression-bomb limits; treating payload as overflowed",
+            )
+            overflows = True
     finally:
         if os.path.exists(probe_path):
             os.remove(probe_path)
 
-    overflows = probe_width > viewport_width
+    if probe_width is not None:
+        overflows = probe_width > viewport_width
     if overflows:
-        logger.warning(
-            "Payload overflowed viewport (%dpx > %dpx), adding truncation indicator",
-            probe_width,
-            viewport_width,
-        )
+        if probe_width is not None:
+            logger.warning(
+                "Payload overflowed viewport (%dpx > %dpx), adding truncation indicator",
+                probe_width,
+                viewport_width,
+            )
+        else:
+            logger.warning(
+                "Payload may overflow viewport; adding truncation indicator",
+            )
     truncation_open = (
         "<div style='border: 2px dashed red; padding: 4px;'>"
         "<div style='color: red; font-size: 24px;'><b>[Content truncated / Contenu tronqué]</b></div>"
