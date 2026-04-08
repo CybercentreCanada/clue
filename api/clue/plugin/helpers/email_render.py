@@ -291,14 +291,17 @@ def process_eml(data, output_dir, load_images=False, mode="simplified"):  # noqa
                     </html>
                     """
                     try:
-                        placeholder_path = NamedTemporaryFile(suffix=".jpeg", delete=False).name
-                        imgkit.from_string(placeholder_html, placeholder_path, options=imgkit_options)
-                        with Image.open(placeholder_path) as placeholder_img:
-                            # Force load and convert to RGB
-                            rgb_placeholder = placeholder_img.convert("RGB")
-                            opened_images.append(rgb_placeholder)
-                        # Clean up after image is closed
-                        os.remove(placeholder_path)
+                        placeholder_fd, placeholder_path = tempfile.mkstemp(suffix=".jpeg")
+                        os.close(placeholder_fd)
+                        try:
+                            imgkit.from_string(placeholder_html, placeholder_path, options=imgkit_options)
+                            with Image.open(placeholder_path) as placeholder_img:
+                                # Force load and convert to RGB
+                                rgb_placeholder = placeholder_img.convert("RGB")
+                                opened_images.append(rgb_placeholder)
+                        finally:
+                            if os.path.exists(placeholder_path):
+                                os.remove(placeholder_path)
                     except Exception:
                         logger.exception("Failed to create placeholder image")
                         # Continue without this image
