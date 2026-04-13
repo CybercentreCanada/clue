@@ -3,9 +3,11 @@ import { addAPIProvider } from '@iconify/react';
 import api from 'api';
 import * as lookup from 'api/lookup';
 import type { AxiosRequestConfig } from 'axios';
+import { REPLICATORS } from 'lib/database/globals';
 import type { SelectorDocType, StatusDocType } from 'lib/database/types';
 import type { EnrichResponse, EnrichResponses, Selector } from 'lib/types/lookup';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
+import { isEmpty } from 'lodash-es';
 import chunk from 'lodash-es/chunk';
 import debounce from 'lodash-es/debounce';
 import groupBy from 'lodash-es/groupBy';
@@ -98,6 +100,21 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseURL, onNetworkCall, skipConfigCall, isReady]);
 
+  useEffect(() => {
+    if (isReady) {
+      Object.values(REPLICATORS).forEach(replicator => {
+        replicator.reSync();
+        replicator.start();
+      });
+    }
+
+    return () => {
+      Object.values(REPLICATORS).forEach(replicator => {
+        replicator.pause();
+      });
+    };
+  }, [isReady]);
+
   const [customIconify, setCustomIconify] = useState(_customIconify);
   useEffect(() => {
     if (_customIconify) {
@@ -131,6 +148,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       for (const entry of entries) {
         const { latency, source, type, value, items, error } = entry;
 
+        await database.selectors.find({ selector: { type, value, source } }).incrementalRemove();
+
         if (error) {
           newRecords.push({
             id: uuid(),
@@ -148,9 +167,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         for (const item of items) {
           const { classification, count, link, annotations } = item;
 
-          await database.selectors.find({ selector: { type, value, source, classification } }).incrementalRemove();
-
-          const record = {
+          const record: SelectorDocType = {
             id: uuid(),
             source,
             type,
@@ -219,7 +236,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         classification: options.classification
       };
 
-      let statusRecord = await database.status?.findOne({ selector: { ...selector } }).exec();
+      let statusRecord = await database.status.findOne({ selector: { ...selector } }).exec();
 
       if (!statusRecord) {
         statusRecord = await database.status?.insert({
@@ -466,12 +483,12 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   );
 
   useEffect(() => {
-    if (!database || import.meta.env.PROD) {
+    if (!database || import.meta.env.PROD || !database.status || database.status.closed) {
       return;
     }
 
     const observer = database.status
-      .count({ selector: { $or: [{ status: 'pending' }, { status: 'in-progress' }] } })
+      ?.count({ selector: { $or: [{ status: 'pending' }, { status: 'in-progress' }] } })
       .$.subscribe(count => clueDebugLogger(`Outstanding requests: ${count}`, debugLogging));
 
     return () => {
@@ -579,7 +596,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       setDefaultClassification,
       setReady: setIsReady,
       defaultClassification,
-      ready: isReady && !!database && !!clueConfig.config?.c12nDef
+      ready:
+        isReady && !!database && !!clueConfig.config?.c12nDef && (isEmpty(REPLICATORS) || database.selectors?.synced)
     }),
     [
       bulkEnrich,

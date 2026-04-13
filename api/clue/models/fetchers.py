@@ -106,7 +106,10 @@ class FetcherResult(BaseModel, Generic[DATA]):
         description="Did the fetcher succeed or fail, or is it pending?"
     )
     data: DATA | None = Field(description="The output of the fetcher.", default=None)
-    error: str | None = Field(description="If the fetcher failed, contains the relevant error message.", default=None)
+    error: str | None = Field(
+        description="If the fetcher failed, contains the relevant error message.",
+        default=None,
+    )
     format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",

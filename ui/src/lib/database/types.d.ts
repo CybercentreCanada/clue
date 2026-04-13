@@ -1,11 +1,68 @@
 import type { Annotation, Selector, WithExtra } from 'lib/types/lookup';
 import type { RxCollection, RxDatabase, RxDocument } from 'rxdb';
 
+/**
+ * Configuration options for the database.
+ */
 export interface DatabaseConfig {
+  /**
+   * The type of storage mechanism to use for persisting database data.
+   * - `'memory'`: Store data in memory (lost on page refresh)
+   * - `'sessionStorage'`: Store data in browser's sessionStorage (persists during session)
+   *
+   * @default 'memory'
+   */
   storageType?: 'memory' | 'sessionStorage';
+
+  /**
+   * Indicates whether the database is running in testing mode.
+   * When enabled, may apply test-specific configurations or disable certain features.
+   *
+   * @default false
+   */
   testing?: boolean;
+
+  /**
+   * Indicates whether the database is running in development mode.
+   * When enabled, provides additional logging and debugging capabilities.
+   *
+   * @default false
+   */
   devMode?: boolean;
+
+  /**
+   * Enables data replication to a remote server.
+   * When enabled, database changes are synchronized with the remote storage.
+   *
+   * @default false
+   */
+  replicate?: boolean;
+
+  /**
+   * The base URL of the clue API server used for replication and remote operations.
+   *
+   * @example 'https://api.clue.example.com'
+   */
+  baseURL?: string;
+
+  /**
+   * Add modify the Axios request configuration before the request is sent
+   *
+   * @param config The existing axios request config
+   */
+  onNetworkCall?: (config: AxiosRequestConfig) => AxiosRequestConfig;
+
+  /**
+   * Get an access token for the clue API. Used during replication.
+   *
+   * @returns An access token valid for use with the clue API.
+   */
+  getToken?: () => string;
 }
+
+export type WithLastUpdated<T> = T & {
+  updated_at: number;
+};
 
 export interface SelectorDocType {
   id: string;

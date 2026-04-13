@@ -75,7 +75,12 @@ def enrich(*args):
                 ubiquitous=True,
             ),
         ],
-        raw_data=[{"classification": os.environ.get("CLASSIFICATION", "TLP:CLEAR"), "data": '{"test": "raw data"}'}],
+        raw_data=[
+            {
+                "classification": os.environ.get("CLASSIFICATION", "TLP:CLEAR"),
+                "data": '{"test": "raw data"}',
+            }
+        ],
     )
 
 
@@ -186,20 +191,34 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
             )
         else:
             return ActionResult(
-                outcome="success", summary="We don't got a value", format="json", output={"value": None}
+                outcome="success",
+                summary="We don't got a value",
+                format="json",
+                output={"value": None},
             )
 
     if not isinstance(request, Params):
         return ActionResult(
-            outcome="failure", summary="Invalid action request type", format="json", output={"value": None}
+            outcome="failure",
+            summary="Invalid action request type",
+            format="json",
+            output={"value": None},
         )
 
     if request.choice == "c":
-        return ActionResult(outcome="failure", summary="We don't got a value", format="json", output={"value": None})
+        return ActionResult(
+            outcome="failure",
+            summary="We don't got a value",
+            format="json",
+            output={"value": None},
+        )
 
     if request.other_value:
         return ActionResult(
-            outcome="success", summary="We got a param value", format="json", output={"value": request.other_value}
+            outcome="success",
+            summary="We got a param value",
+            format="json",
+            output={"value": request.other_value},
         )
 
     if request.selector:
@@ -218,7 +237,12 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
             output={"values": [val.value for val in request.selectors]},
         )
 
-    return ActionResult(outcome="failure", summary="We don't got a value", format="json", output={"value": None})
+    return ActionResult(
+        outcome="failure",
+        summary="We don't got a value",
+        format="json",
+        output={"value": None},
+    )
 
 
 def get_action_status(action: Action, request: ActionStatusRequest, access_token: str | None) -> ActionResult:
@@ -231,8 +255,18 @@ def get_action_status(action: Action, request: ActionStatusRequest, access_token
                 format="json",
                 output={"status": "done"},
             )
-        return ActionResult(outcome="failure", summary="Bad task id", format="json", output={"value": None})
-    return ActionResult(outcome="failure", summary="Unsupported action id", format="json", output={"value": None})
+        return ActionResult(
+            outcome="failure",
+            summary="Bad task id",
+            format="json",
+            output={"value": None},
+        )
+    return ActionResult(
+        outcome="failure",
+        summary="Unsupported action id",
+        format="json",
+        output={"value": None},
+    )
 
 
 def setup_actions(*args, **kwargs):
@@ -309,7 +343,11 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
         return FetcherResult(outcome="success", format="json", data={"potato": "test"})
 
     if fetcher.id == "graph":
-        return FetcherResult(outcome="success", format="graph", data=GraphResult.model_validate(PROCESS_TREE))
+        return FetcherResult(
+            outcome="success",
+            format="graph",
+            data=GraphResult.model_validate(PROCESS_TREE),
+        )
 
     if fetcher.id == "file":
         return FetcherResult(
@@ -339,7 +377,9 @@ def run_fetcher(fetcher: FetcherDefinition, selector: Selector, access_token: st
         return FetcherResult(outcome="pending", task_id=TASK_ID)
 
     return FetcherResult(
-        outcome="success", format="image", data=ImageResult(image="https://example.com", alt="Alt Text")
+        outcome="success",
+        format="image",
+        data=ImageResult(image="https://example.com", alt="Alt Text"),
     )
 
 
