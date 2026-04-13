@@ -1,6 +1,6 @@
 {
   "action.available": "Available Actions",
-  "action.data": "Action Data",
+  "action.parameters": "Action parameters",
   "actions.execute": "Execute",
   "actions.execute.menu": "Execute with options",
   "actions.executing": "Executing",
