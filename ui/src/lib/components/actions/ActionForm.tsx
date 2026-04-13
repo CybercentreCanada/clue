@@ -106,6 +106,7 @@ const ActionForm: FC<{
     runningActionData?.id,
     runningActionData?.selectors,
     runningActionData?.onComplete,
+    runningActionData?.onUpdate,
     runningActionData?.timeout,
     runningActionData?.skipResultModal,
     formData
