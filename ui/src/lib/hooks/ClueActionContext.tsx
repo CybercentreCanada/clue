@@ -378,18 +378,14 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           })
         );
 
-        if (actionResult.outcome === 'success') {
-          setRunningActionData(null);
-        }
+        setRunningActionData(null);
 
         if (actionResult.outcome === 'pending') {
           setLastResult({ ...actionResult, actionId, action: actionToRun, onComplete, onUpdate });
           if (!skipResultModal) {
             setShowResultModal(true);
           }
-          setRunningActionData(null);
         }
-
         if (actionResult.format) {
           setLastResult({ ...actionResult, actionId, action: actionToRun });
           if (actionResult.format !== 'pivot' && !skipResultModal) {
