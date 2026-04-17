@@ -290,7 +290,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       for (const selector of bulkRequest) {
         const query = { type: selector.type, value: selector.value, classification: options.classification };
         let statusRecord = await database.status
-          .findOne({
+          ?.findOne({
             selector: query
           })
           .incrementalPatch({
@@ -298,7 +298,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
           });
 
         if (!statusRecord) {
-          statusRecord = await database.status.insert({
+          statusRecord = await database.status?.insert({
             id: uuid(),
             ...query,
             status: 'in-progress',
@@ -306,7 +306,9 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
           });
         }
 
-        statuses.push(statusRecord.toMutableJSON());
+        if (statusRecord) {
+          statuses.push(statusRecord.toMutableJSON());
+        }
       }
 
       try {
@@ -518,16 +520,21 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         throw new Error('Value cannot be null');
       }
 
+      if (!database.status || database.status.closed) {
+        console.warn('status collection is closed');
+        return;
+      }
+
       const query = { type, value, classification: classification ?? defaultClassification };
 
       let statusRecord = await database.status
-        .findOne({
+        ?.findOne({
           selector: query
         })
         .exec();
 
       if (!statusRecord) {
-        statusRecord = await database.status.queueInsert({
+        statusRecord = await database.status?.queueInsert({
           id: uuid(),
           ...query,
           status: 'pending'
