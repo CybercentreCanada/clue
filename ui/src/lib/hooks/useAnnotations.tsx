@@ -57,7 +57,7 @@ const useAnnotations = (
       return;
     }
 
-    if (database?.status.closed) {
+    if (database.status.closed) {
       // eslint-disable-next-line no-console
       console.warn('Status collection is closed');
       return;
@@ -74,12 +74,12 @@ const useAnnotations = (
   }, [classification, database, ready, type, value]);
 
   useEffect(() => {
-    if (skipEnrichment || availableSources.length < 1 || !ready) {
+    if (skipEnrichment || availableSources.length < 1 || !ready || !database?.status || database.status.closed) {
       return;
     }
 
     queueEnrich(type, value, classification);
-  }, [availableSources.length, classification, queueEnrich, ready, skipEnrichment, type, value]);
+  }, [availableSources.length, classification, database?.status, queueEnrich, ready, skipEnrichment, type, value]);
 
   useEffect(() => {
     // Fetch and update annotations in real-time using RxDB observables
