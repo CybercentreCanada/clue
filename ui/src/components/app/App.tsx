@@ -28,6 +28,8 @@ import Home from 'components/routes/home';
 import Settings from 'components/routes/settings/Settings';
 import type { SnackbarEvents } from 'lib/data/event';
 import { SNACKBAR_EVENT_ID } from 'lib/data/event';
+import buildDatabase from 'lib/database';
+import type { ClueDatabase } from 'lib/database/types';
 import { ClueActionProvider } from 'lib/hooks/ClueActionContext';
 import { ClueComponentProvider } from 'lib/hooks/ClueComponentContext';
 import { ClueConfigProvider } from 'lib/hooks/ClueConfigProvider';
@@ -43,7 +45,7 @@ import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
 import * as monaco from 'monaco-editor';
 import type { FC, PropsWithChildren } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
 import { BrowserRouter, Route } from 'react-router-dom';
 import AppContainer from './AppContainer';
@@ -147,38 +149,48 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
   const mySitemap: AppSiteMapConfigs = useMySitemap();
   const myUser: AppUserService<ClueUser> = useMyUser();
 
-  const databaseConfig = useMemo(() => ({ storageType: 'memory' as const }), []);
+  const { config } = useClueConfig();
+
+  const [database, setDatabase] = useState<ClueDatabase>(null);
+
+  useEffect(() => {
+    if (!config?.configuration?.ui) {
+      return;
+    }
+
+    buildDatabase({ storageType: 'memory', replicate: config?.configuration?.ui.replicate }).then(setDatabase);
+  }, [config?.configuration?.ui]);
 
   return (
-    <ClueConfigProvider>
-      <ClueComponentProvider>
-        <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
-          <ModalProvider>
-            <LocalStorageProvider>
-              <ClueDatabaseProvider databaseConfig={databaseConfig}>
-                <ClueEnrichProvider publicIconify={false} skipConfigCall classification="TLP:CLEAR">
-                  <ClueFetcherProvider>
-                    <ClueActionProvider>
-                      <CluePopupProvider>{children}</CluePopupProvider>
-                    </ClueActionProvider>
-                  </ClueFetcherProvider>
-                </ClueEnrichProvider>
-              </ClueDatabaseProvider>
-            </LocalStorageProvider>
-          </ModalProvider>
-        </AppProvider>
-      </ClueComponentProvider>
-    </ClueConfigProvider>
+    <ClueComponentProvider>
+      <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
+        <ModalProvider>
+          <LocalStorageProvider>
+            <ClueDatabaseProvider database={database}>
+              <ClueEnrichProvider publicIconify={false} enabled={!!database} skipConfigCall classification="TLP:CLEAR">
+                <ClueFetcherProvider>
+                  <ClueActionProvider>
+                    <CluePopupProvider>{children}</CluePopupProvider>
+                  </ClueActionProvider>
+                </ClueFetcherProvider>
+              </ClueEnrichProvider>
+            </ClueDatabaseProvider>
+          </LocalStorageProvider>
+        </ModalProvider>
+      </AppProvider>
+    </ClueComponentProvider>
   );
 };
 
 const App: FC = () => {
   return (
     <BrowserRouter>
-      <MyAppProvider>
-        <MyApp />
-        <Modal />
-      </MyAppProvider>
+      <ClueConfigProvider>
+        <MyAppProvider>
+          <MyApp />
+          <Modal />
+        </MyAppProvider>
+      </ClueConfigProvider>
     </BrowserRouter>
   );
 };
