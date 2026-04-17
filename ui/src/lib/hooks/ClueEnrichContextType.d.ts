@@ -77,7 +77,7 @@ export interface ClueEnrichContextType {
    * @param classification An optional indicator-specific classification
    * @returns a list of enrichment results for the given type and value
    */
-  queueEnrich: (type: string, value: string, classification?: string) => Promise<StatusDocument>;
+  queueEnrich: (type: string, value: string, classification?: string) => Promise<StatusDocument | null>;
 
   /**
    * A set of regexes applications can use for detecting the clue type of a given string
