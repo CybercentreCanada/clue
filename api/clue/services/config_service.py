@@ -29,10 +29,7 @@ def get_configuration():
                 "branch": get_branch(),
                 "commit": get_commit(),
             },
-            "ui": {
-                "apps": apps,
-                "cors_origins": config.ui.cors_origins,
-            },
+            "ui": {"apps": apps, "cors_origins": config.ui.cors_origins, "replicate": config.ui.replication},
         },
         "c12nDef": classification_definition,
     }
