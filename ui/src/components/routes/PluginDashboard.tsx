@@ -161,7 +161,7 @@ const PluginDashboard = () => {
   const getDocumentationTitle = (pluginName: string) => {
     const plugin = pluginName.split('-docs')[0].slice(0);
     return plugin
-      .split('-')
+      .split(/[-_]/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
