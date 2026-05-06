@@ -148,8 +148,7 @@ const PluginDashboard = () => {
 
   const getActivityStatus = (pluginName: string) => {
     const plugin = pluginName.split('-docs')[0].slice(0);
-
-    const activeStatus = availableSources.find(source => source.includes(plugin));
+    const activeStatus = availableSources.find(source => plugin.includes(source));
 
     return activeStatus ? (
       <Chip label="Active" variant="outlined" size="small" color="success" />
