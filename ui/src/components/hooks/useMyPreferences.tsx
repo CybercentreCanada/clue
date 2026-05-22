@@ -1,4 +1,5 @@
 import {
+  AccountTree,
   Code,
   Dashboard,
   Description,
@@ -95,6 +96,15 @@ const useMyPreferences = (): AppPreferenceConfigs => {
             i18nKey: 'route.actions',
             route: '/actions',
             icon: <PlayArrowOutlined />
+          }
+        },
+        {
+          type: 'item',
+          element: {
+            id: 'builder',
+            i18nKey: 'route.builder',
+            route: '/builder',
+            icon: <AccountTree />
           }
         },
         {

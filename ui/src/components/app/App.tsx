@@ -18,6 +18,7 @@ import LoginScreen from 'components/logins/Login';
 import useLogin from 'components/logins/hooks/useLogin';
 import NotFoundPage from 'components/routes/404';
 import Actions from 'components/routes/Actions';
+import Builder from 'components/routes/Builder';
 import Contributing from 'components/routes/Contributing';
 import Documentation from 'components/routes/Documentation';
 import Fetchers from 'components/routes/Fetchers';
@@ -133,6 +134,7 @@ const MyApp: FC = () => {
         <Route path="examples" element={<Examples />} />
         <Route path="fetchers" element={<Fetchers />} />
         <Route path="actions" element={<Actions />} />
+        <Route path="builder" element={<Builder />} />
         <Route path="settings" element={<Settings />} />
         <Route path="help" element={<PluginDashboard />} />
         <Route path="help/contributing" element={<Contributing />} />
