@@ -362,6 +362,7 @@ class QueryEntry(BaseModel):
             examples=sample(sorted(CLASSIFICATION.list_all_classification_combinations()), k=5),
         ),
     ] = "TLP:CLEAR"
+
     count: Annotated[
         int,
         Field(
@@ -369,14 +370,17 @@ class QueryEntry(BaseModel):
             examples=sorted([floor(i / 10) for i in randbytes(5)]),  # noqa: S311
         ),
     ] = 1
+
     link: Annotated[
         Optional[Url],
         Field(description="Link to more information", examples=[Url("https://example.com/moreinfo"), None]),
     ] = None
+
     annotations: Annotated[
         list[Annotation],
         Field(description="A list of annotations returned from the service for this entry"),
     ] = []
+
     raw_data: Annotated[
         Any,
         Field(
@@ -387,7 +391,7 @@ class QueryEntry(BaseModel):
 
     expiry: Annotated[
         datetime | None, Field(description="When should this record expire?", default_factory=generate_expiry)
-    ]
+    ] = None
 
     model_config = ConfigDict(validate_assignment=True)
 

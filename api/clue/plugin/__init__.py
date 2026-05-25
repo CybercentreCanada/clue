@@ -18,7 +18,6 @@ from pydantic_core import PydanticSerializationError
 
 from clue.cache import Cache
 from clue.common.exceptions import (
-    AuthenticationException,
     ClueException,
     ClueValueError,
     InvalidDataException,
@@ -515,34 +514,6 @@ class CluePlugin:
 
         self.logger.debug("Initialization complete!")
 
-    def __check_actions(self) -> list[Action] | None:
-        """Validate token and retrieve dynamic actions if setup_actions is configured.
-
-        This method handles token validation when required and calls the setup_actions
-        function to get a potentially user-specific or dynamically generated list of actions.
-
-        Returns:
-            list[Action] | None: List of actions if setup_actions is configured, None otherwise
-
-        Raises:
-            AuthenticationException: If token validation fails
-        """
-        if self.setup_actions:
-            # Validate token if token validation is configured
-            if self.validate_token:
-                token, error = self.validate_token()
-
-                if error:
-                    self.logger.error("Error on token validation: %s", error)
-                    raise AuthenticationException(error)
-            else:
-                token = None
-
-            # Call user-defined setup_actions with base actions and validated token
-            return self.setup_actions(self.actions or [], token)
-
-        return None
-
     def __init_apm(self):
         """Initialize Application Performance Monitoring (APM) using Elastic APM.
 
@@ -790,6 +761,99 @@ class CluePlugin:
             status_code,
         )
 
+    def _resolve_token(self: Self, context: str | None = None) -> tuple[str | None, Response | None]:
+        """Call the plugin's validate_token function and return the token, or an error response.
+
+        Args:
+            context: Optional name of the calling endpoint (e.g. "action", "fetcher") used
+                     in the warning message when no validator is configured.
+
+        Returns:
+            tuple[str | None, Response | None]: ``(token, None)`` on success,
+                or ``(None, error_response)`` when validation fails or raises.
+        """
+        if not self.validate_token:
+            if context:
+                self.logger.warning(
+                    "No token validator provided. The access token will not be provided to the %s.", context
+                )
+            else:
+                self.logger.warning("No token validator provided")
+            return None, None
+
+        self.logger.debug("Executing plugin-provided token validator")
+        try:
+            token, error = self.validate_token()
+        except Exception as e:
+            self.logger.exception("Catastrophic error in validate_token")
+            return None, self.make_api_response(None, f"Something went wrong: {e}", 500)
+
+        if error:
+            return None, self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
+
+        self.logger.debug("Token is valid")
+        return token, None
+
+    def _call_plugin_func(self: Self, func: Callable, *args: Any, **kwargs: Any) -> tuple[Any, Response | None]:
+        """Call a plugin-provided function with standard enrichment exception handling.
+
+        Maps the well-known Clue exceptions to their corresponding HTTP responses and
+        catches any other exception as a 500. Intended for ``enrich`` and
+        ``alternate_bulk_lookup`` calls.
+
+        Args:
+            func: The plugin function to call.
+            *args: Positional arguments forwarded to the function.
+            **kwargs: Keyword arguments forwarded to the function.
+
+        Returns:
+            tuple[Any, Response | None]: ``(result, None)`` on success,
+                or ``(None, error_response)`` when the function raises.
+        """
+        try:
+            return func(*args, **kwargs), None
+        except InvalidDataException as e:
+            return None, self.make_api_response(None, e.message, 400)
+        except NotFoundException:
+            return None, self.make_api_response([], "", 404)
+        except TimeoutException as e:
+            return None, self.make_api_response(None, e.message or "Request timed out", 408)
+        except UnprocessableException as e:
+            return None, self.make_api_response(None, e.message, 422)
+        except Exception as e:
+            self.logger.exception("Unknown internal exception")
+            return None, self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
+
+    def _get_checked_actions(self: Self) -> tuple[list[Action], Response | None]:
+        """Retrieve the action list, running setup_actions if configured.
+
+        If setup_actions is configured, validates the token first and then calls it
+        to get a potentially user-specific or dynamic list of actions.
+
+        Returns:
+            tuple[list[Action], Response | None]: ``(actions, None)`` on success,
+                or ``([], error_response)`` if token validation or setup_actions fails.
+        """
+        try:
+            if self.setup_actions:
+                # Validate token if token validation is configured
+                token = None
+                if self.validate_token:
+                    token, error = self.validate_token()
+
+                    if error:
+                        self.logger.error("Error on token validation: %s", error)
+                        return [], self.make_api_response({}, err="Error on action setup.", status_code=500)
+
+                # Call user-defined setup_actions with base actions and validated token
+                actions = self.setup_actions(self.actions or [], token)
+                return actions or self.actions or [], None
+
+            return self.actions or [], None
+        except Exception:
+            self.logger.exception("Exception on setup actions:")
+            return [], self.make_api_response({}, err="Error on action setup.", status_code=500)
+
     def get_type_names(self: Self) -> Response:
         """Return the list of supported selector types with their classifications.
 
@@ -859,16 +923,10 @@ class CluePlugin:
                 422,
             )
 
-        token: str | None = None
-        if self.validate_token:
-            try:
-                token, error = self.validate_token()
-            except Exception as e:
-                self.logger.exception("Catastrophic error in validate_token")
-                return self.make_api_response(None, f"Something went wrong: {e}", 500)
+        token, error_response = self._resolve_token()
+        if error_response:
+            return error_response
 
-            if error:
-                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
         try:
             if self.cache and params.use_cache:
                 if result := self.cache.get(type_name, value, params):
@@ -883,22 +941,12 @@ class CluePlugin:
         except Exception:
             self.logger.exception("Unknown internal exception on cache check, continuing to standard enrichment")
 
-        try:
-            results = self.enrich(type_name, value, params, token)
+        results, error_response = self._call_plugin_func(self.enrich, type_name, value, params, token)
+        if error_response:
+            return error_response
 
-            if not isinstance(results, list):
-                results = [results]
-        except InvalidDataException as e:
-            return self.make_api_response(None, e.message, 400)
-        except NotFoundException:
-            return self.make_api_response([], "", 404)
-        except TimeoutException as e:
-            return self.make_api_response(None, e.message or "Request timed out", 408)
-        except UnprocessableException as e:
-            return self.make_api_response(None, e.message, 422)
-        except Exception as e:
-            self.logger.exception("Unknown internal exception")
-            return self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
+        if not isinstance(results, list):
+            results = [results]
 
         try:
             serialized_reult = TypeAdapter(list[QueryEntry]).dump_python(results, mode="json", exclude_none=True)
@@ -998,22 +1046,9 @@ class CluePlugin:
 
             remaining_items.append(entry)
 
-        token: str | None = None
-        if self.validate_token:
-            self.logger.debug("Executing plugin-provided token validator")
-
-            try:
-                token, error = self.validate_token()
-            except Exception as e:
-                self.logger.exception("Catastrophic error in validate_token")
-                return self.make_api_response(None, f"Something went wrong: {e}", 500)
-
-            if error:
-                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
-
-            self.logger.debug("Token is valid")
-        else:
-            self.logger.warning("No token validator provided")
+        token, error_response = self._resolve_token()
+        if error_response:
+            return error_response
 
         # All results were cached
         if len(remaining_items) == 0:
@@ -1022,23 +1057,15 @@ class CluePlugin:
         elif self.alternate_bulk_lookup:
             self.logger.debug("Executing plugin-provided alternate bulk lookup script")
 
-            try:
-                alternate_results = self.alternate_bulk_lookup(remaining_items, params, token)
+            alternate_results, error_response = self._call_plugin_func(
+                self.alternate_bulk_lookup, remaining_items, params, token
+            )
+            if error_response:
+                return error_response
 
-                for _type, _values in alternate_results.items():
-                    for _value, _result in _values.items():
-                        bulk_result[_type][_value] = _result
-            except InvalidDataException as e:
-                return self.make_api_response(None, e.message, 400)
-            except NotFoundException:
-                return self.make_api_response([], "", 404)
-            except TimeoutException as e:
-                return self.make_api_response(None, e.message or "Request timed out", 408)
-            except UnprocessableException as e:
-                return self.make_api_response(None, e.message, 422)
-            except Exception as e:
-                self.logger.exception("Unknown internal exception")
-                return self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
+            for _type, _values in alternate_results.items():
+                for _value, _result in _values.items():
+                    bulk_result[_type][_value] = _result
 
             if self.cache and len(remaining_items) > 0:
                 self.logger.info("Caching results for %s selectors", len(remaining_items))
@@ -1089,15 +1116,9 @@ class CluePlugin:
             ...
         }
         """
-        try:
-            actions = self.__check_actions()
-        except Exception:
-            self.logger.exception("Exception on setup actions:")
-
-            return self.make_api_response({}, err="Error on action setup.", status_code=500)
-
-        if actions is None:
-            actions = self.actions or []
+        actions, error_response = self._get_checked_actions()
+        if error_response:
+            return error_response
 
         if not self.validate_token or not (token := self.validate_token()[0]):
             self.logger.debug("Returning %s actions for unknown user", len(actions))
@@ -1130,32 +1151,17 @@ class CluePlugin:
         if not self.run_action:
             return self.make_api_response({}, err=f"{self.app_name} does not support any actions.", status_code=400)
 
-        try:
-            actions = self.__check_actions()
-        except Exception:
-            self.logger.exception("Exception on setup actions:")
-
-            return self.make_api_response({}, err="Error on action setup.", status_code=500)
-
-        if actions is None:
-            actions = self.actions or []
+        actions, error_response = self._get_checked_actions()
+        if error_response:
+            return error_response
 
         action_to_run = next((action for action in actions if action.id == action_id), None)
         if not action_to_run:
             return self.make_api_response({}, err="Action does not exist", status_code=404)
 
-        token: str | None = None
-        if self.validate_token:
-            self.logger.debug("Executing plugin-provided token validator")
-
-            token, error = self.validate_token()
-
-            if error:
-                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
-
-            self.logger.debug("Token is valid")
-        else:
-            self.logger.warning("No token validation provided. The access token will not be provided to the action.")
+        token, error_response = self._resolve_token(context="action")
+        if error_response:
+            return error_response
 
         # Extract the parameter type from the action definition for validation
         param_type: Any = action_to_run.model_fields["params"].annotation or Any
@@ -1225,32 +1231,17 @@ class CluePlugin:
                 {}, err=f"{self.app_name} does not support the get action status functions.", status_code=400
             )
 
-        try:
-            actions = self.__check_actions()
-        except Exception:
-            self.logger.exception("Exception on setup actions:")
-
-            return self.make_api_response({}, err="Error on action setup.", status_code=500)
-
-        if actions is None:
-            actions = self.actions or []
+        actions, error_response = self._get_checked_actions()
+        if error_response:
+            return error_response
 
         action_to_check = next((action for action in actions if action.id == action_id), None)
         if not action_to_check:
             return self.make_api_response({}, err="Action does not exist", status_code=404)
 
-        token: str | None = None
-        if self.validate_token:
-            self.logger.debug("Executing plugin-provided token validator")
-
-            token, error = self.validate_token()
-
-            if error:
-                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
-
-            self.logger.debug("Token is valid")
-        else:
-            self.logger.warning("No token validation provided. The access token will not be provided to the action.")
+        token, error_response = self._resolve_token(context="action")
+        if error_response:
+            return error_response
 
         try:
             # Validate request body against the action's parameter schema
@@ -1338,18 +1329,9 @@ class CluePlugin:
         if not fetcher_to_run:
             return self.make_api_response({}, err=f"Fetcher {fetcher_id} does not exist", status_code=404)
 
-        token: str | None = None
-        if self.validate_token:
-            self.logger.debug("Executing plugin-provided token validator")
-
-            token, error = self.validate_token()
-
-            if error:
-                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
-
-            self.logger.debug("Token is valid")
-        else:
-            self.logger.warning("No token validation provided. The access token will not be provided to the fetcher.")
+        token, error_response = self._resolve_token(context="fetcher")
+        if error_response:
+            return error_response
 
         status_code = 200
         try:
@@ -1431,18 +1413,9 @@ class CluePlugin:
         if not fetcher:
             return self.make_api_response({}, err=f"Fetcher {fetcher_id} does not exist", status_code=404)
 
-        token: str | None = None
-        if self.validate_token:
-            self.logger.debug("Executing plugin-provided token validator")
-
-            token, error = self.validate_token()
-
-            if error:
-                return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
-
-            self.logger.debug("Token is valid")
-        else:
-            self.logger.warning("No token validation provided. The access token will not be provided to the fetcher.")
+        token, error_response = self._resolve_token(context="fetcher")
+        if error_response:
+            return error_response
 
         status_code = 200
         try:
