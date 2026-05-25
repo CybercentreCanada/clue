@@ -389,9 +389,7 @@ class QueryEntry(BaseModel):
         ),
     ] = None
 
-    expiry: Annotated[
-        datetime | None, Field(description="When should this record expire?", default_factory=generate_expiry)
-    ] = None
+    expiry: datetime | None = Field(description="When should this record expire?", default_factory=generate_expiry)
 
     model_config = ConfigDict(validate_assignment=True)
 

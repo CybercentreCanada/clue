@@ -264,3 +264,16 @@ class TestGetCheckedActions:
 
         plugin.setup_actions = None
         assert any(r.levelno >= logging.ERROR for r in caplog.records)
+
+    def test_setup_actions_token_validation_error_returns_401(self, plugin):
+        plugin.setup_actions = MagicMock(return_value=[])
+        plugin.validate_token = MagicMock(return_value=(None, "token expired"))
+
+        with plugin.app.test_request_context():
+            actions, error_response = plugin._get_checked_actions()
+
+        plugin.setup_actions = None
+        plugin.validate_token = None
+        assert actions == []
+        assert error_response is not None
+        assert error_response.status_code == 401

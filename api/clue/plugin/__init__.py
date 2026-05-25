@@ -836,14 +836,9 @@ class CluePlugin:
         """
         try:
             if self.setup_actions:
-                # Validate token if token validation is configured
-                token = None
-                if self.validate_token:
-                    token, error = self.validate_token()
-
-                    if error:
-                        self.logger.error("Error on token validation: %s", error)
-                        return [], self.make_api_response({}, err="Error on action setup.", status_code=500)
+                token, error_response = self._resolve_token(context="action setup")
+                if error_response:
+                    return [], error_response
 
                 # Call user-defined setup_actions with base actions and validated token
                 actions = self.setup_actions(self.actions or [], token)
@@ -1062,6 +1057,13 @@ class CluePlugin:
             )
             if error_response:
                 return error_response
+
+            if not isinstance(alternate_results, dict):
+                self.logger.error(
+                    "alternate_bulk_lookup returned unexpected type: %s",
+                    type(alternate_results).__name__,
+                )
+                return self.make_api_response(None, "Something went wrong when enriching: unexpected result type", 500)
 
             for _type, _values in alternate_results.items():
                 for _value, _result in _values.items():
