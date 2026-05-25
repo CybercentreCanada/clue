@@ -29,7 +29,7 @@ from clue.helper.headers import generate_headers
 from clue.models.config import ExternalSource
 from clue.models.network import QueryEntry, QueryResult
 from clue.models.selector import Selector
-from clue.services import auth_service, type_service, user_service
+from clue.services import auth_service, mongo_service, type_service, user_service
 
 logger = get_logger(__file__)
 CLIENTS: dict[str, Session] = {}
@@ -314,21 +314,6 @@ def parse_bulk_response(
 
                 # This allows plugins to overwrite the default values if they want
                 data = {**data, **api_response[type][value], "latency": latency or 0.0}
-
-                logger.debug(
-                    "Validating bulk response from source %s (%s), returning %s annotations in %s items, using user %s",
-                    source.name,
-                    "production" if source.production else "not production",
-                    len(
-                        list(
-                            itertools.chain.from_iterable(
-                                entry.get("annotations", []) for entry in data.get("items", [])
-                            )
-                        )
-                    ),
-                    len(data.get("items", [])),
-                    user.get("uname", user.get("email", None)),
-                )
 
                 if source.production:
                     bulk_result[type][value] = QueryResult.model_construct(**data)
@@ -706,6 +691,10 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     pool_size = min(len(data) * len(query_sources or available_sources), int(os.environ.get("EXECUTOR_THREADS", 32)))
     thread_pool = Pool(pool_size)
 
+    existing_results: dict[str, list[dict[str, str]]] = {}
+    if config.ui.replication:
+        existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
+
     greenlets: list[tuple[list[Selector], ExternalSource, Greenlet[Any, dict[str, dict[str, QueryResult]]]]] = []
     for source in available_sources:
         if query_sources and source.name not in query_sources:
@@ -734,6 +723,12 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
             if entry.sources is not None and source.name not in entry.sources:
                 continue
 
+            if (
+                source.name in existing_results
+                and {"type": entry.type, "value": entry.value} in existing_results[source.name]
+            ):
+                continue
+
             if not CLASSIFICATION.is_accessible(
                 source.max_classification or CLASSIFICATION.UNRESTRICTED,
                 entry.classification,
@@ -752,6 +747,10 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                 continue
 
             data_for_source.append(entry)
+
+        if len(data_for_source) < 1:
+            logger.info("No queries for %s", source.name)
+            continue
 
         greenlets.append(
             (

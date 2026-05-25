@@ -1,6 +1,6 @@
 {
   "action.available": "Available Actions",
-  "action.data": "Action Data",
+  "action.parameters": "Action parameters",
   "actions.execute": "Execute",
   "actions.execute.menu": "Execute with options",
   "actions.executing": "Executing",
@@ -51,7 +51,7 @@
   "drawer.mail.trash": "Trash",
   "enrich": "Enrich",
   "error": "Error",
-  "fetcher.error.unexpected": "An unexpected error occurred",
+  "error.unexpected": "An unexpected error occurred",
   "graph.no.dataset": "No dataset has been selected!",
   "graph.node.input.label": "Enter a node ID, and press [ctrl + enter] to select it. [ctrl + space] will open an autocomplete menu.",
   "graph.show.more": "show more",

@@ -1,5 +1,27 @@
 # Clue UI Release Notes
 
+## `1.2.8`
+
+- **Clue Chip Height Bug** *(bugfix)*: Fixed a bug where the EnrichedChip would be forced to 40px if the size was unset.
+
+## `1.2.7`
+
+- **Status Collection Null Safety** *(bugfix)*: Added optional chaining and null guards for `database.status` in the enrich context to prevent errors when the status collection is unavailable or closed.
+- **Queued Enrichment Fixes** *(bugfix)*: `queueEnrich` now returns early when the status collection is null or closed, preventing an unhandled promise rejection from calling `findOne` on a closed RxDB collection.
+
+## `v1.2.6`
+
+- **onUpdate handler for actions** *(bugfix)*: The `onUpdate` callback was not included in the action options when executing the action from the form.
+
+## `v1.2.5`
+
+- **onUpdate handler for actions** *(feature)*: Add `onUpdate` callback function to the executeAction hook for monitoring the progress of long-running actions.
+
+## `v1.2.4`
+
+- **Async Action `onComplete` Callback** *(bugfix)*: The `onComplete` callback passed to `executeAction` is now correctly deferred for async (`pending`) actions and is called once the action resolves via polling, rather than being silently dropped.
+- **Duplicate Key in `executeAction`** *(bugfix)*: Fixed a duplicate key issue in the `executeAction` implementation.
+
 ## `v1.2.3`
 
 - **Fetcher Error Handling** *(bugfix)*: Fetcher components now display a localized error message when the fetch request throws an unexpected exception, instead of throw an uncaught exception.

@@ -257,18 +257,21 @@ def test_hash_found(test_client, al_client, server):
             {
                 "classification": "TLP:CLEAR",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/safelist/{digest}",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/badlist/{digest}",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
         ],
@@ -326,6 +329,7 @@ def test_detailed(test_client, server):
             {
                 "classification": "TLP:CLEAR",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
             {
@@ -333,6 +337,7 @@ def test_detailed(test_client, server):
                 "link": f"{server.AL_URL_BASE}/manage/safelist/9cffecf270e3553f45f5d702c204883d01"
                 "906d91c1d22dfa5d56868abcd7ff2c",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Safelist",
@@ -355,6 +360,7 @@ def test_detailed(test_client, server):
                 "link": f"{server.AL_URL_BASE}/manage/badlist/9cffecf270e3553f45f5d702c204883d01906d91"
                 "c1d22dfa5d56868abcd7ff2c",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Badlist",
@@ -397,6 +403,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
             {
                 "classification": "TLP:CLEAR",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Services",
@@ -416,6 +423,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/safelist/{digest}",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Safelist",
@@ -436,6 +444,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/badlist/{digest}",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [
                     {
                         "analytic": "Assemblyline - Badlist",

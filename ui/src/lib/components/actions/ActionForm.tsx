@@ -82,6 +82,10 @@ const ActionForm: FC<{
         options.onComplete = runningActionData?.onComplete;
       }
 
+      if (runningActionData?.onUpdate) {
+        options.onUpdate = runningActionData?.onUpdate;
+      }
+
       if (runningActionData?.timeout) {
         options.timeout = runningActionData?.timeout;
       }
@@ -102,6 +106,7 @@ const ActionForm: FC<{
     runningActionData?.id,
     runningActionData?.selectors,
     runningActionData?.onComplete,
+    runningActionData?.onUpdate,
     runningActionData?.timeout,
     runningActionData?.skipResultModal,
     formData
@@ -202,7 +207,7 @@ const ActionForm: FC<{
                 <Stack direction="row" height="100%" spacing={1}>
                   <Divider orientation="vertical" />
                   <Stack>
-                    <Typography variant="h5">{t('action.data')}</Typography>
+                    <Typography variant="h5">{t('action.parameters')}</Typography>
                     <Box width={600} height="100%">
                       <JSONViewer data={formData} slotProps={{ stack: { height: '100%' }, json: { name: false } }} />
                     </Box>

@@ -1,6 +1,6 @@
 {
   "action.available": "Actions disponibles",
-  "action.data": "Données de l'Action",
+  "action.parameters": "Paramètres de l'action",
   "actions.execute": "Execute",
   "actions.execute.menu": "Exécuter avec options",
   "actions.executing": "Executing",
@@ -51,7 +51,7 @@
   "drawer.mail.trash": "Poubelle",
   "enrich": "Enrichir",
   "error": "Erreur",
-  "fetcher.error.unexpected": "Une erreur inattendue s'est produite",
+  "error.unexpected": "Une erreur inattendue s'est produite",
   "graph.no.dataset": "Aucun jeu de données n'a été sélectionné!",
   "graph.node.input.label": "Entrez un ID de nœud et appuyez sur [ctrl + entrée] pour le sélectionner. [ctrl + espace] ouvrira un menu d'auto-complétion.",
   "graph.show.more": "Afficher plus",

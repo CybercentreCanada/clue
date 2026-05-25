@@ -100,7 +100,7 @@ const EnrichedChip: FC<EnrichmentProps & ChipProps> = React.memo(
         ref={anchorRef}
         variant={otherProps.variant || 'outlined'}
         sx={{
-          height: otherProps.size !== 'small' ? '40px' : 'unset',
+          height: otherProps.size === 'medium' ? '40px' : 'unset',
           '& .MuiChip-label': { overflow: 'visible' },
           ...(otherProps.sx ?? {})
         }}

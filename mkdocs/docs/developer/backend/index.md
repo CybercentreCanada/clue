@@ -93,7 +93,7 @@ cd ..
 Wait for services to be healthy:
 
 ```bash
-poetry run python build_scripts/keycloak_health.py
+poetry run python build_scripts/docker_health.py
 ```
 
 ## Development Workflow
@@ -544,7 +544,7 @@ docker-compose logs redis
 docker-compose logs keycloak
 
 # Or use the built-in health check
-poetry run python build_scripts/keycloak_health.py
+poetry run python build_scripts/docker_health.py
 ```
 
 #### Accessing Services

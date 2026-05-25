@@ -1,53 +1,12 @@
 {
+  "indexes": ["type", "value"],
   "keyCompression": true,
-  "version": 0,
   "primaryKey": "id",
-  "type": "object",
   "properties": {
-    "id": {
-      "type": "string",
-      "maxLength": 64
-    },
-    "source": {
-      "type": "string"
-    },
-    "type": {
-      "type": "string",
-      "maxLength": 255
-    },
-    "value": {
-      "type": "string",
-      "maxLength": 2048
-    },
-    "classification": {
-      "type": "string"
-    },
-    "count": {
-      "type": "number"
-    },
-    "link": {
-      "type": "string"
-    },
-    "raw_data": {
-      "type": "string"
-    },
-    "error": {
-      "anyOf": [{ "type": "string" }, { "type": "null" }]
-    },
-    "maintainer": {
-      "type": "string"
-    },
-    "datahub_link": {
-      "type": "string"
-    },
-    "documentation_link": {
-      "type": "string"
-    },
-    "latency": {
-      "type": "number"
+    "_deleted": {
+      "type": "boolean"
     },
     "annotations": {
-      "type": "array",
       "items": {
         "properties": {
           "analytic": {
@@ -59,10 +18,34 @@
           "author": {
             "type": "string"
           },
+          "confidence": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "details": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "link": {
+            "format": "uri",
+            "minLength": 1,
+            "type": "string"
+          },
+          "priority": {
+            "type": "number"
+          },
           "quantity": {
             "type": "integer"
           },
-          "version": {
+          "severity": {
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "summary": {
             "type": "string"
           },
           "timestamp": {
@@ -72,45 +55,85 @@
             "enum": ["opinion", "frequency", "assessment", "mitigation", "context"],
             "type": "string"
           },
-          "value": {
-            "anyOf": [{ "type": "string" }, { "type": "number" }, { "type": "integer" }]
-          },
-          "confidence": {
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "type": "number"
-          },
-          "severity": {
-            "maximum": 1.0,
-            "minimum": 0.0,
-            "type": "number"
-          },
-          "priority": {
-            "type": "number"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "details": {
-            "type": "string"
-          },
-          "link": {
-            "format": "uri",
-            "minLength": 1,
-            "type": "string"
-          },
-          "icon": {
-            "type": "string"
-          },
           "ubiquitous": {
             "type": "boolean"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "version": {
+            "type": "string"
           }
         },
         "required": ["type", "value", "confidence", "summary"],
         "type": "object"
-      }
+      },
+      "type": "array"
+    },
+    "classification": {
+      "type": "string"
+    },
+    "count": {
+      "type": "number"
+    },
+    "datahub_link": {
+      "type": "string"
+    },
+    "documentation_link": {
+      "type": "string"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "id": {
+      "maxLength": 64,
+      "type": "string"
+    },
+    "latency": {
+      "type": "number"
+    },
+    "link": {
+      "type": "string"
+    },
+    "maintainer": {
+      "type": "string"
+    },
+    "raw_data": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "type": {
+      "maxLength": 255,
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "number"
+    },
+    "value": {
+      "maxLength": 2048,
+      "type": "string"
     }
   },
-  "required": ["latency", "id", "type", "value", "classification", "count", "annotations"],
-  "indexes": ["type", "value"]
+  "required": ["latency", "id", "type", "value", "classification", "count", "annotations", "_deleted"],
+  "type": "object",
+  "version": 0
 }

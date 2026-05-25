@@ -29,6 +29,29 @@ LOG_LEVEL_MAP = {
 DEBUG = False
 
 
+def get_module_logger(name: str, level: int = logging.INFO) -> logging.Logger:
+    """Create and return a logger with a pre-configured console handler.
+
+    A StreamHandler is added only when the logger has no handlers yet, so
+    calling this function multiple times for the same name is safe.
+
+    Args:
+        name: The dotted logger name (e.g. ``"clue.models.config"``).
+        level: The logging level to set on both the logger and the handler.
+
+    Returns:
+        The configured :class:`logging.Logger` instance.
+    """
+    _logger = logging.getLogger(name)
+    _logger.setLevel(level)
+    if not _logger.handlers:
+        _console = logging.StreamHandler()
+        _console.setLevel(level)
+        _console.setFormatter(logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT))
+        _logger.addHandler(_console)
+    return _logger
+
+
 class JsonFormatter(logging.Formatter):
     """A custom implementation of logging.Formatter that supports json logs as well as traceback for exceptions.
 
@@ -61,7 +84,7 @@ class JsonFormatter(logging.Formatter):
 
         return self._style.format(record)
 
-    def formatException(self, exc_info):  # noqa: N802
+    def formatException(self, exc_info):  # type: ignore # noqa: N802
         """Formats the exception using traceback
 
         Args:

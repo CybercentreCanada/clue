@@ -66,14 +66,23 @@ export interface ClueActionContextType {
       skipResultModal?: boolean;
 
       /**
-       * Callback for post-execution.
+       * Callback for post-execution. Will be called once the action is fully executed and has an outcome of either
+       * 'success' or 'failure'.
        * @param result
        * @returns The action result
        */
       onComplete?: (result: WithActionData<ActionResult>) => void;
 
       /**
-       * Callback for when the action is cancelled
+       * Callback for intra-execution. will be called everytime the result recieves an update and has a
+       * 'pending', 'success', or 'failure' outcome.
+       * @param result
+       * @returns The action result
+       */
+      onUpdate?: (result: WithActionData<ActionResult>) => void;
+
+      /**
+       * Callback for when the action is cancelled.
        * @returns void
        */
       onCancel?: () => void;
@@ -178,7 +187,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   // Initialize the sources and type detection for the user
   const [availableActions, setAvailableActions] = useState<ActionDefinitionsResponse>({});
 
-  const requestConfig = useMemo(() => {
+  const requestConfig = useCallback(() => {
     const headers: AxiosRequestConfig['headers'] = {};
     const token = getToken?.();
     if (token) {
@@ -193,7 +202,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       return;
     }
 
-    const _actions = await api.actions.get(requestConfig);
+    const _actions = await api.actions.get(requestConfig());
 
     if (_actions) {
       setAvailableActions(_actions);
@@ -218,11 +227,22 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
   const executeAction: ClueActionContextType['executeAction'] = useCallback(
     async (actionId, selectors, params, options) => {
-      const { forceMenu, onComplete, onCancel, skipMenu, skipResultModal, timeout, includeContext, extraContext } = {
+      const {
+        forceMenu,
+        onComplete,
+        onUpdate,
+        onCancel,
+        skipMenu,
+        skipResultModal,
+        timeout,
+        includeContext,
+        extraContext
+      } = {
         forceMenu: false,
         skipResultModal: false,
         skipMenu: false,
         onComplete: null,
+        onUpdate: null,
         onCancel: null,
         timeout: null,
         includeContext: defaultIncludeContext ?? false,
@@ -289,6 +309,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           skipResultModal: skipResultModal,
           context,
           onComplete,
+          onUpdate,
           onCancel,
           timeout
         });
@@ -302,12 +323,15 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           validatedParams ?? {},
           context,
           { timeout },
-          requestConfig
+          requestConfig()
         );
 
         const actionResultWithData = { ...actionResult, actionId, action: actionToRun, params: validatedParams };
 
-        onComplete?.(actionResultWithData);
+        onUpdate?.(actionResultWithData);
+        if (actionResult.outcome !== 'pending') {
+          onComplete?.(actionResultWithData);
+        }
 
         setActionResults(_results => {
           const keys = selectors.map(value => getHashKey(value.type, value.value, value.classification));
@@ -354,18 +378,14 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
           })
         );
 
-        if (actionResult.outcome === 'success') {
-          setRunningActionData(null);
-        }
+        setRunningActionData(null);
 
         if (actionResult.outcome === 'pending') {
-          setLastResult({ ...actionResult, actionId, action: actionToRun });
+          setLastResult({ ...actionResult, actionId, action: actionToRun, onComplete, onUpdate });
           if (!skipResultModal) {
             setShowResultModal(true);
           }
-          setRunningActionData(null);
         }
-
         if (actionResult.format) {
           setLastResult({ ...actionResult, actionId, action: actionToRun });
           if (actionResult.format !== 'pivot' && !skipResultModal) {
@@ -393,8 +413,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
   const getActionStatus: ClueActionContextType['getActionStatus'] = useCallback(
     async (actionId, taskId) => {
       try {
-        const res = await api.actions.status.get(actionId, taskId, {}, requestConfig);
-        return res;
+        return await api.actions.status.get(actionId, taskId, {}, requestConfig());
       } catch (e) {
         safeDispatchEvent(
           new CustomEvent<SnackbarEvents>(SNACKBAR_EVENT_ID, {
@@ -413,7 +432,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
     runningActionData?.onCancel?.();
     setRunningActionData(null);
     setLoading(false);
-  }, [runningActionData?.onCancel]);
+  }, [runningActionData]);
 
   const getActionResults: ClueActionContextType['getActionResults'] = useCallback(
     (type, value, classification) => actionResults[getHashKey(type, value, classification)] ?? [],
