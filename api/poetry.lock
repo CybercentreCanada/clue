@@ -223,14 +223,14 @@ files = [
 
 [[package]]
 name = "cachelib"
-version = "0.13.0"
+version = "0.12.0"
 description = "A collection of cache libraries in the same API interface."
 optional = false
 python-versions = ">=3.8"
 groups = ["main"]
 files = [
-    {file = "cachelib-0.13.0-py3-none-any.whl", hash = "sha256:8c8019e53b6302967d4e8329a504acf75e7bc46130291d30188a6e4e58162516"},
-    {file = "cachelib-0.13.0.tar.gz", hash = "sha256:209d8996e3c57595bee274ff97116d1d73c4980b2fd9a34c7846cd07fd2e1a48"},
+    {file = "cachelib-0.12.0-py3-none-any.whl", hash = "sha256:038f4d855afc3eb8caab10458f6eac55c328911f9055824c22c2f259ef9ed3a3"},
+    {file = "cachelib-0.12.0.tar.gz", hash = "sha256:8243029a028436fd23229113dee517c0700bb43a8a289ec5a963e4af9ca2b194"},
 ]
 
 [[package]]
@@ -3290,4 +3290,4 @@ server = ["PyYAML", "Werkzeug", "apscheduler", "authlib", "bcrypt", "flasgger", 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "afaa186a898eacb6142c0da053901a22bb4389b58311ac515d2859b7febf18e2"
+content-hash = "c8e59389c654a9b3df79a305f05b72bb8ee565d897eb39b571682477c4f98adb"
