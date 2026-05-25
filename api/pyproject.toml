@@ -238,7 +238,7 @@ type_check = "build_scripts.type_check:main"
 coverage_report = "build_scripts.coverage_reports:main"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.1.1"
+pytest = ">=8.1.1,<10.0.0"
 mypy = "^1.9.0"
 pytest-cov = "^5.0.0"
 coverage = { extras = ["toml"], version = "^7.4.4" }
