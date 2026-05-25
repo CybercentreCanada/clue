@@ -824,7 +824,7 @@ class CluePlugin:
             self.logger.exception("Unknown internal exception")
             return None, self.make_api_response(None, "An internal error has occurred", 500)
 
-    def _get_checked_actions(self: Self) -> tuple[list[Action], Response | None]:
+    def _get_actions(self: Self) -> tuple[list[Action], Response | None]:
         """Retrieve the action list, running setup_actions if configured.
 
         If setup_actions is configured, validates the token first and then calls it
@@ -1118,7 +1118,7 @@ class CluePlugin:
             ...
         }
         """
-        actions, error_response = self._get_checked_actions()
+        actions, error_response = self._get_actions()
         if error_response:
             return error_response
 
@@ -1153,7 +1153,7 @@ class CluePlugin:
         if not self.run_action:
             return self.make_api_response({}, err=f"{self.app_name} does not support any actions.", status_code=400)
 
-        actions, error_response = self._get_checked_actions()
+        actions, error_response = self._get_actions()
         if error_response:
             return error_response
 
@@ -1233,7 +1233,7 @@ class CluePlugin:
                 {}, err=f"{self.app_name} does not support the get action status functions.", status_code=400
             )
 
-        actions, error_response = self._get_checked_actions()
+        actions, error_response = self._get_actions()
         if error_response:
             return error_response
 

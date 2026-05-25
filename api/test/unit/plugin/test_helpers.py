@@ -3,7 +3,7 @@
 Covers the three helpers introduced to reduce repeated exception-handling boilerplate:
   - _resolve_token
   - _call_plugin_func
-  - _get_checked_actions
+  - _get_actions
 """
 
 import logging
@@ -199,14 +199,14 @@ class TestCallPluginFunc:
 
 
 # ---------------------------------------------------------------------------
-# _get_checked_actions
+# _get_actions
 # ---------------------------------------------------------------------------
 
 
 class TestGetCheckedActions:
     def test_no_setup_actions_returns_empty_list_and_no_error(self, plugin):
         with plugin.app.test_request_context():
-            actions, error_response = plugin._get_checked_actions()
+            actions, error_response = plugin._get_actions()
 
         assert actions == []
         assert error_response is None
@@ -216,7 +216,7 @@ class TestGetCheckedActions:
         plugin.actions = [mock_action]
 
         with plugin.app.test_request_context():
-            actions, error_response = plugin._get_checked_actions()
+            actions, error_response = plugin._get_actions()
 
         plugin.actions = []
         assert actions == [mock_action]
@@ -227,7 +227,7 @@ class TestGetCheckedActions:
         plugin.setup_actions = MagicMock(return_value=[mock_action])
 
         with plugin.app.test_request_context():
-            actions, error_response = plugin._get_checked_actions()
+            actions, error_response = plugin._get_actions()
 
         plugin.setup_actions = None
         assert actions == [mock_action]
@@ -237,7 +237,7 @@ class TestGetCheckedActions:
         plugin.setup_actions = MagicMock(side_effect=RuntimeError("setup crashed"))
 
         with plugin.app.test_request_context():
-            actions, error_response = plugin._get_checked_actions()
+            actions, error_response = plugin._get_actions()
 
         plugin.setup_actions = None
         assert actions == []
@@ -248,7 +248,7 @@ class TestGetCheckedActions:
         plugin.setup_actions = MagicMock(side_effect=RuntimeError("setup crashed"))
 
         with plugin.app.test_request_context():
-            _, error_response = plugin._get_checked_actions()
+            _, error_response = plugin._get_actions()
 
         plugin.setup_actions = None
         data = error_response.get_json()
@@ -260,7 +260,7 @@ class TestGetCheckedActions:
 
         with caplog.at_level(logging.ERROR):
             with plugin.app.test_request_context():
-                plugin._get_checked_actions()
+                plugin._get_actions()
 
         plugin.setup_actions = None
         assert any(r.levelno >= logging.ERROR for r in caplog.records)
@@ -270,7 +270,7 @@ class TestGetCheckedActions:
         plugin.validate_token = MagicMock(return_value=(None, "token expired"))
 
         with plugin.app.test_request_context():
-            actions, error_response = plugin._get_checked_actions()
+            actions, error_response = plugin._get_actions()
 
         plugin.setup_actions = None
         plugin.validate_token = None

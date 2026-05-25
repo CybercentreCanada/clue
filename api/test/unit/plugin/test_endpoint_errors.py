@@ -170,7 +170,7 @@ class TestExecuteActionErrors:
         assert response.status_code == 500
 
     def test_resolve_token_error_returns_401(self, plugin_with_action):
-        # setup_actions is None so _get_checked_actions returns plugin.actions without
+        # setup_actions is None so _get_actions returns plugin.actions without
         # calling validate_token; the second _resolve_token call in execute_action fails.
         plugin_with_action.validate_token = _bad_token
         response = plugin_with_action.app.test_client().post("/actions/test_action/", json={})
