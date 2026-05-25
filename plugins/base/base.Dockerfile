@@ -14,7 +14,7 @@ RUN mkdir -p /install/files
 WORKDIR /install
 
 # Install poetry additional libraries, add poetry
-RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.5.2-r0 openssl-dev=3.5.5-r0 && \
+RUN apk add --no-cache build-base=0.5-r3 libffi-dev=3.5.2-r0 openssl-dev=3.5.6-r0 && \
     pip install --no-cache-dir --no-warn-script-location poetry==2.2.1
 
 ENV PATH=/install/.local/bin:$PATH
