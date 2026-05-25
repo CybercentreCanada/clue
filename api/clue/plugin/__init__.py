@@ -784,9 +784,9 @@ class CluePlugin:
         self.logger.debug("Executing plugin-provided token validator")
         try:
             token, error = self.validate_token()
-        except Exception as e:
+        except Exception:
             self.logger.exception("Catastrophic error in validate_token")
-            return None, self.make_api_response(None, f"Something went wrong: {e}", 500)
+            return None, self.make_api_response(None, "An internal error has occurred", 500)
 
         if error:
             return None, self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
@@ -820,9 +820,9 @@ class CluePlugin:
             return None, self.make_api_response(None, e.message or "Request timed out", 408)
         except UnprocessableException as e:
             return None, self.make_api_response(None, e.message, 422)
-        except Exception as e:
+        except Exception:
             self.logger.exception("Unknown internal exception")
-            return None, self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
+            return None, self.make_api_response(None, "An internal error has occurred", 500)
 
     def _get_checked_actions(self: Self) -> tuple[list[Action], Response | None]:
         """Retrieve the action list, running setup_actions if configured.
