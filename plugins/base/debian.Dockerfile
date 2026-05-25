@@ -17,7 +17,7 @@ WORKDIR /install
 
 # Install poetry additional libraries, add poetry
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential=12.12 libffi-dev=3.4.8-2 libssl-dev=3.6.2-1 && \
+    apt-get install -y --no-install-recommends build-essential=12.12 libffi-dev=3.4.8-2 libssl-dev=3.5.6-1~deb13u1 && \
     rm -rf /var/lib/apt/lists/* && \
     pip install --no-cache-dir --no-warn-script-location poetry==2.2.1
 
