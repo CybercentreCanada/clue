@@ -861,7 +861,11 @@ class CluePlugin:
 
         token: str | None = None
         if self.validate_token:
-            token, error = self.validate_token()
+            try:
+                token, error = self.validate_token()
+            except Exception as e:
+                self.logger.exception("Catastrophic error in validate_token")
+                return self.make_api_response(None, f"Something went wrong: {e}", 500)
 
             if error:
                 return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
@@ -998,7 +1002,11 @@ class CluePlugin:
         if self.validate_token:
             self.logger.debug("Executing plugin-provided token validator")
 
-            token, error = self.validate_token()
+            try:
+                token, error = self.validate_token()
+            except Exception as e:
+                self.logger.exception("Catastrophic error in validate_token")
+                return self.make_api_response(None, f"Something went wrong: {e}", 500)
 
             if error:
                 return self.make_api_response(None, f"Error on token validation: {error}", status_code=401)
@@ -1043,7 +1051,11 @@ class CluePlugin:
                         self.logger.warning("Selector not present in bulk result, skipping cache step")
         # Default bulk lookup
         else:
-            self.__default_bulk_lookup(bulk_result, remaining_items, params, token)
+            try:
+                self.__default_bulk_lookup(bulk_result, remaining_items, params, token)
+            except Exception as e:
+                self.logger.exception("Catastrophic error in default bulk lookup")
+                return self.make_api_response(None, f"Something went wrong when enriching: {e}", 500)
 
         # Calculate how close we came to the deadline (positive = time remaining, negative = overrun)
         variance = params.deadline - time.time()
