@@ -1122,10 +1122,11 @@ class CluePlugin:
         if error_response:
             return error_response
 
-        if not self.validate_token or not (token := self.validate_token()[0]):
-            self.logger.debug("Returning %s actions for unknown user", len(actions))
-        else:
+        token, _ = self._resolve_token()
+        if token:
             self.logger.debug("Returning %s actions for user %s", len(actions), get_username(token))
+        else:
+            self.logger.debug("Returning %s actions for unknown user", len(actions))
 
         results: dict[str, dict[str, Any]] = {}
         for action in actions:
