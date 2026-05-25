@@ -842,7 +842,9 @@ class CluePlugin:
 
                 # Call user-defined setup_actions with base actions and validated token
                 actions = self.setup_actions(self.actions or [], token)
-                return actions or self.actions or [], None
+                if actions is None:
+                    return self.actions or [], None
+                return actions, None
 
             return self.actions or [], None
         except Exception:
