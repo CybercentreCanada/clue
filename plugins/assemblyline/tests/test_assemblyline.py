@@ -257,21 +257,18 @@ def test_hash_found(test_client, al_client, server):
             {
                 "classification": "TLP:CLEAR",
                 "count": 1,
-                "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/safelist/{digest}",
                 "count": 1,
-                "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/badlist/{digest}",
                 "count": 1,
-                "expiry": ANY,
                 "annotations": [],
             },
         ],
