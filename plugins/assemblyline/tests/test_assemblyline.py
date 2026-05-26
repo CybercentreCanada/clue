@@ -257,18 +257,21 @@ def test_hash_found(test_client, al_client, server):
             {
                 "classification": "TLP:CLEAR",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/safelist/{digest}",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
                 "link": f"{server.AL_URL_BASE}/manage/badlist/{digest}",
                 "count": 1,
+                "expiry": ANY,
                 "annotations": [],
             },
         ],
@@ -408,7 +411,6 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                         "quantity": 1,
                         "confidence": 1.0,
                         "summary": "1 Assemblyline service(s) flagged this file as malicious: ConfigExtractor",
-                        "expiry": ANY,
                         "timestamp": ANY,
                         "type": "opinion",
                         "ubiquitous": False,
@@ -431,7 +433,6 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                         "quantity": 1,
                         "summary": "Assemblyline's safelist flagged this SHA256 as benign in 1 "
                         "source(s): urlhaus (external)",
-                        "expiry": ANY,
                         "timestamp": ANY,
                         "type": "opinion",
                         "ubiquitous": False,
@@ -453,7 +454,6 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                         "quantity": 1,
                         "summary": "Assemblyline's badlist flagged this SHA256 as malicious in 1 "
                         "source(s): urlhaus (external)",
-                        "expiry": ANY,
                         "timestamp": ANY,
                         "type": "opinion",
                         "ubiquitous": False,
