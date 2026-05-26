@@ -34,6 +34,7 @@ const PluginDashboard = () => {
   const [actionsList, setActionsList] = useState({});
   const [displayAllDocs, setDisplayAllDocs] = useState('all');
   const { t } = useTranslation();
+  const normalize = (s: string) => s.replace(/[-_]/g, '-').toLowerCase();
   const availableSources = useClueEnrichSelector(ctx => ctx.availableSources);
   const { availableActions } = useClueActions();
   const fetchers = useClueFetcherSelector(ctx => ctx.fetchers);
@@ -81,12 +82,11 @@ const PluginDashboard = () => {
   );
 
   const getAvailableSourcesDocs = (_event: React.MouseEvent<HTMLElement>, showdoc: string) => {
-    const normalize = (s: string) => s.replace(/[-_]/g, '-');
     setDisplayAllDocs(showdoc);
 
     if (showdoc === 'active') {
       const availableSourcesDocs = docsList.filter(item =>
-        availableSources.some(substring => normalize(item).includes(normalize(substring)))
+        availableSources.some(substring => normalize(item.split('-docs')[0]) === normalize(substring))
       );
       setDocsList(availableSourcesDocs);
     } else {
@@ -148,8 +148,7 @@ const PluginDashboard = () => {
 
   const getActivityStatus = (pluginName: string) => {
     const plugin = pluginName.split('-docs')[0].slice(0);
-    const normalize = (s: string) => s.replace(/[-_]/g, '-');
-    const activeStatus = availableSources.find(source => normalize(plugin).includes(normalize(source)));
+    const activeStatus = availableSources.find(source => normalize(plugin) === normalize(source));
 
     return activeStatus ? (
       <Chip label="Active" variant="outlined" size="small" color="success" />
