@@ -81,13 +81,13 @@ const PluginDashboard = () => {
   );
 
   const getAvailableSourcesDocs = (_event: React.MouseEvent<HTMLElement>, showdoc: string) => {
+    const normalize = (s: string) => s.replace(/[-_]/g, '-');
     setDisplayAllDocs(showdoc);
 
     if (showdoc === 'active') {
       const availableSourcesDocs = docsList.filter(item =>
-        availableSources.some(substring => item.includes(substring))
+        availableSources.some(substring => normalize(item).includes(normalize(substring)))
       );
-
       setDocsList(availableSourcesDocs);
     } else {
       setDocsList(Object.keys(docs));
@@ -148,7 +148,8 @@ const PluginDashboard = () => {
 
   const getActivityStatus = (pluginName: string) => {
     const plugin = pluginName.split('-docs')[0].slice(0);
-    const activeStatus = availableSources.find(source => plugin.includes(source));
+    const normalize = (s: string) => s.replace(/[-_]/g, '-');
+    const activeStatus = availableSources.find(source => normalize(plugin).includes(normalize(source)));
 
     return activeStatus ? (
       <Chip label="Active" variant="outlined" size="small" color="success" />
