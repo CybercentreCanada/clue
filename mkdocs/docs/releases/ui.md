@@ -1,5 +1,14 @@
 # Clue UI Release Notes
 
+## `1.2.8`
+
+- **Clue Chip Height Bug** *(bugfix)*: Fixed a bug where the EnrichedChip would be forced to 40px if the size was unset.
+
+## `1.2.7`
+
+- **Status Collection Null Safety** *(bugfix)*: Added optional chaining and null guards for `database.status` in the enrich context to prevent errors when the status collection is unavailable or closed.
+- **Queued Enrichment Fixes** *(bugfix)*: `queueEnrich` now returns early when the status collection is null or closed, preventing an unhandled promise rejection from calling `findOne` on a closed RxDB collection.
+
 ## `v1.2.6`
 
 - **onUpdate handler for actions** *(bugfix)*: The `onUpdate` callback was not included in the action options when executing the action from the form.
