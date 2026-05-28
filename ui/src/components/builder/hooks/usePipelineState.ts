@@ -9,7 +9,8 @@ export type PipelineAction =
   | { type: 'DELETE_STEP'; instanceId: string }
   | { type: 'UPDATE_STEP_CONFIG'; instanceId: string; patch: Record<string, unknown> }
   | { type: 'SET_INDICATOR_TYPE'; indicatorType: string }
-  | { type: 'SELECT_STEP'; instanceId: string | null };
+  | { type: 'SELECT_STEP'; instanceId: string | null }
+  | { type: 'LOAD_MANIFEST'; indicatorType: string; steps: PipelineStep[] };
 
 const initialState: PipelineState = {
   indicatorType: 'ip',
@@ -17,7 +18,7 @@ const initialState: PipelineState = {
   selectedStepId: null
 };
 
-function createStep(definitionId: string): PipelineStep | null {
+const createStep = (definitionId: string): PipelineStep | null => {
   const def = BLOCK_DEFINITIONS.find(b => b.id === definitionId);
   if (!def) return null;
 
@@ -34,10 +35,10 @@ function createStep(definitionId: string): PipelineStep | null {
     config: defaultConfig,
     children: []
   };
-}
+};
 
 /** Recursively apply a transformation to a step tree. */
-function mapSteps(steps: PipelineStep[], fn: (s: PipelineStep) => PipelineStep | null): PipelineStep[] {
+const mapSteps = (steps: PipelineStep[], fn: (s: PipelineStep) => PipelineStep | null): PipelineStep[] => {
   const result: PipelineStep[] = [];
   for (const step of steps) {
     const mapped = fn(step);
@@ -46,24 +47,32 @@ function mapSteps(steps: PipelineStep[], fn: (s: PipelineStep) => PipelineStep |
     }
   }
   return result;
-}
+};
 
 /** Find a step anywhere in the tree. */
-function findStep(steps: PipelineStep[], id: string): PipelineStep | null {
+const findStep = (steps: PipelineStep[], id: string): PipelineStep | null => {
   for (const step of steps) {
     if (step.instanceId === id) return step;
     const found = findStep(step.children, id);
     if (found) return found;
   }
   return null;
-}
+};
 
 /** Collect all instanceIds (flat). */
-function allIds(steps: PipelineStep[]): string[] {
+const allIds = (steps: PipelineStep[]): string[] => {
   return steps.flatMap(s => [s.instanceId, ...allIds(s.children)]);
-}
+};
 
-function pipelineReducer(state: PipelineState, action: PipelineAction): PipelineState {
+/** Recursively assign fresh instanceIds to imported steps. */
+const assignFreshIds = (steps: PipelineStep[]): PipelineStep[] =>
+  steps.map(s => ({
+    ...s,
+    instanceId: crypto.randomUUID(),
+    children: assignFreshIds(s.children)
+  }));
+
+const pipelineReducer = (state: PipelineState, action: PipelineAction): PipelineState => {
   switch (action.type) {
     case 'ADD_STEP': {
       const newStep = createStep(action.definitionId);
@@ -122,14 +131,24 @@ function pipelineReducer(state: PipelineState, action: PipelineAction): Pipeline
       return { ...state, selectedStepId: action.instanceId };
     }
 
+    case 'LOAD_MANIFEST': {
+      return {
+        indicatorType: action.indicatorType,
+        steps: assignFreshIds(action.steps),
+        selectedStepId: null
+      };
+    }
+
     default:
       return state;
   }
-}
+};
 
 export { allIds, findStep };
 
-export default function usePipelineState() {
+const usePipelineState = () => {
   const [state, dispatch] = useReducer(pipelineReducer, initialState);
   return { state, dispatch };
-}
+};
+
+export default usePipelineState;

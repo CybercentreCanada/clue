@@ -139,5 +139,8 @@
   "usermenu": "User menu",
   "usermenu.logout": "Logout",
   "usermenu.settings": "Settings",
-  "value": "Value"
+  "value": "Value",
+  "route.builder.tab.manifest": "Manifest",
+  "route.builder.manifest.apply": "Apply Manifest",
+  "route.builder.manifest.reset": "Reset"
 }

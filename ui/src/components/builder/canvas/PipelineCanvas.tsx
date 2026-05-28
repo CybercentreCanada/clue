@@ -50,10 +50,11 @@ const PipelineCanvas: FC<PipelineCanvasProps> = ({ steps, selectedStepId, dragOv
       ref={setNodeRef}
       sx={{
         flex: 1,
-        p: 3,
+        m: 1,
+        p: 1,
         minHeight: 300,
         overflow: 'auto',
-        border: '2px dashed',
+        border: '5px dashed',
         borderColor: isRootTarget ? 'primary.main' : steps.length === 0 ? 'divider' : 'transparent',
         borderRadius: 2,
         bgcolor: isRootTarget ? 'action.hover' : 'transparent',

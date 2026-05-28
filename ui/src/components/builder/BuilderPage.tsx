@@ -14,6 +14,7 @@ import type { FC, SyntheticEvent } from 'react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import CodePreviewPanel from './canvas/CodePreviewPanel';
+import ManifestPanel from './canvas/ManifestPanel';
 import PipelineCanvas from './canvas/PipelineCanvas';
 import StepDetailPanel from './canvas/StepDetailPanel';
 import Catalogue from './catalogue/Catalogue';
@@ -132,6 +133,7 @@ const BuilderPage: FC = () => {
         <Tabs value={activeTab} onChange={handleTabChange}>
           <Tab label={t('route.builder.tab.pipeline')} />
           <Tab label={t('route.builder.tab.code')} />
+          <Tab label={t('route.builder.tab.manifest')} />
         </Tabs>
       </Box>
 
@@ -172,6 +174,14 @@ const BuilderPage: FC = () => {
       )}
 
       {activeTab === 1 && <CodePreviewPanel steps={state.steps} />}
+
+      {activeTab === 2 && (
+        <ManifestPanel
+          indicatorType={state.indicatorType}
+          steps={state.steps}
+          onLoad={(indicatorType, steps) => dispatch({ type: 'LOAD_MANIFEST', indicatorType, steps })}
+        />
+      )}
     </Box>
   );
 };
