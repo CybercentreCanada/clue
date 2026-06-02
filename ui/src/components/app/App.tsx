@@ -28,7 +28,7 @@ import Home from 'components/routes/home';
 import Settings from 'components/routes/settings/Settings';
 import type { SnackbarEvents } from 'lib/data/event';
 import { SNACKBAR_EVENT_ID } from 'lib/data/event';
-import type { ClueDatabase } from 'lib/database/types.d';
+import type { ClueDatabase } from 'lib/database/types';
 import { ClueActionProvider } from 'lib/hooks/ClueActionContext';
 import { ClueComponentProvider } from 'lib/hooks/ClueComponentContext';
 import { ClueConfigProvider } from 'lib/hooks/ClueConfigProvider';
