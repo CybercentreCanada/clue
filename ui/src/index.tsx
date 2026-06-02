@@ -4,7 +4,7 @@ import App from 'components/app/App';
 import 'i18n';
 import 'index.css';
 import buildDatabase from 'lib/database';
-import type { ClueDatabase } from 'lib/database/types.d';
+import type { ClueDatabase } from 'lib/database/types';
 import type { ApiType } from 'lib/types/config';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
