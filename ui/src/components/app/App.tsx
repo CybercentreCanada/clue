@@ -28,7 +28,6 @@ import Home from 'components/routes/home';
 import Settings from 'components/routes/settings/Settings';
 import type { SnackbarEvents } from 'lib/data/event';
 import { SNACKBAR_EVENT_ID } from 'lib/data/event';
-import buildDatabase from 'lib/database';
 import type { ClueDatabase } from 'lib/database/types';
 import { ClueActionProvider } from 'lib/hooks/ClueActionContext';
 import { ClueComponentProvider } from 'lib/hooks/ClueComponentContext';
@@ -40,12 +39,13 @@ import { CluePopupProvider } from 'lib/hooks/CluePopupContext';
 import { useClueEnrichSelector } from 'lib/hooks/selectors';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
+import type { ApiType } from 'lib/types/config';
 import { StorageKey } from 'lib/utils/constants';
 import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
 import * as monaco from 'monaco-editor';
 import type { FC, PropsWithChildren } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
 import { BrowserRouter, Route } from 'react-router-dom';
 import AppContainer from './AppContainer';
@@ -143,23 +143,11 @@ const MyApp: FC = () => {
   );
 };
 
-const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
+const MyAppProvider: FC<PropsWithChildren<{ database: ClueDatabase | null }>> = ({ children, database }) => {
   const myPreferences: AppPreferenceConfigs = useMyPreferences();
   const myTheme: AppThemeConfigs = useMyTheme();
   const mySitemap: AppSiteMapConfigs = useMySitemap();
   const myUser: AppUserService<ClueUser> = useMyUser();
-
-  const { config } = useClueConfig();
-
-  const [database, setDatabase] = useState<ClueDatabase>(null);
-
-  useEffect(() => {
-    if (!config?.configuration?.ui) {
-      return;
-    }
-
-    buildDatabase({ storageType: 'memory', replicate: config?.configuration?.ui.replicate }).then(setDatabase);
-  }, [config?.configuration?.ui]);
 
   return (
     <ClueComponentProvider>
@@ -182,11 +170,11 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
   );
 };
 
-const App: FC = () => {
+const App: FC<{ database: ClueDatabase | null; config: ApiType | null }> = ({ database, config }) => {
   return (
     <BrowserRouter>
-      <ClueConfigProvider>
-        <MyAppProvider>
+      <ClueConfigProvider config={config}>
+        <MyAppProvider database={database}>
           <MyApp />
           <Modal />
         </MyAppProvider>
