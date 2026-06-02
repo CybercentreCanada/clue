@@ -19,7 +19,11 @@ const QueryStatus: FC = () => {
       return;
     }
 
-    if (database?.status?.closed) {
+    if (!database?.status) {
+      return;
+    }
+
+    if (database.status.closed) {
       // eslint-disable-next-line no-console
       console.warn('Status collection is closed');
       return;
