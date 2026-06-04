@@ -1,0 +1,104 @@
+services:
+  clue-api:
+    image: clue-api:dev
+    environment:
+      CLUE_DEV_BYPASS_AUTH: "true"
+      CLUE_DEV_USER: local-dev
+      CLUE_DEV_NAME: Local Dev
+      CLUE_DEV_CLASSIFICATION: TLP:CLEAR
+      API__EXTERNAL_SOURCES: |
+        [
+          {"name": "port-lookup", "url": "http://port-lookup:5100", "classification": "TLP:CLEAR"},
+          {"name": "crt-sh", "url": "http://crtsh:5101", "classification": "TLP:CLEAR", "include_default": false},
+          {"name": "howler", "url": "http://howler-plugin:5102", "classification": "TLP:CLEAR"},
+          {"name": "malware-bazaar", "url": "http://malware-bazaar:5103", "classification": "TLP:CLEAR"},
+          {"name": "virustotal", "url": "http://virustotal:5104", "classification": "TLP:CLEAR"},
+          {"name": "abuseipdb", "url": "http://abuseipdb:5106", "classification": "TLP:CLEAR"}
+        ]
+
+  crtsh:
+    build:
+      context: ../plugins/crtsh
+      dockerfile: ../base/plugin.Dockerfile
+      args:
+        base_plugin_version: 1.4
+    image: clue-plugin-crtsh:dev
+    environment:
+      APP_NAME: crtsh
+      CLASSIFICATION: TLP:CLEAR
+      PORT: 5101
+      WORKERS: 1
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+
+  howler-plugin:
+    image: cccs/clue-plugin-howler:latest
+    restart: unless-stopped
+    ports:
+      - "5102:5102"
+    environment:
+      APP_NAME: howler
+      CLASSIFICATION: TLP:CLEAR
+      PORT: 5102
+      WORKERS: 1
+      HOWLER_URL: ${HOWLER_URL:-http://host.docker.internal:5000}
+      HOWLER_AUDIENCE: ${HOWLER_AUDIENCE:-7fd79813-310c-456f-b90e-2fdbdf55471b}
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - clue-network
+
+  malware-bazaar:
+    image: cccs/clue-plugin-malware-bazaar:latest
+    restart: unless-stopped
+    ports:
+      - "5103:5103"
+    environment:
+      APP_NAME: malware-bazaar
+      CLASSIFICATION: TLP:CLEAR
+      PORT: 5103
+      WORKERS: 1
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+    networks:
+      - clue-network
+
+  virustotal:
+    image: cccs/clue-plugin-virustotal:latest
+    restart: unless-stopped
+    ports:
+      - "5104:5104"
+    environment:
+      APP_NAME: virustotal
+      CLASSIFICATION: TLP:CLEAR
+      PORT: 5104
+      WORKERS: 1
+      VT_API_KEY: ${VT_API_KEY:-${VT_KEY:-}}
+      VT_KEY: ${VT_KEY:-}
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+    networks:
+      - clue-network
+
+  abuseipdb:
+    build:
+      context: ../plugins/abuseipdb
+      dockerfile: ../base/plugin.Dockerfile
+      args:
+        base_plugin_version: 1.4
+    image: clue-plugin-abuseipdb:dev
+    restart: unless-stopped
+    ports:
+      - "5106:5106"
+    environment:
+      APP_NAME: abuseipdb
+      CLASSIFICATION: TLP:CLEAR
+      PORT: 5106
+      WORKERS: 1
+      ABUSEIPDB_API_KEY: ${ABUSEIPDB_API_KEY:-${ABUSEIPDB_KEY:-}}
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: 6379
+    networks:
+      - clue-network

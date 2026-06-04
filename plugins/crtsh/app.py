@@ -15,6 +15,7 @@ Status: In Development
 import datetime
 import os
 import textwrap
+from typing import Any
 from urllib.parse import urlsplit
 
 import requests
@@ -49,16 +50,39 @@ plugin = CluePlugin(
 class CrtSHCertificate(BaseModel):
     """Fragments of the TLS certificate found by crt.sh"""
 
-    entry_timestamp: str
-    issuer_name: str
-    name_value: str
-    not_before: str
-    not_after: str
-    serial_number: str
+    entry_timestamp: str | None = None
+    issuer_name: str = ""
+    name_value: str = ""
+    not_before: str = ""
+    not_after: str = ""
+    serial_number: str = ""
 
 
 CrtSHResponse = TypeAdapter(list[CrtSHCertificate])
 """Typical JSON response from crt.sh"""
+
+
+def parse_entry_timestamp(value: str | None) -> datetime.datetime | None:
+    """Parse the crt.sh entry timestamp when the upstream response includes one."""
+    if not value:
+        return None
+
+    normalised_value = value.strip()
+    if normalised_value.endswith("Z"):
+        normalised_value = f"{normalised_value[:-1]}+00:00"
+
+    try:
+        return datetime.datetime.fromisoformat(normalised_value)
+    except ValueError:
+        pass
+
+    for timestamp_format in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.datetime.strptime(normalised_value, timestamp_format)
+        except ValueError:
+            continue
+
+    return None
 
 
 @plugin.use
@@ -78,7 +102,7 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
 
     # Make a request to crt.sh on the common name field
     session = requests.Session()
-    query_params: list[tuple[str, str]] = [("cn", value), ("exclude", "expired")]
+    query_params: list[tuple[str, str]] = [("cn", cn), ("exclude", "expired")]
 
     try:
         # FUTURE: Determine if 1.0 is long enough for noisy domains (e.g. google)
@@ -95,12 +119,11 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
 
     for cert in data[: params.limit]:
         normalised_name = cert.name_value.strip().replace("\n", ", ")
-        result.annotations.append(
-            Annotation(
-                analytic="crt.sh - TLS Certificate",
-                type="context",
-                value=cert.serial_number,
-                summary=textwrap.dedent(f"""\
+        annotation_args: dict[str, Any] = {
+            "analytic": "crt.sh - TLS Certificate",
+            "type": "context",
+            "value": cert.serial_number,
+            "summary": textwrap.dedent(f"""\
                 TLS certificate found for domain:
 
                 Common name(s) for certificate: {normalised_name}
@@ -108,9 +131,12 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> QueryEntry:
                 Not after: {cert.not_after}
                 Certificate ID: {cert.serial_number}
                 """),
-                timestamp=datetime.datetime.strptime(cert.entry_timestamp, "%Y-%m-%dT%H:%M:%S.%f"),
-                confidence=1,
-            )
-        )
+            "confidence": 1,
+        }
+
+        if entry_timestamp := parse_entry_timestamp(cert.entry_timestamp):
+            annotation_args["timestamp"] = entry_timestamp
+
+        result.annotations.append(Annotation(**annotation_args))
 
     return result
