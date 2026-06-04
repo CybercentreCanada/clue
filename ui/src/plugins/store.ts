@@ -1,14 +1,17 @@
 /* eslint-disable no-console */
 
 import { createPluginStore } from 'react-pluggable';
-import type CluePlugin from './CluePlugin';
+import type ClueUIPlugin from './CluePlugin';
 
-class CluePluginStore {
+class ClueUIPluginStore {
   private _pluginStore = createPluginStore();
 
   plugins: string[] = [];
 
-  install(plugin: CluePlugin) {
+  pluginsByFormat: { [format: string]: string[] } = {};
+  pluginsByActionId: { [action: string]: string[] } = {};
+
+  install(plugin: ClueUIPlugin) {
     if (this.plugins.includes(plugin.name)) {
       return;
     }
@@ -17,7 +20,25 @@ class CluePluginStore {
 
     this.plugins.push(plugin.name);
 
+    if (plugin.format) {
+      this.pluginsByFormat[plugin.format] = [...(this.pluginsByFormat[plugin.format] ?? []), plugin.name];
+    }
+
+    if (plugin.actionIds) {
+      plugin.actionIds.forEach(actionId => {
+        this.pluginsByActionId[actionId] = [...(this.pluginsByActionId[actionId] ?? []), plugin.name];
+      });
+    }
+
     this.pluginStore.install(plugin);
+  }
+
+  getPluginsByFormat(format: string) {
+    return this.pluginsByFormat[format] ?? [];
+  }
+
+  getPluginsByActionId(actionId: string) {
+    return this.pluginsByActionId[actionId] ?? [];
   }
 
   public get pluginStore() {
@@ -25,6 +46,6 @@ class CluePluginStore {
   }
 }
 
-const cluePluginStore = new CluePluginStore();
+const clueUIPluginStore = new ClueUIPluginStore();
 
-export default cluePluginStore;
+export default clueUIPluginStore;

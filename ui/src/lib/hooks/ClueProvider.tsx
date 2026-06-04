@@ -1,3 +1,4 @@
+import { CluePluginProvider } from 'components/app/providers/CluePluginProvider';
 import type { FC, PropsWithChildren } from 'react';
 import type { ClueActionProps } from './ClueActionContext';
 import { ClueActionProvider } from './ClueActionContext';
@@ -21,13 +22,15 @@ const ClueProvider: FC<
     <ClueComponentProvider {...props}>
       <ClueConfigProvider config={props.config}>
         <ClueDatabaseProvider {...props}>
-          <ClueEnrichProvider {...props}>
-            <ClueFetcherProvider {...props}>
-              <ClueActionProvider {...props}>
-                <CluePopupProvider>{children}</CluePopupProvider>
-              </ClueActionProvider>
-            </ClueFetcherProvider>
-          </ClueEnrichProvider>
+          <CluePluginProvider>
+            <ClueEnrichProvider {...props}>
+              <ClueFetcherProvider {...props}>
+                <ClueActionProvider {...props}>
+                  <CluePopupProvider>{children}</CluePopupProvider>
+                </ClueActionProvider>
+              </ClueFetcherProvider>
+            </ClueEnrichProvider>
+          </CluePluginProvider>
         </ClueDatabaseProvider>
       </ClueConfigProvider>
     </ClueComponentProvider>

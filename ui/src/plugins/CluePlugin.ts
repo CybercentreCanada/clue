@@ -1,5 +1,7 @@
 import i18nInstance from 'i18n';
 import type { i18n as I18N } from 'i18next';
+import type { ActionResult } from 'lib/main';
+import type { WithActionData } from 'lib/types/WithActionData';
 import { difference } from 'lodash-es';
 import type React from 'react';
 import type { PropsWithChildren } from 'react';
@@ -7,12 +9,14 @@ import type { IPlugin, PluginStore } from 'react-pluggable';
 
 const INTERNAL_FUNCTIONS = ['constructor', 'getPluginName', 'getDependencies', 'init', 'activate', 'deactivate'];
 
-abstract class CluePlugin implements IPlugin {
+abstract class ClueUIPlugin implements IPlugin {
   abstract name: string;
-  abstract type: string;
   abstract version: string;
   abstract author: string;
   abstract description: string;
+
+  abstract format: string;
+  public actionIds?: string[];
 
   pluginStore: PluginStore;
 
@@ -20,6 +24,14 @@ abstract class CluePlugin implements IPlugin {
 
   getPluginName(): string {
     return `${this.name}@${this.version}`;
+  }
+
+  getPluginFormat(): string {
+    return this.format;
+  }
+
+  getPluginActionIds(): string[] | undefined {
+    return this.actionIds;
   }
 
   getDependencies(): string[] {
@@ -31,7 +43,8 @@ abstract class CluePlugin implements IPlugin {
   }
 
   activate() {
-    difference(Object.getOwnPropertyNames(CluePlugin.prototype), INTERNAL_FUNCTIONS).forEach(_function => {
+    const functions = difference(Object.getOwnPropertyNames(ClueUIPlugin.prototype), INTERNAL_FUNCTIONS);
+    functions.forEach(_function => {
       this.pluginStore.addFunction(`${this.name}.${_function}`, this[_function]);
       this.functionsToRemove.push(`${this.name}.${_function}`);
     });
@@ -40,11 +53,15 @@ abstract class CluePlugin implements IPlugin {
   }
 
   deactivate() {
-    difference(Object.getOwnPropertyNames(CluePlugin.prototype), INTERNAL_FUNCTIONS).forEach(_function =>
+    difference(Object.getOwnPropertyNames(ClueUIPlugin.prototype), INTERNAL_FUNCTIONS).forEach(_function =>
       this.pluginStore.removeFunction(`${this.name}.${_function}`)
     );
 
     this.functionsToRemove.forEach(name => this.pluginStore.removeFunction(name));
+  }
+
+  render(_props: { result: WithActionData<ActionResult> }) {
+    return null;
   }
 
   provider(): React.FC<PropsWithChildren<{}>> | null {
@@ -76,4 +93,4 @@ abstract class CluePlugin implements IPlugin {
   }
 }
 
-export default CluePlugin;
+export default ClueUIPlugin;
