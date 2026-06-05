@@ -5,7 +5,7 @@ import type { ClueUIPluginDefinition } from '../../../plugins/registry';
 import ClueUIPluginsRegistry from '../../../plugins/registry';
 import clueUIPluginStore from '../../../plugins/store';
 
-type ClueUIPluginProviderProps = {
+export type ClueUIPluginProviderProps = {
   /**
    * List of additional custom plugins to load.
    * Plugins passed in via this prop will take precedence over built-in plugins.
