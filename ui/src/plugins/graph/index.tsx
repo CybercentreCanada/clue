@@ -9,11 +9,11 @@ class GraphPlugin extends ClueUIPlugin {
   author = 'Mrs. White';
   description = 'Renders an interactive tree visualization.';
 
-  renderActionResult({ result }: { result: ActionResult }) {
+  actionResult({ result }: { result: ActionResult }) {
     return <Graph graph={result.output} sx={{ minHeight: '600px' }} />;
   }
 
-  renderFetcherResult({ result }: { result: FetcherResult }) {
+  fetcherResult({ result }: { result: FetcherResult }) {
     return <Graph graph={result.data} sx={{ minHeight: '600px' }} />;
   }
 }

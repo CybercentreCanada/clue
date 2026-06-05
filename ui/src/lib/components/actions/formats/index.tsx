@@ -12,29 +12,13 @@ const Result: FC<{ result: WithActionData<ActionResult> }> = ({ result }) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  let availablePlugins = clueUIPluginStore.getPluginsByActionId(result.actionId);
-  if (availablePlugins.length > 0) {
-    // return the first available plugin for this actionId
-    const plugin = availablePlugins.at(0);
-    if (plugin) {
-      const component = pluginStore.executeFunction(`${plugin}.renderActionResult`, { result }) as ReactNode;
+  const plugin = clueUIPluginStore.getPlugin(result.format, 'action', result.actionId);
 
-      if (component) {
-        return component;
-      }
-    }
-  }
+  if (plugin) {
+    const component = pluginStore.executeFunction(`${plugin}.actionResult`, { result }) as ReactNode;
 
-  availablePlugins = clueUIPluginStore.getPluginsByFormat(result.format);
-  if (availablePlugins.length > 0) {
-    // return the first available plugin for this format
-    const plugin = availablePlugins.at(0);
-    if (plugin) {
-      const component = pluginStore.executeFunction(`${plugin}.renderActionResult`, { result }) as ReactNode;
-
-      if (component) {
-        return component;
-      }
+    if (component) {
+      return component;
     }
   }
 

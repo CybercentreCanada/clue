@@ -8,7 +8,7 @@ class ImagePlugin extends ClueUIPlugin {
   author = 'Mr. Green';
   description = 'Renders images.';
 
-  renderActionResult(props: RenderActionResultProps) {
+  actionResult(props: RenderActionResultProps) {
     const { result, setShowPreview, ...additionalProps } = props;
     return (
       <img
@@ -20,7 +20,7 @@ class ImagePlugin extends ClueUIPlugin {
     );
   }
 
-  renderFetcherResult(props: RenderFetcherResultProps) {
+  fetcherResult(props: RenderFetcherResultProps) {
     const { result, setShowPreview, ...additionalProps } = props;
     return (
       <img src={result.data.image} alt={result.data.alt} {...additionalProps} onClick={() => setShowPreview?.(true)} />

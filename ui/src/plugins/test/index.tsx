@@ -9,11 +9,11 @@ class TestPlugin extends ClueUIPlugin {
   author = 'Col. Mustard';
   description = 'This plugin is a test.';
 
-  renderActionResult(_props: { result: ActionResult }) {
+  actionResult(_props: { result: ActionResult }) {
     return <Typography variant="h1">{'Test Plugin!'}</Typography>;
   }
 
-  renderFetcherResult(_props: { result: FetcherResult }) {
+  fetcherResult(_props: { result: FetcherResult }) {
     return <Typography variant="h1">{'Test Plugin!'}</Typography>;
   }
 }

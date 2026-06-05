@@ -9,7 +9,10 @@ class ClueUIPluginStore {
   plugins: string[] = [];
 
   pluginsByFormat: { [format: string]: string[] } = {};
-  pluginsByActionId: { [action: string]: string[] } = {};
+  pluginsByActionId: { [actionId: string]: string[] } = {};
+  pluginsByFetcherId: { [fetcherId: string]: string[] } = {};
+  actionPlugins: string[] = [];
+  fetcherPlugins: string[] = [];
 
   install(plugin: ClueUIPlugin) {
     if (this.plugins.includes(plugin.name)) {
@@ -30,17 +33,47 @@ class ClueUIPluginStore {
       });
     }
 
+    if (plugin.fetcherIds) {
+      plugin.fetcherIds.forEach(fetcherId => {
+        this.pluginsByFetcherId[fetcherId] = [...(this.pluginsByFetcherId[fetcherId] ?? []), plugin.name];
+      });
+    }
+
+    if (plugin.actionResult) {
+      this.actionPlugins.push(plugin.name);
+    }
+
+    if (plugin.fetcherResult) {
+      this.fetcherPlugins.push(plugin.name);
+    }
+
     this.pluginStore.install(plugin);
   }
 
-  getPluginsByFormat(format: string) {
-    return this.pluginsByFormat[format] ?? [];
-  }
+  getPlugin(format: string, resultType: 'action' | 'fetcher', actionId?: string, fetcherId?: string) {
+    let pluginsById: string[] = [];
+    let pluginsByFormat: string[] = [];
+    let pluginsByResultType: string[] = [];
 
-  getPluginsByActionId(actionId: string) {
-    return this.pluginsByActionId[actionId] ?? [];
-  }
+    if (resultType === 'action' && actionId) {
+      pluginsById = this.pluginsByActionId[actionId];
+    } else if (resultType === 'fetcher' && fetcherId) {
+      pluginsById = this.pluginsByFetcherId[fetcherId];
+    }
 
+    pluginsByResultType = resultType === 'action' ? this.actionPlugins : this.fetcherPlugins;
+
+    pluginsByFormat = this.pluginsByFormat[format] ?? [];
+
+    const availablePlugins = pluginsByFormat.filter(plugin => {
+      if (pluginsById) {
+        return pluginsById.includes(plugin);
+      }
+      return pluginsByResultType.includes(plugin);
+    });
+
+    return availablePlugins.length > 0 ? availablePlugins[0] : undefined;
+  }
   public get pluginStore() {
     return this._pluginStore;
   }

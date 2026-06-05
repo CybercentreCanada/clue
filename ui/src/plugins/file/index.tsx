@@ -10,7 +10,7 @@ class FilePlugin extends ClueUIPlugin {
   author = 'Miss Scarlett';
   description = 'Render a file action result with metadata, hash statistics, and download support.';
 
-  renderActionResult({ result }: { result: WithActionData<ActionResult> }) {
+  actionResult({ result }: { result: WithActionData<ActionResult> }) {
     return <FileResult result={result} />;
   }
 }

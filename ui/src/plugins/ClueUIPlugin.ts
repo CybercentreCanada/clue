@@ -4,7 +4,7 @@ import type { ActionResult, FetcherResult } from 'lib/main';
 import type { WithActionData } from 'lib/types/WithActionData';
 import { difference } from 'lodash-es';
 import type React from 'react';
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
 import type { IPlugin, PluginStore } from 'react-pluggable';
 
 const INTERNAL_FUNCTIONS = ['constructor', 'getPluginName', 'getDependencies', 'init', 'activate', 'deactivate'];
@@ -32,6 +32,7 @@ abstract class ClueUIPlugin implements IPlugin {
 
   abstract format: string;
   public actionIds?: string[];
+  public fetcherIds?: string[];
 
   pluginStore: PluginStore;
 
@@ -48,6 +49,9 @@ abstract class ClueUIPlugin implements IPlugin {
   getPluginActionIds(): string[] | undefined {
     return this.actionIds;
   }
+  getPluginFetcherIds(): string[] | undefined {
+    return this.fetcherIds;
+  }
 
   getDependencies(): string[] {
     return [];
@@ -63,6 +67,13 @@ abstract class ClueUIPlugin implements IPlugin {
       this.pluginStore.addFunction(`${this.name}.${_function}`, this[_function]);
       this.functionsToRemove.push(`${this.name}.${_function}`);
     });
+    // explicityly add render functions to plugin store if they have been implemented
+    if (this.actionResult) {
+      this.pluginStore.addFunction(`${this.name}.${'actionResult'}`, this.actionResult);
+    }
+    if (this.fetcherResult) {
+      this.pluginStore.addFunction(`${this.name}.${'fetcherResult'}`, this.fetcherResult);
+    }
 
     this.localization(i18nInstance);
   }
@@ -72,16 +83,20 @@ abstract class ClueUIPlugin implements IPlugin {
       this.pluginStore.removeFunction(`${this.name}.${_function}`)
     );
 
+    // explicityly remove render functions to plugin store if they have been implemented
+    if (this.actionResult) {
+      this.pluginStore.removeFunction(`${this.name}.${'actionResult'}`);
+    }
+    if (this.fetcherResult) {
+      this.pluginStore.removeFunction(`${this.name}.${'fetcherResult'}`);
+    }
+
     this.functionsToRemove.forEach(name => this.pluginStore.removeFunction(name));
   }
 
-  renderActionResult(_props: RenderActionResultProps) {
-    return null;
-  }
+  actionResult?(_props: RenderActionResultProps): ReactNode;
 
-  renderFetcherResult(_props: RenderFetcherResultProps) {
-    return null;
-  }
+  fetcherResult?(_props: RenderFetcherResultProps): ReactNode;
 
   provider(): React.FC<PropsWithChildren<{}>> | null {
     return null;

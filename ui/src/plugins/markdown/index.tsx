@@ -9,11 +9,11 @@ class MarkdownPlugin extends ClueUIPlugin {
   author = 'Professor Plum';
   description = 'Renders Markdown.';
 
-  renderActionResult({ result }: { result: ActionResult }) {
+  actionResult({ result }: { result: ActionResult }) {
     return <Markdown md={result.output} />;
   }
 
-  renderFetcherResult({ result }: { result: FetcherResult }) {
+  fetcherResult({ result }: { result: FetcherResult }) {
     return <Markdown md={result.data} />;
   }
 }

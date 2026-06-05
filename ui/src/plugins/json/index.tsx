@@ -10,11 +10,11 @@ class JsonPlugin extends ClueUIPlugin {
   description =
     'Renders JSON with the default renderer or the overridden json component defined in the clue component provider.';
 
-  renderActionResult({ result }: { result: ActionResult }) {
+  actionResult({ result }: { result: ActionResult }) {
     return <JSONViewer data={result.output} collapse forceCompact />;
   }
 
-  renderFetcherResult({ result }: { result: FetcherResult }) {
+  fetcherResult({ result }: { result: FetcherResult }) {
     return <JSONViewer data={result.data} />;
   }
 }
