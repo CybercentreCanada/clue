@@ -1,13 +1,13 @@
 import { Stack } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
-import type { FetcherResult } from 'lib/main';
 import type { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
+import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
 import clueUIPluginStore from '../../../plugins/store';
 
-export const FetcherResultView: FC<{ result: FetcherResult }> = ({ result }) => {
+export const FetcherResultView: FC<RenderFetcherResultProps> = ({ result, ...props }) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
@@ -16,7 +16,7 @@ export const FetcherResultView: FC<{ result: FetcherResult }> = ({ result }) => 
     // return the first available plugin for this format
     const plugin = availablePlugins.at(0);
     if (plugin) {
-      const component = pluginStore.executeFunction(`${plugin}.renderFetcherResult`, { result }) as ReactNode;
+      const component = pluginStore.executeFunction(`${plugin}.renderFetcherResult`, { result, ...props }) as ReactNode;
 
       if (component) {
         return component;

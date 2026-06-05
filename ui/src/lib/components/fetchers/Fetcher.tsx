@@ -98,6 +98,13 @@ const Fetcher: FC<FetcherProps> = React.memo(
       })();
     }, [classification, fetchSelector, fetcherId, t, type, value]);
 
+    const resultAdditionalProps = useMemo(() => {
+      if (result?.outcome === 'success' && result.format === 'image') {
+        return { setShowPreview, ...imageProps };
+      }
+      return { result };
+    }, [imageProps, result]);
+
     if (fetchCompleted) {
       if (!fetcherId) {
         console.warn('Missing fetcher Id. Component will not render.');
@@ -201,11 +208,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
             </code>
           )}
 
-          <FetcherResultView result={result} />
-
-          {result.format === 'image' && (
-            <img src={result.data.image} alt={result.data.alt} {...imageProps} onClick={() => setShowPreview(true)} />
-          )}
+          <FetcherResultView result={result} {...resultAdditionalProps} />
 
           <FlexOne />
           <Stack
