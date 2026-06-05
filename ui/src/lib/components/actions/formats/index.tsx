@@ -8,14 +8,20 @@ import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
 import clueUIPluginStore from '../../../../plugins/store';
 
-const Result: FC<{ result: WithActionData<ActionResult> }> = ({ result }) => {
+const Result: FC<{ result: WithActionData<ActionResult>; [additionalProp: string]: any }> = ({
+  result,
+  ...additionalProps
+}) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
   const plugin = clueUIPluginStore.getPlugin(result.format, 'action', result.actionId);
 
   if (plugin) {
-    const component = pluginStore.executeFunction(`${plugin}.actionResult`, { result }) as ReactNode;
+    const component = pluginStore.executeFunction(`${plugin}.actionResult`, {
+      result,
+      ...additionalProps
+    }) as ReactNode;
 
     if (component) {
       return component;
