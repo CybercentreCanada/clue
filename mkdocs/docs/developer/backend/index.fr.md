@@ -94,7 +94,7 @@ cd ..
 Attendre que les services soient en bonne santé :
 
 ```bash
-poetry run python build_scripts/keycloak_health.py
+poetry run python build_scripts/docker_health.py
 ```
 
 ## Flux de travail de développement
@@ -557,7 +557,7 @@ docker-compose logs redis
 docker-compose logs keycloak
 
 # Ou utiliser la vérification de santé intégrée
-poetry run python build_scripts/keycloak_health.py
+poetry run python build_scripts/docker_health.py
 ```
 
 #### Accès aux services

@@ -143,5 +143,13 @@
     "ui/target": true
   },
   "makefile.configureOnOpen": false,
-  "python-envs.defaultEnvManager": "ms-python.python:system"
+  "python-envs.defaultPackageManager": "ms-python.python:poetry",
+  "python-envs.defaultEnvManager": "ms-python.python:poetry",
+  "python-envs.pythonProjects": [
+    {
+      "path": ".",
+      "envManager": "ms-python.python:poetry",
+      "packageManager": "ms-python.python:poetry"
+    }
+  ]
 }

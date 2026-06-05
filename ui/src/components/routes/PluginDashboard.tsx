@@ -34,6 +34,7 @@ const PluginDashboard = () => {
   const [actionsList, setActionsList] = useState({});
   const [displayAllDocs, setDisplayAllDocs] = useState('all');
   const { t } = useTranslation();
+  const normalize = (s: string) => s.replace(/[-_]/g, '-').toLowerCase();
   const availableSources = useClueEnrichSelector(ctx => ctx.availableSources);
   const { availableActions } = useClueActions();
   const fetchers = useClueFetcherSelector(ctx => ctx.fetchers);
@@ -85,9 +86,8 @@ const PluginDashboard = () => {
 
     if (showdoc === 'active') {
       const availableSourcesDocs = docsList.filter(item =>
-        availableSources.some(substring => item.includes(substring))
+        availableSources.some(substring => normalize(item.split('-docs')[0]) === normalize(substring))
       );
-
       setDocsList(availableSourcesDocs);
     } else {
       setDocsList(Object.keys(docs));
@@ -148,8 +148,7 @@ const PluginDashboard = () => {
 
   const getActivityStatus = (pluginName: string) => {
     const plugin = pluginName.split('-docs')[0].slice(0);
-
-    const activeStatus = availableSources.find(source => source.includes(plugin));
+    const activeStatus = availableSources.find(source => normalize(plugin) === normalize(source));
 
     return activeStatus ? (
       <Chip label="Active" variant="outlined" size="small" color="success" />
@@ -161,7 +160,7 @@ const PluginDashboard = () => {
   const getDocumentationTitle = (pluginName: string) => {
     const plugin = pluginName.split('-docs')[0].slice(0);
     return plugin
-      .split('-')
+      .split(/[-_]/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };

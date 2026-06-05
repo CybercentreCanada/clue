@@ -27,9 +27,10 @@ def test_cache_local(mock_plugin: CluePlugin):
     cache = Cache("testing-cache", mock_plugin.app, "local", timeout=60)
 
     test_data = [
-        QueryEntry(count=6, annotations=[]),
+        QueryEntry(count=6, expiry=datetime.now(), annotations=[]),
         QueryEntry(
             count=3,
+            expiry=datetime.now(),
             annotations=[
                 Annotation(
                     analytic="test analytic",
@@ -60,9 +61,10 @@ def test_cache_redis(mock_plugin: CluePlugin):
     cache = Cache("testing-cache", mock_plugin.app, "redis", timeout=60)
 
     test_data = [
-        QueryEntry(count=6, annotations=[]),
+        QueryEntry(count=6, annotations=[], expiry=datetime.now()),
         QueryEntry(
             count=3,
+            expiry=datetime.now(),
             annotations=[
                 Annotation(
                     analytic="test analytic",

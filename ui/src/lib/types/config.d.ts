@@ -11,6 +11,7 @@ export interface ApiType {
       commit: string;
     };
     ui: {
+      replicate?: boolean;
       apps: any[];
     };
   };

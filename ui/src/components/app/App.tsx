@@ -28,6 +28,7 @@ import Home from 'components/routes/home';
 import Settings from 'components/routes/settings/Settings';
 import type { SnackbarEvents } from 'lib/data/event';
 import { SNACKBAR_EVENT_ID } from 'lib/data/event';
+import type { ClueDatabase } from 'lib/database/types';
 import { ClueActionProvider } from 'lib/hooks/ClueActionContext';
 import { ClueComponentProvider } from 'lib/hooks/ClueComponentContext';
 import { ClueConfigProvider } from 'lib/hooks/ClueConfigProvider';
@@ -38,6 +39,7 @@ import { CluePopupProvider } from 'lib/hooks/CluePopupContext';
 import { useClueEnrichSelector } from 'lib/hooks/selectors';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
+import type { ApiType } from 'lib/types/config';
 import { StorageKey } from 'lib/utils/constants';
 import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
@@ -142,43 +144,49 @@ const MyApp: FC = () => {
   );
 };
 
-const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
+const MyAppProvider: FC<PropsWithChildren<{ database: ClueDatabase | null }>> = ({ children, database }) => {
   const myPreferences: AppPreferenceConfigs = useMyPreferences();
   const myTheme: AppThemeConfigs = useMyTheme();
   const mySitemap: AppSiteMapConfigs = useMySitemap();
   const myUser: AppUserService<ClueUser> = useMyUser();
+
   return (
-    <ClueConfigProvider>
-      <ClueComponentProvider>
-        <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
-          <ModalProvider>
-            <LocalStorageProvider>
-              <ClueDatabaseProvider databaseConfig={{ storageType: 'memory' }}>
-                <ClueUIPluginProvider>
-                  <ClueEnrichProvider publicIconify={false} skipConfigCall>
-                    <ClueFetcherProvider>
-                      <ClueActionProvider>
-                        <CluePopupProvider>{children}</CluePopupProvider>
-                      </ClueActionProvider>
-                    </ClueFetcherProvider>
-                  </ClueEnrichProvider>
-                </ClueUIPluginProvider>
-              </ClueDatabaseProvider>
-            </LocalStorageProvider>
-          </ModalProvider>
-        </AppProvider>
-      </ClueComponentProvider>
-    </ClueConfigProvider>
+    <ClueComponentProvider>
+      <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
+        <ModalProvider>
+          <LocalStorageProvider>
+            <ClueDatabaseProvider database={database}>
+              <ClueUIPluginProvider>
+                <ClueEnrichProvider
+                  publicIconify={false}
+                  enabled={!!database}
+                  skipConfigCall
+                  classification="TLP:CLEAR"
+                >
+                  <ClueFetcherProvider>
+                    <ClueActionProvider>
+                      <CluePopupProvider>{children}</CluePopupProvider>
+                    </ClueActionProvider>
+                  </ClueFetcherProvider>
+                </ClueEnrichProvider>
+              </ClueUIPluginProvider>
+            </ClueDatabaseProvider>
+          </LocalStorageProvider>
+        </ModalProvider>
+      </AppProvider>
+    </ClueComponentProvider>
   );
 };
 
-const App: FC = () => {
+const App: FC<{ database: ClueDatabase | null; config: ApiType | null }> = ({ database, config }) => {
   return (
     <BrowserRouter>
-      <MyAppProvider>
-        <MyApp />
-        <Modal />
-      </MyAppProvider>
+      <ClueConfigProvider config={config}>
+        <MyAppProvider database={database}>
+          <MyApp />
+          <Modal />
+        </MyAppProvider>
+      </ClueConfigProvider>
     </BrowserRouter>
   );
 };

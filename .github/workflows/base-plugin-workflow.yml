@@ -58,6 +58,11 @@ jobs:
         with:
           dockerfile: plugins/base/plugin.Dockerfile
           failure-threshold: warning
+      - name: Run docker formatting checks (debian)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: plugins/base/debian.Dockerfile
+          failure-threshold: warning
 
   test_docker_build:
     if: github.event_name == 'pull_request'
@@ -68,6 +73,14 @@ jobs:
 
     needs:
       - formatting
+
+    strategy:
+      matrix:
+        include:
+          - dockerfile: base.Dockerfile
+            tag_suffix: ""
+          - dockerfile: debian.Dockerfile
+            tag_suffix: "-debian"
 
     defaults:
       run:
@@ -84,13 +97,13 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Test build Clue Base Plugin Docker image (no push)
+      - name: Test build Clue Base Plugin Docker image (${{ matrix.dockerfile }}) (no push)
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: plugins/base/base.Dockerfile
+          file: plugins/base/${{ matrix.dockerfile }}
           push: false
-          tags: cccs/clue-plugin-base:test
+          tags: cccs/clue-plugin-base:test${{ matrix.tag_suffix }}
           build-args: |
             version=${{ steps.version.outputs.version }}
             branch=${{ github.ref }}
@@ -105,6 +118,14 @@ jobs:
 
     needs:
       - formatting
+
+    strategy:
+      matrix:
+        include:
+          - dockerfile: base.Dockerfile
+            tag_suffix: ""
+          - dockerfile: debian.Dockerfile
+            tag_suffix: "-debian"
 
     defaults:
       run:
@@ -131,27 +152,27 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Extract metadata (tags, labels) for Docker (${{ matrix.dockerfile }})
         id: meta
         uses: docker/metadata-action@v3
         with:
           images: cccs/clue-plugin-base
           tags: |
-            type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-            type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
-            type=raw,value=${{steps.version.outputs.version}}.${{ github.run_number }}
-            type=raw,value=${{steps.version.outputs.version}}
+            type=raw,event=branch,value=latest${{ matrix.tag_suffix }},enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+            type=raw,event=branch,value=nightly${{ matrix.tag_suffix }},enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
+            type=raw,value=latest${{ matrix.tag_suffix }},enable=${{ startsWith(github.ref, 'refs/tags') }}
+            type=raw,value=${{steps.version.outputs.version}}.${{ github.run_number }}${{ matrix.tag_suffix }}
+            type=raw,value=${{steps.version.outputs.version}}${{ matrix.tag_suffix }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build and push Clue Base Plugin Docker image
+      - name: Build and push Clue Base Plugin Docker image (${{ matrix.dockerfile }})
         id: push
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: plugins/base/base.Dockerfile
+          file: plugins/base/${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

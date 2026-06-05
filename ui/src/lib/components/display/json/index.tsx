@@ -79,7 +79,6 @@ const JSONViewer: FC<{
           size="small"
           error={hasError}
           label={t('json.viewer.search.label')}
-          placeholder={t('json.viewer.search.prompt')}
         />
       )}
       {ReactJson && (
