@@ -11,7 +11,6 @@ const INTERNAL_FUNCTIONS = ['constructor', 'getPluginName', 'getDependencies', '
 
 export type RenderResultProps = {
   result: WithActionData<ActionResult> | FetcherResult;
-  setShowPreview?: (show: boolean) => void;
   // allow for any additional props to be passed in for flexibility, such as styling or event handlers
   [additionalProps: string]: any;
 };

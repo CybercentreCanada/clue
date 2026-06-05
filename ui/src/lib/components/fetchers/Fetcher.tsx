@@ -100,7 +100,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
 
     const resultAdditionalProps = useMemo(() => {
       if (result?.outcome === 'success' && result.format === 'image') {
-        return { setShowPreview, ...imageProps };
+        return { onClick: () => setShowPreview(true), ...imageProps };
       }
       return { result };
     }, [imageProps, result]);

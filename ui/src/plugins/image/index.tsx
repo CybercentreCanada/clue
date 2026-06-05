@@ -9,22 +9,13 @@ class ImagePlugin extends ClueUIPlugin {
   description = 'Renders images.';
 
   actionResult(props: RenderActionResultProps) {
-    const { result, setShowPreview, ...additionalProps } = props;
-    return (
-      <img
-        src={result.output.image}
-        alt={result.output.alt}
-        {...additionalProps}
-        onClick={() => setShowPreview?.(true)}
-      />
-    );
+    const { result, ...additionalProps } = props;
+    return <img src={result.output.image} alt={result.output.alt} {...additionalProps} />;
   }
 
   fetcherResult(props: RenderFetcherResultProps) {
-    const { result, setShowPreview, ...additionalProps } = props;
-    return (
-      <img src={result.data.image} alt={result.data.alt} {...additionalProps} onClick={() => setShowPreview?.(true)} />
-    );
+    const { result, ...additionalProps } = props;
+    return <img src={result.data.image} alt={result.data.alt} {...additionalProps} />;
   }
 }
 export default ImagePlugin;

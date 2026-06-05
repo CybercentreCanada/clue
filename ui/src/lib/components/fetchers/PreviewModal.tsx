@@ -3,6 +3,7 @@ import { Modal, Paper } from '@mui/material';
 import type { FetcherResult } from 'lib/types/fetcher';
 import type { FC } from 'react';
 import { memo } from 'react';
+import { FetcherResultView } from './FetcherResultView';
 
 /**
  * The Annotation Popover is for showing a permanent popover on click with interactivity. For showing data on hover, use Annotation Popper.
@@ -24,9 +25,7 @@ const PreviewModal: FC<
       {...otherProps}
     >
       <Paper sx={{ maxHeight: '90%', maxWidth: '90%', p: 2, overflow: 'auto' }}>
-        {result?.format === 'image' && (
-          <img src={result.data.image} alt={result.data.alt} style={{ maxWidth: '100%' }} />
-        )}
+        <FetcherResultView result={result} />
       </Paper>
     </Modal>
   );
