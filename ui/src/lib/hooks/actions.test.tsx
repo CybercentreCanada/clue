@@ -232,7 +232,7 @@ describe('action functionality', () => {
         });
 
         // The action form should open because the payload is invalid
-        expect(rendered.getByText('Execute')).toBeInTheDocument();
+        expect(rendered.getByText('actions.execute')).toBeInTheDocument();
 
         // Find the value input field in the form
         const valueInput: HTMLInputElement = rendered.getByTestId('#/properties/value-input') as HTMLInputElement;
@@ -244,14 +244,14 @@ describe('action functionality', () => {
         });
 
         // Wait for the execute button to become enabled after valid input
-        await waitFor(() => expect((rendered.getByText('Execute') as HTMLButtonElement).disabled).toBe(false));
+        await waitFor(() => expect((rendered.getByText('actions.execute') as HTMLButtonElement).disabled).toBe(false));
 
         // Ensure the network call has not been made yet
         expect(hpost).not.toBeCalled();
 
         // Simulate clicking the execute button to submit the form
         await act(async () => {
-          await rendered.getByText('Execute').click();
+          await rendered.getByText('actions.execute').click();
         });
 
         // Assert that the network call was made with the correct payload and headers
@@ -268,7 +268,7 @@ describe('action functionality', () => {
         );
 
         // The form should close after successful execution
-        expect(rendered.queryByText('Execute')).not.toBeInTheDocument();
+        expect(rendered.queryByText('actions.execute')).not.toBeInTheDocument();
       });
 
       /**
@@ -285,7 +285,7 @@ describe('action functionality', () => {
         });
 
         // The action form should open because the payload is invalid
-        expect(rendered.getByText('Execute')).toBeInTheDocument();
+        expect(rendered.getByText('actions.execute')).toBeInTheDocument();
 
         // Find the value input field in the form
         const valueInput: HTMLInputElement = rendered.getByTestId('#/properties/value-input') as HTMLInputElement;
@@ -297,14 +297,14 @@ describe('action functionality', () => {
         });
 
         // Wait for the execute button to become enabled
-        await waitFor(() => expect((rendered.getByText('Execute') as HTMLButtonElement).disabled).toBe(false));
+        await waitFor(() => expect((rendered.getByText('actions.execute') as HTMLButtonElement).disabled).toBe(false));
 
         // Clear previous mock calls
         vi.mocked(hpost).mockClear();
 
         // Submit the form
         await act(async () => {
-          await rendered.getByText('Execute').click();
+          await rendered.getByText('actions.execute').click();
         });
 
         // Assert that the network call was made with context information
@@ -328,7 +328,7 @@ describe('action functionality', () => {
           (await rendered.findByTestId('execute')).click();
         });
 
-        expect(rendered.getByText('Execute')).toBeInTheDocument();
+        expect(rendered.getByText('actions.execute')).toBeInTheDocument();
 
         let errorTriggered = false;
         const handler = (event: CustomEvent) => {
@@ -356,7 +356,7 @@ describe('action functionality', () => {
         });
 
         // Ensure the action form is displayed
-        expect(rendered.getByText('Execute')).toBeInTheDocument();
+        expect(rendered.getByText('actions.execute')).toBeInTheDocument();
 
         // Find the value input field in the form
         const valueInput: HTMLInputElement = rendered.getByTestId('#/properties/value-input') as HTMLInputElement;
@@ -368,7 +368,7 @@ describe('action functionality', () => {
         });
 
         // Wait for the execute button to become enabled
-        await waitFor(() => expect((rendered.getByText('Execute') as HTMLButtonElement).disabled).toBe(false));
+        await waitFor(() => expect((rendered.getByText('actions.execute') as HTMLButtonElement).disabled).toBe(false));
 
         // Mock the network call to fail with an error
         vi.mocked(hpost).mockImplementationOnce(() => Promise.reject('example error'));
@@ -382,7 +382,7 @@ describe('action functionality', () => {
 
         // Attempt to execute the action, which should trigger the error
         await act(async () => {
-          (await rendered.getByText('Execute')).click();
+          (await rendered.getByText('actions.execute')).click();
         });
 
         // Remove the event listener after execution
@@ -392,7 +392,7 @@ describe('action functionality', () => {
         expect(errorTriggered).toBe(true);
 
         // The form should remain open for retry after the error
-        expect(rendered.queryByText('Execute')).toBeInTheDocument();
+        expect(rendered.queryByText('actions.execute')).toBeInTheDocument();
       });
 
       /**
@@ -404,13 +404,13 @@ describe('action functionality', () => {
           (await rendered.findByTestId('execute')).click();
         });
 
-        expect(rendered.getByText('Execute')).toBeInTheDocument();
+        expect(rendered.getByText('actions.execute')).toBeInTheDocument();
 
         await act(async () => {
           (await rendered.findByTestId('cancel')).click();
         });
 
-        expect(rendered.queryByText('Execute')).not.toBeInTheDocument();
+        expect(rendered.queryByText('actions.execute')).not.toBeInTheDocument();
       });
     });
 
