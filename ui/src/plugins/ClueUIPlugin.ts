@@ -1,6 +1,6 @@
 import i18nInstance from 'i18n';
 import type { i18n as I18N } from 'i18next';
-import type { ActionResult } from 'lib/main';
+import type { ActionResult, FetcherResult } from 'lib/main';
 import type { WithActionData } from 'lib/types/WithActionData';
 import { difference } from 'lodash-es';
 import type React from 'react';
@@ -8,6 +8,21 @@ import type { PropsWithChildren } from 'react';
 import type { IPlugin, PluginStore } from 'react-pluggable';
 
 const INTERNAL_FUNCTIONS = ['constructor', 'getPluginName', 'getDependencies', 'init', 'activate', 'deactivate'];
+
+export type RenderResultProps = {
+  result: WithActionData<ActionResult> | FetcherResult;
+  setShowPreview?: (show: boolean) => void;
+  // allow for any additional props to be passed in for flexibility, such as styling or event handlers
+  [additionalProps: string]: any;
+};
+
+export interface RenderFetcherResultProps extends RenderResultProps {
+  result: FetcherResult;
+}
+
+export interface RenderActionResultProps extends RenderResultProps {
+  result: WithActionData<ActionResult>;
+}
 
 abstract class ClueUIPlugin implements IPlugin {
   abstract name: string;
@@ -60,7 +75,11 @@ abstract class ClueUIPlugin implements IPlugin {
     this.functionsToRemove.forEach(name => this.pluginStore.removeFunction(name));
   }
 
-  render(_props: { result: WithActionData<ActionResult> }) {
+  renderActionResult(_props: RenderActionResultProps) {
+    return null;
+  }
+
+  renderFetcherResult(_props: RenderFetcherResultProps) {
     return null;
   }
 

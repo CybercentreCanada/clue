@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 import { createPluginStore } from 'react-pluggable';
-import type ClueUIPlugin from './CluePlugin';
+import type ClueUIPlugin from './ClueUIPlugin';
 
 class ClueUIPluginStore {
   private _pluginStore = createPluginStore();

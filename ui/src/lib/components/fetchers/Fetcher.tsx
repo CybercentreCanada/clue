@@ -1,21 +1,9 @@
 /* eslint-disable no-console */
 import { Icon } from '@iconify/react';
 import type { ChipProps, ModalProps, PaperProps, SkeletonProps, StackProps } from '@mui/material';
-import {
-  Box,
-  Chip,
-  IconButton,
-  LinearProgress,
-  Paper,
-  Skeleton,
-  Stack,
-  Tooltip,
-  Typography,
-  useTheme
-} from '@mui/material';
+import { Chip, IconButton, LinearProgress, Paper, Skeleton, Stack, Tooltip, Typography, useTheme } from '@mui/material';
 import FlexOne from 'commons/addons/flexers/FlexOne';
 import Iconified from 'lib/components/display/icons/Iconified';
-import JSONViewer from 'lib/components/display/json';
 import { ClueComponentContext } from 'lib/hooks/ClueComponentContext';
 import { useClueFetcherSelector } from 'lib/hooks/selectors';
 import type { FetcherResult } from 'lib/types/fetcher';
@@ -23,8 +11,7 @@ import type { Selector } from 'lib/types/lookup';
 import type { FC } from 'react';
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useContextSelector } from 'use-context-selector';
-import Graph from '../display/graph';
-import Markdown from '../display/markdown';
+import { FetcherResultView } from './FetcherResultView';
 import PreviewModal from './PreviewModal';
 import StatusChip from './StatusChip';
 
@@ -213,16 +200,13 @@ const Fetcher: FC<FetcherProps> = React.memo(
               <pre style={{ marginTop: 0, marginBottom: 0 }}>{result.error}</pre>
             </code>
           )}
-          {result.format === 'markdown' && <Markdown md={result.data} />}
+
+          <FetcherResultView result={result} />
+
           {result.format === 'image' && (
             <img src={result.data.image} alt={result.data.alt} {...imageProps} onClick={() => setShowPreview(true)} />
           )}
-          {result.format === 'json' && (
-            <Box sx={{ '.react-json-view': { backgroundColor: 'transparent !important' } }}>
-              <JSONViewer data={result.data} />
-            </Box>
-          )}
-          {result.format === 'graph' && <Graph graph={result.data} sx={{ minHeight: '600px' }} />}
+
           <FlexOne />
           <Stack
             direction="row"

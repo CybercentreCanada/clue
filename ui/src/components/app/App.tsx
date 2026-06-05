@@ -47,7 +47,7 @@ import { useEffect } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
 import { BrowserRouter, Route } from 'react-router-dom';
 import AppContainer from './AppContainer';
-import { CluePluginProvider } from './providers/CluePluginProvider';
+import { ClueUIPluginProvider } from './providers/ClueUIPluginProvider';
 import LocalStorageProvider from './providers/LocalStorageProvider';
 import ModalProvider from './providers/ModalProvider';
 
@@ -154,7 +154,7 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
           <ModalProvider>
             <LocalStorageProvider>
               <ClueDatabaseProvider databaseConfig={{ storageType: 'memory' }}>
-                <CluePluginProvider>
+                <ClueUIPluginProvider>
                   <ClueEnrichProvider publicIconify={false} skipConfigCall>
                     <ClueFetcherProvider>
                       <ClueActionProvider>
@@ -162,7 +162,7 @@ const MyAppProvider: FC<PropsWithChildren> = ({ children }) => {
                       </ClueActionProvider>
                     </ClueFetcherProvider>
                   </ClueEnrichProvider>
-                </CluePluginProvider>
+                </ClueUIPluginProvider>
               </ClueDatabaseProvider>
             </LocalStorageProvider>
           </ModalProvider>

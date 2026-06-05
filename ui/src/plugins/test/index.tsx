@@ -1,16 +1,19 @@
 import { Typography } from '@mui/material';
-import type { ActionResult } from 'lib/main';
-import type { WithActionData } from 'lib/types/WithActionData';
-import ClueUIPlugin from '../CluePlugin';
+import type { ActionResult, FetcherResult } from 'lib/main';
+import ClueUIPlugin from '../ClueUIPlugin';
 
 class TestPlugin extends ClueUIPlugin {
   name = 'TestPlugin';
-  format = 'none';
+  format = 'test';
   version = '0.0.1';
   author = 'Col. Mustard';
   description = 'This plugin is a test.';
 
-  render(_props: { result: WithActionData<ActionResult> }) {
+  renderActionResult(_props: { result: ActionResult }) {
+    return <Typography variant="h1">{'Test Plugin!'}</Typography>;
+  }
+
+  renderFetcherResult(_props: { result: FetcherResult }) {
     return <Typography variant="h1">{'Test Plugin!'}</Typography>;
   }
 }

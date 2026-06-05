@@ -52,6 +52,7 @@
   "enrich": "Enrichir",
   "error": "Erreur",
   "error.unexpected": "Une erreur inattendue s'est produite",
+  "format.not.recognized": "Impossible d'afficher le résultat. Aucun plugin disponible pour afficher le format renvoyé : `{{format}}`.",
   "graph.no.dataset": "Aucun jeu de données n'a été sélectionné!",
   "graph.node.input.label": "Entrez un ID de nœud et appuyez sur [ctrl + entrée] pour le sélectionner. [ctrl + espace] ouvrira un menu d'auto-complétion.",
   "graph.show.more": "Afficher plus",

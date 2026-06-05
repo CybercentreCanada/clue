@@ -1,4 +1,4 @@
-import { CluePluginProvider } from 'components/app/providers/CluePluginProvider';
+import { ClueUIPluginProvider } from 'components/app/providers/ClueUIPluginProvider';
 import type { FC, PropsWithChildren } from 'react';
 import type { ClueActionProps } from './ClueActionContext';
 import { ClueActionProvider } from './ClueActionContext';
@@ -22,7 +22,7 @@ const ClueProvider: FC<
     <ClueComponentProvider {...props}>
       <ClueConfigProvider config={props.config}>
         <ClueDatabaseProvider {...props}>
-          <CluePluginProvider>
+          <ClueUIPluginProvider>
             <ClueEnrichProvider {...props}>
               <ClueFetcherProvider {...props}>
                 <ClueActionProvider {...props}>
@@ -30,7 +30,7 @@ const ClueProvider: FC<
                 </ClueActionProvider>
               </ClueFetcherProvider>
             </ClueEnrichProvider>
-          </CluePluginProvider>
+          </ClueUIPluginProvider>
         </ClueDatabaseProvider>
       </ClueConfigProvider>
     </ClueComponentProvider>
