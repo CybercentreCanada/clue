@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
 import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
 import clueUIPluginStore from '../../../plugins/store';
+import ErrorBoundary from '../ErrorBoundary';
 
 export const FetcherResultView: FC<RenderFetcherResultProps> = ({ result, ...props }) => {
   const pluginStore = usePluginStore();
@@ -19,7 +20,7 @@ export const FetcherResultView: FC<RenderFetcherResultProps> = ({ result, ...pro
       const component = pluginStore.executeFunction(`${plugin}.fetcherResult`, { result, ...props }) as ReactNode;
 
       if (component) {
-        return component;
+        return <ErrorBoundary>{component}</ErrorBoundary>;
       }
     }
   }

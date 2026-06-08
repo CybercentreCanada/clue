@@ -1,6 +1,7 @@
 import { Stack } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
+import ErrorBoundary from 'lib/components/ErrorBoundary';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import type { FC, ReactNode } from 'react';
@@ -24,7 +25,7 @@ const Result: FC<{ result: WithActionData<ActionResult>; [additionalProp: string
     }) as ReactNode;
 
     if (component) {
-      return component;
+      return <ErrorBoundary>{component}</ErrorBoundary>;
     }
   }
 
