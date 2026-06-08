@@ -12,16 +12,12 @@ export const FetcherResultView: FC<RenderFetcherResultProps> = ({ result, ...pro
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const availablePlugins = clueUIPluginStore.getPlugin(result.format, 'fetcher');
-  if (availablePlugins.length > 0) {
-    // return the first available plugin for this format
-    const plugin = availablePlugins.at(0);
-    if (plugin) {
-      const component = pluginStore.executeFunction(`${plugin}.fetcherResult`, { result, ...props }) as ReactNode;
+  const plugin = clueUIPluginStore.getPlugin(result.format, 'fetcher');
+  if (plugin) {
+    const component = pluginStore.executeFunction(`${plugin}.fetcherResult`, { result, ...props }) as ReactNode;
 
-      if (component) {
-        return <ErrorBoundary>{component}</ErrorBoundary>;
-      }
+    if (component) {
+      return <ErrorBoundary>{component}</ErrorBoundary>;
     }
   }
 
