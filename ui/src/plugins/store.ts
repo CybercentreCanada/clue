@@ -74,20 +74,25 @@ export class ClueUIPluginStore {
 
     pluginsByResultType = resultType === 'action' ? this.actionPlugins : this.fetcherPlugins;
 
-    pluginsByFormat = this.pluginsByFormat[format] ?? [];
+    pluginsByFormat = format ? (this.pluginsByFormat[format] ?? []) : this.plugins;
 
-    const availablePlugins = [
-      ...pluginsByFormat.filter(plugin => {
-        if (pluginsById) {
-          return pluginsById.includes(plugin);
-        }
-      }),
-      ...pluginsById?.filter(plugin => {
-        if (pluginsByResultType) {
-          return pluginsByResultType.includes(plugin);
-        }
-      })
-    ];
+    const availablePlugins =
+      pluginsById || pluginsByResultType
+        ? [
+            ...(pluginsById
+              ? pluginsByFormat.filter(plugin => {
+                  return pluginsById.includes(plugin);
+                })
+              : []),
+            ...(pluginsByResultType
+              ? pluginsByFormat?.filter(plugin => {
+                  if (pluginsByResultType) {
+                    return pluginsByResultType.includes(plugin);
+                  }
+                })
+              : [])
+          ]
+        : pluginsByFormat;
 
     return availablePlugins ?? [];
   }
@@ -101,6 +106,15 @@ export class ClueUIPluginStore {
     const availablePlugins = this.getPlugins(format, resultType, actionId, fetcherId);
 
     return availablePlugins.length > 0 ? availablePlugins[0] : undefined;
+  }
+
+  getAvailableFormats(pluginId?: string): string[] {
+    const formats = Object.keys(this.pluginsByFormat);
+
+    if (pluginId) {
+      return formats.filter(format => this.pluginsByFormat[format].includes(pluginId));
+    }
+    return formats;
   }
 
   public get pluginStore() {

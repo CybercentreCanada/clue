@@ -6,6 +6,7 @@ import {
   Help,
   HelpCenter,
   PlayArrowOutlined,
+  PowerOutlined,
   Settings,
   SupervisorAccount,
   SystemUpdateAlt
@@ -95,6 +96,15 @@ const useMyPreferences = (): AppPreferenceConfigs => {
             i18nKey: 'route.actions',
             route: '/actions',
             icon: <PlayArrowOutlined />
+          }
+        },
+        {
+          type: 'item',
+          element: {
+            id: 'ui-plugins',
+            i18nKey: 'route.plugins',
+            route: '/ui-plugins',
+            icon: <PowerOutlined />
           }
         },
         {

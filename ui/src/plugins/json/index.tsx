@@ -11,11 +11,39 @@ class JsonPlugin extends ClueUIPlugin {
     'Renders JSON with the default renderer or the overridden json component defined in the clue component provider.';
 
   actionResult({ result }: { result: ActionResult }) {
-    return <JSONViewer data={result.output} collapse forceCompact />;
+    let json = result.output;
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json);
+      } catch {
+        // do nothing, just render the string as is
+      }
+    }
+    return <JSONViewer data={json} collapse forceCompact />;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
-    return <JSONViewer data={result.data} />;
+    let json = result.data;
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json);
+      } catch {
+        // do nothing, just render the string as is
+      }
+    }
+    return <JSONViewer data={json} />;
+  }
+
+  editorLanguage() {
+    return 'json';
+  }
+
+  exampleInput() {
+    return '{ "key": "value" }';
+  }
+
+  documentation() {
+    return `This plugin renders JSON. It can be used by specifying "json" as the format in the plugin configuration. The input should be a JSON object or a stringified JSON.`;
   }
 }
 export default JsonPlugin;

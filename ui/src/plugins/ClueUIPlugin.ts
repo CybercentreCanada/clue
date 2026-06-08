@@ -15,10 +15,12 @@ export type RenderResultProps = {
 };
 
 export interface RenderFetcherResultProps extends RenderResultProps {
+  pluginId?: string;
   result: FetcherResult;
 }
 
 export interface RenderActionResultProps extends RenderResultProps {
+  pluginId?: string;
   result: WithActionData<ActionResult>;
 }
 
@@ -65,6 +67,8 @@ abstract class ClueUIPlugin implements IPlugin {
       this.pluginStore.addFunction(`${this.name}.${_function}`, this[_function]);
       this.functionsToRemove.push(`${this.name}.${_function}`);
     });
+
+    this.pluginStore.addFunction(`${this.name}.${'getPluginName'}`, this.getPluginName);
     // explicityly add render functions to plugin store if they have been implemented
     if (this.actionResult) {
       this.pluginStore.addFunction(`${this.name}.${'actionResult'}`, this.actionResult);
@@ -98,8 +102,19 @@ abstract class ClueUIPlugin implements IPlugin {
 
   localization(_i18n: I18N): void {}
 
-  documentation(md: string): string {
-    return md;
+  exampleInput(): any {
+    return undefined;
+  }
+
+  editorLanguage(): string {
+    /**
+     * Editor language
+     */
+    return undefined;
+  }
+
+  documentation(): string {
+    return null;
   }
 }
 

@@ -10,12 +10,41 @@ class ImagePlugin extends ClueUIPlugin {
 
   actionResult(props: RenderActionResultProps) {
     const { result, ...additionalProps } = props;
-    return <img src={result.output.image} alt={result.output.alt} {...additionalProps} />;
+
+    let json = result.output;
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json);
+      } catch {
+        // do nothing, just render the string as is
+      }
+    }
+    return <img src={json.image} alt={json.alt} {...additionalProps} />;
   }
 
   fetcherResult(props: RenderFetcherResultProps) {
     const { result, ...additionalProps } = props;
-    return <img src={result.data.image} alt={result.data.alt} {...additionalProps} />;
+    let json = result.data;
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json);
+      } catch {
+        // do nothing, just render the string as is
+      }
+    }
+    return <img src={json.image} alt={json.alt} {...additionalProps} />;
+  }
+
+  editorLanguage() {
+    return 'json';
+  }
+
+  exampleInput() {
+    return '{ "image": "/svg/dark/clue-icon2.svg", "alt": "Clue Logo" }';
+  }
+
+  documentation() {
+    return `This plugin renders images. It can be used by specifying "image" as the format in the plugin configuration. The input should be a json object with an "image" property that is the URL of the image, and an optional "alt" property for the alt text of the image.`;
   }
 }
 export default ImagePlugin;

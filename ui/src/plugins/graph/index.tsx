@@ -1,5 +1,6 @@
 import Graph from 'lib/components/display/graph';
 import type { ActionResult, FetcherResult } from 'lib/main';
+import tree_example from '../../components/routes/examples/tree.json';
 import ClueUIPlugin from '../ClueUIPlugin';
 
 class GraphPlugin extends ClueUIPlugin {
@@ -10,11 +11,39 @@ class GraphPlugin extends ClueUIPlugin {
   description = 'Renders an interactive tree visualization.';
 
   actionResult({ result }: { result: ActionResult }) {
-    return <Graph graph={result.output} sx={{ minHeight: '600px' }} />;
+    let json = result.output;
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json);
+      } catch {
+        // do nothing, just render the string as is
+      }
+    }
+    return <Graph graph={json} sx={{ minHeight: '600px' }} />;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
-    return <Graph graph={result.data} sx={{ minHeight: '600px' }} />;
+    let json = result.data;
+    if (typeof json === 'string') {
+      try {
+        json = JSON.parse(json);
+      } catch {
+        // do nothing, just render the string as is
+      }
+    }
+    return <Graph graph={json} sx={{ minHeight: '600px' }} />;
+  }
+
+  editorLanguage() {
+    return 'json';
+  }
+
+  exampleInput() {
+    return JSON.stringify(tree_example, null, 2);
+  }
+
+  documentation() {
+    return `This plugin renders an interactive tree visualization. It can be used by specifying "graph" as the format in the plugin configuration.`;
   }
 }
 export default GraphPlugin;

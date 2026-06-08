@@ -17,6 +17,7 @@
   "actions.result.file.unknown": "Inconnu",
   "adminmenu": "Menu d'administration",
   "adminmenu.config": "Configuration",
+  "route.plugins": "Plugins d'IU",
   "adminmenu.users": "Usagers",
   "all": "Tout",
   "annotation.failed": "Échoué",

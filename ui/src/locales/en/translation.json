@@ -116,6 +116,7 @@
   "route.login.button.oauth.keycloak": "Keycloak",
   "route.plugin": "Plugin",
   "route.plugin.active": "Active",
+  "route.plugins": "UI Plugins",
   "selected": "selected",
   "sources": "Sources",
   "sources.select.all": "Select All Sources",

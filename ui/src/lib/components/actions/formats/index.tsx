@@ -1,38 +1,55 @@
 import { Stack } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
+import ErrorBoundary from 'lib/components/ErrorBoundary';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
-import type { FC, ReactNode } from 'react';
+import { useMemo, type FC, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
 import clueUIPluginStore from '../../../../plugins/store';
 
-const Result: FC<{ result: WithActionData<ActionResult>; [additionalProp: string]: any }> = ({
+const Result: FC<{ pluginId?: string; result: WithActionData<ActionResult>; [additionalProp: string]: any }> = ({
+  pluginId,
   result,
   ...additionalProps
 }) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const plugin = clueUIPluginStore.getPlugin(result.format, 'action', result.actionId);
+  const plugin = useMemo(
+    () => pluginId ?? clueUIPluginStore.getPlugin(result.format, 'action', result.actionId),
+    [pluginId, result.format, result.actionId]
+  );
 
   if (plugin) {
-    const component = pluginStore.executeFunction(`${plugin}.actionResult`, {
-      result,
-      ...additionalProps
-    }) as ReactNode;
-
-    if (component) {
-      return component;
+    try {
+      const component = pluginStore.executeFunction(`${plugin}.actionResult`, {
+        result,
+        ...additionalProps
+      }) as ReactNode;
+      if (component) {
+        return <ErrorBoundary>{component}</ErrorBoundary>;
+      }
+    } catch {
+      return (
+        <ErrorBoundary>
+          <Stack sx={{ overflowY: 'auto' }}>
+            <Markdown md={t('format.render.error', { format: result.format })} />
+            <JSONViewer data={result} collapse forceCompact />
+          </Stack>
+        </ErrorBoundary>
+      );
     }
   }
 
   return (
-    <Stack sx={{ overflowY: 'auto' }}>
-      <Markdown md={t('format.not.recognized', { format: result.format })} />
-      <JSONViewer data={result} collapse forceCompact />
-    </Stack>
+    <ErrorBoundary>
+      <Stack sx={{ overflowY: 'auto' }}>
+        <Markdown md={t('format.not.recognized', { format: result.format })} />
+        <JSONViewer data={result} collapse forceCompact />
+      </Stack>
+    </ErrorBoundary>
   );
 };
 

@@ -1,8 +1,9 @@
-import { useEffect, type FC, type PropsWithChildren } from 'react';
+import { createContext, useEffect, type FC, type PropsWithChildren } from 'react';
 import { PluginProvider } from 'react-pluggable';
 import type ClueUIPlugin from '../../../plugins/ClueUIPlugin';
 import type { ClueUIPluginDefinition } from '../../../plugins/registry';
 import ClueUIPluginsRegistry from '../../../plugins/registry';
+import type { ClueUIPluginStore } from '../../../plugins/store';
 import clueUIPluginStore from '../../../plugins/store';
 
 export type ClueUIPluginProviderProps = {
@@ -22,7 +23,15 @@ export type ClueUIPluginProviderProps = {
   excludeBuiltInPlugins?: boolean;
 };
 
-const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = ({
+export type ClueUIPluginContextType = {
+  clueUIPluginStore: ClueUIPluginStore;
+};
+
+export const ClueUIPluginContext = createContext<ClueUIPluginContextType | null>({
+  clueUIPluginStore: clueUIPluginStore
+});
+
+export const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = ({
   plugins,
   excludePlugins,
   excludeBuiltInPlugins,
@@ -55,7 +64,9 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
     loadPlugins();
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);
 
-  return <PluginProvider pluginStore={clueUIPluginStore.pluginStore}>{children}</PluginProvider>;
+  return (
+    <ClueUIPluginContext.Provider value={{ clueUIPluginStore }}>
+      <PluginProvider pluginStore={clueUIPluginStore.pluginStore}>{children}</PluginProvider>
+    </ClueUIPluginContext.Provider>
+  );
 };
-
-export { ClueUIPluginProvider as ClueUIPluginProvider };

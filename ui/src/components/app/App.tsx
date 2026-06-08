@@ -23,6 +23,7 @@ import Documentation from 'components/routes/Documentation';
 import Fetchers from 'components/routes/Fetchers';
 import Logout from 'components/routes/Logout';
 import PluginDashboard from 'components/routes/PluginDashboard';
+import UIPlugins from 'components/routes/UIPlugins';
 import Examples from 'components/routes/examples';
 import Home from 'components/routes/home';
 import Settings from 'components/routes/settings/Settings';
@@ -138,6 +139,8 @@ const MyApp: FC = () => {
         <Route path="help" element={<PluginDashboard />} />
         <Route path="help/contributing" element={<Contributing />} />
         <Route path="help/:pluginId" element={<Documentation />} />
+        <Route path="ui-plugins" element={<UIPlugins />} />
+        <Route path="ui-plugins/:pluginId" element={<Documentation />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
