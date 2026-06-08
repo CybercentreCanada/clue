@@ -3,7 +3,7 @@
 import { createPluginStore } from 'react-pluggable';
 import type ClueUIPlugin from './ClueUIPlugin';
 
-class ClueUIPluginStore {
+export class ClueUIPluginStore {
   private _pluginStore = createPluginStore();
 
   plugins: string[] = [];
@@ -50,7 +50,18 @@ class ClueUIPluginStore {
     this.pluginStore.install(plugin);
   }
 
-  getPlugin(format: string, resultType: 'action' | 'fetcher', actionId?: string, fetcherId?: string) {
+  /**
+   * Get plugins based on the given criteria.
+   * Only plugins that match all criteria will be returned, which could be an empty list.
+   * The order of the plugins matter, for example if a plugin specifies an action ID, it will ordered before a plugin just specifies the format or result type.
+   *
+   * @param format filter plugins by this format
+   * @param resultType filter plugins by the result type that they accept (action or fetcher)
+   * @param actionId filter plugins by this action ID
+   * @param fetcherId filter plugins by this fetcher ID
+   * @returns an array of plugin names that match the given criteria
+   */
+  getPlugins(format?: string, resultType?: 'action' | 'fetcher', actionId?: string, fetcherId?: string): string[] {
     let pluginsById: string[] = [];
     let pluginsByFormat: string[] = [];
     let pluginsByResultType: string[] = [];
@@ -65,15 +76,33 @@ class ClueUIPluginStore {
 
     pluginsByFormat = this.pluginsByFormat[format] ?? [];
 
-    const availablePlugins = pluginsByFormat.filter(plugin => {
-      if (pluginsById) {
-        return pluginsById.includes(plugin);
-      }
-      return pluginsByResultType.includes(plugin);
-    });
+    const availablePlugins = [
+      ...pluginsByFormat.filter(plugin => {
+        if (pluginsById) {
+          return pluginsById.includes(plugin);
+        }
+      }),
+      ...pluginsById?.filter(plugin => {
+        if (pluginsByResultType) {
+          return pluginsByResultType.includes(plugin);
+        }
+      })
+    ];
+
+    return availablePlugins ?? [];
+  }
+
+  getPlugin(
+    format: string,
+    resultType: 'action' | 'fetcher',
+    actionId?: string,
+    fetcherId?: string
+  ): string | undefined {
+    const availablePlugins = this.getPlugins(format, resultType, actionId, fetcherId);
 
     return availablePlugins.length > 0 ? availablePlugins[0] : undefined;
   }
+
   public get pluginStore() {
     return this._pluginStore;
   }
