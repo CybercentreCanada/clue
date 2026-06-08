@@ -155,21 +155,6 @@ const UIPlugins: FC = () => {
   }, [pluginId, format, rawValue, returnedType, submitDisabled]);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check if Ctrl and Enter are both pressed
-      if (event.key === 'Enter' && event.ctrlKey) {
-        event.preventDefault(); // Prevents adding a newline in some browsers
-        handleSubmit();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    // Cleanup the event listener
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSubmit]);
-
-  useEffect(() => {
     if (!editor.current) {
       return;
     }
