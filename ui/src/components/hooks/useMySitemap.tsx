@@ -1,4 +1,13 @@
-import { Article, Code, Dashboard, Help, PlayArrowOutlined, Settings, SystemUpdateAlt } from '@mui/icons-material';
+import {
+  Article,
+  Code,
+  Dashboard,
+  Help,
+  PlayArrowOutlined,
+  PowerOutlined,
+  Settings,
+  SystemUpdateAlt
+} from '@mui/icons-material';
 import type { AppSiteMapConfigs } from 'commons/components/app/AppConfigs';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,6 +63,12 @@ const useMySitemap = (): AppSiteMapConfigs => {
           title: t('route.actions'),
           isRoot: true,
           icon: <PlayArrowOutlined />
+        },
+        {
+          path: '/ui-plugins',
+          title: t('route.plugins'),
+          isRoot: true,
+          icon: <PowerOutlined />
         },
         {
           path: '/help',

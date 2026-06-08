@@ -3,6 +3,7 @@ import { Editor, useMonaco } from '@monaco-editor/react';
 import { PlayArrow } from '@mui/icons-material';
 import {
   Autocomplete,
+  Badge,
   Box,
   Button,
   Divider,
@@ -13,6 +14,7 @@ import {
   Typography,
   useTheme
 } from '@mui/material';
+
 import PageCenter from 'commons/components/pages/PageCenter';
 import useThemeBuilder from 'commons/components/utils/hooks/useThemeBuilder';
 import useMyTheme from 'components/hooks/useMyTheme';
@@ -60,7 +62,7 @@ const UIPlugins: FC = () => {
     }
     return [];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [format, returnedType, clueUIPluginStore, pluginStore]);
+  }, [format, returnedType, clueUIPluginStore, clueUIPluginStore.plugins.length]);
 
   const availableFormats = useMemo(() => {
     return clueUIPluginStore.getAvailableFormats();
@@ -225,6 +227,18 @@ const UIPlugins: FC = () => {
     [themeBuilder, myTheme]
   );
 
+  const changesMade = useMemo(() => {
+    if (!displayPlugin) {
+      return false;
+    }
+    return (
+      rawValue !== outputValue ||
+      displayPlugin.format !== format ||
+      displayPlugin.returnedType !== returnedType ||
+      displayPlugin.id !== pluginId
+    );
+  }, [displayPlugin, rawValue, outputValue, format, returnedType, pluginId]);
+
   return (
     <PageCenter maxWidth="1800px" textAlign="left" height="100%">
       <Box position="absolute" top={50} left={0} right={0} bottom={0} p={2}>
@@ -316,8 +330,21 @@ const UIPlugins: FC = () => {
                     variant="outlined"
                     color="success"
                     onClick={handleSubmit}
+                    sx={{ pr: 3 }}
                   >
-                    {t('route.plugins.submit')}
+                    <Badge
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          right: -10,
+                          top: 12
+                        }
+                      }}
+                      color={'warning'}
+                      badgeContent={changesMade ? 1 : 0}
+                      variant="dot"
+                    >
+                      {t('route.plugins.submit')}
+                    </Badge>
                   </Button>
                 </Box>
               </Stack>
