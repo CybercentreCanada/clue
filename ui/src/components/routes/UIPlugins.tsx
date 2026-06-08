@@ -65,7 +65,7 @@ const UIPlugins: FC = () => {
   const availableFormats = useMemo(() => {
     return clueUIPluginStore.getAvailableFormats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clueUIPluginStore, format, pluginStore]);
+  }, [clueUIPluginStore, pluginIds, pluginStore]);
 
   const pluginDocumentationString = useMemo(() => {
     if (displayPlugin?.id) {
