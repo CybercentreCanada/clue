@@ -1,0 +1,71 @@
+{
+    "response": {
+        "Attribute": [
+            {
+                "id": "475746",
+                "event_id": "1620",
+                "object_id": "0",
+                "object_relation": null,
+                "category": "Network activity",
+                "type": "domain",
+                "to_ids": true,
+                "uuid": "52e64557-b129-43f4-99b8-26a483862299",
+                "timestamp": "1780945700",
+                "distribution": "5",
+                "sharing_group_id": "0",
+                "comment": "op512",
+                "deleted": false,
+                "disable_correlation": false,
+                "first_seen": null,
+                "last_seen": "2026-06-08T19:08:19.000000+00:00",
+                "value": "zhuxiaocompany.cn",
+                "Event": {
+                    "id": "1620",
+                    "info": "Maltrail IOC for 2026-06-08",
+                    "org_id": "1",
+                    "orgc_id": "29",
+                    "uuid": "4a45e589-c851-41a9-b4c0-249de14eceeb",
+                    "user_id": "1",
+                    "threat_level_id": "2",
+                    "distribution": "3",
+                    "analysis": "1",
+                    "date": "2026-06-07",
+                    "timestamp": "1780948804",
+                    "publish_timestamp": "1781040643",
+                    "Org": {
+                        "id": "1",
+                        "name": "ADMIN",
+                        "uuid": "c331aa76-a6df-4e24-a202-65a2bec3772c"
+                    },
+                    "Orgc": {
+                        "id": "29",
+                        "name": "Krawczyk Industries Limited",
+                        "uuid": "593e9fc8-be28-4cb2-a79b-43f8950d210f"
+                    },
+                    "ThreatLevel": {
+                        "id": "3",
+                        "name": "Low"
+                    }
+                },
+                "Tag": [
+                    {
+                        "id": "573",
+                        "name": "misp:threat-level=\"medium-risk\"",
+                        "colour": "#00833c",
+                        "numerical_value": null,
+                        "is_galaxy": false,
+                        "local": false
+                    },
+                    {
+                        "id": "47",
+                        "name": "type:OSINT",
+                        "colour": "#004646",
+                        "numerical_value": null,
+                        "is_galaxy": false,
+                        "local": false
+                    }
+                ]
+            }
+        ]
+    }
+}

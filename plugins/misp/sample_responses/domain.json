@@ -1,0 +1,71 @@
+{
+    "response": {
+        "Attribute": [
+            {
+                "id": "461564",
+                "event_id": "1616",
+                "object_id": "0",
+                "object_relation": null,
+                "category": "Network activity",
+                "type": "ip-dst",
+                "to_ids": true,
+                "uuid": "26e8dce5-ab1e-4136-80ea-36c09ab79484",
+                "timestamp": "1780603206",
+                "distribution": "5",
+                "sharing_group_id": "0",
+                "comment": "hacked_npmrepos",
+                "deleted": false,
+                "disable_correlation": false,
+                "first_seen": null,
+                "last_seen": "2026-06-04T20:00:06.000000+00:00",
+                "value": "46.224.67.169",
+                "Event": {
+                    "id": "1616",
+                    "info": "Maltrail IOC for 2026-06-04",
+                    "org_id": "1",
+                    "orgc_id": "29",
+                    "uuid": "503001ee-8340-416d-b1a7-a72e79b0ba8f",
+                    "user_id": "1",
+                    "threat_level_id": "2",
+                    "distribution": "3",
+                    "analysis": "1",
+                    "date": "2026-06-03",
+                    "timestamp": "1780603206",
+                    "publish_timestamp": "1781040343",
+                    "Org": {
+                        "id": "1",
+                        "name": "ADMIN",
+                        "uuid": "c331aa76-a6df-4e24-a202-65a2bec3772c"
+                    },
+                    "Orgc": {
+                        "id": "29",
+                        "name": "Krawczyk Industries Limited",
+                        "uuid": "593e9fc8-be28-4cb2-a79b-43f8950d210f"
+                    },
+                    "ThreatLevel": {
+                        "id": "3",
+                        "name": "Low"
+                    }
+                },
+                "Tag": [
+                    {
+                        "id": "573",
+                        "name": "misp:threat-level=\"medium-risk\"",
+                        "colour": "#00833c",
+                        "numerical_value": null,
+                        "is_galaxy": false,
+                        "local": false
+                    },
+                    {
+                        "id": "47",
+                        "name": "type:OSINT",
+                        "colour": "#004646",
+                        "numerical_value": null,
+                        "is_galaxy": false,
+                        "local": false
+                    }
+                ]
+            }
+        ]
+    }
+}

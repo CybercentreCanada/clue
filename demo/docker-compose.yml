@@ -80,9 +80,8 @@ services:
       API__EXTERNAL_SOURCES: |
         [
           {"name": "port-lookup", "url": "http://port-lookup:5100", "classification": "TLP:CLEAR"},
-          {"name": "crt-sh", "url": "http://crtsh:5101", "classification": "TLP:CLEAR"}
+          {"name": "misp", "url": "http://misp:5101", "classification": "TLP:CLEAR"}
         ]
-
     depends_on:
       keycloak:
         condition: service_healthy
@@ -115,17 +114,22 @@ services:
     networks:
       - clue-network
 
-  crtsh:
-    image: cccs/clue-plugin-crtsh:latest
-    restart: unless-stopped
+  misp:
+    build:
+      context: ../plugins/misp
+      dockerfile: ../base/plugin.Dockerfile
+      args:
+        base_plugin_version: "1.6"
     ports:
       - "5101:5101"
+    env_file:
+      - path: ./misp.env
+        required: false
     environment:
-      APP_NAME: crtsh
+      APP_NAME: misp
       CLASSIFICATION: TLP:CLEAR
       WORKERS: 1
-      PORT: 5101
-      # Redis for the plugin (optional, but good practice if it uses cache)
+      PORT: 5102
       CORE__REDIS__HOST: redis
       CORE__REDIS__PORT: 6379
     networks:
