@@ -129,7 +129,7 @@ services:
       APP_NAME: misp
       CLASSIFICATION: TLP:CLEAR
       WORKERS: 1
-      PORT: 5102
+      PORT: 5101
       CORE__REDIS__HOST: redis
       CORE__REDIS__PORT: 6379
     networks:
