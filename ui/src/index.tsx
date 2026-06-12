@@ -11,7 +11,7 @@ import { createRoot } from 'react-dom/client';
 
 const root = createRoot(document.getElementById('root'));
 
-async function init() {
+const init = async () => {
   let config: ApiType | null = null;
   let database: ClueDatabase | null = null;
 
@@ -27,6 +27,6 @@ async function init() {
       <App config={config} database={database} />
     </StrictMode>
   );
-}
+};
 
 init();
