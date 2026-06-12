@@ -74,3 +74,32 @@ export const searchObject = (o: any, query: string) => {
 export const filterEnrichments = (failedEnrichments: FailedRequest[]) => {
   return uniqWith<FailedRequest>(failedEnrichments, isEqual);
 };
+
+/**
+ * Deterministically compute a status ID from query fields.
+ * Uses WebCrypto SHA-256 when available, falls back to a lightweight FNV-1a.
+ */
+export const computeStatusId = async (type: string, value: string, classification: string): Promise<string> => {
+  const input = `${type}::${value}::${classification}`.toLowerCase();
+
+  try {
+    // Prefer WebCrypto for a stable, collision-resistant hash
+    const encoder = new TextEncoder();
+    const data = encoder.encode(input);
+    const digest = await (globalThis.crypto?.subtle?.digest?.('SHA-256', data) ?? Promise.reject());
+    const bytes = new Uint8Array(digest as ArrayBuffer);
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+      hex += bytes[i].toString(16).padStart(2, '0');
+    }
+    return hex;
+  } catch {
+    // Fallback: FNV-1a 32-bit hash
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < input.length; i++) {
+      hash ^= input.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return (hash >>> 0).toString(16);
+  }
+};

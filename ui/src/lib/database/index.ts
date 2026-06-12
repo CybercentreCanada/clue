@@ -80,7 +80,16 @@ const _process = throttle(
 
 const statusStatics: StatusCollectionMethods = {
   queueInsert: function (this: StatusCollection, value: StatusDocType) {
-    queuedValues.push(value);
+    const existingIndex = queuedValues.findIndex(v => v.id === value.id);
+    if (existingIndex === -1) {
+      queuedValues.push(value);
+    } else {
+      // Replace the existing queued value with the latest payload
+      // to avoid inserting the same StatusDocType multiple times.
+      // eslint-disable-next-line no-console
+      console.debug(`Updating existing queued entry ${value.type}:${value.value}`);
+      queuedValues[existingIndex] = value;
+    }
 
     _process(this);
 
