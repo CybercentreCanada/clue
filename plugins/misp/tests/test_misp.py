@@ -1,5 +1,8 @@
 import pytest
 
+TEST_IP = "198.51.100.42"
+TEST_TYPE = "ipv4"
+
 MISP_RESPONSE = {
     "Attribute": [
         {
@@ -11,8 +14,14 @@ MISP_RESPONSE = {
             "value": "198.51.100.42",
             "threat_level_id": "1",
             "Sighting": [
-                {"id": "12", "type": "0", "date_sighting": "1749123600", "Organisation": {"name": "Acme SOC"}},
-                {"id": "13", "type": "0", "date_sighting": "1749210000", "Organisation": {"name": "Acme SOC"}},
+                {
+                    "date_sighting": "1781380901",
+                    "type": "0",
+                },
+                {
+                    "date_sighting": "1781380907",
+                    "type": "0",
+                },
             ],
             "Event": {
                 "id": "305",
@@ -23,9 +32,9 @@ MISP_RESPONSE = {
                 "Orgc": {"name": "Threat Intel Team"},
             },
             "Tag": [
-                {"name": "kill-chain:Command and Control", "colour": "#a80079"},
-                {"name": 'adversary:infrastructure-type="C2"', "colour": "#ff6600"},
-                {"name": "tlp:green", "colour": "#00cc00"},
+                {"name": "kill-chain:Command and Control"},
+                {"name": 'adversary:infrastructure-type="C2"'},
+                {"name": "tlp:green"},
             ],
         }
     ]
@@ -52,17 +61,46 @@ def base_params(app_module):
     )
 
 
+@pytest.fixture()
+def enrich_result(app_module, base_params):
+    return app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+
+
 # Enrich
-def test_enrich_returns_summary(app_module, base_params):
-    result = app_module.enrich("ipv4", "198.51.100.42", base_params)[0]
-    assert result.annotations[0].summary == (
+def test_enrich_returns_summary(enrich_result):
+    assert enrich_result.annotations[0].summary == (
         "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
     )
 
 
-def test_enrich_count(app_module, base_params):
-    result = app_module.enrich("ipv4", "198.51.100.42", base_params)[0]
-    assert result.count == 1
+def test_enrich_count(enrich_result):
+    assert enrich_result.count == 1
+
+
+def test_enrich_classification(enrich_result):
+    assert enrich_result.classification == "TLP:GREEN"
+
+
+def test_enrich_value(enrich_result):
+    assert enrich_result.annotations[0].value == "C2 beacon observed during Cobalt Strike campaign"
+
+
+def test_enrich_confidence_sighting(enrich_result):
+    assert enrich_result.annotations[0].confidence == 1.0
+
+
+def test_enrich_confidence_no_sighting(app_module, base_params):
+    app_module.lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], "Sighting": []}]
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert result.annotations[0].confidence == 0.5
+
+
+def test_enrich_freetext_comment_ignored(app_module, base_params):
+    app_module.lookup_type = lambda *a, **kw: [
+        {**MISP_RESPONSE["Attribute"][0], "comment": "Imported via the Freetext Import Tool"}
+    ]
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert result.annotations[0].value != "Imported via the Freetext Import Tool"
 
 
 # Helpers
@@ -82,31 +120,32 @@ def test__parse_misp_tag(tag_name, exp_ns, exp_pred, exp_val):
     assert pred == exp_pred
     assert val == exp_val
 
+
 def test__process_tags():
     import app
+
     original = app.ALLOW_TAGS
-    app.ALLOW_TAGS = {
-        "misp-galaxy:threat-actor"
-    }
+    app.ALLOW_TAGS = {"misp-galaxy:threat-actor"}
     sample_tags = [
-        {"name":"type:OSINT"},
-        {"name":"tlp:red"},
-        {"name":'osint:lifetime="perpetual"'},
-        {"name":'misp-galaxy:threat-actor="APT 29"'},
+        {"name": "type:OSINT"},
+        {"name": "tlp:red"},
+        {"name": 'osint:lifetime="perpetual"'},
+        {"name": 'misp-galaxy:threat-actor="APT 29"'},
     ]
 
     tags, labels = app._process_tags(sample_tags)
-    assert tags == {'threat-actor:APT 29'}
-    assert labels == {'APT 29', 'OSINT'}
+    assert tags == {"threat-actor:APT 29"}
+    assert labels == {"APT 29", "OSINT"}
 
     app.ALLOW_TAGS = original
 
 
 def test__process_tags_no_match():
     import app
+
     sample_tags = [
         {"name": "tlp:red"},
-        {"name": "osint:lifetime=\"perpetual\""},
+        {"name": 'osint:lifetime="perpetual"'},
     ]
     tags, labels = app._process_tags(sample_tags)
     assert tags == set()
@@ -115,6 +154,7 @@ def test__process_tags_no_match():
 
 def test__process_tags_empty():
     import app
+
     tags, labels = app._process_tags([])
-    assert len(tags) == 0
-    assert len(labels) == 0
+    assert tags == set()
+    assert labels == set()

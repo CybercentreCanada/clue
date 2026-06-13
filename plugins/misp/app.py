@@ -155,7 +155,8 @@ def _parse_misp_tag(tag_name: str) -> tuple[str, str, str]:
 
     return ns, pred, val
 
-def _process_tags(attr_tags: list[dict])  -> tuple[set[str], set[str]]:
+
+def _process_tags(attr_tags: list[dict]) -> tuple[set[str], set[str]]:
     """Extract display tags and canonical labels from attribute tags"""
     tags = set()
     labels = set()
@@ -180,6 +181,7 @@ def _process_tags(attr_tags: list[dict])  -> tuple[set[str], set[str]]:
 
     return tags, labels
 
+
 @plugin.use
 def enrich(type_name: str, value: str, params: Params, *args):
     tn = TYPE_MAPPING.get(type_name)
@@ -202,7 +204,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
             category = attr.get("category")
 
             sightings = attr.get("Sighting") or []
-            true_sightings = sum(1 for s in sightings if s.get("type") == "1")
+            true_sightings = sum(1 for s in sightings if s.get("type") == "0")  # 0 = true
             confidence = true_sightings / len(sightings) if sightings else 0.5
 
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
