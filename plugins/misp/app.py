@@ -33,8 +33,8 @@ logger = get_logger(__file__)
 
 MISP_API_KEY = os.environ.get("MISP_API_KEY", "")
 CLASSIFICATION = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
-API_URL = os.environ.get("API_URL", "")  # MISP is always self hosted
-
+API_URL = os.environ.get("API_URL", "https://misp.local")
+EXCLUDE_DECAYED = str(os.environ.get("EXCLUDE_DECAYED", "true")).lower() in ("true", "1")
 
 verify: Union[str, bool] = str(os.environ.get("MISP_VERIFY", "true")).lower()
 if verify in ("true", "1"):
@@ -92,13 +92,11 @@ plugin = CluePlugin(
 )
 
 
-def lookup_type(type_name: list[str], value: str, timeout: float):
+def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
     if not MISP_API_KEY:
         raise UnprocessableException("No API key is provided. An API key is required")
-    if not API_URL:
-        raise UnprocessableException("No API URL provided. An API URL is required")
 
-    session = requests.Session()
+    session = requests.Session()  # TODO:
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -107,9 +105,10 @@ def lookup_type(type_name: list[str], value: str, timeout: float):
     payload = {
         "type": type_name,
         "value": value,
-        "returnFormat": "json",
+        "limit": limit,
         "includeEventTags": True,
         "includeSightings": True,
+        "returnFormat": "json",
     }
     url = f"{API_URL}/attributes/restSearch"
 
@@ -156,13 +155,37 @@ def _parse_misp_tag(tag_name: str) -> tuple[str, str, str]:
 
     return ns, pred, val
 
+def _process_tags(attr_tags: list[dict])  -> tuple[set[str], set[str]]:
+    """Extract display tags and canonical labels from attribute tags"""
+    tags = set()
+    labels = set()
+    for tag in attr_tags:
+        ns, pred, val = _parse_misp_tag(tag.get("name", ""))
+        if not ns:
+            ns = pred
+            pred = ""
+
+        if ns in ALLOW_TAGS or f"{ns}:{pred}" in ALLOW_TAGS:
+            if val:
+                tag_output = f"{pred}:{val.strip('"')}"
+            else:
+                tag_output = pred
+            tags.add(tag_output)
+
+        # Canonical enrichment tags
+        if f"{ns}:{pred}" == "misp-galaxy:threat-actor" and val:
+            labels.add(val.strip('"'))
+        if ns == "type":
+            labels.add(pred)
+
+    return tags, labels
 
 @plugin.use
-def enrich(type_name: str, value: str, params: Params, token: str | None):
+def enrich(type_name: str, value: str, params: Params, *args):
     tn = TYPE_MAPPING.get(type_name)
     if tn is None:
         raise InvalidDataException(f"{type_name} is not a valid type for this plugin.")
-    data = lookup_type(type_name=tn, value=value, timeout=params.max_timeout)
+    data = lookup_type(type_name=tn, value=value, limit=params.limit, timeout=params.max_timeout)
 
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
@@ -183,27 +206,7 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
             confidence = true_sightings / len(sightings) if sightings else 0.5
 
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
-            tags = set()
-            labels = set()
-            for tag in attr.get("Tag", []):
-                ns, pred, val = _parse_misp_tag(tag.get("name"))
-
-                if not ns:
-                    ns = pred
-                    pred = ""
-
-                if ns in ALLOW_TAGS or f"{ns}:{pred}" in ALLOW_TAGS:
-                    if val:
-                        tag_output = f"{pred}:{val.strip('"')}"
-                    else:
-                        tag_output = pred
-                    tags.add(tag_output)
-
-                # Canonical enrichment tags
-                if f"{ns}:{pred}" == "misp-galaxy:threat-actor" and val:
-                    labels.add(val.strip('"'))
-                if ns == "type":
-                    labels.add(pred)
+            tags, labels = _process_tags(attr.get("Tag", []))
 
             # Attribute date range if we have both first and last
             first_seen_iso = attr.get("first_seen")
@@ -248,7 +251,7 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
             annotations.append(
                 Annotation(
                     analytic="MISP",
-                    analytic_icon="tabler:message-dots",
+                    analytic_icon="flowbite:messages-outline",
                     type="context",
                     link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
                     value=annotation_value,
