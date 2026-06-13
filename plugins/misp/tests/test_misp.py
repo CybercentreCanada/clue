@@ -24,7 +24,7 @@ MISP_RESPONSE = {
             ],
             "Event": {
                 "id": "305",
-                "info": "Cobalt Strike C2 Infrastructure — June 2026",
+                "info": "Stop Ransomware: Medusa Ransomware",
                 "date": "2026-06-01",
                 "threat_level_id": "1",
                 "Org": {"name": "Acme SOC"},

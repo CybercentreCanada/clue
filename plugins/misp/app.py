@@ -48,7 +48,7 @@ TYPE_MAPPING: dict[str, list[str]] = {
     "ipv6": ["ip-src", "ip-dst"],
     "mac_address": ["mac-address"],
     "domain": ["domain"],
-    "url": ["url"],
+    "url": ["url", "link"],
     "email_address": ["email-src", "email-dst"],
     "sha1": ["sha1"],
     "sha256": ["sha256"],
@@ -57,14 +57,17 @@ TYPE_MAPPING: dict[str, list[str]] = {
 
 TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER+STRICT": 2, "TLP:AMBER": 3, "TLP:RED": 4}
 
-# Defaults to filter tags by "namespace" or "namespace:predicate"
+# Tags in MISP can be noisy, limit to known high impact tags
+# filter tags by "namespace" or "namespace:predicate"
 ALLOW_TAGS = {
-    "admiralty-scale",
     "ecsirt",
-    "kill-chain",
     "adversary",
     "malware_classification",
-    "type",
+    "misp-galaxy:threat-actor",
+    "misp-galaxy:malware",
+    "misp-galaxy:tool",
+    "misp-galaxy:ransomware",
+    "misp-galaxy:sector",
 }
 # Allow users to append or override the default list
 if extra := os.environ.get("ALLOW_TAGS_EXTRA"):
@@ -74,9 +77,9 @@ if override := os.environ.get("ALLOW_TAGS"):
 
 # 4 (undefined), defaults to None
 THREAT_LEVEL = {
-    1: 0.75, # High
+    1: 0.75,  # High
     2: 0.5,  # Medium
-    3: 0.25, # Low
+    3: 0.25,  # Low
 }
 
 plugin = CluePlugin(
@@ -85,6 +88,7 @@ plugin = CluePlugin(
     supported_types=set(TYPE_MAPPING.keys()),
     logger=logger,
 )
+
 
 def lookup_type(type_name: list[str], value: str, timeout: float):
     if not MISP_API_KEY:
@@ -123,7 +127,6 @@ def lookup_type(type_name: list[str], value: str, timeout: float):
 
 def _highest_tlp(tag_names: list[str]) -> str | None:
     """Calculates the highest TLP from a list of unfiltered tags"""
-    # TODO: store the score not the key easer, one lookup only
     highest: str | None = None
     for tag in tag_names:
         tlp = TLP_ENUM.get(tag.upper())
@@ -133,8 +136,19 @@ def _highest_tlp(tag_names: list[str]) -> str | None:
     return highest
 
 
-def pluralize(count: int, word: str) -> str:
-    return word if count == 1 else f"{word}s"
+def _parse_misp_tag(tag_name: str) -> tuple[str, str, str]:
+    """Parse MISP tag format"""
+    # MISP tag structure <namespace:predicate="value">
+    # https://www.misp-standard.org/rfc/misp-standard-taxonomy-format.html
+    ns_pred, _, val = tag_name.partition("=")
+    ns, _, pred = ns_pred.partition(":")
+    val = val.strip('"')
+
+    pred, _, _ = pred.partition(",")
+    pred = pred.rstrip("'")
+
+    return ns, pred, val
+
 
 @plugin.use
 def enrich(type_name: str, value: str, params: Params, token: str | None):
@@ -146,12 +160,72 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
     classification = CLASSIFICATION  # Give the attribute the highest TLP of the parent event(s)
     annotations = []
     if params.annotate:
-        logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
-
         for attr in data:
-            # Prefer results from attributes but fallback to the parent event's data for fields that are not gareteed at the attribute level
-            event_id = attr.get("event_id", "")
+            # Attribute fields
+            # Find best value with fallbacks, avoid irrelevant data
+            attr_comment = attr.get("comment", "")
+            if attr_comment == "Imported via the Freetext Import Tool":
+                attr_comment = ""
+            category = attr.get("category")
+
+            sightings = attr.get("Sighting") or []
+            true_sightings = sum(1 for s in sightings if s.get("type") == "1")
+            confidence = max(0.5, true_sightings / len(sightings)) if sightings else 0.5
+
+            # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
+            tags = set()
+            labels = set()
+            for tag in attr.get("Tag", []):
+                ns, predicate, val = _parse_misp_tag(tag.get("name"))
+
+                if not ns:
+                    ns = predicate
+                    predicate = ""
+
+                if ns in ALLOW_TAGS or f"{ns}:{predicate}" in ALLOW_TAGS:
+                    if val:
+                        tag_output = f"{predicate}:{val.strip('"')}"
+                    else:
+                        tag_output = predicate
+                    tags.add(tag_output)
+
+                # Canonical enrichment tags
+                if f"{ns}:{predicate}" == "misp-galaxy:threat-actor" and val:
+                    labels.add(val.strip('"'))
+                if ns == "type":
+                    labels.add(predicate)
+
+            # Attribute date range if we have both first and last
+            first_seen_iso = attr.get("first_seen")
+            last_seen_iso = attr.get("last_seen")
+            active_range = None
+            if first_seen_iso and last_seen_iso:
+                first_seen = datetime.fromisoformat(first_seen_iso.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+                last_seen = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+                active_range = f"Active: {first_seen} - {last_seen}"
+
+            annotation_value = attr_comment or ", ".join(labels) or "reported"
+
+            detail_parts = []
+            if tags:
+                detail_parts.append(f"**Tags**: {', '.join(sorted(tags))}")
+            if active_range:
+                detail_parts.append(active_range)
+            details = "\n\n".join(detail_parts) or None
+
+            # Event fields
             event = attr.get("Event", {})
+
+            org = event.get("Orgc", {}).get("name", "Unknown")
+            event_title = event.get("info")
+            summary = f"{org} reported {category}: {event_title}"
+
+            # Timestamp
+            # Last seen preferred, fallback to event creation date
+            if last_seen_iso:
+                timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
+            else:
+                timestamp = datetime.fromisoformat(event.get("date") + "T00:00:00").replace(tzinfo=timezone.utc)
 
             # Classification
             # Calculate both the attribute's and event's highest TLP and perfer the attributes
@@ -161,77 +235,18 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
             if TLP_ENUM.get(attr_classification, 0) > TLP_ENUM.get(classification, 0):
                 classification = attr_classification
 
-            # Timestamp
-            # Last seen timestamp is perferred, fallback to the event creation time
-            last_seen_iso = attr.get("last_seen")
-            event_creation_iso = event.get("date")
-            if last_seen_iso:
-                timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
-            else:
-                timestamp = datetime.fromisoformat(event_creation_iso + "T00:00:00").replace(tzinfo=timezone.utc)
-
-            # first_seen - last_seed pair june 1 - jun 8
-
-            # Summary
-            # Reporter
-            summary_parts = []
-            org = event.get("Orgc", {}).get("name", "Unknown")
-            category = attr.get("category")
-
-            # Atribute comment, fallback to event title
-            attr_comment = attr.get("comment")
-            event_title = event.get("info")
-
-            summary_parts.append(f"{org} reported {category}: {attr_comment or event_title}")
-
-            # Sightings (true/false positives)
-            confidence = 0.5
-            true_sightings = 0
-            sightings = attr.get("Sighting")
-
-            if sightings:
-                true_sightings = sum(1 for s in sightings if s.get("type") == "1")
-                confidence = max(confidence, true_sightings / (len(sightings)))
-
-            # Severity
-            threat_level = THREAT_LEVEL.get(int(event.get("threat_level_id")))
-
-            # Tags
-            # Tag structure <misp:>threat-level<=\"medium-risk\"><extra-tags>
-            # Only trust attributes to avoid misrepresentation (no fallback to event)
-            if attr_tags := attr.get("Tag", []):
-                tags = set()
-                for tag in attr_tags:
-                    tag_name = tag.get("name")
-                    ns_predicate, _, val = tag_name.partition("=")
-                    ns, _, predicate_extra = ns_predicate.partition(":")
-                    predicate, _, _ = predicate_extra.partition(",")
-                    predicate = predicate.rstrip("'")
-
-                    if not ns:
-                        ns = predicate
-                        predicate = ""
-
-                    if ns in ALLOW_TAGS or ns_predicate in ALLOW_TAGS:
-                        if val:
-                            tag_output = f"{predicate}:{val.strip('"')}"
-                        else:
-                            tag_output = predicate
-                        tags.add(tag_output)
-
-            summary = " ".join(summary_parts)
-
             annotations.append(
                 Annotation(
                     analytic="MISP",
                     analytic_icon="tabler:message-dots",
                     type="context",
-                    link=Url(f"{API_URL}/events/view/{event_id}"),
-                    value=event_title,
-                    summary=summary or event_title,
+                    link=Url(f"{API_URL}/events/view/{attr.get("event_id", "")}"),
+                    value=annotation_value,
+                    summary=summary,
+                    details=details,
                     timestamp=timestamp,
                     confidence=confidence,
-                    severity=threat_level,
+                    severity=THREAT_LEVEL.get(int(event.get("threat_level_id", 0))),
                     quantity=true_sightings,
                 )
             )
