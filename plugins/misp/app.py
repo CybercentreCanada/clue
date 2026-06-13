@@ -6,7 +6,7 @@ Point of Contact: Monjia Pawne <iambrendamore@gmail.com>
 
 Status: In Development
 
-This plugin interfaces with MISP's API
+MISP plugin enriches attributes, pulling data from attributes and their parent event
 """
 
 import os
@@ -85,6 +85,8 @@ THREAT_LEVEL = {
 plugin = CluePlugin(
     app_name=os.environ.get("APP_NAME", "misp"),
     classification=CLASSIFICATION,
+    enable_apm=False,
+    enable_cache=True,
     supported_types=set(TYPE_MAPPING.keys()),
     logger=logger,
 )
@@ -115,12 +117,17 @@ def lookup_type(type_name: list[str], value: str, timeout: float):
         rsp = session.post(url, json=payload, headers=headers, verify=VERIFY, timeout=timeout)
     except requests.exceptions.Timeout as e:
         raise TimeoutException("MISP failed to respond in time", cause=e)
+    except requests.exceptions.ConnectionError as e:
+        raise ClueException(f"Failed to connect to MISP: {e}", cause=e)
+    except requests.exceptions.RequestException as e:
+        raise ClueException(f"Request failed: {e}", cause=e)
+
     if rsp.status_code == 403:
         raise AuthenticationException(f"Authentication to MISP server: {API_URL} failed")
-    elif not int(rsp.headers.get("X-Result-Count", 0)):
-        raise NotFoundException("No result found")
     elif rsp.status_code != 200:
         raise ClueException(f"Error requesting data [{rsp.status_code}]")
+    elif not int(rsp.headers.get("X-Result-Count", 0)):
+        raise NotFoundException("No result found")
 
     return rsp.json().get("response", {}).get("Attribute")
 
@@ -157,10 +164,13 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
         raise InvalidDataException(f"{type_name} is not a valid type for this plugin.")
     data = lookup_type(type_name=tn, value=value, timeout=params.max_timeout)
 
+    logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
+
     classification = CLASSIFICATION  # Give the attribute the highest TLP of the parent event(s)
     annotations = []
     if params.annotate:
         for attr in data:
+            logger.debug(f"Processing attribute event_id={attr.get('event_id')}")
             # Attribute fields
             # Find best value with fallbacks, avoid irrelevant data
             attr_comment = attr.get("comment", "")
@@ -170,30 +180,30 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
 
             sightings = attr.get("Sighting") or []
             true_sightings = sum(1 for s in sightings if s.get("type") == "1")
-            confidence = max(0.5, true_sightings / len(sightings)) if sightings else 0.5
+            confidence = true_sightings / len(sightings) if sightings else 0.5
 
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
             tags = set()
             labels = set()
             for tag in attr.get("Tag", []):
-                ns, predicate, val = _parse_misp_tag(tag.get("name"))
+                ns, pred, val = _parse_misp_tag(tag.get("name"))
 
                 if not ns:
-                    ns = predicate
-                    predicate = ""
+                    ns = pred
+                    pred = ""
 
-                if ns in ALLOW_TAGS or f"{ns}:{predicate}" in ALLOW_TAGS:
+                if ns in ALLOW_TAGS or f"{ns}:{pred}" in ALLOW_TAGS:
                     if val:
-                        tag_output = f"{predicate}:{val.strip('"')}"
+                        tag_output = f"{pred}:{val.strip('"')}"
                     else:
-                        tag_output = predicate
+                        tag_output = pred
                     tags.add(tag_output)
 
                 # Canonical enrichment tags
-                if f"{ns}:{predicate}" == "misp-galaxy:threat-actor" and val:
+                if f"{ns}:{pred}" == "misp-galaxy:threat-actor" and val:
                     labels.add(val.strip('"'))
                 if ns == "type":
-                    labels.add(predicate)
+                    labels.add(pred)
 
             # Attribute date range if we have both first and last
             first_seen_iso = attr.get("first_seen")
@@ -240,7 +250,7 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
                     analytic="MISP",
                     analytic_icon="tabler:message-dots",
                     type="context",
-                    link=Url(f"{API_URL}/events/view/{attr.get("event_id", "")}"),
+                    link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
                     value=annotation_value,
                     summary=summary,
                     details=details,
@@ -261,4 +271,5 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
         raw_data=data if params.raw else None,
     )
 
+    logger.info(f"Returning {len(annotations)} annotations for {type_name}={value}")
     return [QueryEntry.model_validate(r)]
