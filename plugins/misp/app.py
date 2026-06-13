@@ -35,6 +35,7 @@ MISP_API_KEY = os.environ.get("MISP_API_KEY", "")
 CLASSIFICATION = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
 API_URL = os.environ.get("API_URL", "")  # MISP is always self hosted
 
+
 verify: Union[str, bool] = str(os.environ.get("MISP_VERIFY", "true")).lower()
 if verify in ("true", "1"):
     verify = True
@@ -56,10 +57,33 @@ TYPE_MAPPING: dict[str, list[str]] = {
 
 TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER+STRICT": 2, "TLP:AMBER": 3, "TLP:RED": 4}
 
+# Defaults to filter tags by "namespace" or "namespace:predicate"
+ALLOW_TAGS = {
+    "admiralty-scale",
+    "ecsirt",
+    "kill-chain",
+    "adversary",
+    "malware_classification",
+    "type",
+}
+# Allow users to append or override the default list
+if extra := os.environ.get("ALLOW_TAGS_EXTRA"):
+    ALLOW_TAGS = ALLOW_TAGS | {t.strip() for t in extra.split(",")}
+if override := os.environ.get("ALLOW_TAGS"):
+    ALLOW_TAGS = {t.strip() for t in override.split(",")}
+
+THREAT_LEVEL = {
+    1: "high",
+    2: "medium",
+    3: "low",
+}
+
 
 def lookup_type(type_name: list[str], value: str, timeout: float):
     if not MISP_API_KEY:
         raise UnprocessableException("No API key is provided. An API key is required")
+    if not API_URL:
+        raise UnprocessableException("No API URL provided. An API URL is required")
 
     session = requests.Session()
     headers = {
@@ -74,9 +98,7 @@ def lookup_type(type_name: list[str], value: str, timeout: float):
         "includeEventTags": True,
         "includeSightings": True,
     }
-
     url = f"{API_URL}/attributes/restSearch"
-    logger.debug(f"URL {url}, Payload {payload}")
 
     try:
         rsp = session.post(url, json=payload, headers=headers, verify=VERIFY, timeout=timeout)
@@ -94,6 +116,7 @@ def lookup_type(type_name: list[str], value: str, timeout: float):
 
 def _highest_tlp(tag_names: list[str]) -> str | None:
     """Calculate the highest TLP from a list of unfiltered tags"""
+    # TODO: store the score not the key easer, one lookup only
     highest: str | None = None
     for tag in tag_names:
         tlp = TLP_ENUM.get(tag.upper())
@@ -101,6 +124,10 @@ def _highest_tlp(tag_names: list[str]) -> str | None:
             if highest is None or tlp > TLP_ENUM[highest]:
                 highest = tag.upper()
     return highest
+
+
+def pluralize(count: int, word: str) -> str:
+    return word if count == 1 else f"{word}s"
 
 
 def enrich(type_name: str, value: str, params: Params, token: str | None):
@@ -116,7 +143,6 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
 
         for attr in data:
             # Prefer results from attributes but fallback to the parent event's data for fields that are not gareteed at the attribute level
-            summary_parts = []
             event_id = attr.get("event_id", "")
             event = attr.get("Event", {})
 
@@ -128,32 +154,63 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
             if TLP_ENUM.get(attr_classification, 0) > TLP_ENUM.get(classification, 0):
                 classification = attr_classification
 
+            # Timestamp
+            # Last seen timestamp is perferred, fallback to the event creation time
+            last_seen_iso = attr.get("last_seen")
+            event_creation_iso = event.get("date")
+            if last_seen_iso:
+                timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
+            else:
+                timestamp = datetime.fromisoformat(event_creation_iso + "T00:00:00").replace(tzinfo=timezone.utc)
+
+            # first_seen - last_seed pair june 1 - jun 8
+
+            # Summary
             # Reporter
-            summary_parts.append(f"Reported by {event.get('Orgc', {}).get('name')}")
-            summary_parts.append(f"({attr.get("category")}):")
+            summary_parts = []
+            org = event.get("Orgc", {}).get("name", "Unknown")
+            category = attr.get("category")
 
             # Atribute comment, fallback to event title
             attr_comment = attr.get("comment")
             event_title = event.get("info")
-            summary_parts.append(attr_comment or event_title)
+
+            summary_parts.append(f"{org} reported {category}: {attr_comment or event_title}")
 
             # Sightings (true/false positives)
-            sightings = attr.get("Sighting")
+            confidence = 0.5
             true_sightings = 0
-            false_sightings = 0
+            sightings = attr.get("Sighting")
+
             if sightings:
-                for sighting in sightings:
-                    if sighting.get("type") == "1":
-                        true_sightings += 1
-                    else:
-                        false_sightings += 1
-                # TODO: Fix pluaral
-                summary_parts.append(f"- {true_sightings} sightings, {false_sightings} false sightings")
-            else:
-                summary_parts.append("- no sightings reported")
+                true_sightings = sum(1 for s in sightings if s.get("type") == "1")
+                confidence = max(confidence, true_sightings / (len(sightings)))
 
             # Tags
-            # TODO: Filter non tlp, non meta tags eg APT, Phishing
+            # Tag structure <misp:>threat-level<=\"medium-risk\">
+            # Only trust attributes to avoid misrepresentation (no fallback to event)
+            if attr_tags := attr.get("Tag", []):
+                tags = set()
+                for tag in attr_tags:
+                    tag_name = tag.get("name")
+                    ns_predicate, _, val = tag_name.partition("=")
+                    ns, _, predicate = ns_predicate.partition(":")
+
+                    if not ns:
+                        ns = predicate
+                        predicate = ""
+
+                    if ns in ALLOW_TAGS or ns_predicate in ALLOW_TAGS:
+                        if val:
+                            tag_output = f"{predicate}:{val.strip('"')}"
+                        else:
+                            tag_output = predicate
+                        tags.add(tag_output)
+
+                if threat_level := THREAT_LEVEL.get(int(event.get("threat_level_id"))):
+                    tags.add(f"threat: {threat_level}")
+                if tags:
+                    summary_parts.append(f"[{', '.join(tags)}]")
 
             summary = " ".join(summary_parts)
 
@@ -165,12 +222,13 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
                     link=Url(f"{API_URL}/events/view/{event_id}"),
                     value=event_title,
                     summary=summary or event_title,
-                    timestamp=datetime.fromtimestamp(int(attr["timestamp"]), tz=timezone.utc),
-                    confidence=1.0,
+                    timestamp=timestamp,
+                    confidence=confidence,
                     quantity=true_sightings,
                 )
             )
 
+    annotations.sort(key=lambda a: a.confidence, reverse=True)
     r = QueryEntry(
         classification=classification,
         link=Url(f"{API_URL}"),
