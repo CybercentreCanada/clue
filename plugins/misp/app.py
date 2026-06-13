@@ -72,12 +72,19 @@ if extra := os.environ.get("ALLOW_TAGS_EXTRA"):
 if override := os.environ.get("ALLOW_TAGS"):
     ALLOW_TAGS = {t.strip() for t in override.split(",")}
 
+# 4 (undefined), defaults to None
 THREAT_LEVEL = {
-    1: "high",
-    2: "medium",
-    3: "low",
+    1: 0.75, # High
+    2: 0.5,  # Medium
+    3: 0.25, # Low
 }
 
+plugin = CluePlugin(
+    app_name=os.environ.get("APP_NAME", "misp"),
+    classification=CLASSIFICATION,
+    supported_types=set(TYPE_MAPPING.keys()),
+    logger=logger,
+)
 
 def lookup_type(type_name: list[str], value: str, timeout: float):
     if not MISP_API_KEY:
@@ -115,7 +122,7 @@ def lookup_type(type_name: list[str], value: str, timeout: float):
 
 
 def _highest_tlp(tag_names: list[str]) -> str | None:
-    """Calculate the highest TLP from a list of unfiltered tags"""
+    """Calculates the highest TLP from a list of unfiltered tags"""
     # TODO: store the score not the key easer, one lookup only
     highest: str | None = None
     for tag in tag_names:
@@ -129,7 +136,7 @@ def _highest_tlp(tag_names: list[str]) -> str | None:
 def pluralize(count: int, word: str) -> str:
     return word if count == 1 else f"{word}s"
 
-
+@plugin.use
 def enrich(type_name: str, value: str, params: Params, token: str | None):
     tn = TYPE_MAPPING.get(type_name)
     if tn is None:
@@ -186,15 +193,20 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
                 true_sightings = sum(1 for s in sightings if s.get("type") == "1")
                 confidence = max(confidence, true_sightings / (len(sightings)))
 
+            # Severity
+            threat_level = THREAT_LEVEL.get(int(event.get("threat_level_id")))
+
             # Tags
-            # Tag structure <misp:>threat-level<=\"medium-risk\">
+            # Tag structure <misp:>threat-level<=\"medium-risk\"><extra-tags>
             # Only trust attributes to avoid misrepresentation (no fallback to event)
             if attr_tags := attr.get("Tag", []):
                 tags = set()
                 for tag in attr_tags:
                     tag_name = tag.get("name")
                     ns_predicate, _, val = tag_name.partition("=")
-                    ns, _, predicate = ns_predicate.partition(":")
+                    ns, _, predicate_extra = ns_predicate.partition(":")
+                    predicate, _, _ = predicate_extra.partition(",")
+                    predicate = predicate.rstrip("'")
 
                     if not ns:
                         ns = predicate
@@ -206,11 +218,6 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
                         else:
                             tag_output = predicate
                         tags.add(tag_output)
-
-                if threat_level := THREAT_LEVEL.get(int(event.get("threat_level_id"))):
-                    tags.add(f"threat: {threat_level}")
-                if tags:
-                    summary_parts.append(f"[{', '.join(tags)}]")
 
             summary = " ".join(summary_parts)
 
@@ -224,11 +231,13 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
                     summary=summary or event_title,
                     timestamp=timestamp,
                     confidence=confidence,
+                    severity=threat_level,
                     quantity=true_sightings,
                 )
             )
 
     annotations.sort(key=lambda a: a.confidence, reverse=True)
+
     r = QueryEntry(
         classification=classification,
         link=Url(f"{API_URL}"),
@@ -238,12 +247,3 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
     )
 
     return [QueryEntry.model_validate(r)]
-
-
-plugin = CluePlugin(
-    app_name=os.environ.get("APP_NAME", "misp"),
-    classification=CLASSIFICATION,
-    enrich=enrich,
-    supported_types=set(TYPE_MAPPING.keys()),
-    logger=logger,
-)
