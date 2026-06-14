@@ -96,7 +96,6 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
     if not MISP_API_KEY:
         raise UnprocessableException("No API key is provided. An API key is required")
 
-    session = requests.Session()  # TODO:
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -108,12 +107,14 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
         "limit": limit,
         "includeEventTags": True,
         "includeSightings": True,
+        "excludeDecayed": EXCLUDE_DECAYED,
         "returnFormat": "json",
     }
     url = f"{API_URL}/attributes/restSearch"
 
     try:
-        rsp = session.post(url, json=payload, headers=headers, verify=VERIFY, timeout=timeout)
+        with requests.session() as session:
+            rsp = session.post(url, json=payload, headers=headers, verify=VERIFY, timeout=timeout)
     except requests.exceptions.Timeout as e:
         raise TimeoutException("MISP failed to respond in time", cause=e)
     except requests.exceptions.ConnectionError as e:
@@ -128,7 +129,7 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
     elif not int(rsp.headers.get("X-Result-Count", 0)):
         raise NotFoundException("No result found")
 
-    return rsp.json().get("response", {}).get("Attribute")
+    return rsp.json().get("response", {}).get("Attribute") or []
 
 
 def _highest_tlp(tag_names: list[str]) -> str | None:
@@ -205,7 +206,11 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
             sightings = attr.get("Sighting") or []
             true_sightings = sum(1 for s in sightings if s.get("type") == "0")  # 0 = true
-            confidence = true_sightings / len(sightings) if sightings else 0.5
+            if sightings:
+                # Cap MISP confidence to 0.9, even with all true sightings MISP IOCs are still not aboslute facts
+                confidence = min(0.9, true_sightings / len(sightings))
+            else:
+                confidence = 0.5
 
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
             tags, labels = _process_tags(attr.get("Tag", []))

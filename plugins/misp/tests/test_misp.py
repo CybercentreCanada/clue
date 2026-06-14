@@ -86,13 +86,39 @@ def test_enrich_value(enrich_result):
 
 
 def test_enrich_confidence_sighting(enrich_result):
-    assert enrich_result.annotations[0].confidence == 1.0
+    assert enrich_result.annotations[0].confidence == 0.9
 
 
 def test_enrich_confidence_no_sighting(app_module, base_params):
     app_module.lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], "Sighting": []}]
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].confidence == 0.5
+
+
+def test_enrich_sighting_quantity(enrich_result):
+    assert enrich_result.annotations[0].quantity == 2
+
+
+def test_enrich_severity(enrich_result):
+    assert enrich_result.annotations[0].severity == 0.75
+
+
+def test_enrich_raw_data(app_module, base_params):
+    base_params.raw = True
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert result.raw_data is not None
+
+
+def test_enrich_active_range_in_details(app_module, base_params):
+    app_module.lookup_type = lambda *a, **kw: [
+        {
+            **MISP_RESPONSE["Attribute"][0],
+            "first_seen": "2026-01-01T00:00:00Z",
+            "last_seen": "2026-06-01T00:00:00Z",
+        }
+    ]
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
 
 
 def test_enrich_freetext_comment_ignored(app_module, base_params):
@@ -158,3 +184,12 @@ def test__process_tags_empty():
     tags, labels = app._process_tags([])
     assert tags == set()
     assert labels == set()
+
+
+def test__hightest_tlp():
+    import app
+
+    assert app._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
+    assert app._highest_tlp(["TLP:GREEN"]) == "TLP:GREEN"
+    assert app._highest_tlp(["tlp:green"]) == "TLP:GREEN"
+    assert app._highest_tlp([]) is None
