@@ -34,12 +34,13 @@ CLASSIFICATION = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
 API_URL = os.environ.get("API_URL", "https://misp.local")
 EXCLUDE_DECAYED = str(os.environ.get("EXCLUDE_DECAYED", "true")).lower() in ("true", "1")
 
-verify: Union[str, bool] = str(os.environ.get("MISP_VERIFY", "true")).lower()
-if verify in ("true", "1"):
-    verify = True
-elif verify in ("false", "0"):
-    verify = False
-VERIFY = verify
+_verify_raw = os.environ.get("MISP_VERIFY", "true")
+if _verify_raw.lower() in ("true", "1"):
+    VERIFY: Union[str, bool] = True
+elif _verify_raw.lower() in ("false", "0"):
+    VERIFY = False
+else:
+    VERIFY = _verify_raw
 
 TYPE_MAPPING: dict[str, list[str]] = {
     "ipv4": ["ip-src", "ip-dst"],
@@ -53,7 +54,7 @@ TYPE_MAPPING: dict[str, list[str]] = {
     "md5": ["md5"],
 }
 
-TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER+STRICT": 2, "TLP:AMBER": 3, "TLP:RED": 4}
+TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER": 2, "TLP:AMBER+STRICT": 3, "TLP:RED": 4}
 
 # Tags in MISP can be noisy, limit to known high impact tags
 # filter tags by "namespace" or "namespace:predicate"
@@ -125,9 +126,12 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
     if rsp.status_code == 403:
         raise AuthenticationException(f"Authentication to MISP server: {API_URL} failed")
     elif rsp.status_code != 200:
-        raise ClueException(f"Error requesting data [{rsp.status_code}]")
+        raise ClueException(f"Error requesting data [{rsp.status_code}]: {rsp.text[:200]}")
 
-    attributes = rsp.json().get("response", {}).get("Attribute") or []
+    try:
+        attributes = rsp.json().get("response", {}).get("Attribute") or []
+    except ValueError:
+        raise ClueException(f"MISP returned non JSON response: {rsp.text[:200]}")
     if not attributes:
         raise NotFoundException("No result found")
 
@@ -195,15 +199,26 @@ def enrich(type_name: str, value: str, params: Params, *args):
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
     entries = []
-    if params.annotate:
-        for attr in data:
-            logger.debug(f"Processing attribute event_id={attr.get('event_id')}")
+    for attr in data:
+        logger.debug(f"Processing attribute event_id={attr.get('event_id')}")
+
+        # Event fields
+        event = attr.get("Event", {})
+
+        # Classification
+        # Calculate both the attribute's and event's highest TLP and prefer the attributes
+        attr_tlp = _highest_tlp([tag.get("name", "") for tag in attr.get("Tag", [])])
+        event_tlp = _highest_tlp([tag.get("name", "") for tag in event.get("Tag", [])])
+        attr_classification = attr_tlp or event_tlp or CLASSIFICATION
+
+        annotations = []
+        if params.annotate:
             # Attribute fields
             # Find best value with fallbacks, avoid irrelevant data
             attr_comment = attr.get("comment", "")
             if attr_comment == "Imported via the Freetext Import Tool":
                 attr_comment = ""
-            category = attr.get("category")
+            category = attr.get("category", "Unknown")
 
             sightings = attr.get("Sighting") or []
             true_sightings = sum(1 for s in sightings if s.get("type") == "0")  # 0 = true
@@ -239,46 +254,39 @@ def enrich(type_name: str, value: str, params: Params, *args):
             if last_seen_iso:
                 timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
             elif attr_ts := attr.get("timestamp"):
-                timestamp = datetime.fromtimestamp(int(attr_ts), tz=timezone.utc)
+                timestamp = datetime.fromtimestamp(int(attr_ts or 0), tz=timezone.utc)
             else:
-                continue
-
-            # Event fields
-            event = attr.get("Event", {})
+                continue  # attribute timestamp is guaranteed by MISP, guard against bad data
 
             org = event.get("Orgc", {}).get("name", "Unknown")
-            event_title = event.get("info")
+            event_title = event.get("info", "Unknown")
             summary = f"{org} reported {category}: {event_title}"
 
-            # Classification
-            # Calculate both the attribute's and event's highest TLP and prefer the attributes
-            attr_tlp = _highest_tlp([tag.get("name", "") for tag in attr.get("Tag", [])])
-            event_tlp = _highest_tlp([tag.get("name", "") for tag in event.get("Tag", [])])
-            attr_classification = attr_tlp or event_tlp or CLASSIFICATION
-
-            entries.append(
-                QueryEntry(
-                    classification=attr_classification,
-                    link=Url(f"{API_URL}"),
-                    count=1,
-                    annotations=[
-                        Annotation(
-                            analytic="MISP",
-                            analytic_icon="flowbite:messages-outline",
-                            type="context",
-                            link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
-                            value=annotation_value,
-                            summary=summary,
-                            details=details,
-                            timestamp=timestamp,
-                            confidence=confidence,
-                            severity=THREAT_LEVEL.get(int(event.get("threat_level_id", 0))),
-                            quantity=true_sightings,
-                        )
-                    ],
-                    raw_data=attr if params.raw else None,
+            annotations = [
+                Annotation(
+                    analytic="MISP",
+                    analytic_icon="flowbite:messages-outline",
+                    type="context",
+                    link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
+                    value=annotation_value,
+                    summary=summary,
+                    details=details,
+                    timestamp=timestamp,
+                    confidence=confidence,
+                    severity=THREAT_LEVEL.get(int(event.get("threat_level_id") or 0)),
+                    quantity=true_sightings,
                 )
+            ]
+
+        entries.append(
+            QueryEntry(
+                classification=attr_classification,
+                link=Url(f"{API_URL}"),
+                count=1,
+                annotations=annotations,
+                raw_data=attr if params.raw else None,
             )
+        )
 
     logger.info(f"Returning {len(entries)} entries for {type_name}={value}")
 

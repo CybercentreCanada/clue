@@ -72,6 +72,13 @@ def enrich_result(app_module, base_params):
     return app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
 
 
+def test_enrich_no_annotate(app_module, base_params):
+    base_params.annotate = False
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)
+    assert len(result) == 1
+    assert result[0].annotations == []
+
+
 def test_enrich_count(enrich_result):
     assert enrich_result.count == 1
 
@@ -205,6 +212,7 @@ def test__highest_tlp():
     import app
 
     assert app._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
+    assert app._highest_tlp(["TLP:AMBER+STRICT", "TLP:AMBER"]) == "TLP:AMBER+STRICT"
     assert app._highest_tlp(["TLP:GREEN"]) == "TLP:GREEN"
     assert app._highest_tlp(["tlp:green"]) == "TLP:GREEN"
     assert app._highest_tlp([]) is None
