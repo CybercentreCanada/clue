@@ -2,8 +2,6 @@
 
 Team: Monjiapawne
 
-Point of Contact: Monjia Pawne <iambrendamore@gmail.com>
-
 Status: In Development
 
 MISP plugin enriches attributes, pulling data from attributes and their parent event
@@ -78,7 +76,7 @@ if override := os.environ.get("ALLOW_TAGS"):
 # 4 (undefined), defaults to None
 THREAT_LEVEL = {
     1: 0.75,  # High
-    2: 0.5,   # Medium
+    2: 0.5,  # Medium
     3: 0.25,  # Low
 }
 
