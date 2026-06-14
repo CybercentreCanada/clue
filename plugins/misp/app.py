@@ -277,10 +277,12 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
     logger.info(f"Returning {len(annotations)} annotations for {type_name}={value}")
 
-    return QueryEntry(
-        classification=classification,
-        link=Url(f"{API_URL}"),
-        count=len(data),
-        annotations=annotations,
-        raw_data=data if params.raw else None,
-    )
+    return [
+        QueryEntry(
+            classification=classification,
+            link=Url(f"{API_URL}"),
+            count=len(data),
+            annotations=annotations,
+            raw_data=data if params.raw else None,
+        )
+    ]
