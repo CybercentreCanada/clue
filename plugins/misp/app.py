@@ -78,9 +78,12 @@ if override := os.environ.get("ALLOW_TAGS"):
 # 4 (undefined), defaults to None
 THREAT_LEVEL = {
     1: 0.75,  # High
-    2: 0.5,  # Medium
+    2: 0.5,   # Medium
     3: 0.25,  # Low
 }
+
+# Module level sessions to reuse TCP connections (prevent MISP 5XX)
+_session = requests.Session()
 
 plugin = CluePlugin(
     app_name=os.environ.get("APP_NAME", "misp"),
@@ -113,8 +116,7 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
     url = f"{API_URL}/attributes/restSearch"
 
     try:
-        with requests.session() as session:
-            rsp = session.post(url, json=payload, headers=headers, verify=VERIFY, timeout=timeout)
+        rsp = _session.post(url, json=payload, headers=headers, verify=VERIFY, timeout=timeout)
     except requests.exceptions.Timeout as e:
         raise TimeoutException("MISP failed to respond in time", cause=e)
     except requests.exceptions.ConnectionError as e:
@@ -126,7 +128,7 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
         raise AuthenticationException(f"Authentication to MISP server: {API_URL} failed")
     elif rsp.status_code != 200:
         raise ClueException(f"Error requesting data [{rsp.status_code}]")
-    elif not int(rsp.headers.get("X-Result-Count", 0)):
+    elif not int(rsp.headers.get("X-Result-Count", 0) or 0):
         raise NotFoundException("No result found")
 
     return rsp.json().get("response", {}).get("Attribute") or []
@@ -169,14 +171,14 @@ def _process_tags(attr_tags: list[dict]) -> tuple[set[str], set[str]]:
 
         if ns in ALLOW_TAGS or f"{ns}:{pred}" in ALLOW_TAGS:
             if val:
-                tag_output = f"{pred}:{val.strip('"')}"
+                tag_output = f"{pred}:{val}"
             else:
                 tag_output = pred
             tags.add(tag_output)
 
         # Canonical enrichment tags
         if f"{ns}:{pred}" == "misp-galaxy:threat-actor" and val:
-            labels.add(val.strip('"'))
+            labels.add(val)
         if ns == "type":
             labels.add(pred)
 
@@ -244,8 +246,10 @@ def enrich(type_name: str, value: str, params: Params, *args):
             # Last seen preferred, fallback to event creation date
             if last_seen_iso:
                 timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
+            elif event_date := event.get("date"):
+                timestamp = datetime.fromisoformat(event_date + "T00:00:00").replace(tzinfo=timezone.utc)
             else:
-                timestamp = datetime.fromisoformat(event.get("date") + "T00:00:00").replace(tzinfo=timezone.utc)
+                continue
 
             # Classification
             # Calculate both the attribute's and event's highest TLP and perfer the attributes
@@ -273,13 +277,12 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
     annotations.sort(key=lambda a: a.confidence, reverse=True)
 
-    r = QueryEntry(
+    logger.info(f"Returning {len(annotations)} annotations for {type_name}={value}")
+
+    return QueryEntry(
         classification=classification,
         link=Url(f"{API_URL}"),
         count=len(data),
         annotations=annotations,
         raw_data=data if params.raw else None,
     )
-
-    logger.info(f"Returning {len(annotations)} annotations for {type_name}={value}")
-    return [QueryEntry.model_validate(r)]

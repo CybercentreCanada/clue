@@ -137,6 +137,7 @@ services:
       dockerfile: ../base/plugin.Dockerfile
       args:
         base_plugin_version: "1.6"
+    restart: unless-stopped
     ports:
       - "5102:5102"
     env_file:
@@ -147,6 +148,7 @@ services:
       CLASSIFICATION: TLP:CLEAR
       WORKERS: 1
       PORT: 5102
+      # Redis for the plugin (optional, but good practice if it uses cache)
       CORE__REDIS__HOST: redis
       CORE__REDIS__PORT: 6379
     networks:

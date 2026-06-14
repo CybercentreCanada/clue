@@ -24,7 +24,6 @@ MISP_RESPONSE = {
                 },
             ],
             "Event": {
-                "id": "305",
                 "info": "Stop Ransomware: Medusa Ransomware",
                 "date": "2026-06-01",
                 "threat_level_id": "1",
@@ -47,6 +46,11 @@ def app_module():
 
     app.lookup_type = lambda *a, **kw: MISP_RESPONSE["Attribute"]
     return app
+
+
+def override_attr(app_module, overrides):
+    """Mock lookup_type with attribute field overrides"""
+    app_module.lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
 
 
 @pytest.fixture()
@@ -90,7 +94,7 @@ def test_enrich_confidence_sighting(enrich_result):
 
 
 def test_enrich_confidence_no_sighting(app_module, base_params):
-    app_module.lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], "Sighting": []}]
+    override_attr(app_module, {"Sighting": []})
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].confidence == 0.5
 
@@ -103,6 +107,20 @@ def test_enrich_severity(enrich_result):
     assert enrich_result.annotations[0].severity == 0.75
 
 
+def test_enrich_severity_none(app_module, base_params):
+    override_attr(
+        app_module,
+        {
+            "Event": {
+                "date": "2026-06-01",
+                "threat_level_id": "0",
+            }
+        },
+    )
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert result.annotations[0].severity is None
+
+
 def test_enrich_raw_data(app_module, base_params):
     base_params.raw = True
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
@@ -110,21 +128,13 @@ def test_enrich_raw_data(app_module, base_params):
 
 
 def test_enrich_active_range_in_details(app_module, base_params):
-    app_module.lookup_type = lambda *a, **kw: [
-        {
-            **MISP_RESPONSE["Attribute"][0],
-            "first_seen": "2026-01-01T00:00:00Z",
-            "last_seen": "2026-06-01T00:00:00Z",
-        }
-    ]
+    override_attr(app_module, {"first_seen": "2026-01-01T00:00:00Z", "last_seen": "2026-06-01T00:00:00Z"})
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
 
 
 def test_enrich_freetext_comment_ignored(app_module, base_params):
-    app_module.lookup_type = lambda *a, **kw: [
-        {**MISP_RESPONSE["Attribute"][0], "comment": "Imported via the Freetext Import Tool"}
-    ]
+    override_attr(app_module, {"comment": "Imported via the Freetext Import Tool"})
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].value != "Imported via the Freetext Import Tool"
 
