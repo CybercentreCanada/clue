@@ -599,6 +599,27 @@
             {%endif%}
           </span>
         </div>
+        <div class="entry">
+            <span class="icon">
+                💬
+            </span>
+            <strong>
+                {%if 'fr/' in page.url %}
+                MISP
+                {%else%}
+                MISP
+                {%endif%}
+            </strong>
+            <span class="description">
+                {%if 'fr/' in page.url %}
+                MISP-fr
+                {%else%}
+                Syncs with the Malware Information Sharing Platform (MISP) to enrich IOCs with attribute and event data.
+                Supports hashes (MD5, SHA1, SHA256), IP addresses (IPv4, IPv6), MAC addresses, email addresses, domains
+                and URLs
+                {%endif%}
+            </span>
+        </div>
       </div>
     </div>
   </div>
