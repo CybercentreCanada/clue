@@ -214,7 +214,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
             tags, labels = _process_tags(attr.get("Tag", []))
 
-            annotation_value = attr_comment or ", ".join(labels) or "reported"
+            annotation_value = attr_comment or ", ".join(sorted(labels)) or "reported"
 
             # Attribute date range if we have both first and last
             first_seen_iso = attr.get("first_seen")
@@ -250,8 +250,8 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
             # Classification
             # Calculate both the attribute's and event's highest TLP and prefer the attributes
-            attr_tlp = _highest_tlp([tag["name"] for tag in attr.get("Tag", [])])
-            event_tlp = _highest_tlp([tag["name"] for tag in event.get("Tag", [])])
+            attr_tlp = _highest_tlp([tag.get("name", "") for tag in attr.get("Tag", [])])
+            event_tlp = _highest_tlp([tag.get("name", "") for tag in event.get("Tag", [])])
             attr_classification = attr_tlp or event_tlp or CLASSIFICATION
 
             entries.append(

@@ -152,6 +152,7 @@ def test_enrich_active_range_in_details(app_module, base_params):
     [
         ("tlp:red", "tlp", "red", ""),
         ("type:OSINT", "type", "OSINT", ""),
+        ('misp-galaxy:mitre-attack="Exfiltration C2"', "misp-galaxy", "mitre-attack", "Exfiltration C2"),
         ('misp-galaxy:mitre-attack="Exfiltration C2', "misp-galaxy", "mitre-attack", "Exfiltration C2"),
     ],
 )
@@ -164,11 +165,10 @@ def test__parse_misp_tag(tag_name, exp_ns, exp_pred, exp_val):
     assert val == exp_val
 
 
-def test__process_tags():
+def test__process_tags(monkeypatch):
     import app
 
-    original = app.ALLOW_TAGS
-    app.ALLOW_TAGS = {"misp-galaxy:threat-actor"}
+    monkeypatch.setattr(app, "ALLOW_TAGS", {"misp-galaxy:threat-actor"})
     sample_tags = [
         {"name": "type:OSINT"},
         {"name": "tlp:red"},
@@ -179,8 +179,6 @@ def test__process_tags():
     tags, labels = app._process_tags(sample_tags)
     assert tags == {"threat-actor:APT 29"}
     assert labels == {"APT 29", "OSINT"}
-
-    app.ALLOW_TAGS = original
 
 
 def test__process_tags_no_match():
@@ -203,7 +201,7 @@ def test__process_tags_empty():
     assert labels == set()
 
 
-def test__hightest_tlp():
+def test__highest_tlp():
     import app
 
     assert app._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
