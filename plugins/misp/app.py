@@ -126,10 +126,12 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
         raise AuthenticationException(f"Authentication to MISP server: {API_URL} failed")
     elif rsp.status_code != 200:
         raise ClueException(f"Error requesting data [{rsp.status_code}]")
-    elif not int(rsp.headers.get("X-Result-Count", 0) or 0):
+
+    attributes = rsp.json().get("response", {}).get("Attribute") or []
+    if not attributes:
         raise NotFoundException("No result found")
 
-    return rsp.json().get("response", {}).get("Attribute") or []
+    return attributes
 
 
 def _highest_tlp(tag_names: list[str]) -> str | None:
@@ -171,7 +173,7 @@ def _process_tags(attr_tags: list[dict]) -> tuple[set[str], set[str]]:
             if val:
                 tag_output = f"{pred}:{val}"
             else:
-                tag_output = pred
+                tag_output = pred or ns
             tags.add(tag_output)
 
         # Canonical enrichment tags
