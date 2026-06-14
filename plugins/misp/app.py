@@ -215,6 +215,8 @@ def enrich(type_name: str, value: str, params: Params, *args):
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
             tags, labels = _process_tags(attr.get("Tag", []))
 
+            annotation_value = attr_comment or ", ".join(labels) or "reported"
+
             # Attribute date range if we have both first and last
             first_seen_iso = attr.get("first_seen")
             last_seen_iso = attr.get("last_seen")
@@ -224,8 +226,6 @@ def enrich(type_name: str, value: str, params: Params, *args):
                 last_seen = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00")).strftime("%Y-%m-%d")
                 active_range = f"Active: {first_seen} - {last_seen}"
 
-            annotation_value = attr_comment or ", ".join(labels) or "reported"
-
             detail_parts = []
             if tags:
                 detail_parts.append(f"**Tags**: {', '.join(sorted(tags))}")
@@ -233,21 +233,21 @@ def enrich(type_name: str, value: str, params: Params, *args):
                 detail_parts.append(active_range)
             details = "\n\n".join(detail_parts) or None
 
+            # Timestamp
+            # Last seen preferred, fallback to attribute modifcation time
+            if last_seen_iso:
+                timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
+            elif attr_ts := attr.get("timestamp"):
+                timestamp = datetime.fromtimestamp(int(attr_ts), tz=timezone.utc)
+            else:
+                continue
+
             # Event fields
             event = attr.get("Event", {})
 
             org = event.get("Orgc", {}).get("name", "Unknown")
             event_title = event.get("info")
             summary = f"{org} reported {category}: {event_title}"
-
-            # Timestamp
-            # Last seen preferred, fallback to event creation date
-            if last_seen_iso:
-                timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
-            elif event_date := event.get("date"):
-                timestamp = datetime.fromisoformat(event_date + "T00:00:00").replace(tzinfo=timezone.utc)
-            else:
-                continue
 
             # Classification
             # Calculate both the attribute's and event's highest TLP and prefer the attributes

@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 
 TEST_IP = "198.51.100.42"
 TEST_TYPE = "ipv4"
@@ -12,6 +13,7 @@ MISP_RESPONSE = {
             "type": "ip-src",
             "comment": "C2 beacon observed during Cobalt Strike campaign",
             "value": "198.51.100.42",
+            "timestamp": "1576589519",
             "threat_level_id": "1",
             "Sighting": [
                 {
@@ -70,13 +72,6 @@ def enrich_result(app_module, base_params):
     return app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
 
 
-# Enrich
-def test_enrich_returns_summary(enrich_result):
-    assert enrich_result.annotations[0].summary == (
-        "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
-    )
-
-
 def test_enrich_count(enrich_result):
     assert enrich_result.count == 1
 
@@ -85,8 +80,26 @@ def test_enrich_classification(enrich_result):
     assert enrich_result.classification == "TLP:GREEN"
 
 
+def test_enrich_raw_data(app_module, base_params):
+    base_params.raw = True
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert result.raw_data is not None
+
+
+def test_enrich_returns_summary(enrich_result):
+    assert enrich_result.annotations[0].summary == (
+        "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
+    )
+
+
 def test_enrich_value(enrich_result):
     assert enrich_result.annotations[0].value == "C2 beacon observed during Cobalt Strike campaign"
+
+
+def test_enrich_freetext_comment_ignored(app_module, base_params):
+    override_attr(app_module, {"comment": "Imported via the Freetext Import Tool"})
+    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    assert result.annotations[0].value != "Imported via the Freetext Import Tool"
 
 
 def test_enrich_confidence_sighting(enrich_result):
@@ -121,22 +134,16 @@ def test_enrich_severity_none(app_module, base_params):
     assert result.annotations[0].severity is None
 
 
-def test_enrich_raw_data(app_module, base_params):
-    base_params.raw = True
+def test_enrich_timestamp_no_sightings(app_module, base_params):
+    override_attr(app_module, {"last_seen": None, "timestamp": "1576589519"})
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
-    assert result.raw_data is not None
+    assert result.annotations[0].timestamp == datetime.fromtimestamp(1576589519, tz=timezone.utc)
 
 
 def test_enrich_active_range_in_details(app_module, base_params):
     override_attr(app_module, {"first_seen": "2026-01-01T00:00:00Z", "last_seen": "2026-06-01T00:00:00Z"})
     result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
-
-
-def test_enrich_freetext_comment_ignored(app_module, base_params):
-    override_attr(app_module, {"comment": "Imported via the Freetext Import Tool"})
-    result = app_module.enrich(TEST_TYPE, TEST_IP, base_params)[0]
-    assert result.annotations[0].value != "Imported via the Freetext Import Tool"
 
 
 # Helpers
