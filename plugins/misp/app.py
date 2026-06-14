@@ -192,8 +192,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
-    classification = CLASSIFICATION  # Default to user provided, potentially upgraded below
-    annotations = []
+    entries = []
     if params.annotate:
         for attr in data:
             logger.debug(f"Processing attribute event_id={attr.get('event_id')}")
@@ -254,35 +253,31 @@ def enrich(type_name: str, value: str, params: Params, *args):
             attr_tlp = _highest_tlp([tag["name"] for tag in attr.get("Tag", [])])
             event_tlp = _highest_tlp([tag["name"] for tag in event.get("Tag", [])])
             attr_classification = attr_tlp or event_tlp or CLASSIFICATION
-            if TLP_ENUM.get(attr_classification, 0) > TLP_ENUM.get(classification, 0):
-                classification = attr_classification
 
-            annotations.append(
-                Annotation(
-                    analytic="MISP",
-                    analytic_icon="flowbite:messages-outline",
-                    type="context",
-                    link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
-                    value=annotation_value,
-                    summary=summary,
-                    details=details,
-                    timestamp=timestamp,
-                    confidence=confidence,
-                    severity=THREAT_LEVEL.get(int(event.get("threat_level_id", 0))),
-                    quantity=true_sightings,
+            entries.append(
+                QueryEntry(
+                    classification=attr_classification,
+                    link=Url(f"{API_URL}"),
+                    count=1,
+                    annotations=[
+                        Annotation(
+                            analytic="MISP",
+                            analytic_icon="flowbite:messages-outline",
+                            type="context",
+                            link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
+                            value=annotation_value,
+                            summary=summary,
+                            details=details,
+                            timestamp=timestamp,
+                            confidence=confidence,
+                            severity=THREAT_LEVEL.get(int(event.get("threat_level_id", 0))),
+                            quantity=true_sightings,
+                        )
+                    ],
+                    raw_data=attr if params.raw else None,
                 )
             )
 
-    annotations.sort(key=lambda a: a.confidence, reverse=True)
+    logger.info(f"Returning {len(entries)} entries for {type_name}={value}")
 
-    logger.info(f"Returning {len(annotations)} annotations for {type_name}={value}")
-
-    return [
-        QueryEntry(
-            classification=classification,
-            link=Url(f"{API_URL}"),
-            count=len(data),
-            annotations=annotations,
-            raw_data=data if params.raw else None,
-        )
-    ]
+    return entries
