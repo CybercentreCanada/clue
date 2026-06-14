@@ -80,7 +80,7 @@ THREAT_LEVEL = {
     3: 0.25,  # Low
 }
 
-# Reuse TCP connections access requests, MISP returns 500 if too many connections
+# Reuse TCP connections across requests, MISP returns 500 if too many connections
 _session = requests.Session()
 
 plugin = CluePlugin(
@@ -206,7 +206,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
             sightings = attr.get("Sighting") or []
             true_sightings = sum(1 for s in sightings if s.get("type") == "0")  # 0 = true
             if sightings:
-                # Cap MISP confidence to 0.9, even with all true sightings MISP IOCs are still not aboslute facts
+                # Cap MISP confidence to 0.9, even with all true sightings MISP IOCs are still not absolute facts
                 confidence = min(0.9, true_sightings / len(sightings))
             else:
                 confidence = 0.5
@@ -233,7 +233,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
             details = "\n\n".join(detail_parts) or None
 
             # Timestamp
-            # Last seen preferred, fallback to attribute modifcation time
+            # Last seen preferred, fallback to attribute modification time
             if last_seen_iso:
                 timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
             elif attr_ts := attr.get("timestamp"):
