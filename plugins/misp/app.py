@@ -82,7 +82,7 @@ THREAT_LEVEL = {
     3: 0.25,  # Low
 }
 
-# Module level sessions to reuse TCP connections (prevent MISP 5XX)
+# Reuse TCP connections access requests, MISP returns 500 if too many connections
 _session = requests.Session()
 
 plugin = CluePlugin(
@@ -194,7 +194,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
-    classification = CLASSIFICATION  # Give the attribute the highest TLP of the parent event(s)
+    classification = CLASSIFICATION  # Default to user provided, potentially upgraded below
     annotations = []
     if params.annotate:
         for attr in data:
@@ -252,7 +252,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
                 continue
 
             # Classification
-            # Calculate both the attribute's and event's highest TLP and perfer the attributes
+            # Calculate both the attribute's and event's highest TLP and prefer the attributes
             attr_tlp = _highest_tlp([tag["name"] for tag in attr.get("Tag", [])])
             event_tlp = _highest_tlp([tag["name"] for tag in event.get("Tag", [])])
             attr_classification = attr_tlp or event_tlp or CLASSIFICATION
