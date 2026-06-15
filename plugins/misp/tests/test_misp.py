@@ -44,15 +44,15 @@ MISP_RESPONSE = {
 
 @pytest.fixture()
 def app_module():
-    import app
+    from misp import app
 
-    app.lookup_type = lambda *a, **kw: MISP_RESPONSE["Attribute"]
+    app._lookup_type = lambda *a, **kw: MISP_RESPONSE["Attribute"]
     return app
 
 
 def override_attr(app_module, overrides):
     """Mock lookup_type with attribute field overrides"""
-    app_module.lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
+    app_module._lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
 
 
 @pytest.fixture()
@@ -161,10 +161,11 @@ def test_enrich_active_range_in_details(app_module, base_params):
         ("type:OSINT", "type", "OSINT", ""),
         ('misp-galaxy:mitre-attack="Exfiltration C2"', "misp-galaxy", "mitre-attack", "Exfiltration C2"),
         ('misp-galaxy:mitre-attack="Exfiltration C2', "misp-galaxy", "mitre-attack", "Exfiltration C2"),
+        ("adversary:infrastructure-type='C2'", "adversary", "infrastructure-type", "C2"),
     ],
 )
 def test__parse_misp_tag(tag_name, exp_ns, exp_pred, exp_val):
-    import app
+    from misp import app
 
     ns, pred, val = app._parse_misp_tag(tag_name)
     assert ns == exp_ns
@@ -173,7 +174,7 @@ def test__parse_misp_tag(tag_name, exp_ns, exp_pred, exp_val):
 
 
 def test__process_tags(monkeypatch):
-    import app
+    from misp import app
 
     monkeypatch.setattr(app, "ALLOW_TAGS", {"misp-galaxy:threat-actor"})
     sample_tags = [
@@ -188,8 +189,15 @@ def test__process_tags(monkeypatch):
     assert labels == {"APT 29", "OSINT"}
 
 
+def test__process_tags_namespace_only():
+    from misp import app
+
+    tags, _ = app._process_tags([{"name": 'ecsirt="malware"'}])
+    assert tags == {"ecsirt:malware"}
+
+
 def test__process_tags_no_match():
-    import app
+    from misp import app
 
     sample_tags = [
         {"name": "tlp:red"},
@@ -201,7 +209,7 @@ def test__process_tags_no_match():
 
 
 def test__process_tags_empty():
-    import app
+    from misp import app
 
     tags, labels = app._process_tags([])
     assert tags == set()
@@ -209,7 +217,7 @@ def test__process_tags_empty():
 
 
 def test__highest_tlp():
-    import app
+    from misp import app
 
     assert app._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
     assert app._highest_tlp(["TLP:AMBER+STRICT", "TLP:AMBER"]) == "TLP:AMBER+STRICT"

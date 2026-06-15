@@ -8,24 +8,23 @@ MISP plugin enriches attributes, pulling data from attributes and their parent e
 """
 
 import os
-from typing import Union
 from datetime import datetime, timezone
+from typing import Any, Union
 
 import requests
 from clue.common.exceptions import (
+    AuthenticationException,
     ClueException,
     InvalidDataException,
     NotFoundException,
-    UnprocessableException,
     TimeoutException,
-    AuthenticationException,
+    UnprocessableException,
 )
 from clue.common.logging import get_logger
 from clue.models.network import Annotation, QueryEntry
 from clue.plugin import CluePlugin
 from clue.plugin.utils import Params
 from pydantic_core import Url
-
 
 logger = get_logger(__file__)
 
@@ -94,7 +93,8 @@ plugin = CluePlugin(
 )
 
 
-def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
+def _lookup_type(type_name: list[str], value: str, limit: int, timeout: float) -> list[dict[str, Any]]:
+    """Lookup the type in MISP"""
     if not MISP_API_KEY:
         raise UnprocessableException("No API key is provided. An API key is required")
 
@@ -130,8 +130,8 @@ def lookup_type(type_name: list[str], value: str, limit: int, timeout: float):
 
     try:
         attributes = rsp.json().get("response", {}).get("Attribute") or []
-    except ValueError:
-        raise ClueException(f"MISP returned non JSON response: {rsp.text[:200]}")
+    except ValueError as e:
+        raise ClueException(f"MISP returned non JSON response: {rsp.text[:200]}", cause=e)
     if not attributes:
         raise NotFoundException("No result found")
 
@@ -155,15 +155,13 @@ def _parse_misp_tag(tag_name: str) -> tuple[str, str, str]:
     # https://www.misp-standard.org/rfc/misp-standard-taxonomy-format.html
     ns_pred, _, val = tag_name.partition("=")
     ns, _, pred = ns_pred.partition(":")
-    val = val.strip('"')
-
-    pred, _, _ = pred.partition(",")
-    pred = pred.rstrip("'")
+    # Values may be wrapped in single or double quotes and padded with whitespace
+    val = val.strip(" \"'")
 
     return ns, pred, val
 
 
-def _process_tags(attr_tags: list[dict]) -> tuple[set[str], set[str]]:
+def _process_tags(attr_tags: list[dict[str, Any]]) -> tuple[set[str], set[str]]:
     """Extract display tags and canonical labels from attribute tags"""
     tags = set()
     labels = set()
@@ -174,10 +172,9 @@ def _process_tags(attr_tags: list[dict]) -> tuple[set[str], set[str]]:
             pred = ""
 
         if ns in ALLOW_TAGS or f"{ns}:{pred}" in ALLOW_TAGS:
-            if val:
-                tag_output = f"{pred}:{val}"
-            else:
-                tag_output = pred or ns
+            # Predicate may be empty for namespace only tags (e.g ecsirt="malware")
+            key = pred or ns
+            tag_output = f"{key}:{val}" if val else key
             tags.add(tag_output)
 
         # Canonical enrichment tags
@@ -190,11 +187,12 @@ def _process_tags(attr_tags: list[dict]) -> tuple[set[str], set[str]]:
 
 
 @plugin.use
-def enrich(type_name: str, value: str, params: Params, *args):
+def enrich(type_name: str, value: str, params: Params, *_args) -> list[QueryEntry]:
+    """Run MISP enrichment on the specified value"""
     tn = TYPE_MAPPING.get(type_name)
     if tn is None:
         raise InvalidDataException(f"{type_name} is not a valid type for this plugin.")
-    data = lookup_type(type_name=tn, value=value, limit=params.limit, timeout=params.max_timeout)
+    data = _lookup_type(type_name=tn, value=value, limit=params.limit, timeout=params.max_timeout)
 
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
 
@@ -222,11 +220,8 @@ def enrich(type_name: str, value: str, params: Params, *args):
 
             sightings = attr.get("Sighting") or []
             true_sightings = sum(1 for s in sightings if s.get("type") == "0")  # 0 = true
-            if sightings:
-                # Cap MISP confidence to 0.9, even with all true sightings MISP IOCs are still not absolute facts
-                confidence = min(0.9, true_sightings / len(sightings))
-            else:
-                confidence = 0.5
+            # Cap MISP confidence to 0.9, even with all true sightings MISP IOCs are still not absolute facts
+            confidence = min(0.9, true_sightings / len(sightings)) if sightings else 0.5
 
             # Tags - only trust attribute tags to avoid misrepresentation (no fallback to event)
             tags, labels = _process_tags(attr.get("Tag", []))
@@ -281,7 +276,6 @@ def enrich(type_name: str, value: str, params: Params, *args):
         entries.append(
             QueryEntry(
                 classification=attr_classification,
-                link=Url(f"{API_URL}"),
                 count=1,
                 annotations=annotations,
                 raw_data=attr if params.raw else None,
