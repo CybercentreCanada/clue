@@ -267,7 +267,7 @@ def enrich(type_name: str, value: str, params: Params, *args):
                     analytic="MISP",
                     analytic_icon="flowbite:messages-outline",
                     type="context",
-                    link=Url(f'{API_URL}/events/view/{attr.get("event_id", "")}'),
+                    link=Url(f"{API_URL}/events/view/{attr.get('event_id', '')}"),
                     value=annotation_value,
                     summary=summary,
                     details=details,
