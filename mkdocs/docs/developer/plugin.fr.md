@@ -4,54 +4,111 @@ Ce document vous guidera à travers le développement, la publication et le dép
 
 ## Configuration de l'environnement de développement
 
-### Installation de poetry
+Utilisez cette section pour préparer votre machine afin de modifier et valider le code localement.
+Ces étapes sont volontairement orientées pratique, pas une reproduction exacte de la CI.
+
+### Prérequis
+
+- Python 3.12+ et Poetry
+- Docker (pour la pile de dépendances et les builds d'images)
+- GNU Make
+
+Références utiles :
+
+- Documentation d'installation Poetry : <https://python-poetry.org/docs/#installation>
+- Documentation CLI Poetry : <https://python-poetry.org/docs/cli/>
+- Téléchargements Python : <https://www.python.org/downloads/>
+- pyenv (gestionnaire optionnel de versions Python) : <https://github.com/pyenv/pyenv>
+- Documentation d'installation Docker : <https://docs.docker.com/engine/install/>
+
+### 1) Installer les dépendances du projet
+
+Approche recommandée (à la racine du dépôt) :
 
 ```bash
-pip install poetry
-cd clue-api
-poetry install --with dev,test --all-extras
+make setup
+```
 
-# OPTIONNEL : Installer les hooks pre-commit (formatage black/flake8/isort)
-poetry run pre-commit install
+Si `make setup` ne convient pas à votre environnement, installation manuelle :
 
-# Maintenant vous pouvez lancer le serveur clue !
+```bash
+cd api
+python -m pip install poetry
+poetry env use 3.12
+poetry install --all-extras --with test
+```
+
+Si Poetry n'est pas disponible dans votre PATH après installation :
+
+```bash
+python -m pip install --user poetry
+python -m poetry --version
+```
+
+Si vous utilisez pipx :
+
+```bash
+pipx install poetry
+poetry --version
+```
+
+### 2) Préparer les dossiers locaux et la configuration Clue
+
+Ces dossiers/fichiers de config sont généralement nécessaires pour le développement local API et plugin :
+
+```bash
+sudo mkdir -p /etc/clue/conf/
+sudo mkdir -p /etc/clue/lookups/
+sudo mkdir -p /var/log/clue/
+sudo chmod a+rw /etc/clue/conf/
+sudo chmod a+rw /etc/clue/lookups/
+sudo chmod a+rw /var/log/clue/
+
+cp api/build_scripts/classification.yml /etc/clue/conf/classification.yml
+cp api/test/unit/config.yml /etc/clue/conf/config.yml
+```
+
+### 3) Démarrer les dépendances et lancer l'API en local
+
+```bash
+make start-dependencies
+cd api
 poetry run server
 ```
 
-#### Commandes utiles
+### 4) Exécuter les vérifications locales avant de pousser
 
-Pour activer un venv, utilisez **`poetry shell`**.
-
-Pour ajouter une nouvelle dépendance, utilisez **`poetry add`** :
+Pour les changements API et interface plugin dans `api/` :
 
 ```bash
-➜  clue-api git:(poetry) poetry add pyjwt
-Using version ^2.8.0 for pyjwt
-
-Updating dependencies
-Resolving dependencies... (0.5s)
-
-Package operations: 1 install, 0 updates, 0 removals
-
-  - Installing pyjwt (2.8.0)
-
-Writing lock file
+cd api
+poetry check
+poetry run ruff format clue --diff
+poetry run ruff check clue
+poetry run type_check
+poetry run test
 ```
 
-Ensuite, validez les nouveaux fichiers `pyproject.toml` et `poetry.lock`.
-
-### Configuration des dossiers et de la configuration Clue
+Pour les changements de Dockerfile dans `plugins/base/` :
 
 ```bash
-# Le fichier config.yml de Clue doit être à cet emplacement, ainsi que classification.yml
-# Pour une configuration de départ, utilisez le fichier config.yml et classification de test.
-sudo mkdir -p /etc/clue/conf
-# Répertoire des fichiers journaux, écrira les fichiers journaux ici s'ils sont activés
-sudo mkdir -p /var/log/clue
-
-sudo chown -R $USER /etc/clue
-sudo chown $USER /var/log/clue
+hadolint plugins/base/base.Dockerfile
+hadolint plugins/base/plugin.Dockerfile
+hadolint plugins/base/debian.Dockerfile
 ```
+
+### Dépannage de l'installation des dépendances
+
+- Si Python 3.12 n'est pas disponible, installez-le d'abord (gestionnaire de paquets système, installateur officiel ou pyenv), puis relancez `poetry env use 3.12`.
+- Si la résolution de l'environnement Poetry échoue, essayez de recréer l'environnement :
+
+```bash
+cd api
+poetry env remove --all
+poetry install --all-extras --with test
+```
+
+- Si les dépendances Docker ne démarrent pas, exécutez `docker compose ps` et `docker compose logs` depuis `api/dev/`.
 
 ## Création du plugin
 
@@ -436,3 +493,34 @@ plugin = CluePlugin(
 ```
 
 ## Construction de l'image Docker
+
+Pour construire localement les images de base plugin depuis les Dockerfiles dans `plugins/base/` :
+
+```bash
+# Variante de base
+docker build \
+  -f plugins/base/base.Dockerfile \
+  -t cccs/clue-plugin-base:local \
+  .
+
+# Variante Debian
+docker build \
+  -f plugins/base/debian.Dockerfile \
+  -t cccs/clue-plugin-base:local-debian \
+  .
+```
+
+Pour construire l'image API en local :
+
+```bash
+docker build \
+  -f api/Dockerfile \
+  -t clue-api:local \
+  api
+```
+
+## Références supplémentaires
+
+- Référence du workflow API : `.github/workflows/api-workflow.yml`
+- Référence du workflow base plugin : `.github/workflows/base-plugin-workflow.yml`
+- Guide de développement API : `docs/api/development.en.md`
