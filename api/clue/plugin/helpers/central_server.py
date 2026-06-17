@@ -98,7 +98,6 @@ def _safe_central_get(
     session: requests.Session,
     headers: dict[str, str],
     timeout: float = 5.0,
-    endpoint_name: str = "",
 ) -> dict | None:
     """Make a GET request to the central server with standardized error handling.
 
@@ -107,7 +106,6 @@ def _safe_central_get(
         session: A cached ``requests.Session`` from ``_get_session()``.
         headers: Request headers dict from ``_connect_to_central_server()``.
         timeout: HTTP timeout in seconds. Defaults to 5.0.
-        endpoint_name: Endpoint name for logging context.
 
     Returns:
         The ``api_response`` dict from the response body on success, or ``None``
@@ -119,10 +117,12 @@ def _safe_central_get(
         return rsp.json().get("api_response", {})
     except requests.exceptions.ConnectionError:
         logger.exception("Unable to connect to central server at %s", url)
+    except requests.exceptions.Timeout:
+        logger.exception("Timeout calling central server %s", url)
     except (JSONDecodeError, KeyError, AttributeError):
-        logger.exception("Central server returned unexpected format for %s", endpoint_name or url)
+        logger.exception("Central server returned unexpected format for %s", url)
     except requests.exceptions.HTTPError:
-        logger.exception("HTTP error from central server %s", endpoint_name or url)
+        logger.exception("HTTP error from central server %s", url)
     return None
 
 
@@ -133,7 +133,6 @@ def _safe_central_post(
     json_body: dict | list | None = None,
     params: dict | None = None,
     timeout: float | tuple[float, float] = 5.0,
-    endpoint_name: str = "",
 ) -> dict | None:
     """Make a POST request to the central server with standardized error handling.
 
@@ -144,7 +143,6 @@ def _safe_central_post(
         json_body: JSON payload to POST, or ``None``.
         params: Query parameters dict, or ``None``.
         timeout: HTTP timeout in seconds or (connect, read) tuple. Defaults to 5.0.
-        endpoint_name: Endpoint name for logging context.
 
     Returns:
         The ``api_response`` dict from the response body on success, or ``None``
@@ -156,10 +154,12 @@ def _safe_central_post(
         return rsp.json().get("api_response", {})
     except requests.exceptions.ConnectionError:
         logger.exception("Unable to connect to central server at %s", url)
+    except requests.exceptions.Timeout:
+        logger.exception("Timeout calling central server %s", url)
     except (JSONDecodeError, KeyError, AttributeError):
-        logger.exception("Central server returned unexpected format for %s", endpoint_name or url)
+        logger.exception("Central server returned unexpected format for %s", url)
     except requests.exceptions.HTTPError:
-        logger.exception("HTTP error from central server %s", endpoint_name or url)
+        logger.exception("HTTP error from central server %s", url)
     return None
 
 
@@ -177,7 +177,7 @@ def get_sources() -> dict[str, list[str]]:
     """
     session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/lookup/types/")
-    result = _safe_central_get(url, session, headers, endpoint_name="/api/v1/lookup/types/")
+    result = _safe_central_get(url, session, headers)
     return result if result is not None else {}
 
 
@@ -246,7 +246,6 @@ def enrich(
         json_body=payload,
         params=params,
         timeout=(timeout, timeout * 3),
-        endpoint_name="/api/v1/lookup/enrich",
     )
     if api_response is None:
         return result
@@ -294,7 +293,7 @@ def list_actions() -> dict[str, ActionSpec]:
     """
     session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/actions/")
-    api_response = _safe_central_get(url, session, headers, endpoint_name="/api/v1/actions/")
+    api_response = _safe_central_get(url, session, headers)
     if api_response is None:
         return {}
     try:
@@ -334,7 +333,6 @@ def execute_action(
         headers,
         json_body=payload or {},
         timeout=timeout,
-        endpoint_name=f"action {plugin_id}.{action_id}",
     )
     if api_response is None:
         return ActionResult(
@@ -363,7 +361,7 @@ def list_fetchers() -> dict[str, FetcherDefinition]:
     """
     session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/fetchers/")
-    api_response = _safe_central_get(url, session, headers, endpoint_name="/api/v1/fetchers/")
+    api_response = _safe_central_get(url, session, headers)
     if api_response is None:
         return {}
     try:
@@ -404,7 +402,6 @@ def run_fetcher(
         headers,
         json_body=payload,
         timeout=timeout,
-        endpoint_name=f"fetcher {plugin_id}.{fetcher_id}",
     )
     if api_response is None:
         return FetcherResult.error_result(f"Unable to connect to central server to run {plugin_id}.{fetcher_id}.")
