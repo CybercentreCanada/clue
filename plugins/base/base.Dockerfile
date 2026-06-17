@@ -4,7 +4,7 @@ FROM python:3.12-alpine AS base
 # Make sure root account is locked so 'su' commands fail all the time
 RUN passwd -l root
 
-RUN apk update && apk upgrade && apk add --no-cache libffi-3.5.2-r1
+RUN apk update && apk upgrade && apk add --no-cache libffi=3.5.2-r1
 
 
 FROM base AS builder

@@ -325,7 +325,8 @@ def execute_action(
         :class:`~clue.models.actions.ActionResult` from the central server.
         Returns a ``failure`` result on connection or parse errors.
     """
-    session, headers = _connect_to_central_server()
+    # Retrying a POST action execution can unintentionally execute the action multiple times.
+    session, headers = _connect_to_central_server(retries=0)
     url = urljoin(CENTRAL_SERVER_URL, f"/api/v1/actions/execute/{plugin_id}/{action_id}")
     api_response = _safe_central_post(
         url,
@@ -334,11 +335,13 @@ def execute_action(
         json_body=payload or {},
         timeout=timeout,
     )
+
     if api_response is None:
         return ActionResult(
             outcome="failure",
             summary=f"Unable to connect to central server to execute {plugin_id}.{action_id}.",
         )
+
     try:
         return ActionResult.model_validate(api_response, context={"is_response": True})
     except ValidationError:
