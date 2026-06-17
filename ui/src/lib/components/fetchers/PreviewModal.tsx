@@ -11,9 +11,10 @@ import { FetcherResultView } from './FetcherResultView';
 const PreviewModal: FC<
   {
     result: FetcherResult;
+    fetcherId?: string;
     onClose?: () => void;
   } & Omit<ModalProps, 'children'>
-> = ({ result, onClose, open = false, ...otherProps }) => {
+> = ({ result, fetcherId, onClose, open = false, ...otherProps }) => {
   return (
     <Modal
       open={open}
@@ -25,7 +26,7 @@ const PreviewModal: FC<
       {...otherProps}
     >
       <Paper sx={{ maxHeight: '90%', maxWidth: '90%', p: 2, overflow: 'auto' }}>
-        <FetcherResultView result={result} />
+        <FetcherResultView result={result} fetcherId={fetcherId} />
       </Paper>
     </Modal>
   );

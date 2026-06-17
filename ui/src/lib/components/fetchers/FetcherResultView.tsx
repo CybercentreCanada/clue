@@ -8,16 +8,35 @@ import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
 import clueUIPluginStore from '../../../plugins/store';
 import ErrorBoundary from '../ErrorBoundary';
 
-export const FetcherResultView: FC<RenderFetcherResultProps> = ({ result, ...props }) => {
+export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: string }> = ({
+  pluginId,
+  result,
+  fetcherId,
+  ...props
+}) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const plugin = clueUIPluginStore.getPlugin(result.format, 'fetcher');
-  if (plugin) {
-    const component = pluginStore.executeFunction(`${plugin}.fetcherResult`, { result, ...props }) as ReactNode;
-
-    if (component) {
-      return <ErrorBoundary>{component}</ErrorBoundary>;
+  const availablePlugin = pluginId ?? clueUIPluginStore.getPlugin(result.format, 'fetcher', undefined, fetcherId);
+  if (availablePlugin) {
+    // return the first available plugin for this format
+    try {
+      const component = pluginStore.executeFunction(`${availablePlugin}.fetcherResult`, {
+        result,
+        ...props
+      }) as ReactNode;
+      if (component) {
+        return <ErrorBoundary>{component}</ErrorBoundary>;
+      }
+    } catch {
+      return (
+        <ErrorBoundary>
+          <Stack sx={{ overflowY: 'auto' }}>
+            <Markdown md={t('format.render.error', { format: result.format })} />
+            <JSONViewer data={result} collapse forceCompact />
+          </Stack>
+        </ErrorBoundary>
+      );
     }
   }
 

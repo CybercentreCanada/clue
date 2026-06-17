@@ -208,7 +208,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
             </code>
           )}
 
-          <FetcherResultView result={result} {...resultAdditionalProps} />
+          <FetcherResultView result={result} fetcherId={fetcherId} {...resultAdditionalProps} />
 
           <FlexOne />
           <Stack
@@ -250,7 +250,13 @@ const Fetcher: FC<FetcherProps> = React.memo(
               </IconButton>
             )}
           </Stack>
-          <PreviewModal {...previewProps} open={showPreview} result={result} onClose={() => setShowPreview(false)} />
+          <PreviewModal
+            {...previewProps}
+            fetcherId={fetcherId}
+            open={showPreview}
+            result={result}
+            onClose={() => setShowPreview(false)}
+          />
         </Stack>
       </Paper>
     );
