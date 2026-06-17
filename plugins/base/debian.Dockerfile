@@ -16,10 +16,11 @@ RUN mkdir -p /install/files
 WORKDIR /install
 
 # Install poetry additional libraries, add poetry
+# hadolint ignore=DL3008
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential=12.12 libffi-dev=3.4.8-2 libssl3t64=3.5.6-1~deb13u2 libssl-dev=3.5.6-1~deb13u2 && \
+    apt-get install -y --no-install-recommends build-essential libffi-dev libssl3t64 libssl-dev && \
     rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir --no-warn-script-location poetry==2.2.1
+    pip install --no-cache-dir --no-warn-script-location poetry==2.4.1
 
 ENV PATH=/install/.local/bin:$PATH
 
