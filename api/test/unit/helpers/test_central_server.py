@@ -29,6 +29,7 @@ def mock_plugin():
         supported_types={"ipv4", "ipv6"},
         enrich=lambda *args: QueryEntry(count=10, annotations=[], link="https://example.com"),
         logger=logging.getLogger("test"),
+        classification="TLP:CLEAR",
     )
     return plugin
 
