@@ -10,6 +10,7 @@ from clue.models.network import QueryEntry
 from clue.models.selector import Selector
 from clue.plugin import CluePlugin
 from clue.plugin.helpers.central_server import (
+    _SESSIONS,
     _connect_to_central_server,
     enrich,
     execute_action,
@@ -79,6 +80,19 @@ def test_connect_no_token(mock_plugin: CluePlugin, caplog):
 
     assert "Authorization" not in headers
     assert "No token specified" in caplog.text
+
+
+def test_connect_timeout_variation_does_not_grow_session_cache(mock_plugin: CluePlugin):
+    """Per-call timeout changes should not create additional cached Sessions."""
+    _SESSIONS.clear()
+
+    with mock_plugin.app.test_request_context(headers={"Authorization": "Bearer raw-token"}):
+        session_1, _ = _connect_to_central_server()
+        # Timeout values are used per request, not for session cache partitioning.
+        session_2, _ = _connect_to_central_server()
+
+    assert len(_SESSIONS) == 1
+    assert session_1 is session_2
 
 
 # ---------------------------------------------------------------------------

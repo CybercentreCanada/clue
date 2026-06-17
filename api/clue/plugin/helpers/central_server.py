@@ -20,20 +20,20 @@ CENTRAL_SERVER_URL = os.getenv("CENTRAL_API_URL", "http://enrichment-rest.enrich
 
 logger = get_logger(__file__)
 
-# Module-level session cache keyed by sha256(url:timeout:retries).
+# Module-level session cache keyed by sha256(url:retries).
 _SESSIONS: dict[str, requests.Session] = {}
 
 
-def _get_session(base_url: str, timeout: int, retries: int) -> requests.Session:
+def _get_session(base_url: str, retries: int) -> requests.Session:
     """Return a cached, retry-configured :class:`requests.Session` for *base_url*.
 
-    Sessions are keyed by ``(base_url, timeout, retries)`` so callers with
-    different timeout requirements each get their own pool.
+    Sessions are keyed by ``(base_url, retries)``. Request timeout is provided
+    per call and does not affect Session or adapter configuration.
     """
-    cache_key = sha256(f"{base_url}:{timeout}:{retries}".encode()).hexdigest()
+    cache_key = sha256(f"{base_url}:{retries}".encode()).hexdigest()
     if cache_key not in _SESSIONS:
         session = requests.Session()
-        pool_size = math.floor(int(os.environ.get("EXECUTOR_THREADS", 32)) / 2)
+        pool_size = max(1, math.floor(int(os.environ.get("EXECUTOR_THREADS", 32)) / 2))
         retry_strategy = Retry(
             total=retries,
             backoff_factor=0.5,
@@ -51,7 +51,7 @@ def _get_session(base_url: str, timeout: int, retries: int) -> requests.Session:
     return _SESSIONS[cache_key]
 
 
-def _connect_to_central_server(timeout: int | None = 3, retries: int = 3) -> tuple[requests.Session, dict[str, str]]:
+def _connect_to_central_server(retries: int = 3) -> tuple[requests.Session, dict[str, str]]:
     """Return a ``(session, headers)`` pair for calling the central server.
 
     Token extraction priority:
@@ -89,9 +89,78 @@ def _connect_to_central_server(timeout: int | None = 3, retries: int = 3) -> tup
     if secondary_token:
         headers["X-Clue-Authorization"] = secondary_token
 
-    effective_timeout = timeout if timeout is not None else 3
-    session = _get_session(CENTRAL_SERVER_URL, effective_timeout, retries)
+    session = _get_session(CENTRAL_SERVER_URL, retries)
     return session, headers
+
+
+def _safe_central_get(
+    url: str,
+    session: requests.Session,
+    headers: dict[str, str],
+    timeout: float = 5.0,
+    endpoint_name: str = "",
+) -> dict | None:
+    """Make a GET request to the central server with standardized error handling.
+
+    Args:
+        url: The full URL to request.
+        session: A cached ``requests.Session`` from ``_get_session()``.
+        headers: Request headers dict from ``_connect_to_central_server()``.
+        timeout: HTTP timeout in seconds. Defaults to 5.0.
+        endpoint_name: Endpoint name for logging context.
+
+    Returns:
+        The ``api_response`` dict from the response body on success, or ``None``
+        on any connection, parse, or HTTP error.
+    """
+    try:
+        rsp = session.get(url, headers=headers, timeout=timeout)
+        rsp.raise_for_status()
+        return rsp.json().get("api_response", {})
+    except requests.exceptions.ConnectionError:
+        logger.exception("Unable to connect to central server at %s", url)
+    except (JSONDecodeError, KeyError, AttributeError):
+        logger.exception("Central server returned unexpected format for %s", endpoint_name or url)
+    except requests.exceptions.HTTPError:
+        logger.exception("HTTP error from central server %s", endpoint_name or url)
+    return None
+
+
+def _safe_central_post(
+    url: str,
+    session: requests.Session,
+    headers: dict[str, str],
+    json_body: dict | list | None = None,
+    params: dict | None = None,
+    timeout: float | tuple[float, float] = 5.0,
+    endpoint_name: str = "",
+) -> dict | None:
+    """Make a POST request to the central server with standardized error handling.
+
+    Args:
+        url: The full URL to request.
+        session: A cached ``requests.Session`` from ``_get_session()``.
+        headers: Request headers dict from ``_connect_to_central_server()``.
+        json_body: JSON payload to POST, or ``None``.
+        params: Query parameters dict, or ``None``.
+        timeout: HTTP timeout in seconds or (connect, read) tuple. Defaults to 5.0.
+        endpoint_name: Endpoint name for logging context.
+
+    Returns:
+        The ``api_response`` dict from the response body on success, or ``None``
+        on any connection, parse, or HTTP error.
+    """
+    try:
+        rsp = session.post(url, json=json_body, params=params, headers=headers, timeout=timeout)
+        rsp.raise_for_status()
+        return rsp.json().get("api_response", {})
+    except requests.exceptions.ConnectionError:
+        logger.exception("Unable to connect to central server at %s", url)
+    except (JSONDecodeError, KeyError, AttributeError):
+        logger.exception("Central server returned unexpected format for %s", endpoint_name or url)
+    except requests.exceptions.HTTPError:
+        logger.exception("HTTP error from central server %s", endpoint_name or url)
+    return None
 
 
 def get_sources() -> dict[str, list[str]]:
@@ -108,17 +177,8 @@ def get_sources() -> dict[str, list[str]]:
     """
     session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/lookup/types/")
-    try:
-        rsp = session.get(url, headers=headers, timeout=5.0)
-        rsp.raise_for_status()
-        return rsp.json().get("api_response", {})
-    except requests.exceptions.ConnectionError:
-        logger.exception("Unable to connect to central server at %s", url)
-    except (JSONDecodeError, KeyError):
-        logger.exception("Central server returned unexpected format for /api/v1/lookup/types/")
-    except requests.exceptions.HTTPError:
-        logger.exception("HTTP error from central server /api/v1/lookup/types/")
-    return {}
+    result = _safe_central_get(url, session, headers, endpoint_name="/api/v1/lookup/types/")
+    return result if result is not None else {}
 
 
 def enrich(
@@ -160,7 +220,7 @@ def enrich(
     if isinstance(selectors, Selector):
         selectors = [selectors]
 
-    session, headers = _connect_to_central_server(timeout=int(timeout))
+    session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/lookup/enrich")
 
     params: dict[str, str | int | float | bool] = {
@@ -170,33 +230,25 @@ def enrich(
     if sources:
         params["sources"] = "|".join(sources)
     if no_annotation:
-        params["no_annotation"] = "true"
+        params["no_annotation"] = True
     if include_raw:
-        params["include_raw"] = "true"
+        params["include_raw"] = True
     if no_cache:
-        params["no_cache"] = "true"
+        params["no_cache"] = True
 
     payload = [s.model_dump(exclude_none=True, exclude_unset=True) for s in selectors]
     result: dict[str, dict[str, dict[str, BulkEntry]]] = {}
 
-    try:
-        rsp = session.post(
-            url,
-            json=payload,
-            params=params,
-            headers=headers,
-            timeout=(timeout, timeout * 3),
-        )
-        rsp.raise_for_status()
-        api_response: dict = rsp.json().get("api_response", {})
-    except requests.exceptions.ConnectionError:
-        logger.exception("Unable to connect to central server at %s", url)
-        return result
-    except (JSONDecodeError, KeyError):
-        logger.exception("Central server returned unexpected format for /api/v1/lookup/enrich")
-        return result
-    except requests.exceptions.HTTPError:
-        logger.exception("HTTP error from central server /api/v1/lookup/enrich")
+    api_response = _safe_central_post(
+        url,
+        session,
+        headers,
+        json_body=payload,
+        params=params,
+        timeout=(timeout, timeout * 3),
+        endpoint_name="/api/v1/lookup/enrich",
+    )
+    if api_response is None:
         return result
 
     _parse_enrich_response(api_response, result)
@@ -242,18 +294,14 @@ def list_actions() -> dict[str, ActionSpec]:
     """
     session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/actions/")
+    api_response = _safe_central_get(url, session, headers, endpoint_name="/api/v1/actions/")
+    if api_response is None:
+        return {}
     try:
-        rsp = session.get(url, headers=headers, timeout=5.0)
-        rsp.raise_for_status()
-        api_response = rsp.json().get("api_response", {})
         return TypeAdapter(dict[str, ActionSpec]).validate_python(api_response)
-    except requests.exceptions.ConnectionError:
-        logger.exception("Unable to connect to central server at %s", url)
-    except (JSONDecodeError, KeyError, ValidationError):
-        logger.exception("Central server returned unexpected format for /api/v1/actions/")
-    except requests.exceptions.HTTPError:
-        logger.exception("HTTP error from central server /api/v1/actions/")
-    return {}
+    except ValidationError:
+        logger.exception("Failed to validate actions response")
+        return {}
 
 
 def execute_action(
@@ -278,28 +326,29 @@ def execute_action(
         :class:`~clue.models.actions.ActionResult` from the central server.
         Returns a ``failure`` result on connection or parse errors.
     """
-    session, headers = _connect_to_central_server(timeout=int(timeout))
+    session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, f"/api/v1/actions/execute/{plugin_id}/{action_id}")
-    try:
-        rsp = session.post(url, json=payload or {}, headers=headers, timeout=timeout)
-        rsp.raise_for_status()
-        api_response = rsp.json().get("api_response", {})
-        return ActionResult.model_validate(api_response, context={"is_response": True})
-    except requests.exceptions.ConnectionError:
-        logger.exception("Unable to connect to central server at %s", url)
+    api_response = _safe_central_post(
+        url,
+        session,
+        headers,
+        json_body=payload or {},
+        timeout=timeout,
+        endpoint_name=f"action {plugin_id}.{action_id}",
+    )
+    if api_response is None:
         return ActionResult(
             outcome="failure",
             summary=f"Unable to connect to central server to execute {plugin_id}.{action_id}.",
         )
-    except (JSONDecodeError, KeyError, ValidationError):
-        logger.exception("Central server returned unexpected format for action %s.%s", plugin_id, action_id)
+    try:
+        return ActionResult.model_validate(api_response, context={"is_response": True})
+    except ValidationError:
+        logger.exception("Failed to validate action result for %s.%s", plugin_id, action_id)
         return ActionResult(
             outcome="failure",
             summary=f"Unexpected response format from central server for {plugin_id}.{action_id}.",
         )
-    except requests.exceptions.HTTPError as err:
-        logger.exception("HTTP error from central server for action %s.%s", plugin_id, action_id)
-        return ActionResult(outcome="failure", summary=str(err))
 
 
 def list_fetchers() -> dict[str, FetcherDefinition]:
@@ -314,18 +363,14 @@ def list_fetchers() -> dict[str, FetcherDefinition]:
     """
     session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, "/api/v1/fetchers/")
+    api_response = _safe_central_get(url, session, headers, endpoint_name="/api/v1/fetchers/")
+    if api_response is None:
+        return {}
     try:
-        rsp = session.get(url, headers=headers, timeout=5.0)
-        rsp.raise_for_status()
-        api_response = rsp.json().get("api_response", {})
         return TypeAdapter(dict[str, FetcherDefinition]).validate_python(api_response)
-    except requests.exceptions.ConnectionError:
-        logger.exception("Unable to connect to central server at %s", url)
-    except (JSONDecodeError, KeyError, ValidationError):
-        logger.exception("Central server returned unexpected format for /api/v1/fetchers/")
-    except requests.exceptions.HTTPError:
-        logger.exception("HTTP error from central server /api/v1/fetchers/")
-    return {}
+    except ValidationError:
+        logger.exception("Failed to validate fetchers response")
+        return {}
 
 
 def run_fetcher(
@@ -350,22 +395,23 @@ def run_fetcher(
         :class:`~clue.models.fetchers.FetcherResult` from the central server.
         Returns a ``failure`` result on connection or parse errors.
     """
-    session, headers = _connect_to_central_server(timeout=int(timeout))
+    session, headers = _connect_to_central_server()
     url = urljoin(CENTRAL_SERVER_URL, f"/api/v1/fetchers/{plugin_id}/{fetcher_id}")
     payload = selector.model_dump(exclude_none=True, exclude_unset=True)
-    try:
-        rsp = session.post(url, json=payload, headers=headers, timeout=timeout)
-        rsp.raise_for_status()
-        api_response = rsp.json().get("api_response", {})
-        return FetcherResult.model_validate(api_response, context={"is_response": True})
-    except requests.exceptions.ConnectionError:
-        logger.exception("Unable to connect to central server at %s", url)
+    api_response = _safe_central_post(
+        url,
+        session,
+        headers,
+        json_body=payload,
+        timeout=timeout,
+        endpoint_name=f"fetcher {plugin_id}.{fetcher_id}",
+    )
+    if api_response is None:
         return FetcherResult.error_result(f"Unable to connect to central server to run {plugin_id}.{fetcher_id}.")
-    except (JSONDecodeError, KeyError, ValidationError):
-        logger.exception("Central server returned unexpected format for fetcher %s.%s", plugin_id, fetcher_id)
+    try:
+        return FetcherResult.model_validate(api_response, context={"is_response": True})
+    except ValidationError:
+        logger.exception("Failed to validate fetcher result for %s.%s", plugin_id, fetcher_id)
         return FetcherResult.error_result(
             f"Unexpected response format from central server for {plugin_id}.{fetcher_id}."
         )
-    except requests.exceptions.HTTPError as err:
-        logger.exception("HTTP error from central server for fetcher %s.%s", plugin_id, fetcher_id)
-        return FetcherResult.error_result(str(err))
