@@ -4,8 +4,7 @@ FROM python:3.12-alpine AS base
 # Make sure root account is locked so 'su' commands fail all the time
 RUN passwd -l root
 
-# Upgrade packages and get required packages
-RUN apk update && apk upgrade && apk add --no-cache libffi=3.5.2-r0
+RUN apk update && apk upgrade && apk add --no-cache libffi-3.5.2-r1
 
 
 FROM base AS builder
@@ -14,7 +13,7 @@ RUN mkdir -p /install/files
 WORKDIR /install
 
 # Install poetry additional libraries, add poetry
-RUN apk add --no-cache build-base=0.5-r3 libffi-3.5.2-r1 openssl-dev=3.5.6-r0 && \
+RUN apk add --no-cache build-base=0.5-r3 openssl-dev=3.5.6-r0 && \
     pip install --no-cache-dir --no-warn-script-location poetry==2.2.1
 
 ENV PATH=/install/.local/bin:$PATH
