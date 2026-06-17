@@ -137,7 +137,7 @@ def all_supported_types(user: dict[str, Any], access_token: str | None = None) -
     return all_types
 
 
-def get_plugins_supported_types(user: dict[str, Any]):
+def get_plugins_supported_types(user: dict[str, Any]) -> dict[str, list[str]]:
     """Return the supported type names of each external service, filtered to what the user has access to."""
     configured_sources: list[ExternalSource] = getattr(config.api, "external_sources", [])
     available_types: dict[str, list[str]] = {}
