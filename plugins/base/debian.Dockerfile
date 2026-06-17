@@ -6,7 +6,7 @@ RUN passwd -l root
 
 # Upgrade packages and get required packages
 RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends libffi8=3.4.8-2 && \
+    apt-get install -y --no-install-recommends libffi8 && \
     rm -rf /var/lib/apt/lists/*
 
 
