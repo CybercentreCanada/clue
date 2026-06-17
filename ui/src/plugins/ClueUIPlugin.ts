@@ -64,36 +64,30 @@ abstract class ClueUIPlugin implements IPlugin {
   activate() {
     const functions = difference(Object.getOwnPropertyNames(ClueUIPlugin.prototype), INTERNAL_FUNCTIONS);
     functions.forEach(_function => {
-      this.pluginStore.addFunction(`${this.name}.${_function}`, this[_function]);
-      this.functionsToRemove.push(`${this.name}.${_function}`);
+      const fn = (this as any)[_function];
+      if (typeof fn === 'function') {
+        this.pluginStore.addFunction(`${this.name}.${_function}`, fn.bind(this));
+        this.functionsToRemove.push(`${this.name}.${_function}`);
+      }
     });
 
     this.pluginStore.addFunction(`${this.name}.${'getPluginName'}`, this.getPluginName);
     // explicityly add render functions to plugin store if they have been implemented
     if (this.actionResult) {
-      this.pluginStore.addFunction(`${this.name}.${'actionResult'}`, this.actionResult);
+      this.pluginStore.addFunction(`${this.name}.actionResult`, this.actionResult.bind(this));
+      this.functionsToRemove.push(`${this.name}.actionResult`);
     }
     if (this.fetcherResult) {
-      this.pluginStore.addFunction(`${this.name}.${'fetcherResult'}`, this.fetcherResult);
+      this.pluginStore.addFunction(`${this.name}.fetcherResult`, this.fetcherResult.bind(this));
+      this.functionsToRemove.push(`${this.name}.fetcherResult`);
     }
 
     this.localization(i18nInstance);
   }
 
   deactivate() {
-    difference(Object.getOwnPropertyNames(ClueUIPlugin.prototype), INTERNAL_FUNCTIONS).forEach(_function =>
-      this.pluginStore.removeFunction(`${this.name}.${_function}`)
-    );
-
-    // explicityly remove render functions to plugin store if they have been implemented
-    if (this.actionResult) {
-      this.pluginStore.removeFunction(`${this.name}.${'actionResult'}`);
-    }
-    if (this.fetcherResult) {
-      this.pluginStore.removeFunction(`${this.name}.${'fetcherResult'}`);
-    }
-
     this.functionsToRemove.forEach(name => this.pluginStore.removeFunction(name));
+    this.functionsToRemove = [];
   }
 
   actionResult?(_props: RenderActionResultProps): ReactNode;

@@ -8,11 +8,16 @@ import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
 import clueUIPluginStore from '../../../plugins/store';
 import ErrorBoundary from '../ErrorBoundary';
 
-export const FetcherResultView: FC<RenderFetcherResultProps> = ({ pluginId, result, ...props }) => {
+export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: string }> = ({
+  pluginId,
+  result,
+  fetcherId,
+  ...props
+}) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const availablePlugin = pluginId ?? clueUIPluginStore.getPlugin(result.format, 'fetcher');
+  const availablePlugin = pluginId ?? clueUIPluginStore.getPlugin(result.format, 'fetcher', undefined, fetcherId);
   if (availablePlugin) {
     // return the first available plugin for this format
     try {
