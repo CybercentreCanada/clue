@@ -5,6 +5,7 @@ FROM python:3.12-slim AS base
 RUN passwd -l root
 
 # Upgrade packages and get required packages
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get upgrade -y && \
     apt-get install -y --no-install-recommends libffi8 && \
     rm -rf /var/lib/apt/lists/*
