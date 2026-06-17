@@ -65,7 +65,7 @@ import useClueConfig from './hooks/useClueConfig';
 import AssessmentIcon from './icons/Assessment';
 import ContextIcon from './icons/Context';
 import OpinionIcon from './icons/Opinion';
-import type FrequencyText from './text/Frequency';
+import FrequencyText from './text/Frequency';
 
 export {
   ActionForm,
@@ -104,51 +104,51 @@ export {
   useClueFetcherSelector
 };
 
-export type {
-  ActionDefinition,
-  ActionDefinitionsResponse,
-  ActionResult,
-  Annotation,
-  BulkEnrichRequest,
-  BulkEnrichResponses,
-  ClueConfigContextProps,
-  ClueDatabase,
-  ClueDatabaseCollections,
-  ClueDatabaseContextProps,
-  ClueResponse,
-  ClueUIPluginDefinition,
-  EnrichedCardProps,
-  EnrichedTypographyProps,
-  Enrichment,
-  EnrichmentProps,
-  EnrichResponse,
-  EnrichResponses,
-  FailedRequest,
-  FetcherDefinition,
-  FetcherDefinitionsResponse,
-  FetcherResult,
-  RunningActionData,
-  Selector,
-  SelectorCollection,
-  SelectorCollectionMethods,
-  SelectorDocMethods,
-  SelectorDocType,
-  SelectorDocument,
-  SnackbarEvents,
-  StatusCollection,
-  StatusCollectionMethods,
-  StatusDocMethods,
-  StatusDocType,
-  StatusDocument,
-  TypesDetectionResponse,
-  TypesResponse,
-  WithExtra
-};
+  export type {
+    ActionDefinition,
+    ActionDefinitionsResponse,
+    ActionResult,
+    Annotation,
+    BulkEnrichRequest,
+    BulkEnrichResponses,
+    ClueConfigContextProps,
+    ClueDatabase,
+    ClueDatabaseCollections,
+    ClueDatabaseContextProps,
+    ClueResponse,
+    ClueUIPluginDefinition,
+    EnrichedCardProps,
+    EnrichedTypographyProps,
+    Enrichment,
+    EnrichmentProps,
+    EnrichResponse,
+    EnrichResponses,
+    FailedRequest,
+    FetcherDefinition,
+    FetcherDefinitionsResponse,
+    FetcherResult,
+    RunningActionData,
+    Selector,
+    SelectorCollection,
+    SelectorCollectionMethods,
+    SelectorDocMethods,
+    SelectorDocType,
+    SelectorDocument,
+    SnackbarEvents,
+    StatusCollection,
+    StatusCollectionMethods,
+    StatusDocMethods,
+    StatusDocType,
+    StatusDocument,
+    TypesDetectionResponse,
+    TypesResponse,
+    WithExtra
+  };
 
-export type {
-  ClueConfigContextProps as BorealisConfigContextProps,
-  ClueDatabase as BorealisDatabase,
-  ClueDatabaseCollections as BorealisDatabaseCollections,
-  ClueDatabaseContextProps as BorealisDatabaseContextProps,
-  ClueResponse as BorealisResponse
-};
+  export type {
+    ClueConfigContextProps as BorealisConfigContextProps,
+    ClueDatabase as BorealisDatabase,
+    ClueDatabaseCollections as BorealisDatabaseCollections,
+    ClueDatabaseContextProps as BorealisDatabaseContextProps,
+    ClueResponse as BorealisResponse
+  };

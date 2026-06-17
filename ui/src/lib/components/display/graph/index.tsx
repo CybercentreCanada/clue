@@ -277,7 +277,8 @@ const Graph: FC<{ graph: NestedDataset; sx?: StackProps['sx'] }> = ({ graph, sx 
             '& .path': {
               transition: theme.transitions.create(['opacity'], {
                 duration: theme.transitions.duration.short
-              })
+              }),
+              transform: 'translateY(-10px)'
             },
             '& .node': {
               cursor: 'pointer',

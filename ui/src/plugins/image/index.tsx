@@ -40,7 +40,7 @@ class ImagePlugin extends ClueUIPlugin {
   }
 
   exampleInput() {
-    return '{ "image": "/svg/dark/clue-icon2.svg", "alt": "Clue Logo" }';
+    return JSON.stringify({ image: '/svg/dark/clue-icon2.svg', alt: 'Clue Logo' }, null, 2);
   }
 
   documentation() {

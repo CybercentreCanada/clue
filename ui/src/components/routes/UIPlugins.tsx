@@ -235,7 +235,7 @@ const UIPlugins: FC = () => {
 
           <Stack direction={'row'} flex={1} gap={2} sx={{ overflow: 'hidden', minHeight: 0 }}>
             <Stack spacing={1} flex={1} overflow={'hidden'} gap={1}>
-              <Typography sx={{ pt: 2 }}>{t('route.plugin.description')}</Typography>
+              <Typography sx={{ pt: 2 }}>{t('route.plugins.description')}</Typography>
               <Divider flexItem orientation="horizontal" />
               <Stack gap={2}>
                 <Autocomplete
@@ -339,7 +339,9 @@ const UIPlugins: FC = () => {
             <Stack flex={2} minHeight={0} sx={{ overflow: 'hidden' }}>
               {displayPlugin && (
                 <>
-                  <Typography sx={{ py: 2 }}>{displayPlugin.id}</Typography>
+                  <Typography variant="h6" sx={{ py: 2 }}>
+                    {displayPlugin.id}
+                  </Typography>
                   <Divider flexItem />
                   <Markdown md={pluginDocumentationString ?? '_No documentation available for this plugin_'} />
                 </>

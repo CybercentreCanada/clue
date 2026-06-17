@@ -31,7 +31,14 @@ class GraphPlugin extends ClueUIPlugin {
         // do nothing, just render the string as is
       }
     }
-    return <Graph graph={json} sx={{ minHeight: '600px' }} />;
+    return (
+      <Graph
+        graph={json}
+        sx={{
+          minHeight: '600px'
+        }}
+      />
+    );
   }
 
   editorLanguage() {
