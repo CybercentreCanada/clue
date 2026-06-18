@@ -64,9 +64,9 @@ export class ClueUIPluginStore {
    * @returns an array of plugin names that match the given criteria
    */
   getPlugins(format?: string, resultType?: 'action' | 'fetcher', actionId?: string, fetcherId?: string): string[] {
-    let pluginsById: string[] = [];
+    let pluginsById: string[] | undefined = undefined;
     let pluginsByFormat: string[] = [];
-    let pluginsByResultType: string[] = [];
+    let pluginsByResultType: string[] | undefined = undefined;
 
     if (resultType === 'action' && actionId) {
       pluginsById = this.pluginsByActionId[actionId];
@@ -79,14 +79,14 @@ export class ClueUIPluginStore {
     pluginsByFormat = format ? (this.pluginsByFormat[format] ?? []) : this.plugins;
 
     const availablePlugins =
-      pluginsById.length || pluginsByResultType.length
+      pluginsById?.length || pluginsByResultType?.length
         ? [
-            ...(pluginsById.length
+            ...(pluginsById?.length
               ? pluginsByFormat.filter(plugin => {
                   return pluginsById.includes(plugin);
                 })
               : []),
-            ...(pluginsByResultType.length
+            ...(pluginsByResultType?.length
               ? pluginsByFormat?.filter(plugin => {
                   if (pluginsByResultType) {
                     return pluginsByResultType.includes(plugin);
