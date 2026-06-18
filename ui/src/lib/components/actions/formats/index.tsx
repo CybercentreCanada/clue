@@ -4,7 +4,7 @@ import Markdown from 'lib/components/display/markdown';
 import ErrorBoundary from 'lib/components/ErrorBoundary';
 import type { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
-import { useMemo, type FC, type ReactNode } from 'react';
+import { type FC, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
 import clueUIPluginStore from '../../../../plugins/store';
@@ -17,10 +17,7 @@ const Result: FC<{ pluginId?: string; result: WithActionData<ActionResult>; [add
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const plugin = useMemo(
-    () => pluginId ?? clueUIPluginStore.getPlugin(result.format, 'action', result.actionId),
-    [pluginId, result.format, result.actionId]
-  );
+  const plugin = pluginId ?? clueUIPluginStore.getPlugin(result.format, 'action', result.actionId);
 
   if (plugin) {
     try {
@@ -28,7 +25,7 @@ const Result: FC<{ pluginId?: string; result: WithActionData<ActionResult>; [add
         result,
         ...additionalProps
       }) as ReactNode;
-      if (component) {
+      if (component !== undefined) {
         return <ErrorBoundary>{component}</ErrorBoundary>;
       }
     } catch {

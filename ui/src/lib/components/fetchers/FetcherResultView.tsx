@@ -25,7 +25,7 @@ export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: stri
         result,
         ...props
       }) as ReactNode;
-      if (component) {
+      if (component !== undefined) {
         return <ErrorBoundary>{component}</ErrorBoundary>;
       }
     } catch {

@@ -52,8 +52,10 @@ export class ClueUIPluginStore {
 
   /**
    * Get plugins based on the given criteria.
-   * Only plugins that match all criteria will be returned, which could be an empty list.
-   * The order of the plugins matter, for example if a plugin specifies an action ID, it will ordered before a plugin just specifies the format or result type.
+   *
+   * Only plugins that match all criteria will be returned, which could be an empty list. The order of the plugins
+   * matter, for example if a plugin specifies an action ID, it will be ordered before a plugin just specifies the
+   * format or result type.
    *
    * @param format filter plugins by this format
    * @param resultType filter plugins by the result type that they accept (action or fetcher)
@@ -77,14 +79,14 @@ export class ClueUIPluginStore {
     pluginsByFormat = format ? (this.pluginsByFormat[format] ?? []) : this.plugins;
 
     const availablePlugins =
-      pluginsById || pluginsByResultType
+      pluginsById.length || pluginsByResultType.length
         ? [
-            ...(pluginsById
+            ...(pluginsById.length
               ? pluginsByFormat.filter(plugin => {
                   return pluginsById.includes(plugin);
                 })
               : []),
-            ...(pluginsByResultType
+            ...(pluginsByResultType.length
               ? pluginsByFormat?.filter(plugin => {
                   if (pluginsByResultType) {
                     return pluginsByResultType.includes(plugin);

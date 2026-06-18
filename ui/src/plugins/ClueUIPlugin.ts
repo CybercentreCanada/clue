@@ -68,7 +68,7 @@ abstract class ClueUIPlugin implements IPlugin {
         this.functionsToRemove.push(`${this.name}.${_function}`);
       }
     });
-    // explicityly add render functions to plugin store if they have been implemented
+    // explicitly add render functions to plugin store if they have been implemented
     if (this.actionResult) {
       this.pluginStore.addFunction(`${this.name}.actionResult`, this.actionResult.bind(this));
       this.functionsToRemove.push(`${this.name}.actionResult`);

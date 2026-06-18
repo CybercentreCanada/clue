@@ -29,14 +29,23 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
   children
 }) => {
   useEffect(() => {
+    const loadPlugin = async (pluginDef: ClueUIPluginDefinition) => {
+      try {
+        const pluginModule = await pluginDef.loadPlugin();
+        const plugin = new pluginModule.default() as ClueUIPlugin;
+        clueUIPluginStore.install(plugin);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error(`[ClueUIPluginProvider] Failed to load plugin: ${pluginDef.name ?? pluginDef.id}`, err);
+      }
+    };
+
     const loadPlugins = async () => {
       // load plugins passed in via props first, so they take precedence over built-in plugins
       if (plugins && Array.isArray(plugins)) {
         for (const pluginDef of plugins) {
           if (!excludePlugins?.includes(pluginDef.id)) {
-            const pluginModule = await pluginDef.loadPlugin();
-            const plugin = new pluginModule.default() as ClueUIPlugin;
-            clueUIPluginStore.install(plugin);
+            loadPlugin(pluginDef);
           }
         }
       }
@@ -45,14 +54,13 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
         const builtInPlugins = new ClueUIPluginsRegistry().getPlugins();
         for (const pluginDef of builtInPlugins) {
           if (!excludePlugins?.includes(pluginDef.id)) {
-            const pluginModule = await pluginDef.loadPlugin();
-            const plugin = new pluginModule.default() as ClueUIPlugin;
-            clueUIPluginStore.install(plugin);
+            loadPlugin(pluginDef);
           }
         }
       }
     };
-    loadPlugins();
+    // eslint-disable-next-line no-console
+    void loadPlugins().catch(err => console.error('[ClueUIPluginProvider] Failed to load plugins', err));
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);
 
   return <PluginProvider pluginStore={clueUIPluginStore.pluginStore}>{children}</PluginProvider>;
