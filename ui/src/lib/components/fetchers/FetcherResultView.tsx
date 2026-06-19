@@ -17,7 +17,8 @@ export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: stri
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const availablePlugin = pluginId ?? clueUIPluginStore.getPlugin(result.format, 'fetcher', undefined, fetcherId);
+  const availablePlugin =
+    pluginId ?? clueUIPluginStore.getPlugin(result.format ?? 'unknown', 'fetcher', undefined, fetcherId);
   if (availablePlugin) {
     // return the first available plugin for this format
     try {

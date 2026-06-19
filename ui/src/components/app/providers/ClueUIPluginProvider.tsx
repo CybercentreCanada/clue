@@ -45,7 +45,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
       if (plugins && Array.isArray(plugins)) {
         for (const pluginDef of plugins) {
           if (!excludePlugins?.includes(pluginDef.id)) {
-            loadPlugin(pluginDef);
+            await loadPlugin(pluginDef);
           }
         }
       }
@@ -54,7 +54,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
         const builtInPlugins = new ClueUIPluginsRegistry().getPlugins();
         for (const pluginDef of builtInPlugins) {
           if (!excludePlugins?.includes(pluginDef.id)) {
-            loadPlugin(pluginDef);
+            await loadPlugin(pluginDef);
           }
         }
       }

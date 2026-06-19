@@ -74,9 +74,14 @@ export class ClueUIPluginStore {
       pluginsById = this.pluginsByFetcherId[fetcherId];
     }
 
-    pluginsByResultType = resultType === 'action' ? this.actionPlugins : this.fetcherPlugins;
+    pluginsByResultType =
+      resultType === 'action' ? this.actionPlugins : resultType === 'fetcher' ? this.fetcherPlugins : undefined;
 
     pluginsByFormat = format ? (this.pluginsByFormat[format] ?? []) : this.plugins;
+
+    if (resultType && (pluginsByResultType?.length ?? 0) === 0) {
+      return [];
+    }
 
     const availablePlugins =
       pluginsById?.length || pluginsByResultType?.length
@@ -96,7 +101,7 @@ export class ClueUIPluginStore {
           ]
         : pluginsByFormat;
 
-    return availablePlugins ?? [];
+    return [...new Set(availablePlugins ?? [])];
   }
 
   getPlugin(

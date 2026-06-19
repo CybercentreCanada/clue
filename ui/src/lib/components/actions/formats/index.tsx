@@ -17,7 +17,7 @@ const Result: FC<{ pluginId?: string; result: WithActionData<ActionResult>; [add
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const plugin = pluginId ?? clueUIPluginStore.getPlugin(result.format, 'action', result.actionId);
+  const plugin = pluginId ?? clueUIPluginStore.getPlugin(result.format ?? 'unknown', 'action', result.actionId);
 
   if (plugin) {
     try {
