@@ -1,5 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
-import { ClueUIPluginProvider } from 'components/app/providers/ClueUIPluginProvider';
+import { ClueUIPluginProvider } from 'lib/hooks/ClueUIPluginContext';
 import type { ReactNode } from 'react';
 import { createPluginStore } from 'react-pluggable';
 import { describe, it } from 'vitest';

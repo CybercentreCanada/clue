@@ -1,15 +1,15 @@
 import { Stack } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
+import type { RenderFetcherResultProps } from 'lib/plugins/ClueUIPlugin';
+import clueUIPluginStore from 'lib/plugins/store';
 import type { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
-import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
-import clueUIPluginStore from '../../../plugins/store';
 import ErrorBoundary from '../ErrorBoundary';
 
 export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: string }> = ({
-  pluginId,
+  pluginName,
   result,
   fetcherId,
   ...props
@@ -18,12 +18,13 @@ export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: stri
   const { t } = useTranslation();
 
   const availablePlugin =
-    pluginId ?? clueUIPluginStore.getPlugin(result.format ?? 'undefined', 'fetcher', undefined, fetcherId);
+    pluginName ?? clueUIPluginStore.getPlugin(result.format ?? 'undefined', 'fetcher', undefined, fetcherId);
   if (availablePlugin) {
     // return the first available plugin for this format
     try {
       const component = pluginStore.executeFunction(`${availablePlugin}.fetcherResult`, {
         result,
+        fetcherId,
         ...props
       }) as ReactNode;
       if (component !== undefined) {

@@ -1,5 +1,5 @@
-import type { ClueUIPluginProviderProps } from 'components/app/providers/ClueUIPluginProvider';
-import { ClueUIPluginProvider } from 'components/app/providers/ClueUIPluginProvider';
+import type { ClueUIPluginProviderProps } from 'lib/hooks/ClueUIPluginContext';
+import { ClueUIPluginProvider } from 'lib/hooks/ClueUIPluginContext';
 import type { FC, PropsWithChildren } from 'react';
 import type { ClueActionProps } from './ClueActionContext';
 import { ClueActionProvider } from './ClueActionContext';

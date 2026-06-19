@@ -1,9 +1,8 @@
+import type { ClueUIPlugin, ClueUIPluginDefinition } from 'lib/main';
+import ClueUIPluginsRegistry from 'lib/plugins/registry';
+import clueUIPluginStore from 'lib/plugins/store';
 import { useEffect, type FC, type PropsWithChildren } from 'react';
 import { PluginProvider } from 'react-pluggable';
-import type ClueUIPlugin from '../../../plugins/ClueUIPlugin';
-import type { ClueUIPluginDefinition } from '../../../plugins/registry';
-import ClueUIPluginsRegistry from '../../../plugins/registry';
-import clueUIPluginStore from '../../../plugins/store';
 
 export type ClueUIPluginProviderProps = {
   /**

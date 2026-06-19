@@ -1,9 +1,9 @@
 import type { ModalProps } from '@mui/material';
 import { Modal, Paper } from '@mui/material';
+import type { RenderFetcherResultProps } from 'lib/plugins/ClueUIPlugin';
 import type { FetcherResult } from 'lib/types/fetcher';
 import type { FC } from 'react';
 import { memo } from 'react';
-import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
 import { FetcherResultView } from './FetcherResultView';
 
 /**

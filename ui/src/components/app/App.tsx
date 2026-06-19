@@ -36,6 +36,7 @@ import { ClueDatabaseProvider } from 'lib/hooks/ClueDatabaseContext';
 import { ClueEnrichProvider } from 'lib/hooks/ClueEnrichContext';
 import { ClueFetcherProvider } from 'lib/hooks/ClueFetcherContext';
 import { CluePopupProvider } from 'lib/hooks/CluePopupContext';
+import { ClueUIPluginProvider } from 'lib/hooks/ClueUIPluginContext';
 import { useClueEnrichSelector } from 'lib/hooks/selectors';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
@@ -49,7 +50,6 @@ import { useEffect } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
 import { BrowserRouter, Route } from 'react-router-dom';
 import AppContainer from './AppContainer';
-import { ClueUIPluginProvider } from './providers/ClueUIPluginProvider';
 import LocalStorageProvider from './providers/LocalStorageProvider';
 import ModalProvider from './providers/ModalProvider';
 
