@@ -253,6 +253,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
           <PreviewModal
             {...previewProps}
             fetcherId={fetcherId}
+            slotProps={{ fetcherResultView: resultAdditionalProps }}
             open={showPreview}
             result={result}
             onClose={() => setShowPreview(false)}

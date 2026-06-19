@@ -3,6 +3,7 @@ import { Modal, Paper } from '@mui/material';
 import type { FetcherResult } from 'lib/types/fetcher';
 import type { FC } from 'react';
 import { memo } from 'react';
+import type { RenderFetcherResultProps } from '../../../plugins/ClueUIPlugin';
 import { FetcherResultView } from './FetcherResultView';
 
 /**
@@ -13,8 +14,11 @@ const PreviewModal: FC<
     result: FetcherResult;
     fetcherId?: string;
     onClose?: () => void;
-  } & Omit<ModalProps, 'children'>
-> = ({ result, fetcherId, onClose, open = false, ...otherProps }) => {
+    slotProps?: ModalProps['slotProps'] & { fetcherResultView: Partial<RenderFetcherResultProps> };
+  } & Omit<ModalProps, 'children' | 'slotProps'>
+> = ({ result, slotProps, fetcherId, onClose, open = false, ...otherProps }) => {
+  const { fetcherResultView, ...modalSlotProps } = slotProps;
+
   return (
     <Modal
       open={open}
@@ -23,10 +27,11 @@ const PreviewModal: FC<
         ...(Array.isArray(otherProps?.sx) ? otherProps?.sx : [otherProps?.sx])
       ]}
       onClose={onClose}
+      slotProps={modalSlotProps}
       {...otherProps}
     >
       <Paper sx={{ maxHeight: '90%', maxWidth: '90%', p: 2, overflow: 'auto' }}>
-        <FetcherResultView result={result} fetcherId={fetcherId} />
+        <FetcherResultView result={result} fetcherId={fetcherId} {...(fetcherResultView ?? {})} />
       </Paper>
     </Modal>
   );
