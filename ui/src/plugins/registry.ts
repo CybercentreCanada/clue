@@ -1,7 +1,9 @@
+import type ClueUIPlugin from './ClueUIPlugin';
+
 export type ClueUIPluginDefinition = {
   name: string;
   id: string;
-  loadPlugin: () => Promise<{ default: any }>;
+  loadPlugin: () => Promise<{ default: new () => ClueUIPlugin }>;
 };
 
 export default class ClueUIPluginsRegistry {

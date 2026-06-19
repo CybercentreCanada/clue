@@ -60,7 +60,19 @@ abstract class ClueUIPlugin implements IPlugin {
   }
 
   activate() {
-    const functions = difference(Object.getOwnPropertyNames(ClueUIPlugin.prototype), INTERNAL_FUNCTIONS);
+    const functionNames = new Set<string>([
+      ...Object.getOwnPropertyNames(this),
+      ...Object.getOwnPropertyNames(Object.getPrototypeOf(this)),
+      ...Object.getOwnPropertyNames(ClueUIPlugin.prototype)
+    ]);
+
+    const functions = difference(Array.from(functionNames), [
+      ...INTERNAL_FUNCTIONS,
+      'actionResult',
+      'fetcherResult',
+      'localization'
+    ]);
+
     functions.forEach(_function => {
       const fn = (this as any)[_function];
       if (typeof fn === 'function') {

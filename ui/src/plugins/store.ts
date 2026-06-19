@@ -92,11 +92,7 @@ export class ClueUIPluginStore {
                 })
               : []),
             ...(pluginsByResultType?.length
-              ? pluginsByFormat?.filter(plugin => {
-                  if (pluginsByResultType) {
-                    return pluginsByResultType.includes(plugin);
-                  }
-                })
+              ? pluginsByFormat.filter(plugin => pluginsByResultType.includes(plugin))
               : [])
           ]
         : pluginsByFormat;
