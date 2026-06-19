@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
 import ErrorBoundary from '../ErrorBoundary';
 
-export const FetcherResultView: FC<RenderFetcherResultProps & { fetcherId?: string }> = ({
+export const FetcherResultView: FC<RenderFetcherResultProps & { pluginName?: string; fetcherId?: string }> = ({
   pluginName,
   result,
   fetcherId,

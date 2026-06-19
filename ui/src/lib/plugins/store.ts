@@ -21,6 +21,12 @@ export class ClueUIPluginStore {
 
     console.log(`Installing plugin ${plugin.getPluginName()} by ${plugin.author}`);
 
+    try {
+      this.pluginStore.install(plugin);
+    } catch (err) {
+      throw err;
+    }
+
     this.plugins.push(plugin.name);
 
     if (plugin.format) {
