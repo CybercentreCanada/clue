@@ -27,13 +27,13 @@ export class ClueUIPluginStore {
       this.pluginsByFormat[plugin.format] = [...(this.pluginsByFormat[plugin.format] ?? []), plugin.name];
     }
 
-    if (plugin.actionIds) {
+    if (plugin.actionIds && plugin.actionResult) {
       plugin.actionIds.forEach(actionId => {
         this.pluginsByActionId[actionId] = [...(this.pluginsByActionId[actionId] ?? []), plugin.name];
       });
     }
 
-    if (plugin.fetcherIds) {
+    if (plugin.fetcherIds && plugin.fetcherResult) {
       plugin.fetcherIds.forEach(fetcherId => {
         this.pluginsByFetcherId[fetcherId] = [...(this.pluginsByFetcherId[fetcherId] ?? []), plugin.name];
       });
