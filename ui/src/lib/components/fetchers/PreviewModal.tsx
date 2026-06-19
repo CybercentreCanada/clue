@@ -14,9 +14,9 @@ const PreviewModal: FC<
     result: FetcherResult;
     fetcherId?: string;
     onClose?: () => void;
-    slotProps?: ModalProps['slotProps'] & { fetcherResultView: Partial<RenderFetcherResultProps> };
+    slotProps?: ModalProps['slotProps'] & { fetcherResultView?: Partial<RenderFetcherResultProps> };
   } & Omit<ModalProps, 'children' | 'slotProps'>
-> = ({ result, slotProps, fetcherId, onClose, open = false, ...otherProps }) => {
+> = ({ result, slotProps = {}, fetcherId, onClose, open = false, ...otherProps }) => {
   const { fetcherResultView, ...modalSlotProps } = slotProps;
 
   return (
