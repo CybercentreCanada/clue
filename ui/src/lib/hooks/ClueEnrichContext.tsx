@@ -7,6 +7,7 @@ import { REPLICATORS } from 'lib/database/globals';
 import type { SelectorDocType, StatusDocType } from 'lib/database/types';
 import type { EnrichResponse, EnrichResponses, Selector } from 'lib/types/lookup';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
+import { computeStatusId } from 'lib/utils/utils';
 import { isEmpty } from 'lodash-es';
 import chunk from 'lodash-es/chunk';
 import debounce from 'lodash-es/debounce';
@@ -240,7 +241,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
       if (!statusRecord) {
         statusRecord = await database.status?.insert({
-          id: uuid(),
+          id: await computeStatusId(selector.type, selector.value, selector.classification ?? defaultClassification),
           type: selector.type,
           value: selector.value,
           classification: selector.classification ?? defaultClassification,
@@ -316,7 +317,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
         if (!statusRecord) {
           statusRecord = await database.status?.insert({
-            id: uuid(),
+            id: await computeStatusId(query.type, query.value, query.classification),
             ...query,
             status: 'in-progress',
             sources: options.sources
@@ -379,16 +380,16 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     for (const [classification, selectors] of Object.entries(byClassification)) {
       const bySelector = groupBy(selectors, _selector => `${_selector.type}:${_selector.value}`);
 
-      Object.values(bySelector).forEach(records => {
+      for (const records of Object.values(bySelector)) {
         newRequests.push({
-          id: uuid(),
+          id: await computeStatusId(records[0].type, records[0].value, classification),
           type: records[0].type,
           value: records[0].value,
           classification,
           sources: uniq(records.map(_record => _record.source)).sort(),
           status: 'pending'
         });
-      });
+      }
     }
 
     await database.status.bulkInsert(newRequests);
@@ -552,7 +553,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
       if (!statusRecord) {
         statusRecord = await database.status?.queueInsert({
-          id: uuid(),
+          id: await computeStatusId(query.type, query.value, query.classification),
           ...query,
           status: 'pending'
         });

@@ -4,62 +4,127 @@ This document will walk you through developing, publishing and deploying a new C
 
 ## Development Environment Setup
 
-### Installing poetry
+Use this section to get your machine ready to make and validate changes locally.
+These steps are intentionally practical rather than exact CI reproduction.
+
+### Prerequisites
+
+- Python 3.12+ and Poetry
+- Docker (for dependency stack and image builds)
+- GNU Make
+
+Useful references:
+
+- Poetry installation docs: <https://python-poetry.org/docs/#installation>
+- Poetry CLI docs: <https://python-poetry.org/docs/cli/>
+- Python downloads: <https://www.python.org/downloads/>
+- pyenv (optional Python version manager): <https://github.com/pyenv/pyenv>
+- Docker install docs: <https://docs.docker.com/engine/install/>
+
+### 1) Install project dependencies
+
+Preferred (from repository root):
 
 ```bash
-pip install poetry
-cd clue-api
-poetry install --with dev,test --all-extras
+make setup
+```
 
-# OPTIONAL: Instead pre-commit hooks (black/flake8/isort formatting)
-poetry run pre-commit install
+If `make setup` does not fit your environment, install manually:
 
-# Now you can run the clue server!
+```bash
+cd api
+python -m pip install poetry
+poetry env use 3.12
+poetry install --all-extras --with test
+```
+
+If Poetry is not available on your PATH after installation:
+
+```bash
+python -m pip install --user poetry
+python -m poetry --version
+```
+
+If you use pipx:
+
+```bash
+pipx install poetry
+poetry --version
+```
+
+### 2) Prepare local Clue folders and config
+
+These folders/config files are commonly needed for local API and plugin development:
+
+```bash
+sudo mkdir -p /etc/clue/conf/
+sudo mkdir -p /etc/clue/lookups/
+sudo mkdir -p /var/log/clue/
+sudo chmod a+rw /etc/clue/conf/
+sudo chmod a+rw /etc/clue/lookups/
+sudo chmod a+rw /var/log/clue/
+
+cp api/build_scripts/classification.yml /etc/clue/conf/classification.yml
+cp api/test/unit/config.yml /etc/clue/conf/config.yml
+```
+
+### 3) Start dependencies and run API locally
+
+```bash
+make start-dependencies
+cd api
 poetry run server
 ```
 
-#### Useful Commands
+### 4) Run local quality checks before pushing changes
 
-To activate a venv, use **`poetry shell`**.
-
-To add a new dependency, use **`poetry add`**:
+For API and plugin-interface changes in `api/`:
 
 ```bash
-➜  clue-api git:(poetry) poetry add pyjwt
-Using version ^2.8.0 for pyjwt
-
-Updating dependencies
-Resolving dependencies... (0.5s)
-
-Package operations: 1 install, 0 updates, 0 removals
-
-  - Installing pyjwt (2.8.0)
-
-Writing lock file
+cd api
+poetry check
+poetry run ruff format clue --diff
+poetry run ruff check clue
+poetry run type_check
+poetry run test
 ```
 
-Then commit the new `pyproject.toml` and `poetry.lock`.
-
-### Setup Clue Folders and Configuration
+For Dockerfile changes in `plugins/base/`:
 
 ```bash
-# Clue config.yml should be in this location, as well as classification.yml
-# For a starter config, use the test config.yml and classification.
-sudo mkdir -p /etc/clue/conf
-# Log file directory, will write log files here if enabled
-sudo mkdir -p /var/log/clue
-
-sudo chown -R $USER /etc/clue
-sudo chown $USER /var/log/clue
+hadolint plugins/base/base.Dockerfile
+hadolint plugins/base/plugin.Dockerfile
+hadolint plugins/base/debian.Dockerfile
 ```
+
+### Troubleshooting dependency setup
+
+- If Python 3.12 is unavailable, install it first (system package manager, official installer, or pyenv), then rerun `poetry env use 3.12`.
+- If Poetry environment resolution fails, try recreating the environment:
+
+```bash
+cd api
+poetry env remove --all
+poetry install --all-extras --with test
+```
+
+- If Docker-based dependencies fail to start, run `docker compose ps` and `docker compose logs` from `api/dev/`.
 
 ## Creating the plugin
 
-The easiest way to create a plugin is to use the Interactive Wizard. This script can be found at plugins/setup/create.py
-Simply run the python script and it will prompt you for required info:
+The easiest way to create a plugin is to use the interactive wizard:
+
 ```bash
 python plugins/setup/create.py
 ```
+
+For interactive plugin testing during development:
+
+```bash
+make test-plugin plugins/<your_plugin_dir>
+```
+
+If your plugin needs authenticated calls to external services, set `CLUE_ACCESS_TOKEN` before running interactive tests.
 
 ## Interacting with the central API
 
@@ -433,3 +498,34 @@ plugin = CluePlugin(
 ```
 
 ## Building the docker image
+
+To build plugin base images locally from the Dockerfiles in `plugins/base/`:
+
+```bash
+# Base variant
+docker build \
+  -f plugins/base/base.Dockerfile \
+  -t cccs/clue-plugin-base:local \
+  .
+
+# Debian variant
+docker build \
+  -f plugins/base/debian.Dockerfile \
+  -t cccs/clue-plugin-base:local-debian \
+  .
+```
+
+To build the API image locally:
+
+```bash
+docker build \
+  -f api/Dockerfile \
+  -t clue-api:local \
+  api
+```
+
+## Additional references
+
+- API workflow reference: `.github/workflows/api-workflow.yml`
+- Base plugin workflow reference: `.github/workflows/base-plugin-workflow.yml`
+- API development guide: `docs/api/development.en.md`

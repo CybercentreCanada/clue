@@ -255,9 +255,20 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
       }
 
       // Telemetry is special cased into a JSON string
-      const stringifiedSelectors = selectors.map(selector =>
-        selector.type === 'telemetry' ? { ...selector, value: JSON.stringify(selector.value) } : selector
-      );
+      const stringifiedSelectors = selectors.map(selector => {
+        if (selector.type !== 'telemetry') {
+          return selector;
+        }
+
+        try {
+          // Already safely JSON formatted
+          JSON.parse(selector.value);
+        } catch {
+          selector = { ...selector, value: JSON.stringify(selector.value) };
+        }
+
+        return selector;
+      });
 
       const actionToRun = availableActions[actionId];
 
