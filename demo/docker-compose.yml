@@ -80,8 +80,7 @@ services:
       API__EXTERNAL_SOURCES: |
         [
           {"name": "port-lookup", "url": "http://port-lookup:5100", "classification": "TLP:CLEAR"},
-          {"name": "crt-sh", "url": "http://crtsh:5101", "classification": "TLP:CLEAR"},
-          {"name": "misp", "url": "http://misp:5102", "classification": "TLP:CLEAR"}
+          {"name": "crt-sh", "url": "http://crtsh:5101", "classification": "TLP:CLEAR"}
         ]
     depends_on:
       keycloak:
@@ -132,11 +131,9 @@ services:
       - clue-network
 
   misp:
-    build:
-      context: ../plugins/misp
-      dockerfile: ../base/plugin.Dockerfile
-      args:
-        base_plugin_version: "1.6"
+    profiles:
+      - misp
+    image: cccs/clue-plugin-misp:latest
     restart: unless-stopped
     ports:
       - "5102:5102"
