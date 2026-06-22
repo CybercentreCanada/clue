@@ -36,7 +36,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
   excludeBuiltInPlugins,
   children
 }) => {
-  const [pluginStore, setPluginStore] = useState<PluginStore>();
+  const [pluginStore, setPluginStore] = useState<PluginStore>(() => clueUIPluginStore.pluginStore);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -78,18 +78,15 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
     };
 
     clueUIPluginStore.reset();
+    setPluginStore(clueUIPluginStore.pluginStore);
 
     // eslint-disable-next-line no-console
-    void loadPlugins()
-      .catch(err => {
-        if (!abortController.signal.aborted) {
-          // eslint-disable-next-line no-console
-          console.error('[ClueUIPluginProvider] Failed to load plugins', err);
-        }
-      })
-      .finally(() => {
-        setPluginStore(clueUIPluginStore.pluginStore);
-      });
+    void loadPlugins().catch(err => {
+      if (!abortController.signal.aborted) {
+        // eslint-disable-next-line no-console
+        console.error('[ClueUIPluginProvider] Failed to load plugins', err);
+      }
+    });
 
     return () => abortController.abort(); // Cleanup: abort on unmount or re-run
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);
