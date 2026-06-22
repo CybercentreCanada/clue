@@ -6,7 +6,16 @@ import { difference } from 'lodash-es';
 import type { ReactNode } from 'react';
 import type { IPlugin, PluginStore } from 'react-pluggable';
 
-const INTERNAL_FUNCTIONS = ['constructor', 'getPluginName', 'getDependencies', 'init', 'activate', 'deactivate'];
+const INTERNAL_FUNCTIONS = [
+  'constructor',
+  'getPluginFormat',
+  'getPluginActionIds',
+  'getPluginFetcherIds',
+  'getDependencies',
+  'init',
+  'activate',
+  'deactivate'
+];
 
 export type RenderResultProps = {
   result: WithActionData<ActionResult> | FetcherResult;

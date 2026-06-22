@@ -43,7 +43,7 @@ const UIPlugins: FC = () => {
   const monaco = useMonaco();
   const editor = useRef<editor.IStandaloneCodeEditor>(null);
 
-  const [pluginId, setPluginId] = useState('');
+  const [pluginName, setPluginName] = useState('');
 
   const [format, setFormat] = useState('');
   const [returnedType, setReturnedType] = useState<'action' | 'fetcher'>('action');
@@ -56,7 +56,7 @@ const UIPlugins: FC = () => {
     { id: string; format: string; returnedType: 'action' | 'fetcher' } | undefined
   >(undefined);
 
-  const pluginIds = useMemo(() => {
+  const pluginNames = useMemo(() => {
     if (clueUIPluginStore) {
       return clueUIPluginStore.getPlugins(format, returnedType) ?? [];
     }
@@ -67,9 +67,9 @@ const UIPlugins: FC = () => {
   const availableFormats = useMemo(() => {
     return clueUIPluginStore.getAvailableFormats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clueUIPluginStore, pluginIds, pluginStore]);
+  }, [clueUIPluginStore, pluginNames, pluginStore]);
 
-  const pluginName = useMemo(() => {
+  const pluginDisplayName = useMemo(() => {
     if (displayPlugin?.id) {
       const name = pluginStore.executeFunction(`${displayPlugin.id}.getPluginName`) as string;
 
@@ -90,43 +90,43 @@ const UIPlugins: FC = () => {
   }, [displayPlugin, pluginStore]);
 
   const pluginEditorLanguage = useMemo(() => {
-    if (pluginId) {
-      const langauge = pluginStore.executeFunction(`${pluginId}.editorLanguage`) as string;
+    if (pluginName) {
+      const langauge = pluginStore.executeFunction(`${pluginName}.editorLanguage`) as string;
 
       if (langauge) {
         return langauge;
       }
     }
-  }, [pluginId, pluginStore]);
+  }, [pluginName, pluginStore]);
 
   const pluginExampleInput = useMemo(() => {
-    if (pluginId) {
-      const exampleInput = pluginStore.executeFunction(`${pluginId}.exampleInput`);
+    if (pluginName) {
+      const exampleInput = pluginStore.executeFunction(`${pluginName}.exampleInput`);
 
       if (exampleInput) {
         return exampleInput;
       }
     }
-  }, [pluginId, pluginStore]);
+  }, [pluginName, pluginStore]);
 
   const pluginValidationErrors = useMemo(() => {
     const errors: string[] = [];
-    if (pluginId.length === 0) {
+    if (pluginName.length === 0) {
       errors.push(t('route.plugins.validation.select.plugin'));
     }
-    if (pluginIds.length === 0 || pluginIds.indexOf(pluginId) === -1) {
+    if (pluginName.length === 0 || pluginNames.indexOf(pluginName) === -1) {
       errors.push(t('route.plugins.validation.no.plugin.for.format'));
     }
     return errors;
-  }, [pluginId, pluginIds, t]);
+  }, [pluginName, pluginNames, t]);
 
   const formatValidationErrors = useMemo(() => {
     const errors: string[] = [];
-    if (pluginId.length === 0 && pluginIds.indexOf(pluginId) === -1) {
+    if (pluginName.length === 0 && pluginNames.indexOf(pluginName) === -1) {
       errors.push(t('route.plugins.validation.no.plugin.for.format'));
     }
     return errors;
-  }, [pluginId, pluginIds, t]);
+  }, [pluginName, pluginNames, t]);
 
   const validationErrors = useMemo(
     () => [...pluginValidationErrors, ...formatValidationErrors],
@@ -139,7 +139,7 @@ const UIPlugins: FC = () => {
   );
 
   const handlePluginChange = useCallback((pluginValue: string | null) => {
-    setPluginId(pluginValue ?? '');
+    setPluginName(pluginValue ?? '');
   }, []);
 
   const handleFormatChange = useCallback((formatValue: string | null) => {
@@ -153,16 +153,16 @@ const UIPlugins: FC = () => {
   }, [pluginExampleInput]);
 
   const submitDisabled = useMemo(() => {
-    return isEmpty(pluginIds) || validationErrors.length > 0;
-  }, [pluginIds, validationErrors]);
+    return isEmpty(pluginNames) || validationErrors.length > 0;
+  }, [pluginNames, validationErrors]);
 
   const handleSubmit = useCallback(() => {
     if (submitDisabled) {
       return;
     }
     setOutputValue(rawValue);
-    setDisplayPlugin({ id: pluginId, format, returnedType });
-  }, [pluginId, format, rawValue, returnedType, submitDisabled]);
+    setDisplayPlugin({ id: pluginName, format, returnedType });
+  }, [pluginName, format, rawValue, returnedType, submitDisabled]);
 
   useEffect(() => {
     if (!editor.current) {
@@ -230,9 +230,9 @@ const UIPlugins: FC = () => {
       rawValue !== outputValue ||
       displayPlugin.format !== format ||
       displayPlugin.returnedType !== returnedType ||
-      displayPlugin.id !== pluginId
+      displayPlugin.id !== pluginName
     );
-  }, [displayPlugin, rawValue, outputValue, format, returnedType, pluginId]);
+  }, [displayPlugin, rawValue, outputValue, format, returnedType, pluginName]);
 
   return (
     <PageCenter maxWidth="1800px" textAlign="left" height="100%">
@@ -250,10 +250,10 @@ const UIPlugins: FC = () => {
               <Stack gap={2}>
                 <Autocomplete
                   size="small"
-                  disabled={isEmpty(pluginIds)}
-                  loading={isEmpty(pluginIds)}
-                  value={pluginId}
-                  options={pluginIds}
+                  disabled={isEmpty(pluginNames)}
+                  loading={isEmpty(pluginNames)}
+                  value={pluginName}
+                  options={pluginNames}
                   onChange={(_, pluginValue) => handlePluginChange(pluginValue)}
                   renderInput={params => (
                     <TextField
@@ -343,14 +343,14 @@ const UIPlugins: FC = () => {
                   </Button>
                 </Box>
               </Stack>
-              <LinearProgress sx={{ opacity: !isEmpty(pluginIds) ? 0 : 1 }} />
+              <LinearProgress sx={{ opacity: !isEmpty(pluginNames) ? 0 : 1 }} />
             </Stack>
             <Divider flexItem orientation="vertical" sx={{ mx: 4 }} />
             <Stack flex={2} minHeight={0} sx={{ overflow: 'hidden' }}>
-              {displayPlugin && pluginName && (
+              {displayPlugin && pluginDisplayName && (
                 <>
                   <Typography variant="h6" sx={{ py: 2 }}>
-                    {pluginName}
+                    {pluginDisplayName}
                   </Typography>
                   <Divider flexItem />
                   <Markdown md={pluginDocumentationString ?? '_No documentation available for this plugin_'} />
@@ -372,7 +372,7 @@ const UIPlugins: FC = () => {
                   outputValue &&
                   (displayPlugin.returnedType === 'action' ? (
                     <Result
-                      pluginId={displayPlugin.id}
+                      pluginName={displayPlugin.id}
                       height="80%"
                       result={
                         {
@@ -384,7 +384,7 @@ const UIPlugins: FC = () => {
                     />
                   ) : (
                     <FetcherResultView
-                      pluginId={displayPlugin.id}
+                      pluginName={displayPlugin.id}
                       height="80%"
                       result={{ data: outputValue, format: displayPlugin.format } as FetcherResult}
                     />
