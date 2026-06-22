@@ -31,7 +31,7 @@ const PreviewModal: FC<
       {...otherProps}
     >
       <Paper sx={{ maxHeight: '90%', maxWidth: '90%', p: 2, overflow: 'auto' }}>
-        <FetcherResultView result={result} fetcherId={fetcherId} {...(fetcherResultView ?? {})} />
+        <FetcherResultView {...(fetcherResultView ?? {})} result={result} fetcherId={fetcherId} />
       </Paper>
     </Modal>
   );

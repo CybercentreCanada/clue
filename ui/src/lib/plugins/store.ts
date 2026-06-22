@@ -52,8 +52,6 @@ export class ClueUIPluginStore {
     if (plugin.fetcherResult) {
       this.fetcherPlugins.push(plugin.name);
     }
-
-    this.pluginStore.install(plugin);
   }
 
   /**
