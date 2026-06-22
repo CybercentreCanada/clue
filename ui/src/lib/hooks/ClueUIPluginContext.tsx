@@ -28,12 +28,17 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
   children
 }) => {
   useEffect(() => {
+    const abortController = new AbortController();
+
     const loadPlugin = async (pluginDef: ClueUIPluginDefinition) => {
       try {
         const pluginModule = await pluginDef.loadPlugin();
+        if (abortController.signal.aborted) return; // Exit if effect was cancelled
+
         const plugin = new pluginModule.default() as ClueUIPlugin;
         clueUIPluginStore.install(plugin);
       } catch (err) {
+        if (abortController.signal.aborted) return;
         // eslint-disable-next-line no-console
         console.error(`[ClueUIPluginProvider] Failed to load plugin: ${pluginDef.name ?? pluginDef.id}`, err);
       }
@@ -43,6 +48,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
       // load plugins passed in via props first, so they take precedence over built-in plugins
       if (plugins && Array.isArray(plugins)) {
         for (const pluginDef of plugins) {
+          if (abortController.signal.aborted) return;
           if (!excludePlugins?.includes(pluginDef.id)) {
             await loadPlugin(pluginDef);
           }
@@ -52,6 +58,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
       if (!excludeBuiltInPlugins) {
         const builtInPlugins = new ClueUIPluginsRegistry().getPlugins();
         for (const pluginDef of builtInPlugins) {
+          if (abortController.signal.aborted) return;
           if (!excludePlugins?.includes(pluginDef.id)) {
             await loadPlugin(pluginDef);
           }
@@ -62,7 +69,14 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
     clueUIPluginStore.reset();
 
     // eslint-disable-next-line no-console
-    void loadPlugins().catch(err => console.error('[ClueUIPluginProvider] Failed to load plugins', err));
+    void loadPlugins().catch(err => {
+      if (!abortController.signal.aborted) {
+        // eslint-disable-next-line no-console
+        console.error('[ClueUIPluginProvider] Failed to load plugins', err);
+      }
+    });
+
+    return () => abortController.abort(); // Cleanup: abort on unmount or re-run
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);
 
   return <PluginProvider pluginStore={clueUIPluginStore.pluginStore}>{children}</PluginProvider>;
