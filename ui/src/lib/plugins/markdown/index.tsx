@@ -6,8 +6,8 @@ class MarkdownPlugin extends ClueUIPlugin {
   name = 'MarkdownPlugin';
   format = 'markdown';
   version = '1.0.0';
-  author = 'Professor Plum';
-  description = 'This Plugin renders Markdown.';
+  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
+  description = 'Renders Markdown.';
 
   actionResult({ result }: { result: ActionResult }) {
     return <Markdown md={result.output} />;

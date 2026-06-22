@@ -1,5 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
-import { ClueUIPluginProvider } from 'components/app/providers/ClueUIPluginProvider';
+import { ClueUIPluginProvider } from 'lib/hooks/ClueUIPluginContext';
 import type { ReactNode } from 'react';
 import { createPluginStore } from 'react-pluggable';
 import { describe, it } from 'vitest';
@@ -26,7 +26,7 @@ const makeTestPlugin = ({
   withActionResult = true,
   withFetcherResult = false,
   version = '1.0.0',
-  author = 'Col. Mustard'
+  author = 'test author'
 }: TestPluginOptions) => {
   class TestPlugin extends ClueUIPlugin {
     name = name;
@@ -174,7 +174,6 @@ describe('ClueUIPlugin framework', () => {
       const plugin = makeTestPlugin({
         name: 'FallbackPlugin',
         format: 'fallback-format',
-        actionIds: ['known.action'],
         withActionResult: true
       });
 
@@ -184,12 +183,42 @@ describe('ClueUIPlugin framework', () => {
       expect(selected).toBe('FallbackPlugin');
     });
 
+    it('should prefer generic plugins over id-specific plugins that do not match the requested id', () => {
+      const nonMatchingSpecific = makeTestPlugin({
+        name: 'NonMatchingSpecificPlugin',
+        format: 'mixed-format',
+        actionIds: ['other.action'],
+        withActionResult: true
+      });
+      const generic = makeTestPlugin({
+        name: 'GenericPlugin',
+        format: 'mixed-format',
+        withActionResult: true
+      });
+
+      clueUIPluginStore.install(nonMatchingSpecific);
+      clueUIPluginStore.install(generic);
+
+      const selected = clueUIPluginStore.getPlugin('mixed-format', 'action', 'unknown.action');
+      expect(selected).toBe('GenericPlugin');
+    });
     it('should return undefined when no compatible plugin is found', () => {
       const plugin = makeTestPlugin({ name: 'SinglePlugin', format: 'only-format', withActionResult: true });
       clueUIPluginStore.install(plugin);
 
       const selected = clueUIPluginStore.getPlugin('missing-format', 'action', 'any.action');
       expect(selected).toBeUndefined();
+    });
+
+    it('reset should empty the plugin store', () => {
+      const plugin = makeTestPlugin({ name: 'TemporaryPlugin', format: 'temp-format', withActionResult: true });
+      clueUIPluginStore.install(plugin);
+
+      expect(clueUIPluginStore.plugins).toEqual(['TemporaryPlugin']);
+
+      clueUIPluginStore.reset();
+
+      expect(clueUIPluginStore.plugins).toEqual([]);
     });
   });
 
@@ -294,7 +323,7 @@ describe('ClueUIPlugin framework', () => {
       });
 
       expect(console.log).toHaveBeenCalledWith('Installing plugin MarkdownPlugin@9.9.9 by Custom Markdown Author');
-      expect(console.log).not.toHaveBeenCalledWith('Installing plugin MarkdownPlugin@1.0.0 by Professor Plum');
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Installing plugin MarkdownPlugin@1.0.0'));
     });
   });
 });

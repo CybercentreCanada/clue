@@ -100,7 +100,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
 
     const resultAdditionalProps = useMemo(() => {
       if (result?.outcome === 'success' && result.format === 'image') {
-        return { onClick: () => setShowPreview(true), ...imageProps };
+        return { ...imageProps, onClick: () => setShowPreview(true) };
       }
       return { result };
     }, [imageProps, result]);
@@ -253,6 +253,7 @@ const Fetcher: FC<FetcherProps> = React.memo(
           <PreviewModal
             {...previewProps}
             fetcherId={fetcherId}
+            slotProps={{ fetcherResultView: resultAdditionalProps }}
             open={showPreview}
             result={result}
             onClose={() => setShowPreview(false)}

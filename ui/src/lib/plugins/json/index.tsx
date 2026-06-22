@@ -1,14 +1,14 @@
-import Graph from 'lib/components/display/graph';
+import JSONViewer from 'lib/components/display/json';
 import type { ActionResult, FetcherResult } from 'lib/main';
-import tree_example from '../../components/routes/examples/tree.json';
 import ClueUIPlugin from '../ClueUIPlugin';
 
-class GraphPlugin extends ClueUIPlugin {
-  name = 'GraphPlugin';
-  format = 'graph';
+class JsonPlugin extends ClueUIPlugin {
+  name = 'JsonPlugin';
+  format = 'json';
   version = '1.0.0';
-  author = 'Mrs. White';
-  description = 'Renders an interactive tree visualization.';
+  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
+  description =
+    'Renders JSON with the default renderer or the overridden json component defined in the clue component provider.';
 
   actionResult({ result }: { result: ActionResult }) {
     let json = result.output;
@@ -19,7 +19,7 @@ class GraphPlugin extends ClueUIPlugin {
         // do nothing, just render the string as is
       }
     }
-    return <Graph graph={json} sx={{ minHeight: '600px' }} />;
+    return <JSONViewer data={json} collapse forceCompact />;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
@@ -31,14 +31,7 @@ class GraphPlugin extends ClueUIPlugin {
         // do nothing, just render the string as is
       }
     }
-    return (
-      <Graph
-        graph={json}
-        sx={{
-          minHeight: '600px'
-        }}
-      />
-    );
+    return <JSONViewer data={json} />;
   }
 
   editorLanguage() {
@@ -46,11 +39,11 @@ class GraphPlugin extends ClueUIPlugin {
   }
 
   exampleInput() {
-    return JSON.stringify(tree_example, null, 2);
+    return '{ "key": "value" }';
   }
 
   documentation() {
-    return `This plugin renders an interactive tree visualization. It can be used by specifying "graph" as the format in the plugin configuration.`;
+    return `This plugin renders JSON. It can be used by specifying "json" as the format in the plugin configuration. The input should be a JSON object or a stringified JSON.`;
   }
 }
-export default GraphPlugin;
+export default JsonPlugin;

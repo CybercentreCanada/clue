@@ -5,11 +5,12 @@ class ImagePlugin extends ClueUIPlugin {
   name = 'ImagePlugin';
   format = 'image';
   version = '1.0.0';
-  author = 'Mr. Green';
+  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
   description = 'Renders images.';
 
   actionResult(props: RenderActionResultProps) {
-    const { result, ...additionalProps } = props;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { result, pluginId, ...additionalProps } = props;
 
     let json = result.output;
     if (typeof json === 'string') {
@@ -23,7 +24,8 @@ class ImagePlugin extends ClueUIPlugin {
   }
 
   fetcherResult(props: RenderFetcherResultProps) {
-    const { result, ...additionalProps } = props;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { result, fetcherId: _fetcherId, ...additionalProps } = props;
     let json = result.data;
     if (typeof json === 'string') {
       try {

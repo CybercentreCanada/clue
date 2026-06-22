@@ -29,8 +29,8 @@ abstract class ClueUIPlugin implements IPlugin {
   abstract version: string;
   abstract author: string;
   abstract description: string;
-
   abstract format: string;
+
   public actionIds?: string[];
   public fetcherIds?: string[];
 
@@ -62,7 +62,19 @@ abstract class ClueUIPlugin implements IPlugin {
   }
 
   activate() {
-    const functions = difference(Object.getOwnPropertyNames(ClueUIPlugin.prototype), INTERNAL_FUNCTIONS);
+    const functionNames = new Set<string>([
+      ...Object.getOwnPropertyNames(this),
+      ...Object.getOwnPropertyNames(Object.getPrototypeOf(this)),
+      ...Object.getOwnPropertyNames(ClueUIPlugin.prototype)
+    ]);
+
+    const functions = difference(Array.from(functionNames), [
+      ...INTERNAL_FUNCTIONS,
+      'actionResult',
+      'fetcherResult',
+      'localization'
+    ]);
+
     functions.forEach(_function => {
       const fn = (this as any)[_function];
       if (typeof fn === 'function') {
@@ -70,9 +82,7 @@ abstract class ClueUIPlugin implements IPlugin {
         this.functionsToRemove.push(`${this.name}.${_function}`);
       }
     });
-
-    this.pluginStore.addFunction(`${this.name}.${'getPluginName'}`, this.getPluginName);
-    // explicityly add render functions to plugin store if they have been implemented
+    // explicitly add render functions to plugin store if they have been implemented
     if (this.actionResult) {
       this.pluginStore.addFunction(`${this.name}.actionResult`, this.actionResult.bind(this));
       this.functionsToRemove.push(`${this.name}.actionResult`);
