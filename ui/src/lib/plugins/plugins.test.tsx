@@ -1,7 +1,6 @@
 import { render, waitFor } from '@testing-library/react';
 import { ClueUIPluginProvider } from 'lib/hooks/ClueUIPluginContext';
 import type { ReactNode } from 'react';
-import { createPluginStore } from 'react-pluggable';
 import { describe, it } from 'vitest';
 import ClueUIPlugin from './ClueUIPlugin';
 import type { ClueUIPluginDefinition } from './registry';
@@ -45,13 +44,7 @@ const makeTestPlugin = ({
 };
 
 const resetPluginStore = () => {
-  clueUIPluginStore.plugins = [];
-  clueUIPluginStore.pluginsByFormat = {};
-  clueUIPluginStore.pluginsByActionId = {};
-  clueUIPluginStore.pluginsByFetcherId = {};
-  clueUIPluginStore.actionPlugins = [];
-  clueUIPluginStore.fetcherPlugins = [];
-  (clueUIPluginStore as any)._pluginStore = createPluginStore();
+  clueUIPluginStore.reset();
 };
 
 describe('ClueUIPlugin framework', () => {

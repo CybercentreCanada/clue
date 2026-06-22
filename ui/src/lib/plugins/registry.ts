@@ -17,6 +17,7 @@ export default class ClueUIPluginsRegistry {
   ];
 
   getPlugins() {
-    return this._plugins;
+    // return shallow copy to preserve encapsulation
+    return [...this._plugins];
   }
 }
