@@ -1,6 +1,6 @@
 import Graph from 'lib/components/display/graph';
 import type { ActionResult, FetcherResult } from 'lib/main';
-import tree_example from '../../components/routes/examples/tree.json';
+import tree_example from '../../../components/routes/examples/tree.json';
 import ClueUIPlugin from '../ClueUIPlugin';
 
 class GraphPlugin extends ClueUIPlugin {
