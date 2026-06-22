@@ -15,6 +15,17 @@ export class ClueUIPluginStore {
   actionPlugins: string[] = [];
   fetcherPlugins: string[] = [];
 
+  reset() {
+    this._pluginStore = createPluginStore();
+
+    this.plugins = [];
+    this.pluginsByFormat = {};
+    this.pluginsByActionId = {};
+    this.pluginsByFetcherId = {};
+    this.actionPlugins = [];
+    this.fetcherPlugins = [];
+  }
+
   install(plugin: ClueUIPlugin) {
     if (this.plugins.includes(plugin.name)) {
       return;

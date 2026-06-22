@@ -58,6 +58,9 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
         }
       }
     };
+
+    clueUIPluginStore.reset();
+
     // eslint-disable-next-line no-console
     void loadPlugins().catch(err => console.error('[ClueUIPluginProvider] Failed to load plugins', err));
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);

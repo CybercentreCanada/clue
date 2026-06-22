@@ -190,6 +190,17 @@ describe('ClueUIPlugin framework', () => {
       const selected = clueUIPluginStore.getPlugin('missing-format', 'action', 'any.action');
       expect(selected).toBeUndefined();
     });
+
+    it('reset should empty the plugin store', () => {
+      const plugin = makeTestPlugin({ name: 'TemporaryPlugin', format: 'temp-format', withActionResult: true });
+      clueUIPluginStore.install(plugin);
+
+      expect(clueUIPluginStore.plugins).toEqual(['TemporaryPlugin']);
+
+      clueUIPluginStore.reset();
+
+      expect(clueUIPluginStore.plugins).toEqual([]);
+    });
   });
 
   describe('ClueUIPluginProvider', () => {
