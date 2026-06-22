@@ -13,6 +13,23 @@ import { useClueActionsSelector } from './selectors';
 // Mock the API module to intercept HTTP calls during testing
 vi.mock('api', { spy: true });
 
+// mock translation
+vi.mock('react-i18next', async importOriginal => {
+  const actual = await importOriginal<typeof import('react-i18next')>();
+
+  return {
+    ...actual,
+    useTranslation: () => ({
+      t: (key: string) => key,
+      i18n: {
+        language: 'en',
+        changeLanguage: vi.fn()
+      },
+      ready: true
+    })
+  };
+});
+
 // Mock functions for the ClueProvider dependencies
 const getToken = vi.fn(() => 'example token');
 const onNetworkCall = vi.fn(conf => conf);

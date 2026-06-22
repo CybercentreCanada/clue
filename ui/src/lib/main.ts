@@ -63,6 +63,8 @@ import useClueConfig from './hooks/useClueConfig';
 import AssessmentIcon from './icons/Assessment';
 import ContextIcon from './icons/Context';
 import OpinionIcon from './icons/Opinion';
+import ClueUIPlugin from './plugins/ClueUIPlugin';
+import type { ClueUIPluginDefinition } from './plugins/registry';
 import FrequencyText from './text/Frequency';
 
 export {
@@ -79,6 +81,7 @@ export {
   ClueEnrichContext,
   CluePopupContext,
   ClueProvider,
+  ClueUIPlugin,
   ContextIcon,
   CountBadge,
   EnrichedCard,
@@ -113,6 +116,7 @@ export type {
   ClueDatabaseCollections,
   ClueDatabaseContextProps,
   ClueResponse,
+  ClueUIPluginDefinition,
   EnrichedCardProps,
   EnrichedTypographyProps,
   Enrichment,

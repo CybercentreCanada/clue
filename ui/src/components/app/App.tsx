@@ -36,6 +36,7 @@ import { ClueDatabaseProvider } from 'lib/hooks/ClueDatabaseContext';
 import { ClueEnrichProvider } from 'lib/hooks/ClueEnrichContext';
 import { ClueFetcherProvider } from 'lib/hooks/ClueFetcherContext';
 import { CluePopupProvider } from 'lib/hooks/CluePopupContext';
+import { ClueUIPluginProvider } from 'lib/hooks/ClueUIPluginContext';
 import { useClueEnrichSelector } from 'lib/hooks/selectors';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import useMyLocalStorage from 'lib/hooks/useMyLocalStorage';
@@ -155,13 +156,20 @@ const MyAppProvider: FC<PropsWithChildren<{ database: ClueDatabase | null }>> = 
         <ModalProvider>
           <LocalStorageProvider>
             <ClueDatabaseProvider database={database}>
-              <ClueEnrichProvider publicIconify={false} enabled={!!database} skipConfigCall classification="TLP:CLEAR">
-                <ClueFetcherProvider>
-                  <ClueActionProvider>
-                    <CluePopupProvider>{children}</CluePopupProvider>
-                  </ClueActionProvider>
-                </ClueFetcherProvider>
-              </ClueEnrichProvider>
+              <ClueUIPluginProvider>
+                <ClueEnrichProvider
+                  publicIconify={false}
+                  enabled={!!database}
+                  skipConfigCall
+                  classification="TLP:CLEAR"
+                >
+                  <ClueFetcherProvider>
+                    <ClueActionProvider>
+                      <CluePopupProvider>{children}</CluePopupProvider>
+                    </ClueActionProvider>
+                  </ClueFetcherProvider>
+                </ClueEnrichProvider>
+              </ClueUIPluginProvider>
             </ClueDatabaseProvider>
           </LocalStorageProvider>
         </ModalProvider>

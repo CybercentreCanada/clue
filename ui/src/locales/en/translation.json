@@ -52,6 +52,7 @@
   "enrich": "Enrich",
   "error": "Error",
   "error.unexpected": "An unexpected error occurred",
+  "format.not.recognized": "Unable to display result. No available plugins to display returned format: `{{format}}`.",
   "graph.no.dataset": "No dataset has been selected!",
   "graph.node.input.label": "Enter a node ID, and press [ctrl + enter] to select it. [ctrl + space] will open an autocomplete menu.",
   "graph.show.more": "show more",

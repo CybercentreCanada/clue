@@ -26,6 +26,7 @@
     "lodash-es": "^4.17.23",
     "react-i18next": "^13.5.0",
     "react-markdown": "10.1.0",
+    "react-pluggable": "^0.4.3",
     "react-syntax-highlighter": "^15.6.1",
     "rehype-raw": "7.0.0",
     "remark-gfm": "4.0.1",

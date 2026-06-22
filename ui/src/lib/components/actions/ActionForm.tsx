@@ -102,13 +102,13 @@ const ActionForm: FC<{
       setLoading(false);
     }
   }, [
-    executeAction,
-    runningActionData?.id,
-    runningActionData?.selectors,
     runningActionData?.onComplete,
     runningActionData?.onUpdate,
     runningActionData?.timeout,
     runningActionData?.skipResultModal,
+    runningActionData?.id,
+    runningActionData?.selectors,
+    executeAction,
     formData
   ]);
 

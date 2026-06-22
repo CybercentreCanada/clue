@@ -1,29 +1,31 @@
 import { Stack } from '@mui/material';
 import JSONViewer from 'lib/components/display/json';
 import Markdown from 'lib/components/display/markdown';
-import ErrorBoundary from 'lib/components/ErrorBoundary';
+import type { RenderFetcherResultProps } from 'lib/plugins/ClueUIPlugin';
 import clueUIPluginStore from 'lib/plugins/store';
-import type { ActionResult } from 'lib/types/action';
-import type { WithActionData } from 'lib/types/WithActionData';
-import { type FC, type ReactNode } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePluginStore } from 'react-pluggable';
+import ErrorBoundary from '../ErrorBoundary';
 
-const Result: FC<{ pluginName?: string; result: WithActionData<ActionResult>; [additionalProp: string]: any }> = ({
+export const FetcherResultView: FC<RenderFetcherResultProps & { pluginName?: string; fetcherId?: string }> = ({
   pluginName,
   result,
-  ...additionalProps
+  fetcherId,
+  ...props
 }) => {
   const pluginStore = usePluginStore();
   const { t } = useTranslation();
 
-  const plugin = pluginName ?? clueUIPluginStore.getPlugin(result.format ?? 'undefined', 'action', result.actionId);
-
-  if (plugin) {
+  const availablePlugin =
+    pluginName ?? clueUIPluginStore.getPlugin(result.format ?? 'undefined', 'fetcher', undefined, fetcherId);
+  if (availablePlugin) {
+    // return the first available plugin for this format
     try {
-      const component = pluginStore.executeFunction(`${plugin}.actionResult`, {
+      const component = pluginStore.executeFunction(`${availablePlugin}.fetcherResult`, {
         result,
-        ...additionalProps
+        fetcherId,
+        ...props
       }) as ReactNode;
       if (component !== undefined) {
         return <ErrorBoundary>{component}</ErrorBoundary>;
@@ -41,13 +43,9 @@ const Result: FC<{ pluginName?: string; result: WithActionData<ActionResult>; [a
   }
 
   return (
-    <ErrorBoundary>
-      <Stack sx={{ overflowY: 'auto' }}>
-        <Markdown md={t('format.not.recognized', { format: result.format })} />
-        <JSONViewer data={result} collapse forceCompact />
-      </Stack>
-    </ErrorBoundary>
+    <Stack sx={{ overflowY: 'auto' }}>
+      <Markdown md={t('format.not.recognized', { format: result.format })} />
+      <JSONViewer data={result} collapse forceCompact />
+    </Stack>
   );
 };
-
-export default Result;
