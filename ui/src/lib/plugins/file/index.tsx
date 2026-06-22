@@ -7,7 +7,7 @@ class FilePlugin extends ClueUIPlugin {
   name = 'FilePlugin';
   format = 'file';
   version = '1.0.0';
-  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
+  author = 'Canadian Centre for Cyber Security Matthew.Rafuse@cyber.gc.ca';
   description = 'Render a file action result with metadata, hash statistics, and download support.';
 
   actionResult({ result }: { result: WithActionData<ActionResult> }) {

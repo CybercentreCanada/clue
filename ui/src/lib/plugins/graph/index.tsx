@@ -6,7 +6,7 @@ class GraphPlugin extends ClueUIPlugin {
   name = 'GraphPlugin';
   format = 'graph';
   version = '1.0.0';
-  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
+  author = 'Canadian Centre for Cyber Security Matthew.Rafuse@cyber.gc.ca';
   description = 'Renders an interactive tree visualization.';
 
   actionResult({ result }: { result: ActionResult }) {
