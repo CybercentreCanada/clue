@@ -6,7 +6,7 @@ class TestPlugin extends ClueUIPlugin {
   name = 'TestPlugin';
   format = 'test';
   version = '0.0.1';
-  author = 'Col. Mustard';
+  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
   description = 'This plugin is a test.';
 
   actionResult(_props: { result: ActionResult }) {

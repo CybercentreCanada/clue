@@ -26,7 +26,7 @@ const makeTestPlugin = ({
   withActionResult = true,
   withFetcherResult = false,
   version = '1.0.0',
-  author = 'Col. Mustard'
+  author = 'test author'
 }: TestPluginOptions) => {
   class TestPlugin extends ClueUIPlugin {
     name = name;

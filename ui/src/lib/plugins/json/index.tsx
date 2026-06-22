@@ -6,7 +6,7 @@ class JsonPlugin extends ClueUIPlugin {
   name = 'JsonPlugin';
   format = 'json';
   version = '1.0.0';
-  author = 'Mrs. Peacock';
+  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
   description =
     'Renders JSON with the default renderer or the overridden json component defined in the clue component provider.';
 

@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 
+import { uniq } from 'lodash-es';
 import { createPluginStore } from 'react-pluggable';
 import type ClueUIPlugin from './ClueUIPlugin';
 
@@ -101,7 +102,7 @@ export class ClueUIPluginStore {
           ]
         : pluginsByFormat;
 
-    return [...new Set(availablePlugins ?? [])];
+    return uniq(availablePlugins);
   }
 
   getPlugin(

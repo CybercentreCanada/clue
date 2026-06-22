@@ -5,7 +5,7 @@ class ImagePlugin extends ClueUIPlugin {
   name = 'ImagePlugin';
   format = 'image';
   version = '1.0.0';
-  author = 'Mr. Green';
+  author = 'Canadian Centre for Cyber Security <some.email@cyber.gc.ca>';
   description = 'Renders images.';
 
   actionResult(props: RenderActionResultProps) {

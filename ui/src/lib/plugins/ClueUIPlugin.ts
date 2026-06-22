@@ -27,8 +27,8 @@ abstract class ClueUIPlugin implements IPlugin {
   abstract version: string;
   abstract author: string;
   abstract description: string;
-
   abstract format: string;
+
   public actionIds?: string[];
   public fetcherIds?: string[];
 
