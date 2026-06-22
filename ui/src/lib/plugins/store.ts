@@ -58,14 +58,17 @@ export class ClueUIPluginStore {
   /**
    * Get plugins based on the given criteria.
    *
-   * Only plugins that match all criteria will be returned, which could be an empty list. The order of the plugins
-   * matter, for example if a plugin specifies an action ID, it will be ordered before a plugin just specifies the
-   * format or result type.
+   * Only plugins that match format and result type criteria will be returned, which could be an empty list.
+   *
+   * If no criteria is provided all available plugins are returned.
+   *
+   * The order of the plugins matters, for example if a plugin specifies an action ID, it will be ordered before a
+   * plugin just specifies the format and result type.
    *
    * @param format filter plugins by this format
    * @param resultType filter plugins by the result type that they accept (action or fetcher)
-   * @param actionId filter plugins by this action ID
-   * @param fetcherId filter plugins by this fetcher ID
+   * @param actionId prefer plugins that specify this action ID
+   * @param fetcherId prefer plugins that specify this fetcher ID
    * @returns an array of plugin names that match the given criteria
    */
   getPlugins(format?: string, resultType?: 'action' | 'fetcher', actionId?: string, fetcherId?: string): string[] {
@@ -73,9 +76,9 @@ export class ClueUIPluginStore {
     let pluginsByFormat: string[] = [];
     let pluginsByResultType: string[] | undefined = undefined;
 
-    if (resultType === 'action' && actionId) {
+    if (actionId) {
       pluginsById = this.pluginsByActionId[actionId];
-    } else if (resultType === 'fetcher' && fetcherId) {
+    } else if (fetcherId) {
       pluginsById = this.pluginsByFetcherId[fetcherId];
     }
 

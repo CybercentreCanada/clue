@@ -174,7 +174,6 @@ describe('ClueUIPlugin framework', () => {
       const plugin = makeTestPlugin({
         name: 'FallbackPlugin',
         format: 'fallback-format',
-        actionIds: ['known.action'],
         withActionResult: true
       });
 
