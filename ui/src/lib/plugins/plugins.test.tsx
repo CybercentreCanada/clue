@@ -304,7 +304,6 @@ describe('ClueUIPlugin framework', () => {
       });
 
       expect(console.log).toHaveBeenCalledWith('Installing plugin MarkdownPlugin@9.9.9 by Custom Markdown Author');
-      expect(console.log).not.toHaveBeenCalledWith('Installing plugin MarkdownPlugin@1.0.0 by Professor Plum');
-    });
+      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Installing plugin MarkdownPlugin@1.0.0'));
   });
 });
