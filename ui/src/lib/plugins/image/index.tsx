@@ -9,12 +9,14 @@ class ImagePlugin extends ClueUIPlugin {
   description = 'Renders images.';
 
   actionResult(props: RenderActionResultProps) {
-    const { result, ...additionalProps } = props;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { result, fetcherId: _fetcherId, ...additionalProps } = props;
     return <img src={result.output.image} alt={result.output.alt} {...additionalProps} />;
   }
 
   fetcherResult(props: RenderFetcherResultProps) {
-    const { result, ...additionalProps } = props;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { result, fetcherId: _fetcherId, ...additionalProps } = props;
     return <img src={result.data.image} alt={result.data.alt} {...additionalProps} />;
   }
 }

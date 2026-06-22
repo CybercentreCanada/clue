@@ -1,7 +1,8 @@
 import type { ClueUIPlugin, ClueUIPluginDefinition } from 'lib/main';
 import ClueUIPluginsRegistry from 'lib/plugins/registry';
 import clueUIPluginStore from 'lib/plugins/store';
-import { useEffect, type FC, type PropsWithChildren } from 'react';
+import { useEffect, useState, type FC, type PropsWithChildren } from 'react';
+import type { PluginStore } from 'react-pluggable';
 import { PluginProvider } from 'react-pluggable';
 
 export type ClueUIPluginProviderProps = {
@@ -27,6 +28,8 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
   excludeBuiltInPlugins,
   children
 }) => {
+  const [pluginStore, setPluginStore] = useState<PluginStore>();
+
   useEffect(() => {
     const abortController = new AbortController();
 
@@ -69,17 +72,21 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
     clueUIPluginStore.reset();
 
     // eslint-disable-next-line no-console
-    void loadPlugins().catch(err => {
-      if (!abortController.signal.aborted) {
-        // eslint-disable-next-line no-console
-        console.error('[ClueUIPluginProvider] Failed to load plugins', err);
-      }
-    });
+    void loadPlugins()
+      .catch(err => {
+        if (!abortController.signal.aborted) {
+          // eslint-disable-next-line no-console
+          console.error('[ClueUIPluginProvider] Failed to load plugins', err);
+        }
+      })
+      .finally(() => {
+        setPluginStore(clueUIPluginStore.pluginStore);
+      });
 
     return () => abortController.abort(); // Cleanup: abort on unmount or re-run
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);
 
-  return <PluginProvider pluginStore={clueUIPluginStore.pluginStore}>{children}</PluginProvider>;
+  return <PluginProvider pluginStore={pluginStore}>{children}</PluginProvider>;
 };
 
 export { ClueUIPluginProvider as ClueUIPluginProvider };

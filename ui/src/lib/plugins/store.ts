@@ -80,7 +80,7 @@ export class ClueUIPluginStore {
    */
   getPlugins(format?: string, resultType?: 'action' | 'fetcher', actionId?: string, fetcherId?: string): string[] {
     let pluginsById: string[] | undefined = undefined;
-    let pluginsWithId: Set<string> | undefined = undefined;
+    let pluginsWithId: Set<string> | undefined = new Set();
     let pluginsByFormat: string[] = [];
     let pluginsByResultType: string[] | undefined = undefined;
 
@@ -126,7 +126,7 @@ export class ClueUIPluginStore {
       // if there is no result type given, return the plugins that match the format
       availablePlugins = [...availablePlugins, ...pluginsByFormat.filter(plugin => !pluginsWithId.has(plugin))];
     }
-    // return unique available plugins (only first unique occurance is kept)
+    // return unique available plugins (only first unique occurrence is kept)
     return uniq(availablePlugins);
   }
 
