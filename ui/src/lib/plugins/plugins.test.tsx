@@ -183,6 +183,25 @@ describe('ClueUIPlugin framework', () => {
       expect(selected).toBe('FallbackPlugin');
     });
 
+    it('should prefer generic plugins over id-specific plugins that do not match the requested id', () => {
+      const nonMatchingSpecific = makeTestPlugin({
+        name: 'NonMatchingSpecificPlugin',
+        format: 'mixed-format',
+        actionIds: ['other.action'],
+        withActionResult: true
+      });
+      const generic = makeTestPlugin({
+        name: 'GenericPlugin',
+        format: 'mixed-format',
+        withActionResult: true
+      });
+
+      clueUIPluginStore.install(nonMatchingSpecific);
+      clueUIPluginStore.install(generic);
+
+      const selected = clueUIPluginStore.getPlugin('mixed-format', 'action', 'unknown.action');
+      expect(selected).toBe('GenericPlugin');
+    });
     it('should return undefined when no compatible plugin is found', () => {
       const plugin = makeTestPlugin({ name: 'SinglePlugin', format: 'only-format', withActionResult: true });
       clueUIPluginStore.install(plugin);
