@@ -69,6 +69,16 @@ const UIPlugins: FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clueUIPluginStore, pluginIds, pluginStore]);
 
+  const pluginName = useMemo(() => {
+    if (displayPlugin?.id) {
+      const name = pluginStore.executeFunction(`${displayPlugin.id}.getPluginName`) as string;
+
+      if (name) {
+        return name;
+      }
+    }
+  }, [displayPlugin, pluginStore]);
+
   const pluginDocumentationString = useMemo(() => {
     if (displayPlugin?.id) {
       const documentation = pluginStore.executeFunction(`${displayPlugin.id}.documentation`) as string;
@@ -337,10 +347,10 @@ const UIPlugins: FC = () => {
             </Stack>
             <Divider flexItem orientation="vertical" sx={{ mx: 4 }} />
             <Stack flex={2} minHeight={0} sx={{ overflow: 'hidden' }}>
-              {displayPlugin && (
+              {displayPlugin && pluginName && (
                 <>
                   <Typography variant="h6" sx={{ py: 2 }}>
-                    {displayPlugin.id}
+                    {pluginName}
                   </Typography>
                   <Divider flexItem />
                   <Markdown md={pluginDocumentationString ?? '_No documentation available for this plugin_'} />

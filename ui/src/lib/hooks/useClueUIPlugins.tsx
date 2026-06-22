@@ -1,6 +1,6 @@
-import type { ClueUIPluginContextType } from 'components/app/providers/ClueUIPluginProvider';
-import { ClueUIPluginContext } from 'components/app/providers/ClueUIPluginProvider';
 import { useContext } from 'react';
+import type { ClueUIPluginContextType } from './ClueUIPluginContext';
+import { ClueUIPluginContext } from './ClueUIPluginContext';
 
 const useClueUIPlugins = (): ClueUIPluginContextType => {
   const context = useContext(ClueUIPluginContext);
