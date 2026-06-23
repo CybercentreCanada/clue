@@ -1,5 +1,6 @@
 import type { RenderActionResultProps, RenderFetcherResultProps } from '../ClueUIPlugin';
 import ClueUIPlugin from '../ClueUIPlugin';
+import { validateJsonData } from '../utils';
 
 class ImagePlugin extends ClueUIPlugin {
   name = 'ImagePlugin';
@@ -12,29 +13,23 @@ class ImagePlugin extends ClueUIPlugin {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { result, pluginId, ...additionalProps } = props;
 
-    let json = result.output;
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json);
-      } catch {
-        // do nothing, just render the string as is
-      }
+    const json = validateJsonData(result.output);
+    if (json !== null && json !== undefined) {
+      const imgJson = json as { image: string; alt: string };
+      return <img src={imgJson.image} alt={imgJson.alt} {...additionalProps} />;
     }
-    return <img src={json.image} alt={json.alt} {...additionalProps} />;
+    return null;
   }
 
   fetcherResult(props: RenderFetcherResultProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { result, fetcherId: _fetcherId, ...additionalProps } = props;
-    let json = result.data;
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json);
-      } catch {
-        // do nothing, just render the string as is
-      }
+    const json = validateJsonData(result.data);
+    if (json !== null && json !== undefined) {
+      const imgJson = json as { image: string; alt: string };
+      return <img src={imgJson.image} alt={imgJson.alt} {...additionalProps} />;
     }
-    return <img src={json.image} alt={json.alt} {...additionalProps} />;
+    return null;
   }
 
   editorLanguage() {

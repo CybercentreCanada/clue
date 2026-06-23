@@ -119,15 +119,15 @@ abstract class ClueUIPlugin implements IPlugin {
     return undefined;
   }
 
-  editorLanguage(): string {
+  editorLanguage(): string | undefined {
     /**
      * Editor language
      */
     return undefined;
   }
 
-  documentation(): string {
-    return null;
+  documentation(): string | undefined {
+    return undefined;
   }
 }
 

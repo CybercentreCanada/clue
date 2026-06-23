@@ -22,13 +22,12 @@ export type ClueUIPluginProviderProps = {
    */
   excludeBuiltInPlugins?: boolean;
 };
+
 export type ClueUIPluginContextType = {
   clueUIPluginStore: ClueUIPluginStore;
 };
 
-export const ClueUIPluginContext = createContext<ClueUIPluginContextType | null>({
-  clueUIPluginStore: clueUIPluginStore
-});
+export const ClueUIPluginContext = createContext<ClueUIPluginContextType>(null);
 
 const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = ({
   plugins,

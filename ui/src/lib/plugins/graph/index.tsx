@@ -1,7 +1,9 @@
 import Graph from 'lib/components/display/graph';
 import type { ActionResult, FetcherResult } from 'lib/main';
+import type { NestedDataset } from 'lib/types/graph';
 import tree_example from '../../../components/routes/examples/tree.json';
 import ClueUIPlugin from '../ClueUIPlugin';
+import { validateJsonData } from '../utils';
 
 class GraphPlugin extends ClueUIPlugin {
   name = 'GraphPlugin';
@@ -11,34 +13,19 @@ class GraphPlugin extends ClueUIPlugin {
   description = 'Renders an interactive tree visualization.';
 
   actionResult({ result }: { result: ActionResult }) {
-    let json = result.output;
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json);
-      } catch {
-        // do nothing, just render the string as is
-      }
+    const json = validateJsonData(result.output);
+    if (json !== null && json !== undefined) {
+      return <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
     }
-    return <Graph graph={json} sx={{ minHeight: '600px' }} />;
+    return null;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
-    let json = result.data;
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json);
-      } catch {
-        // do nothing, just render the string as is
-      }
+    const json = validateJsonData(result.data);
+    if (json !== null && json !== undefined) {
+      <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
     }
-    return (
-      <Graph
-        graph={json}
-        sx={{
-          minHeight: '600px'
-        }}
-      />
-    );
+    return null;
   }
 
   editorLanguage() {

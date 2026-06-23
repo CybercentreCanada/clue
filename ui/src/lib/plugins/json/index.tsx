@@ -1,6 +1,7 @@
 import JSONViewer from 'lib/components/display/json';
 import type { ActionResult, FetcherResult } from 'lib/main';
 import ClueUIPlugin from '../ClueUIPlugin';
+import { validateJsonData } from '../utils';
 
 class JsonPlugin extends ClueUIPlugin {
   name = 'JsonPlugin';
@@ -11,27 +12,19 @@ class JsonPlugin extends ClueUIPlugin {
     'Renders JSON with the default renderer or the overridden json component defined in the clue component provider.';
 
   actionResult({ result }: { result: ActionResult }) {
-    let json = result.output;
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json);
-      } catch {
-        // do nothing, just render the string as is
-      }
+    const json = validateJsonData(result.output);
+    if (json !== null && json !== undefined) {
+      return <JSONViewer data={json} collapse forceCompact />;
     }
-    return <JSONViewer data={json} collapse forceCompact />;
+    return null;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
-    let json = result.data;
-    if (typeof json === 'string') {
-      try {
-        json = JSON.parse(json);
-      } catch {
-        // do nothing, just render the string as is
-      }
+    const json = validateJsonData(result.data);
+    if (json !== null && json !== undefined) {
+      return <JSONViewer data={json} collapse forceCompact />;
     }
-    return <JSONViewer data={json} />;
+    return null;
   }
 
   editorLanguage() {

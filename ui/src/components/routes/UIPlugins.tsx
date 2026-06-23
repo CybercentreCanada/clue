@@ -91,10 +91,10 @@ const UIPlugins: FC = () => {
 
   const pluginEditorLanguage = useMemo(() => {
     if (pluginName) {
-      const langauge = pluginStore.executeFunction(`${pluginName}.editorLanguage`) as string;
+      const language = pluginStore.executeFunction(`${pluginName}.editorLanguage`) as string;
 
-      if (langauge) {
-        return langauge;
+      if (language) {
+        return language;
       }
     }
   }, [pluginName, pluginStore]);
@@ -165,7 +165,7 @@ const UIPlugins: FC = () => {
   }, [pluginName, format, rawValue, returnedType, submitDisabled]);
 
   useEffect(() => {
-    if (!editor.current) {
+    if (!editor.current || !monaco) {
       return;
     }
 
@@ -234,6 +234,8 @@ const UIPlugins: FC = () => {
     );
   }, [displayPlugin, rawValue, outputValue, format, returnedType, pluginName]);
 
+  const loadingPlugins = useMemo(() => clueUIPluginStore?.plugins?.length === 0, [clueUIPluginStore?.plugins?.length]);
+
   return (
     <PageCenter maxWidth="1800px" textAlign="left" height="100%">
       <Box position="absolute" top={50} left={0} right={0} bottom={0} p={2}>
@@ -247,12 +249,12 @@ const UIPlugins: FC = () => {
             <Stack spacing={1} flex={1} overflow={'hidden'} gap={1}>
               <Typography sx={{ pt: 2 }}>{t('route.plugins.description')}</Typography>
               <Divider flexItem orientation="horizontal" />
-              <LinearProgress sx={{ visibility: isEmpty(pluginNames) ? 'default' : 'hidden' }} />
+              <LinearProgress sx={{ visibility: loadingPlugins ? 'visible' : 'hidden' }} />
               <Stack gap={2}>
                 <Autocomplete
                   size="small"
-                  disabled={isEmpty(pluginNames)}
-                  loading={isEmpty(pluginNames)}
+                  disabled={loadingPlugins}
+                  loading={loadingPlugins}
                   value={pluginName}
                   options={pluginNames}
                   onChange={(_, pluginValue) => handlePluginChange(pluginValue)}
@@ -271,8 +273,8 @@ const UIPlugins: FC = () => {
                   size="small"
                   sx={{ flex: 1 }}
                   value={format}
-                  disabled={isEmpty(pluginNames)}
-                  loading={isEmpty(pluginNames)}
+                  disabled={loadingPlugins}
+                  loading={loadingPlugins}
                   onChange={(_, formatValue) => handleFormatChange(formatValue)}
                   options={availableFormats}
                   renderInput={props => <TextField {...props} label={t('route.plugins.format')} />}
