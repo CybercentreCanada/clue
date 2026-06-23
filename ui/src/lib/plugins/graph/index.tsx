@@ -23,7 +23,7 @@ class GraphPlugin extends ClueUIPlugin {
   fetcherResult({ result }: { result: FetcherResult }) {
     const json = validateJsonData(result.data);
     if (json !== null && json !== undefined) {
-      <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
+      return <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
     }
     return null;
   }

@@ -16,7 +16,7 @@ class ImagePlugin extends ClueUIPlugin {
     const json = validateJsonData(result.output);
     if (json !== null && json !== undefined) {
       const { image, alt } = json as { image: string; alt: string };
-      return <img src={image} alt={alt} {...additionalProps} />;
+      return <img src={image} alt={alt ?? ''} {...additionalProps} />;
     }
     return null;
   }
@@ -27,7 +27,7 @@ class ImagePlugin extends ClueUIPlugin {
     const json = validateJsonData(result.data);
     if (json !== null && json !== undefined) {
       const { image, alt } = json as { image: string; alt: string };
-      return <img src={image} alt={alt} {...additionalProps} />;
+      return <img src={image} alt={alt ?? ''} {...additionalProps} />;
     }
     return null;
   }

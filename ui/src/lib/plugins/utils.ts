@@ -5,7 +5,7 @@ export const validateJsonData: (data: any) => object = (data: any) => {
       json = JSON.parse(json);
     } catch (err) {
       // failed to parse json string
-      throw new Error('Failed to parse JSON string: ', err);
+      throw new Error('Failed to parse JSON string: ', { cause: err });
     }
   }
   if (typeof json !== 'object') {
