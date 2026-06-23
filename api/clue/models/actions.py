@@ -269,6 +269,7 @@ class PendingActionOutput(BaseModel, Generic[DATA]):
 
     partial_output: DATA | Url | None = Field(description="The partial output of the action.", default=None)
 
+
 class ActionResult(BaseModel, Generic[DATA]):
     outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the action succeed/fail, or is it pending?"
@@ -318,15 +319,12 @@ class ActionResult(BaseModel, Generic[DATA]):
         if self.format != "pivot" and isinstance(self.output, Url):
             raise ClueValueError("You can only return a Url if format is set to pivot.")
 
-        if self.format and not isinstance(self.output, Url) and not isinstance(self.output, PendingActionOutput):
-            self.output = validate_result(self.format, self.output, info)
-        elif (
-            isinstance(self.output, PendingActionOutput)
-            and self.format is not None
-            and self.output.partial_output is not None
-            and not isinstance(self.output.partial_output, Url)
-        ):
-            self.output = validate_result(self.format, self.output.partial_output, info)
+        if self.format:
+            if isinstance(self.output, PendingActionOutput):
+                if not isinstance(self.output.partial_output, Url):
+                    self.output.partial_output = validate_result(self.format, self.output.partial_output, info)
+            elif not isinstance(self.output, Url):
+                self.output = validate_result(self.format, self.output, info)
 
         return self
 

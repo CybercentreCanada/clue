@@ -535,3 +535,17 @@ def test_action_result_pending_output_rejects_progress_out_of_range():
         )
 
     assert "output must be a valid PendingActionOutput when outcome is pending." in str(err.value)
+
+
+def test_action_result_pending_output_validates_partial_output_when_format_set():
+    result = ActionResult(
+        outcome="pending",
+        summary="processing",
+        task_id="task-123",
+        format="json",
+        output={"message": "working", "progress": 0.2, "partial_output": {"status": "still-working"}},
+    )
+    assert result.output is not None
+    assert result.output.message == "working"
+    assert result.output.progress == 0.2
+    assert result.output.partial_output == {"status": "still-working"}
