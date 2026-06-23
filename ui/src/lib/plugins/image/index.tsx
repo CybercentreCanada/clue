@@ -23,7 +23,7 @@ class ImagePlugin extends ClueUIPlugin {
 
   fetcherResult(props: RenderFetcherResultProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { result, fetcherId: _fetcherId, ...additionalProps } = props;
+    const { result, fetcherId, ...additionalProps } = props;
     const json = validateJsonData(result.data);
     if (json !== null && json !== undefined) {
       const { image, alt } = json as { image: string; alt: string };
