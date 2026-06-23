@@ -22,8 +22,7 @@ class MarkdownPlugin extends ClueUIPlugin {
   }
 
   exampleInput() {
-    return `
-# Markdown Plugin
+    return `# Markdown Plugin
 This is an example of the Markdown plugin.
 You can use **Markdown** syntax to format your text.`;
   }

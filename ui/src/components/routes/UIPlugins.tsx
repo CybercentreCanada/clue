@@ -247,6 +247,7 @@ const UIPlugins: FC = () => {
             <Stack spacing={1} flex={1} overflow={'hidden'} gap={1}>
               <Typography sx={{ pt: 2 }}>{t('route.plugins.description')}</Typography>
               <Divider flexItem orientation="horizontal" />
+              <LinearProgress sx={{ visibility: isEmpty(pluginNames) ? 'default' : 'hidden' }} />
               <Stack gap={2}>
                 <Autocomplete
                   size="small"
@@ -270,6 +271,8 @@ const UIPlugins: FC = () => {
                   size="small"
                   sx={{ flex: 1 }}
                   value={format}
+                  disabled={isEmpty(pluginNames)}
+                  loading={isEmpty(pluginNames)}
                   onChange={(_, formatValue) => handleFormatChange(formatValue)}
                   options={availableFormats}
                   renderInput={props => <TextField {...props} label={t('route.plugins.format')} />}
@@ -286,6 +289,7 @@ const UIPlugins: FC = () => {
                   </Typography>
                   <Switch
                     color="default"
+                    disabled={isEmpty(pluginNames)}
                     checked={returnedType === 'fetcher'}
                     onChange={(_, checked) => setReturnedType(checked ? 'fetcher' : 'action')}
                   />
@@ -343,7 +347,6 @@ const UIPlugins: FC = () => {
                   </Button>
                 </Box>
               </Stack>
-              <LinearProgress sx={{ opacity: !isEmpty(pluginNames) ? 0 : 1 }} />
             </Stack>
             <Divider flexItem orientation="vertical" sx={{ mx: 4 }} />
             <Stack flex={2} minHeight={0} sx={{ overflow: 'hidden' }}>
