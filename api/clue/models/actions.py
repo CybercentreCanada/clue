@@ -269,8 +269,11 @@ class ActionResult(BaseModel, Generic[DATA]):
         "the output.",
         default=None,
     )
-    link: Url | None = Field(description="Link to more information on the outcome of the action", default=None)
+    link: Url | None = Field(description="Link to more information on the outcome of the action.", default=None)
     task_id: str | None = Field(description="The celery task id if the action is pending.", default=None)
+    progress: float | None = Field(
+        description="Optional progress of the pending async action.", default=None, ge=0.0, le=1.0
+    )
 
     @model_validator(mode="after")
     def validate_model(self: Self, info: ValidationInfo) -> Self:  # noqa: C901
