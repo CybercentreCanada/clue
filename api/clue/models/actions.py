@@ -282,7 +282,6 @@ class ActionResult(BaseModel, Generic[DATA]):
     link: Url | None = Field(description="Link to more information on the outcome of the action.", default=None)
     task_id: str | None = Field(description="The celery task id if the action is pending.", default=None)
 
-
     @model_validator(mode="after")
     def validate_model(self: Self, info: ValidationInfo) -> Self:  # noqa: C901
         """Validates the entire model.
