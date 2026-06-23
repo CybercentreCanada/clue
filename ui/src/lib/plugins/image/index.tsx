@@ -12,24 +12,24 @@ class ImagePlugin extends ClueUIPlugin {
   actionResult(props: RenderActionResultProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { result, pluginId, ...additionalProps } = props;
-
-    const json = validateJsonData(result.output);
-    if (json !== null && json !== undefined) {
-      const { image, alt } = json as { image: string; alt: string };
-      return <img src={image} alt={alt ?? ''} {...additionalProps} />;
+    const json = validateJsonData(result.output) as { image: string; alt: string };
+    if (typeof json.image !== 'string' || json.image.length === 0) {
+      throw new Error('ImagePlugin expects a JSON object with a non-empty "image" string property.');
     }
-    return null;
+    const { image, alt } = json;
+    return <img src={image} alt={alt ?? ''} {...additionalProps} />;
   }
 
   fetcherResult(props: RenderFetcherResultProps) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { result, fetcherId, ...additionalProps } = props;
-    const json = validateJsonData(result.data);
-    if (json !== null && json !== undefined) {
-      const { image, alt } = json as { image: string; alt: string };
-      return <img src={image} alt={alt ?? ''} {...additionalProps} />;
+    const json = validateJsonData(result.data) as { image: string; alt: string };
+    if (typeof json.image !== 'string' || json.image.length === 0) {
+      throw new Error('ImagePlugin expects a JSON object with a non-empty "image" string property.');
     }
-    return null;
+    const { image, alt } = json;
+
+    return <img src={image} alt={alt ?? ''} {...additionalProps} />;
   }
 
   editorLanguage() {

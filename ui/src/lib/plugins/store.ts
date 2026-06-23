@@ -141,11 +141,11 @@ export class ClueUIPluginStore {
     return availablePlugins.length > 0 ? availablePlugins[0] : undefined;
   }
 
-  getAvailableFormats(pluginId?: string): string[] {
+  getAvailableFormats(pluginName?: string): string[] {
     const formats = Object.keys(this.pluginsByFormat);
 
-    if (pluginId) {
-      return formats.filter(format => this.pluginsByFormat[format].includes(pluginId));
+    if (pluginName) {
+      return formats.filter(format => this.pluginsByFormat[format].includes(pluginName));
     }
     return formats;
   }

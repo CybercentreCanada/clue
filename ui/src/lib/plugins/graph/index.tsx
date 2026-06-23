@@ -1,9 +1,9 @@
 import Graph from 'lib/components/display/graph';
 import type { ActionResult, FetcherResult } from 'lib/main';
 import type { NestedDataset } from 'lib/types/graph';
-import tree_example from '../../../components/routes/examples/tree.json';
 import ClueUIPlugin from '../ClueUIPlugin';
 import { validateJsonData } from '../utils';
+import tree_example from './example/tree.json';
 
 class GraphPlugin extends ClueUIPlugin {
   name = 'GraphPlugin';
@@ -14,18 +14,14 @@ class GraphPlugin extends ClueUIPlugin {
 
   actionResult({ result }: { result: ActionResult }) {
     const json = validateJsonData(result.output);
-    if (json !== null && json !== undefined) {
-      return <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
-    }
-    return null;
+
+    return <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
     const json = validateJsonData(result.data);
-    if (json !== null && json !== undefined) {
-      return <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
-    }
-    return null;
+
+    return <Graph graph={json as NestedDataset} sx={{ minHeight: '600px' }} />;
   }
 
   editorLanguage() {

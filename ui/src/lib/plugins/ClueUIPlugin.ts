@@ -115,7 +115,7 @@ abstract class ClueUIPlugin implements IPlugin {
 
   localization(_i18n: I18N): void {}
 
-  exampleInput(): any {
+  exampleInput(): string | undefined {
     return undefined;
   }
 

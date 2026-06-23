@@ -13,18 +13,14 @@ class JsonPlugin extends ClueUIPlugin {
 
   actionResult({ result }: { result: ActionResult }) {
     const json = validateJsonData(result.output);
-    if (json !== null && json !== undefined) {
-      return <JSONViewer data={json} collapse forceCompact />;
-    }
-    return null;
+
+    return <JSONViewer data={json} collapse forceCompact />;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
     const json = validateJsonData(result.data);
-    if (json !== null && json !== undefined) {
-      return <JSONViewer data={json} collapse forceCompact />;
-    }
-    return null;
+
+    return <JSONViewer data={json} collapse forceCompact />;
   }
 
   editorLanguage() {

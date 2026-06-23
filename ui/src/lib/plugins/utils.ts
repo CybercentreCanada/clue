@@ -14,7 +14,8 @@ export const validateJsonData = (data: unknown): object => {
 
   if (json === null || typeof json !== 'object') {
     // can only parse objects or json objects as strings
-    throw new Error(`Input must be a JSON object or a JSON object encoded as a string. Got: ${typeof data}`);
+    const receivedType = json === null ? 'null' : typeof json;
+    throw new Error(`Input must be a JSON object or a JSON object encoded as a string. Got: ${receivedType}`);
   }
 
   return json;
