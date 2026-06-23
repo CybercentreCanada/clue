@@ -258,7 +258,7 @@ class Action(ActionBase, Generic[ER]):
         return data
 
 
-class PendingActionOutput(BaseModel):
+class PendingActionOutput(BaseModel, Generic[DATA]):
     message: str | None = Field(
         description="Optional message to display feedback or the current state of the pending action.",
         default=None,
@@ -267,13 +267,14 @@ class PendingActionOutput(BaseModel):
         description="Optional progress of the pending async action.", default=None, ge=0.0, le=1.0
     )
 
+    partial_output: DATA | Url | None = Field(description="The partial output of the action.", default=None)
 
 class ActionResult(BaseModel, Generic[DATA]):
     outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
-    output: PendingActionOutput | DATA | Url | None = Field(description="The output of the action.", default=None)
+    output: PendingActionOutput[DATA] | DATA | Url | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
@@ -319,6 +320,13 @@ class ActionResult(BaseModel, Generic[DATA]):
 
         if self.format and not isinstance(self.output, Url) and not isinstance(self.output, PendingActionOutput):
             self.output = validate_result(self.format, self.output, info)
+        elif (
+            isinstance(self.output, PendingActionOutput)
+            and self.format is not None
+            and self.output.partial_output is not None
+            and not isinstance(self.output.partial_output, Url)
+        ):
+            self.output = validate_result(self.format, self.output.partial_output, info)
 
         return self
 

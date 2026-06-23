@@ -499,6 +499,7 @@ def test_execute_request_with_typed_context():
     assert request.context.model_extra is not None
     assert request.context.model_extra["custom_key"] == "value"
 
+
 def test_action_result_pending_output_accepts_valid_payload():
     result = ActionResult(
         outcome="pending",
