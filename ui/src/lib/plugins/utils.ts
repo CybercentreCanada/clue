@@ -1,16 +1,21 @@
-export const validateJsonData: (data: any) => object = (data: any) => {
-  let json = data;
+export const validateJsonData = (data: unknown): object => {
+  let json: unknown = data;
+
   if (typeof json === 'string') {
     try {
       json = JSON.parse(json);
     } catch (err) {
       // failed to parse json string
-      throw new Error('Failed to parse JSON string: ', { cause: err });
+      throw new Error(`Failed to parse JSON string: ${String(err)}`, {
+        cause: err instanceof Error ? err : undefined
+      });
     }
   }
-  if (typeof json !== 'object') {
+
+  if (json === null || typeof json !== 'object') {
     // can only parse objects or json objects as strings
-    throw new Error('Input must be string or object type. Cannot parse type : ' + typeof data);
+    throw new Error(`Input must be a JSON object or a JSON object encoded as a string. Got: ${typeof data}`);
   }
+
   return json;
 };

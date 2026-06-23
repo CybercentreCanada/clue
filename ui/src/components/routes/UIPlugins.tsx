@@ -111,27 +111,20 @@ const UIPlugins: FC = () => {
 
   const pluginValidationErrors = useMemo(() => {
     const errors: string[] = [];
+
     if (pluginName.length === 0) {
       errors.push(t('route.plugins.validation.select.plugin'));
+      return errors;
     }
-    if (pluginName.length === 0 || pluginNames.indexOf(pluginName) === -1) {
+
+    if (!pluginNames.includes(pluginName)) {
       errors.push(t('route.plugins.validation.no.plugin.for.format'));
     }
+
     return errors;
   }, [pluginName, pluginNames, t]);
 
-  const formatValidationErrors = useMemo(() => {
-    const errors: string[] = [];
-    if (pluginName.length === 0 && pluginNames.indexOf(pluginName) === -1) {
-      errors.push(t('route.plugins.validation.no.plugin.for.format'));
-    }
-    return errors;
-  }, [pluginName, pluginNames, t]);
-
-  const validationErrors = useMemo(
-    () => [...pluginValidationErrors, ...formatValidationErrors],
-    [pluginValidationErrors, formatValidationErrors]
-  );
+  const validationErrors = useMemo(() => pluginValidationErrors, [pluginValidationErrors]);
 
   const validationError = useMemo(
     () => (pluginValidationErrors.length > 0 ? pluginValidationErrors[0] : null),
