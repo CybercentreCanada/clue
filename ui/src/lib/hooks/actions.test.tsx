@@ -740,6 +740,76 @@ describe('action functionality', () => {
       });
 
       /**
+       * Test that pending output payload (message/progress) is forwarded to onUpdate callbacks
+       * Should preserve valid PendingActionOutput values from both execute and status polling responses
+       */
+      it('should propagate valid pending output to onUpdate callbacks', async () => {
+        const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.resolve({
+            outcome: 'pending',
+            task_id: 'task-123',
+            summary: 'processing...',
+            output: { message: 'queued', progress: 0 }
+          })
+        );
+
+        vi.mocked(hget).mockImplementationOnce(() =>
+          Promise.resolve({
+            outcome: 'success',
+            summary: 'done',
+            output: { hello: 'world' }
+          })
+        );
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onUpdate });
+        });
+
+        await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(2));
+
+        expect(onUpdate.mock.calls[0][0]).toEqual(
+          expect.objectContaining({
+            outcome: 'pending',
+            task_id: 'task-123',
+            output: { message: 'queued', progress: 0 }
+          })
+        );
+      });
+
+      /**
+       * Test that invalid pending output rejected by the backend does not trigger update callbacks
+       * Should surface the backend validation error via snackbar
+       */
+      it('should not call onUpdate/onComplete when backend rejects invalid pending output', async () => {
+        const onComplete = vi.fn();
+        const onUpdate = vi.fn();
+
+        vi.mocked(hpost).mockImplementationOnce(() =>
+          Promise.reject('output must be a valid PendingActionOutput when outcome is pending.')
+        );
+
+        let errorTriggered = false;
+        const handler = (event: CustomEvent) => {
+          errorTriggered =
+            event.detail.level === 'error' &&
+            event.detail.message === 'output must be a valid PendingActionOutput when outcome is pending.';
+        };
+        window.addEventListener(SNACKBAR_EVENT_ID, handler);
+
+        await act(async () => {
+          await hook.result.current('example.action', [value], { value: 'example' }, { onComplete, onUpdate });
+        });
+
+        window.removeEventListener(SNACKBAR_EVENT_ID, handler);
+
+        expect(errorTriggered).toBe(true);
+        expect(onUpdate).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+      });
+
+      /**
        * Test that onUpdate is called at each time a response is received, including the final result when onComplete
        *  is called with a success outcome
        */

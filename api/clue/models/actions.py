@@ -258,12 +258,22 @@ class Action(ActionBase, Generic[ER]):
         return data
 
 
+class PendingActionOutput(BaseModel):
+    message: str | None = Field(
+        description="Optional message to display feedback or the current state of the pending action.",
+        default=None,
+    )
+    progress: float | None = Field(
+        description="Optional progress of the pending async action.", default=None, ge=0.0, le=1.0
+    )
+
+
 class ActionResult(BaseModel, Generic[DATA]):
     outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
-    output: DATA | Url | None = Field(description="The output of the action.", default=None)
+    output: PendingActionOutput | DATA | Url | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
@@ -271,9 +281,7 @@ class ActionResult(BaseModel, Generic[DATA]):
     )
     link: Url | None = Field(description="Link to more information on the outcome of the action.", default=None)
     task_id: str | None = Field(description="The celery task id if the action is pending.", default=None)
-    progress: float | None = Field(
-        description="Optional progress of the pending async action.", default=None, ge=0.0, le=1.0
-    )
+
 
     @model_validator(mode="after")
     def validate_model(self: Self, info: ValidationInfo) -> Self:  # noqa: C901
@@ -291,6 +299,12 @@ class ActionResult(BaseModel, Generic[DATA]):
         if not self.task_id and self.outcome == "pending":
             raise ClueValueError("task_id must be set if outcome is pending.")
 
+        if self.outcome == "pending" and self.output is not None and not isinstance(self.output, PendingActionOutput):
+            try:
+                self.output = PendingActionOutput.model_validate(self.output)
+            except ValidationError as exc:
+                raise ClueValueError("output must be a valid PendingActionOutput when outcome is pending.") from exc
+
         if self.format == "pivot" and (not self.output or not isinstance(self.output, Url)):
             if isinstance(self.output, str):
                 try:
@@ -304,7 +318,7 @@ class ActionResult(BaseModel, Generic[DATA]):
         if self.format != "pivot" and isinstance(self.output, Url):
             raise ClueValueError("You can only return a Url if format is set to pivot.")
 
-        if self.format and not isinstance(self.output, Url):
+        if self.format and not isinstance(self.output, Url) and not isinstance(self.output, PendingActionOutput):
             self.output = validate_result(self.format, self.output, info)
 
         return self
