@@ -258,7 +258,7 @@ class Action(ActionBase, Generic[ER]):
         return data
 
 
-class PendingActionOutput(BaseModel, Generic[DATA]):
+class PendingActionOutput(BaseModel):
     message: str | None = Field(
         description="Optional message to display feedback or the current state of the pending action.",
         default=None,
@@ -266,8 +266,6 @@ class PendingActionOutput(BaseModel, Generic[DATA]):
     progress: float | None = Field(
         description="Optional progress of the pending async action.", default=None, ge=0.0, le=1.0
     )
-
-    partial_output: DATA | Url | None = Field(description="The partial output of the action.", default=None)
 
 
 class ActionResult(BaseModel, Generic[DATA]):
@@ -319,12 +317,8 @@ class ActionResult(BaseModel, Generic[DATA]):
         if self.format != "pivot" and isinstance(self.output, Url):
             raise ClueValueError("You can only return a Url if format is set to pivot.")
 
-        if self.format:
-            if isinstance(self.output, PendingActionOutput):
-                if not isinstance(self.output.partial_output, Url):
-                    self.output.partial_output = validate_result(self.format, self.output.partial_output, info)
-            elif not isinstance(self.output, Url):
-                self.output = validate_result(self.format, self.output, info)
+        if self.format and not isinstance(self.output, PendingActionOutput) and not isinstance(self.output, Url):
+            self.output = validate_result(self.format, self.output, info)
 
         return self
 
