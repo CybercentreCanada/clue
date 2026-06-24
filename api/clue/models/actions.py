@@ -273,7 +273,7 @@ class ActionResult(BaseModel, Generic[DATA]):
         description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
-    output: PendingActionOutput[DATA] | DATA | Url | None = Field(description="The output of the action.", default=None)
+    output: PendingActionOutput | DATA | Url | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
