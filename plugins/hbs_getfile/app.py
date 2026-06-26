@@ -19,7 +19,7 @@ from pydantic import Field
 
 logger = get_logger(__file__)
 
-CLASSIFICATION = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
+CLASSIFICATION = os.environ.get("CLASSIFICATION", "PB")
 TASKING_API_URL = os.environ.get("TASKING_API_URL", "https://tasking-api.pb.cyber.burrito.cloud")
 VERIFY = os.environ.get("VERIFY", "true").lower() not in ("false", "0")
 TIMEOUT = float(os.environ.get("TIMEOUT", 10))
