@@ -141,6 +141,15 @@ export class ClueUIPluginStore {
     return availablePlugins.length > 0 ? availablePlugins[0] : undefined;
   }
 
+  getAvailableFormats(pluginName?: string): string[] {
+    const formats = Object.keys(this.pluginsByFormat);
+
+    if (pluginName) {
+      return formats.filter(format => this.pluginsByFormat[format].includes(pluginName));
+    }
+    return formats;
+  }
+
   public get pluginStore() {
     return this._pluginStore;
   }

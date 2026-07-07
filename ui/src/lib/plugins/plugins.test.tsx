@@ -213,6 +213,56 @@ describe('ClueUIPlugin framework', () => {
 
       expect(clueUIPluginStore.plugins).toEqual([]);
     });
+
+    it('getAvailableFormats should return all registered formats when no plugin id is provided', () => {
+      const firstPlugin = makeTestPlugin({
+        name: 'FormatPluginOne',
+        format: 'format-one',
+        withActionResult: true
+      });
+      const secondPlugin = makeTestPlugin({
+        name: 'FormatPluginTwo',
+        format: 'format-two',
+        withActionResult: true
+      });
+
+      clueUIPluginStore.install(firstPlugin);
+      clueUIPluginStore.install(secondPlugin);
+
+      expect(clueUIPluginStore.getAvailableFormats()).toEqual(['format-one', 'format-two']);
+    });
+
+    it('getAvailableFormats should return only formats supported by the given plugin id', () => {
+      const sharedOne = makeTestPlugin({
+        name: 'SharedFormatPluginOne',
+        format: 'shared-format',
+        withActionResult: true
+      });
+      const sharedTwo = makeTestPlugin({
+        name: 'SharedFormatPluginTwo',
+        format: 'shared-format',
+        withActionResult: true
+      });
+      const uniquePlugin = makeTestPlugin({
+        name: 'UniqueFormatPlugin',
+        format: 'unique-format',
+        withActionResult: true
+      });
+
+      clueUIPluginStore.install(sharedOne);
+      clueUIPluginStore.install(sharedTwo);
+      clueUIPluginStore.install(uniquePlugin);
+
+      expect(clueUIPluginStore.getAvailableFormats('SharedFormatPluginOne')).toEqual(['shared-format']);
+      expect(clueUIPluginStore.getAvailableFormats('UniqueFormatPlugin')).toEqual(['unique-format']);
+    });
+
+    it('getAvailableFormats should return an empty list for unknown plugin id', () => {
+      const plugin = makeTestPlugin({ name: 'KnownPlugin', format: 'known-format', withActionResult: true });
+      clueUIPluginStore.install(plugin);
+
+      expect(clueUIPluginStore.getAvailableFormats('UnknownPlugin')).toEqual([]);
+    });
   });
 
   describe('ClueUIPluginProvider', () => {

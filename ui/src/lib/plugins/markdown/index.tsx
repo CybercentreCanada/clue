@@ -16,5 +16,19 @@ class MarkdownPlugin extends ClueUIPlugin {
   fetcherResult({ result }: { result: FetcherResult }) {
     return <Markdown md={result.data} />;
   }
+
+  editorLanguage() {
+    return 'markdown';
+  }
+
+  exampleInput() {
+    return `# Markdown Plugin
+This is an example of the Markdown plugin.
+You can use **Markdown** syntax to format your text.`;
+  }
+
+  documentation() {
+    return `This plugin renders Markdown. It can be used by specifying "markdown" as the format in the plugin configuration. The input should be a string in Markdown format.`;
+  }
 }
 export default MarkdownPlugin;

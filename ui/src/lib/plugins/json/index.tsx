@@ -1,6 +1,7 @@
 import JSONViewer from 'lib/components/display/json';
 import type { ActionResult, FetcherResult } from 'lib/main';
 import ClueUIPlugin from '../ClueUIPlugin';
+import { validateJsonData } from '../utils';
 
 class JsonPlugin extends ClueUIPlugin {
   name = 'JsonPlugin';
@@ -11,11 +12,27 @@ class JsonPlugin extends ClueUIPlugin {
     'Renders JSON with the default renderer or the overridden json component defined in the clue component provider.';
 
   actionResult({ result }: { result: ActionResult }) {
-    return <JSONViewer data={result.output} collapse forceCompact />;
+    const json = validateJsonData(result.output);
+
+    return <JSONViewer data={json} collapse forceCompact />;
   }
 
   fetcherResult({ result }: { result: FetcherResult }) {
-    return <JSONViewer data={result.data} />;
+    const json = validateJsonData(result.data);
+
+    return <JSONViewer data={json} collapse forceCompact />;
+  }
+
+  editorLanguage() {
+    return 'json';
+  }
+
+  exampleInput() {
+    return '{ "key": "value" }';
+  }
+
+  documentation() {
+    return `This plugin renders JSON. It can be used by specifying "json" as the format in the plugin configuration. The input should be a JSON object or a stringified JSON.`;
   }
 }
 export default JsonPlugin;

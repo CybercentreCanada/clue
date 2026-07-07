@@ -1,7 +1,8 @@
 import type { ClueUIPlugin, ClueUIPluginDefinition } from 'lib/main';
 import ClueUIPluginsRegistry from 'lib/plugins/registry';
+import type { ClueUIPluginStore } from 'lib/plugins/store';
 import clueUIPluginStore from 'lib/plugins/store';
-import { useEffect, useState, type FC, type PropsWithChildren } from 'react';
+import { createContext, useEffect, useState, type FC, type PropsWithChildren } from 'react';
 import type { PluginStore } from 'react-pluggable';
 import { PluginProvider } from 'react-pluggable';
 
@@ -21,6 +22,12 @@ export type ClueUIPluginProviderProps = {
    */
   excludeBuiltInPlugins?: boolean;
 };
+
+export type ClueUIPluginContextType = {
+  clueUIPluginStore: ClueUIPluginStore;
+};
+
+export const ClueUIPluginContext = createContext<ClueUIPluginContextType>(null);
 
 const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = ({
   plugins,
@@ -83,7 +90,11 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
     return () => abortController.abort(); // Cleanup: abort on unmount or re-run
   }, [excludeBuiltInPlugins, excludePlugins, plugins]);
 
-  return <PluginProvider pluginStore={pluginStore}>{children}</PluginProvider>;
+  return (
+    <ClueUIPluginContext.Provider value={{ clueUIPluginStore }}>
+      <PluginProvider pluginStore={pluginStore}>{children}</PluginProvider>
+    </ClueUIPluginContext.Provider>
+  );
 };
 
 export { ClueUIPluginProvider as ClueUIPluginProvider };

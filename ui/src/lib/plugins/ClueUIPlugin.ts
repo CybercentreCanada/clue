@@ -6,7 +6,16 @@ import { difference } from 'lodash-es';
 import type { ReactNode } from 'react';
 import type { IPlugin, PluginStore } from 'react-pluggable';
 
-const INTERNAL_FUNCTIONS = ['constructor', 'getPluginName', 'getDependencies', 'init', 'activate', 'deactivate'];
+const INTERNAL_FUNCTIONS = [
+  'constructor',
+  'getPluginFormat',
+  'getPluginActionIds',
+  'getPluginFetcherIds',
+  'getDependencies',
+  'init',
+  'activate',
+  'deactivate'
+];
 
 export type RenderResultProps = {
   result: WithActionData<ActionResult> | FetcherResult;
@@ -15,10 +24,12 @@ export type RenderResultProps = {
 };
 
 export interface RenderFetcherResultProps extends RenderResultProps {
+  pluginId?: string;
   result: FetcherResult;
 }
 
 export interface RenderActionResultProps extends RenderResultProps {
+  pluginId?: string;
   result: WithActionData<ActionResult>;
 }
 
@@ -104,8 +115,19 @@ abstract class ClueUIPlugin implements IPlugin {
 
   localization(_i18n: I18N): void {}
 
-  documentation(md: string): string {
-    return md;
+  exampleInput(): string | undefined {
+    return undefined;
+  }
+
+  editorLanguage(): string | undefined {
+    /**
+     * Editor language
+     */
+    return undefined;
+  }
+
+  documentation(): string | undefined {
+    return undefined;
   }
 }
 
