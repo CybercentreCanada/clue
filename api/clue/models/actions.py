@@ -258,7 +258,9 @@ class Action(ActionBase, Generic[ER]):
         return data
 
 
-class PendingActionOutput(BaseModel):
+class PendingActionOutput(BaseModel, Generic[DATA]):
+    model_config = ConfigDict(extra="forbid")
+
     message: str | None = Field(
         description="Optional message to display feedback or the current state of the pending action.",
         default=None,
@@ -267,13 +269,14 @@ class PendingActionOutput(BaseModel):
         description="Optional progress of the pending async action.", default=None, ge=0.0, le=1.0
     )
 
+    partial_data: DATA | None = Field(description="Optional partial data of the pending async action.", default=None)
 
 class ActionResult(BaseModel, Generic[DATA]):
     outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
-    output: DATA | Url | PendingActionOutput | None = Field(description="The output of the action.", default=None)
+    output: DATA | Url | PendingActionOutput[DATA] | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
