@@ -526,7 +526,8 @@ def test_action_result_pending_output_with_partial_data():
     assert result.output.message == "queued"
     assert result.output.progress == 0.5
     assert result.format == "json"
-    assert isinstance(result.output.partial_data, CustomJsonResult)
+    assert isinstance(result.output.partial_data, dict)
+    assert result.output.partial_data["test"] == "test"
 
 
 def test_action_result_pending_output_rejects_invalid_shape():
