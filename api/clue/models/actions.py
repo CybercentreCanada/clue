@@ -271,6 +271,7 @@ class PendingActionOutput(BaseModel, Generic[DATA]):
 
     partial_data: DATA | None = Field(description="Optional partial data of the pending async action.", default=None)
 
+
 class ActionResult(BaseModel, Generic[DATA]):
     outcome: Literal["success", "failure", "pending"] = Field(
         description="Did the action succeed/fail, or is it pending?"
