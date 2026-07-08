@@ -304,7 +304,13 @@ class ActionResult(BaseModel, Generic[DATA]):
 
         if self.outcome == "pending" and self.output is not None:
             try:
-                self.output = PendingActionOutput.model_validate(self.output)
+                self.output = PendingActionOutput[DATA].model_validate(self.output)
+                if self.output.partial_data is not None:
+                    if self.format is None:
+                        raise ClueValueError("You must set a format if partial_data is provided in output.")
+                    else:
+                        self.output.partial_data = validate_result(self.format, self.output.partial_data, info)
+
             except ValidationError as exc:
                 raise ClueValueError("output must be a valid PendingActionOutput when outcome is pending.") from exc
 
