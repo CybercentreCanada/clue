@@ -273,7 +273,7 @@ class ActionResult(BaseModel, Generic[DATA]):
         description="Did the action succeed/fail, or is it pending?"
     )
     summary: str | None = Field(description="Message explaining the outcome of the action.", default=None)
-    output: PendingActionOutput | DATA | Url | None = Field(description="The output of the action.", default=None)
+    output: DATA | Url | PendingActionOutput | None = Field(description="The output of the action.", default=None)
     format: str | None = Field(
         description="What is the format of the output? Used to indicate what component to use when rendering "
         "the output.",
@@ -298,13 +298,11 @@ class ActionResult(BaseModel, Generic[DATA]):
         if not self.task_id and self.outcome == "pending":
             raise ClueValueError("task_id must be set if outcome is pending.")
 
-        if self.outcome == "pending" and self.output is not None and not isinstance(self.output, PendingActionOutput):
+        if self.outcome == "pending" and self.output is not None:
             try:
                 self.output = PendingActionOutput.model_validate(self.output)
             except ValidationError as exc:
                 raise ClueValueError("output must be a valid PendingActionOutput when outcome is pending.") from exc
-        elif self.outcome != "pending" and isinstance(self.output, PendingActionOutput):
-            self.output = self.output.model_dump(mode="json", exclude_none=True)
 
         if self.format == "pivot" and (not self.output or not isinstance(self.output, Url)):
             if isinstance(self.output, str):
@@ -322,7 +320,7 @@ class ActionResult(BaseModel, Generic[DATA]):
         if self.outcome != "pending" and isinstance(self.output, PendingActionOutput):
             raise ClueValueError("output must not be PendingActionOutput unless outcome is pending.")
 
-        if self.format and not isinstance(self.output, Url):
+        if self.format and not isinstance(self.output, Url) and not isinstance(self.output, PendingActionOutput):
             self.output = validate_result(self.format, self.output, info)
 
         return self
