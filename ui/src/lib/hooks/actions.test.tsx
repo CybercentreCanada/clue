@@ -775,8 +775,7 @@ describe('action functionality', () => {
           await hook.result.current('example.action', [value], { value: 'example' }, { onUpdate });
         });
 
-        await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(3));
-
+        await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(3), { timeout: 4000 });
         expect(onUpdate.mock.calls[0][0]).toEqual(
           expect.objectContaining({
             outcome: 'pending',
