@@ -303,6 +303,8 @@ class ActionResult(BaseModel, Generic[DATA]):
                 self.output = PendingActionOutput.model_validate(self.output)
             except ValidationError as exc:
                 raise ClueValueError("output must be a valid PendingActionOutput when outcome is pending.") from exc
+        elif self.outcome != "pending" and isinstance(self.output, PendingActionOutput):
+            self.output = self.output.model_dump(mode="json", exclude_none=True)
 
         if self.format == "pivot" and (not self.output or not isinstance(self.output, Url)):
             if isinstance(self.output, str):
@@ -317,7 +319,10 @@ class ActionResult(BaseModel, Generic[DATA]):
         if self.format != "pivot" and isinstance(self.output, Url):
             raise ClueValueError("You can only return a Url if format is set to pivot.")
 
-        if self.format and not isinstance(self.output, PendingActionOutput) and not isinstance(self.output, Url):
+        if self.outcome != "pending" and isinstance(self.output, PendingActionOutput):
+            raise ClueValueError("output must not be PendingActionOutput unless outcome is pending.")
+
+        if self.format and not isinstance(self.output, Url):
             self.output = validate_result(self.format, self.output, info)
 
         return self
