@@ -513,6 +513,22 @@ def test_action_result_pending_output_accepts_valid_payload():
     assert result.output.progress == 0.5
 
 
+def test_action_result_pending_output_with_partial_data():
+    result = ActionResult(
+        outcome="pending",
+        summary="processing",
+        task_id="task-123",
+        format="json",
+        output={"message": "queued", "progress": 0.5, "partial_data": CustomJsonResult(test="test")},
+    )
+
+    assert result.output is not None
+    assert result.output.message == "queued"
+    assert result.output.progress == 0.5
+    assert result.format == "json"
+    assert isinstance(result.output.partial_data, CustomJsonResult)
+
+
 def test_action_result_pending_output_rejects_invalid_shape():
     with pytest.raises(ValidationError) as err:
         ActionResult(
