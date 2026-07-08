@@ -757,6 +757,14 @@ describe('action functionality', () => {
 
         vi.mocked(hget).mockImplementationOnce(() =>
           Promise.resolve({
+            outcome: 'pending',
+            task_id: 'task-123',
+            output: { message: 'working', progress: 0.5 }
+          })
+        );
+
+        vi.mocked(hget).mockImplementationOnce(() =>
+          Promise.resolve({
             outcome: 'success',
             summary: 'done',
             output: { hello: 'world' }
@@ -767,13 +775,21 @@ describe('action functionality', () => {
           await hook.result.current('example.action', [value], { value: 'example' }, { onUpdate });
         });
 
-        await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(onUpdate).toHaveBeenCalledTimes(3));
 
         expect(onUpdate.mock.calls[0][0]).toEqual(
           expect.objectContaining({
             outcome: 'pending',
             task_id: 'task-123',
             output: { message: 'queued', progress: 0 }
+          })
+        );
+
+        expect(onUpdate.mock.calls[1][0]).toEqual(
+          expect.objectContaining({
+            outcome: 'pending',
+            task_id: 'task-123',
+            output: { message: 'working', progress: 0.5 }
           })
         );
       });
