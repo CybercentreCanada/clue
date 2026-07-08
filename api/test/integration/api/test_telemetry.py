@@ -133,6 +133,8 @@ def test_run_action(host):
 
     response = res.json()["api_response"]
 
+    assert response["output"] == 2
+
     assert response["output"]["value"] == json.loads(TELEMETRY_JSON)["timestamp"]
 
 
