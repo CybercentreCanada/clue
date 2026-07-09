@@ -498,3 +498,57 @@ def test_execute_request_with_typed_context():
     assert request.context.language is None
     assert request.context.model_extra is not None
     assert request.context.model_extra["custom_key"] == "value"
+
+
+def test_action_result_pending_output_accepts_valid_payload():
+    result = ActionResult(
+        outcome="pending",
+        summary="processing",
+        task_id="task-123",
+        output={"message": "queued", "progress": 0.5},
+    )
+
+    assert result.output is not None
+    assert result.output.message == "queued"
+    assert result.output.progress == 0.5
+
+
+def test_action_result_pending_output_with_partial_data():
+    result = ActionResult(
+        outcome="pending",
+        summary="processing",
+        task_id="task-123",
+        format="json",
+        output={"message": "queued", "progress": 0.5, "partial_data": CustomJsonResult(test="test")},
+    )
+
+    assert result.output is not None
+    assert result.output.message == "queued"
+    assert result.output.progress == 0.5
+    assert result.format == "json"
+    assert isinstance(result.output.partial_data, dict)
+    assert result.output.partial_data["test"] == "test"
+
+
+def test_action_result_pending_output_rejects_invalid_shape():
+    with pytest.raises(ValidationError) as err:
+        ActionResult(
+            outcome="pending",
+            summary="processing",
+            task_id="task-123",
+            output="not-a-pending-output-object",
+        )
+
+    assert "output must be a valid PendingActionOutput when outcome is pending." in str(err.value)
+
+
+def test_action_result_pending_output_rejects_progress_out_of_range():
+    with pytest.raises(ValidationError) as err:
+        ActionResult(
+            outcome="pending",
+            summary="processing",
+            task_id="task-123",
+            output={"message": "working", "progress": 1.1},
+        )
+
+    assert "output must be a valid PendingActionOutput when outcome is pending." in str(err.value)
