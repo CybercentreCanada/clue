@@ -141,7 +141,7 @@ log_cli_level = "WARN"
 [tool.poetry]
 package-mode = true
 name = "clue-api"
-version = "1.5.3"
+version = "1.6.0"
 description = "Clue distributed enrichment service"
 authors = ["Canadian Centre for Cyber Security <contact@cyber.gc.ca>"]
 license = "MIT"
@@ -188,8 +188,6 @@ pillow = ">=11.1,<13.0"
 cart = "^1.2.3"
 setuptools = "<79.0.0"
 requests = "^2.32.5"
-pyjwt = { version = "^2.8.0" }
-prometheus-client = { version = "^0.20.0" }
 
 # Dependencies required for the main server
 Werkzeug = { version = "^3.0.2", optional = true }
@@ -197,6 +195,8 @@ bcrypt = { version = "^4.1.2", optional = true }
 PyYAML = { version = "^6.0.1", optional = true }
 python-baseconv = { version = "^1.2.2", optional = true }
 pyroute2 = { version = "^0.7.12", optional = true }
+pyjwt = { version = "^2.8.0", optional = true }
+prometheus-client = { version = "^0.20.0", optional = true }
 apscheduler = { version = "^3.10.4", optional = true }
 pytz = { version = "^2024.1", optional = true }
 passlib = { version = "^1.7.4", optional = true }
@@ -214,6 +214,8 @@ server = [
   "PyYAML",
   "python-baseconv",
   "pyroute2",
+  "pyjwt",
+  "prometheus-client",
   "apscheduler",
   "pytz",
   "passlib",
