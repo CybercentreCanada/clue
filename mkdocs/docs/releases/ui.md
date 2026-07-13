@@ -1,5 +1,16 @@
 # Clue UI Release Notes
 
+## `1.3.0`
+
+- **Clue UI Plugins** *(new feature)*: Added support for UI plugins, including a route for testing plugin integrations ([#73](https://github.com/CybercentreCanada/clue/pull/73), [#79](https://github.com/CybercentreCanada/clue/pull/79)).
+- **Data Replication** *(new feature)*: Added replication and local storage support for synchronizing Clue data ([#47](https://github.com/CybercentreCanada/clue/pull/47)).
+- **Action Failure Handling** *(bugfix)*: Actions now stop executing after a failure instead of continuing unexpectedly ([#62](https://github.com/CybercentreCanada/clue/pull/62)).
+- **Pending Request Handling** *(bugfix)*: Fixed duplicate pending requests ([#74](https://github.com/CybercentreCanada/clue/pull/74)).
+- **Dashboard and Database Stability** *(bugfix)*: Fixed dashboard display issues and database warnings ([#69](https://github.com/CybercentreCanada/clue/pull/69), [#71](https://github.com/CybercentreCanada/clue/pull/71)).
+- **Telemetry Value Handling** *(bugfix)*: Corrected handling of telemetry selector values.
+- **Query Links and Email Layout** *(improvement)*: Query links now target their associated verdict documents, and email rendering no longer overflows ([#60](https://github.com/CybercentreCanada/clue/pull/60)).
+- **Dependency Updates** *(technical update)*: Updated UI dependencies, including Vite and picomatch.
+
 ## `1.2.8`
 
 - **Clue Chip Height Bug** *(bugfix)*: Fixed a bug where the EnrichedChip would be forced to 40px if the size was unset.

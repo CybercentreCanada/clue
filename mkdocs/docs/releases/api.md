@@ -1,5 +1,14 @@
 # Clue API Release Notes
 
+## `v1.5.0`
+
+- **Data Replication API** *(new feature)*: Added authenticated pull, push, and server-sent event endpoints for synchronizing supported collections with RxDB clients ([#47](https://github.com/CybercentreCanada/clue/pull/47)).
+- **Plugin Query Helpers** *(new feature)*: Added helpers that let plugins query other configured plugins ([#78](https://github.com/CybercentreCanada/clue/pull/78)).
+- **Pending Action Output Validation** *(bugfix)*: Added validation for output returned by pending actions ([#80](https://github.com/CybercentreCanada/clue/pull/80)).
+- **Documentation File Serving** *(bugfix)*: Fixed documentation file lookup and added the `CLUE_DOCUMENTATION_PATH` setting for configuring the documentation directory.
+- **Pydantic Response Serialization** *(improvement)*: API response helpers now serialize Pydantic models consistently, including aliases and JSON-compatible values.
+- **Dependency and CI Updates** *(technical update)*: Updated Python dependencies and expanded CI testing to Python 3.13.
+
 ## `v1.4.0`
 
 - **Async Fetcher Results** *(new feature)*: Fetchers can now return results asynchronously for improved responsiveness on long-running lookups ([#35](https://github.com/CybercentreCanada/clue/pull/35)).
