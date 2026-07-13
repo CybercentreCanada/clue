@@ -16,7 +16,7 @@ Clue enables tool developers to interconnect their SOC applications by dynamical
 
 - **🪄 Simple UI Integration**: Integrate Clue into any UI application by importing the clue-ui npm package, initializing the ClueProvider with the API server URL, and using enriched components or React hooks. Enrichments happen automatically by replacing standard components with their enriched equivalents. 
 
-- **🧰 Simplified Plugin Development **: Create custom plugins using the clue-api Python library and template plugin repository. Simply register your plugin with the central server by specifying its name, supported indicator types, and URL. Develop and deploy integrations to query, display, and interact with your own tools. 
+- **🧰 Simplified Plugin Development**: Create custom plugins using the clue-api Python library and template plugin repository. Simply register your plugin with the central server by specifying its name, supported indicator types, and URL. Develop and deploy integrations to query, display, and interact with your own tools. 
 
 ## 🔌 Available Plugins
 
@@ -35,6 +35,8 @@ Clue comes with several built-in plugins to enrich your security data:
 - **🚪 Port Lookup**: Provides instant context for network ports and services. Automatically maps port numbers from raw inputs or URLs to their IANA service definitions and common usages, enhanced with visual service icons (e.g., SSH, HTTP, FTP) for faster recognition. 
 
 - **🛡️ VirusTotal**: Unlocks global threat context via the VirusTotal API. Enriches IPs, domains, URLs, and file hashes with reputation scores, geographic ownership data (ASN/Country), and detailed threat intelligence attributes to accelerate decision-making. 
+
+- **💬️ MISP**: Syncs with the Malware Information Sharing Platform (MISP) to enrich IOCs with attribute and event data. Supports hashes (MD5, SHA1, SHA256), IP addresses (IPv4, IPv6), MAC addresses, email addresses, domains and URLs.
 
 ## Documentation
 

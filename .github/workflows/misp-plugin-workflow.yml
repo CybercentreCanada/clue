@@ -1,0 +1,59 @@
+name: Clue MISP Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/misp/**
+      - .github/workflows/misp-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/misp/**
+      - .github/workflows/misp-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-misp-plugin-formatting:
+    name: Lint MISP Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/misp
+  test-misp-plugin:
+    needs: check-misp-plugin-formatting
+    name: Test MISP Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/misp
+  build-misp-plugin:
+    needs: test-misp-plugin
+    name: Build MISP Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/misp
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit
