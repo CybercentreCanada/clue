@@ -736,8 +736,16 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         # check query against the max supported classification of the external system
         # if this is not supported, we should let the user know.
         for entry in data:
-            if entry.sources is not None and source.name not in entry.sources:
-                continue
+            if entry.sources is not None:
+                include_sources = []
+                exclude_sources = []
+                for entry_source in entry.sources:
+                    if entry_source.startswith("-"):
+                        exclude_sources.append(entry_source[1:])
+                    else:
+                        include_sources.append(entry_source)
+                if (include_sources and source.name not in include_sources) or source.name in exclude_sources:
+                    continue
 
             if (
                 source.name in existing_results
