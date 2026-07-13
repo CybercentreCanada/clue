@@ -412,7 +412,7 @@ class OBOService(BaseModel):
 
 class UI(BaseModel):
     cors_origins: list[str] = Field(default=[], description="List of valid deployments")
-    replication: bool = Field(default=True, description="Should server-side replication be enabled?")
+    replication: bool = Field(default=False, description="Should server-side replication be enabled?")
 
 
 class API(BaseModel):
