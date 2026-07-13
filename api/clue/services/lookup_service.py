@@ -107,6 +107,7 @@ class ParsedParams(BaseModel):
     "Validation of parameters parsed from request"
 
     query_sources: list[str]
+    excluded_sources: list[str]
     max_timeout: float
     limit: int
     type_classification: str
@@ -153,8 +154,17 @@ def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):
     else:
         query_sources = []
 
+    include_sources = []
+    exclude_sources = []
+    for source in query_sources:
+        if source.startswith("-"):
+            exclude_sources.append(source[1:])
+        else:
+            include_sources.append(source)
+
     return ParsedParams(
-        query_sources=query_sources,
+        query_sources=include_sources,
+        excluded_sources=exclude_sources,
         max_timeout=parse_timeout(timeout),
         limit=limit,
         type_classification=type_classification,
