@@ -466,6 +466,7 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
     """
     query_params = parse_query_params(request=request)
     query_sources = query_params.query_sources
+    excluded_sources = query_params.excluded_sources
     available_sources = get_sources(user)
 
     access_token = request.headers.get("Authorization", type=str)
@@ -488,7 +489,9 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
     for source in available_sources:
         if query_sources and source.name not in query_sources:
             continue
-        elif not query_sources and not source.include_default:
+        if excluded_sources and source.name in excluded_sources:
+            continue
+        if not query_sources and not source.include_default:
             continue
 
         finish_result = functools.partial(build_result, type_name, value, source)
@@ -678,6 +681,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     """create searches for external sources"""
     query_params = parse_query_params(request=request)
     query_sources = query_params.query_sources
+    excluded_sources = query_params.excluded_sources
     available_sources = get_sources(user)
 
     logger.debug(
@@ -709,7 +713,9 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     for source in available_sources:
         if query_sources and source.name not in query_sources:
             continue
-        elif not query_sources and not source.include_default:
+        if excluded_sources and source.name in excluded_sources:
+            continue
+        if not query_sources and not source.include_default:
             continue
 
         obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
