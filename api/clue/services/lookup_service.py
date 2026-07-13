@@ -154,13 +154,7 @@ def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):
     else:
         query_sources = []
 
-    include_sources = []
-    exclude_sources = []
-    for source in query_sources:
-        if source.startswith("-"):
-            exclude_sources.append(source[1:])
-        else:
-            include_sources.append(source)
+    include_sources, exclude_sources = _parse_source_list(query_sources)
 
     return ParsedParams(
         query_sources=include_sources,
@@ -737,13 +731,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         # if this is not supported, we should let the user know.
         for entry in data:
             if entry.sources is not None:
-                include_sources = []
-                exclude_sources = []
-                for entry_source in entry.sources:
-                    if entry_source.startswith("-"):
-                        exclude_sources.append(entry_source[1:])
-                    else:
-                        include_sources.append(entry_source)
+                include_sources, exclude_sources = _parse_source_list(entry.sources)
                 if (include_sources and source.name not in include_sources) or source.name in exclude_sources:
                     continue
 
@@ -826,3 +814,30 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     thread_pool.kill(block=False)
 
     return bulk_result
+
+
+def _parse_source_list(source_list: list[str]) -> tuple[list[str], list[str]]:
+    """Sorts the provided source list include and exclude lists.
+
+    Args:
+        source_list (list[str]): The list of sources to parse.
+
+    Returns:
+        tuple[list[str], list[str]]: (include_sources, exclude_sources)
+            The list of sources to include and the list of sources to exclude.
+    """
+    include_sources = []
+    exclude_sources = []
+
+    for source in source_list:
+        source = source.strip()
+        if not source:
+            continue
+        if source.startswith("-"):
+            excluded_source = source[1:].strip()
+            if excluded_source:
+                exclude_sources.append(excluded_source)
+        else:
+            include_sources.append(source)
+
+    return include_sources, exclude_sources
