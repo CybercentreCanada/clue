@@ -325,6 +325,24 @@ def test_enrichment_excluded_sources(host, default_sources):
             assert default_source in json
 
 
+def test_excluded_sources_overlaps_source_list(host):
+    access_token = get_token()
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    res = requests.get(
+        f"{host}/api/v1/lookup/enrich/ipv4/127.0.0.1",
+        params={"max_timeout": 2.0, "sources": "test|bad|-test|-bad"},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    json = res.json()["api_response"]
+    assert json == {}
+
+
 def test_bulk_enrichment_excluded_sources(host, default_sources):
     access_token = get_token()
 

@@ -90,10 +90,10 @@ def bulk_enrich(**kwargs) -> dict[str, dict[str, dict[str, QueryResult]]]:
 
     Optional Arguments:
     classification: string  => Classification of the type [Default: minimum configured classification]
-    sources: string         => | separated list of data sources. If empty, all configured sources are used.
-        A source prefixed with '-' will be used as an exclusion rule after the rest of the data sources are collected.
-        Exclusion is best used alone to omit specific sources from the default configured sources,
-        and it takes precedence over inclusion.
+    sources: string         => | separated list of data sources.
+        A source prefixed with '-' will be excluded. Exclusion takes precedence over inclusion.
+        If sources is empty or only exclusions, all default configured sources are used (with exclusions applied).
+        Note, a source list that includes and excludes the same sources (e.g. sources=vt|-vt) is not treated as empty.
     max_timeout: number     => Maximum execution time for the call in seconds
     limit: number           => limit the amount of returned results counted per source
     no_annotation: boolean  => Do not return any anotations
@@ -174,10 +174,10 @@ def enrich(type_name: str, value: str, **kwargs) -> dict[str, QueryResult]:
 
     Optional Arguments:
     classification: string  => Classification of the type [Default: minimum configured classification]
-    sources: string         => | separated list of data sources. If empty, all configured sources are used.
-        A source prefixed with '-' will be used as an exclusion rule after the rest of the data sources are collected.
-        Exclusion is best used alone to omit specific sources from the default configured sources,
-        and it takes precedence over inclusion.
+    sources: string         => | separated list of data sources.
+        A source prefixed with '-' will be excluded. Exclusion takes precedence over inclusion.
+        If sources is empty or only exclusions, all default configured sources are used (with exclusions applied).
+        Note, a source list that includes and excludes the same sources (e.g. sources=vt|-vt) is not treated as empty.
     max_timeout: number     => Maximum execution time for the call in seconds
     limit: number           => limit the amount of returned results counted per source
     no_annotation: boolean  => Do not return any anotations
