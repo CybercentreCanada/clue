@@ -8,7 +8,8 @@ RUN mkdir /install
 WORKDIR /install
 
 # Get required apk packages
-RUN apk add --no-cache build-base=0.5-r3
+# hadolint ignore=DL3018
+RUN apk add --no-cache build-base
 
 # Add pip.conf file. This allows plugin developers to customize the pip install functionality
 COPY pip.conf pip.conf
