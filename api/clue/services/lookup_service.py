@@ -705,8 +705,8 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     if config.ui.replication:
         existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
 
-    sources_per_entry: dict[str, tuple[list[str], list[str]]] = {
-        entry.value: _parse_source_list(entry.sources) for entry in data if entry.sources is not None
+    sources_per_entry: dict[tuple[str, str], tuple[list[str], list[str]]] = {
+        (entry.type, entry.value): _parse_source_list(entry.sources) for entry in data if entry.sources is not None
     }
 
     greenlets: list[tuple[list[Selector], ExternalSource, Greenlet[Any, dict[str, dict[str, QueryResult]]]]] = []
@@ -736,8 +736,8 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         # check query against the max supported classification of the external system
         # if this is not supported, we should let the user know.
         for entry in data:
-            if sources_per_entry.get(entry.value):
-                include_sources, exclude_sources = sources_per_entry[entry.value]
+            if sources_per_entry.get((entry.type, entry.value)):
+                include_sources, exclude_sources = sources_per_entry[(entry.type, entry.value)]
                 if (include_sources and source.name not in include_sources) or source.name in exclude_sources:
                     continue
 

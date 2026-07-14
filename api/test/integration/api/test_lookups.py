@@ -264,7 +264,7 @@ def test_get_enrichment_eml(host):
     assert res.ok
 
 
-def test_bulk_enrichment_sources(host, default_sources):
+def test_bulk_enrichment_sources(host):
     access_token = get_token()
 
     if not access_token:
