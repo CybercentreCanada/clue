@@ -470,7 +470,8 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
 
     logger.debug(
         f"Beginning enrichment for single selector on sources "
-        f"[{','.join(query_sources or [source.name for source in available_sources])}]"
+        f"[{','.join(query_sources or [source.name for source in available_sources])}] "
+        f"excluding sources [{','.join(excluded_sources)}]"
     )
 
     results: dict[str, QueryResult] = {}
@@ -680,7 +681,8 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
 
     logger.debug(
         f"Beginning enrichment for {len(data)} selectors on sources "
-        f"[{','.join(query_sources or [source.name for source in available_sources])}]"
+        f"[{','.join(query_sources or [source.name for source in available_sources])}] "
+        f"excluding sources [{','.join(excluded_sources)}]"
     )
 
     access_token = request.headers.get("Authorization", type=str)
@@ -821,7 +823,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
 
 
 def _parse_source_list(source_list: list[str]) -> tuple[list[str], list[str]]:
-    """Sorts the provided source list include and exclude lists.
+    """Splits the provided source list into include and exclude lists.
 
     Args:
         source_list (list[str]): The list of sources to parse.
