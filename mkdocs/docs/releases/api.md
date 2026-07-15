@@ -1,5 +1,13 @@
 # Clue API Release Notes
 
+## `v1.5.2`
+
+- **Annotation Timestamp Validation** *(bugfix)*: Tightened `Annotation.timestamp` validation so ISO-formatted timestamp strings continue to parse correctly while invalid timestamp values now fail validation. Added unit test coverage for default timestamp generation, string parsing, and invalid input handling.
+
+## `v1.5.1`
+
+- **JWT Service Import Chain** *(bugfix)*: Fixed an issue where `jwt_service` pulled in a long chain of module imports through the security package, reducing import coupling and preventing related startup/runtime failures ([#83](https://github.com/CybercentreCanada/clue/pull/83)).
+
 ## `v1.5.0`
 
 - **Data Replication API** *(new feature)*: Added authenticated pull, push, and server-sent event endpoints for synchronizing supported collections with RxDB clients ([#47](https://github.com/CybercentreCanada/clue/pull/47)).
