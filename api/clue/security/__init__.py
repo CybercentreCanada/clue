@@ -1,8 +1,8 @@
 import functools
 from typing import Callable, Optional
 
-import elasticapm
 import requests
+from elasticapm.traces import set_user_context
 from flask import request
 from jwt import ExpiredSignatureError
 from prometheus_client import Counter
@@ -22,8 +22,6 @@ from clue.common.forge import APP_NAME
 from clue.common.logging import get_logger
 from clue.common.logging.audit import audit
 from clue.config import AUDIT, config
-
-logger = get_logger(__file__)
 
 SUCCESSFUL_ATTEMPTS = Counter(
     f"{APP_NAME.replace('-', '_')}_auth_success_total",
@@ -95,6 +93,7 @@ class api_login(object):  # noqa: N801
         Returns:
             _type_: _description_
         """
+        logger = get_logger(__file__)
 
         @functools.wraps(func)
         def base(*args, **kwargs):  # noqa: C901
@@ -189,7 +188,7 @@ class api_login(object):  # noqa: N801
                 return internal_error(err=e.message)
 
             if config.core.metrics.apm_server.server_url is not None:
-                elasticapm.set_user_context(
+                set_user_context(
                     username=user.get("name", None),
                     email=user.get("email", None),
                     user_id=user.get("uname", None),
@@ -201,11 +200,11 @@ class api_login(object):  # noqa: N801
             SUCCESSFUL_ATTEMPTS.inc()
             return func(*args, **kwargs)
 
-        base.protected = True
+        base.protected = True  # type: ignore
         # TODO: Fix type parsing and checks
         # base.required_type = self.required_type
-        base.audit = self.audit
-        base.required_priv = self.required_priv
-        base.required_method = self.required_method
-        base.check_xsrf_token = self.check_xsrf_token
+        base.audit = self.audit  # type: ignore
+        base.required_priv = self.required_priv  # type: ignore
+        base.required_method = self.required_method  # type: ignore
+        base.check_xsrf_token = self.check_xsrf_token  # type: ignore
         return base
