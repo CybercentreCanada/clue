@@ -76,11 +76,6 @@ class ClueResponse(BaseModel):
 Timestamp = Annotated[
     datetime,
     BeforeValidator(parse_datetime),
-    Field(
-        description="A timestamp describing when the knowledge was generated.",
-        default_factory=lambda: datetime.now(timezone.utc),
-        examples=[datetime.now(timezone.utc), datetime.now(timezone.utc) - timedelta(weeks=2)],
-    ),
 ]
 
 
@@ -121,7 +116,11 @@ class Annotation(BaseModel):
             examples=["v0.0.1", "1.0.0", None],
         ),
     ] = None
-    timestamp: Timestamp
+    timestamp: Timestamp = Field(
+        description="A timestamp describing when the knowledge was generated.",
+        default_factory=lambda: datetime.now(timezone.utc),
+        examples=[datetime.now(timezone.utc), datetime.now(timezone.utc) - timedelta(weeks=2)],
+    )
     type: Annotated[
         Literal["opinion", "frequency", "assessment", "mitigation", "context"],
         Field(
