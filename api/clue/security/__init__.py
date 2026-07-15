@@ -19,8 +19,6 @@ from clue.common.exceptions import (
     NotFoundException,
 )
 from clue.common.forge import APP_NAME
-from clue.common.logging import get_logger
-from clue.common.logging.audit import audit
 from clue.config import AUDIT, config
 
 SUCCESSFUL_ATTEMPTS = Counter(
@@ -93,6 +91,9 @@ class api_login(object):  # noqa: N801
         Returns:
             _type_: _description_
         """
+        from clue.common.logging import get_logger
+        from clue.common.logging.audit import audit
+
         logger = get_logger(__file__)
 
         @functools.wraps(func)
