@@ -1,5 +1,9 @@
 # Clue API Release Notes
 
+## `v1.5.3`
+
+- **Clue Plugin Dependency Improvements** *(bugfix)*: Fixed missing dependendencies in the clue plugin library.
+
 ## `v1.5.2`
 
 - **Annotation Timestamp Validation** *(bugfix)*: Tightened `Annotation.timestamp` validation so ISO-formatted timestamp strings continue to parse correctly while invalid timestamp values now fail validation. Added unit test coverage for default timestamp generation, string parsing, and invalid input handling.
