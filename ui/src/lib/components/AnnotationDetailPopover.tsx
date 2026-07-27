@@ -53,8 +53,8 @@ const AnnotationDetailPopover: FC<
       onClick={e => {
         // Avoid preventing default when the click originates from a link so that
         // anchors inside the popover navigate normally on left-click.
-        const isLink = (e.target as HTMLElement).closest?.('a[href]');
-        if (!isLink) {
+        const linkEl = e.target instanceof Element ? e.target.closest('a[href]') : null;
+        if (!linkEl) {
           e.preventDefault();
         }
         e.stopPropagation();
