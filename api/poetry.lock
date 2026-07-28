@@ -1827,9 +1827,10 @@ virtualenv = ">=20.10.0"
 name = "prometheus-client"
 version = "0.20.0"
 description = "Python client for the Prometheus monitoring system."
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
+markers = "extra == \"server\""
 files = [
     {file = "prometheus_client-0.20.0-py3-none-any.whl", hash = "sha256:cde524a85bce83ca359cc837f28b8c0db5cac7aa653a588fd7e84ba061c329e7"},
     {file = "prometheus_client-0.20.0.tar.gz", hash = "sha256:287629d00b147a32dcb2be0b9df905da599b2d82f80377083ec8463309a4bb89"},
@@ -3284,9 +3285,9 @@ files = [
 cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and python_version < \"3.14\"", "cffi (>=2.0.0b0) ; platform_python_implementation != \"PyPy\" and python_version >= \"3.14\""]
 
 [extras]
-server = ["PyYAML", "Werkzeug", "apscheduler", "authlib", "bcrypt", "flasgger", "flask-cors", "passlib", "pymongo", "pyroute2", "python-baseconv", "pytz"]
+server = ["PyYAML", "Werkzeug", "apscheduler", "authlib", "bcrypt", "flasgger", "flask-cors", "passlib", "prometheus-client", "pyjwt", "pymongo", "pyroute2", "python-baseconv", "pytz"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "963927fbad7a8ba81f28da2611282798e9abde7d239bc1136fa5ca1051e7b08e"
+content-hash = "099a27a11ca1353d478d94f6882c91dbf82c7728014d330dcba3780e35821aff"
