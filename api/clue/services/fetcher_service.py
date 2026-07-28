@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 
 import elasticapm
 import requests
-from flask import request
+from flask import has_request_context, request
 from pydantic import TypeAdapter, ValidationError
 from requests import JSONDecodeError, exceptions
 
@@ -11,6 +11,7 @@ from clue.common.exceptions import (
     AuthenticationException,
     ClueException,
     ClueValueError,
+    InvalidDataException,
     NotFoundException,
 )
 from clue.common.logging import get_logger
@@ -24,6 +25,26 @@ logger = get_logger(__file__)
 
 # Either cache for one second in debug mode, or five minutes in production
 CACHE_TIMEOUT: int = 1 if DEBUG else 5 * 60
+
+
+def get_obo_access_token(
+    source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
+) -> tuple[Optional[str], Optional[str]]:
+    """Get the caller access token and an OBO token for an external source when needed."""
+    if access_token is None and has_request_context():
+        access_token = request.headers.get("Authorization", type=str)
+        if access_token:
+            access_token = access_token.split(" ")[1]
+
+    if not access_token:
+        return None, None
+
+    obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
+    if error:
+        logger.error("%s: %s", source.name, error)
+        raise AuthenticationException("Invalid token provided for this enrichment.")
+
+    return access_token, obo_access_token
 
 
 @cache.memoize(timeout=1 if DEBUG else 5 * 60, args_to_ignore=["access_token"])  # Cached for 5 minutes
@@ -43,13 +64,10 @@ def get_supported_fetchers(
 
     url = urljoin(source.url, "fetchers/")
 
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", source.name, error)
-            return {}
+    try:
+        access_token, obo_access_token = get_obo_access_token(source, user, access_token)
+    except AuthenticationException:
+        return {}
 
     headers = {"Accept": "application/json"}
     if obo_access_token or access_token:
@@ -132,7 +150,7 @@ def get_plugins_supported_fetchers(user: dict[str, Any]) -> dict[str, FetcherDef
 
 def _validate_fetcher_classification(fetcher: FetcherDefinition | None, selector: Selector, fetcher_id: str) -> None:
     if fetcher and not CLASSIFICATION.is_accessible(fetcher.classification, selector.classification):
-        raise ClueValueError(
+        raise InvalidDataException(
             f"Cannot send data classified as {selector.classification} to fetcher {fetcher_id} "
             f"at classification {fetcher.classification}.",
             status_code=400,
@@ -159,17 +177,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
     if not plugin:
         raise NotFoundException(f"Plugin {plugin_id} does not exist.")
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", plugin.name, error)
-            raise AuthenticationException("Invalid token provided for this enrichment.")
+    access_token, obo_access_token = get_obo_access_token(plugin, user)
 
     headers = {"Accept": "application/json"}
     if obo_access_token or access_token:
@@ -208,7 +216,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
         return FetcherResult.model_validate(result["api_response"], context={"is_response": True})
     except ValidationError as err:
         logger.exception("Invalid Request Body:")
-        raise ClueValueError(
+        raise InvalidDataException(
             "Validation error encountered on request body. Ensure your request body is properly formatted.",
             status_code=400,
         ) from err
@@ -240,17 +248,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
     if not plugin:
         raise NotFoundException(f"Plugin {plugin_id} does not exist.")
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", plugin.name, error)
-            raise AuthenticationException("Invalid token provided for this enrichment.")
+    access_token, obo_access_token = get_obo_access_token(plugin, user)
 
     headers = {"Accept": "application/json"}
     if obo_access_token or access_token:

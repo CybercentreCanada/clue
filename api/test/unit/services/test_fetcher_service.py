@@ -4,7 +4,7 @@ import pytest
 from flask import Flask
 from requests import exceptions
 
-from clue.common.exceptions import AuthenticationException, ClueException, ClueValueError, NotFoundException
+from clue.common.exceptions import AuthenticationException, ClueException, InvalidDataException, NotFoundException
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.services import fetcher_service
@@ -57,6 +57,31 @@ def make_response(api_response, *, ok=True, status_code=200, error_message=None)
 def get_supported_fetchers_uncached(plugin, user, access_token=None):
     uncached = getattr(fetcher_service.get_supported_fetchers, "uncached")
     return uncached(plugin, user, access_token=access_token)
+
+
+def test_get_obo_access_token_returns_none_without_authorization(app, plugin, user):
+    with app.test_request_context():
+        assert fetcher_service.get_obo_access_token(plugin, user) == (None, None)
+
+
+def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
+    with (
+        app.test_request_context(headers={"Authorization": "Bearer access-token"}),
+        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+    ):
+        result = fetcher_service.get_obo_access_token(plugin, user)
+
+    assert result == ("access-token", "obo-token")
+    check_obo.assert_called_once_with(plugin, "access-token", "test-user")
+
+
+def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):
+    with (
+        app.test_request_context(headers={"Authorization": "Bearer access-token"}),
+        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=(None, "invalid token")),
+    ):
+        with pytest.raises(AuthenticationException, match="Invalid token provided"):
+            fetcher_service.get_obo_access_token(plugin, user)
 
 
 def test_get_supported_fetchers_parses_upstream_response(plugin, user, fetcher):
@@ -165,7 +190,7 @@ def test_run_fetcher_rejects_selector_above_fetcher_classification(app, configur
         patch("clue.services.fetcher_service.CLASSIFICATION.is_accessible", return_value=False) as is_accessible,
         patch("clue.services.fetcher_service.requests.post") as post,
     ):
-        with pytest.raises(ClueValueError, match="Cannot send data classified as TLP:AMBER") as error:
+        with pytest.raises(InvalidDataException, match="Cannot send data classified as TLP:AMBER") as error:
             fetcher_service.run_fetcher("test", "test_fetcher", user)
 
     assert error.value.status_code == 400
@@ -195,7 +220,7 @@ def test_run_fetcher_rejects_invalid_selector(app, configured_plugin, user):
         app.test_request_context(json={}),
         patch("clue.services.fetcher_service.get_supported_fetchers") as get_supported,
     ):
-        with pytest.raises(ClueValueError, match="Validation error encountered on request body") as error:
+        with pytest.raises(InvalidDataException, match="Validation error encountered on request body") as error:
             fetcher_service.run_fetcher("test", "test_fetcher", user)
 
     assert error.value.status_code == 400
