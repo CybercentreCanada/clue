@@ -32,10 +32,10 @@ def get_obo_access_token(
 ) -> tuple[Optional[str], Optional[str]]:
     """Get the caller access token and an OBO token for an external source when needed."""
     if access_token is None and has_request_context():
-        access_token = request.headers.get("Authorization", type=str)
-        if access_token:
-            access_token = access_token.split(" ")[1]
-
+        auth_header = request.headers.get("Authorization", type=str)
+        if auth_header:
+            parts = auth_header.split(" ", 1)
+            access_token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else auth_header
     if not access_token:
         return None, None
 
