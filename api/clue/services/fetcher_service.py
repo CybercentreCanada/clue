@@ -196,7 +196,10 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
     try:
         selector = Selector.model_validate(parameters)
-        fetcher = get_supported_fetchers(plugin, user, access_token=access_token).get(fetcher_id)
+        supported_fetchers = get_supported_fetchers(plugin, user, access_token=access_token)
+        fetcher = supported_fetchers.get(fetcher_id)
+        if fetcher is None:
+            raise NotFoundException(f"Fetcher {fetcher_id} does not exist", status_code=404)
         _validate_fetcher_classification(fetcher, selector, fetcher_id)
 
         response = requests.post(
