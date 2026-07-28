@@ -166,11 +166,16 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
     if obo_access_token or access_token:
         headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
 
-    if request.content_type == "application/json":
+    if request.is_json:
         parameters = request.json
     else:
-        # TODO: Pass parameters via urlencode?
-        parameters = {}
+        logger.error(
+            "Invalid content-type detected: %s",
+        )
+        raise ClueValueError(
+            "The request body must be of type application/json.",
+            status_code=400,
+        )
 
     try:
         Selector.model_validate(parameters)
