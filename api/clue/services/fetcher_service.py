@@ -130,6 +130,15 @@ def get_plugins_supported_fetchers(user: dict[str, Any]) -> dict[str, FetcherDef
     return available_fetchers
 
 
+def _validate_fetcher_classification(fetcher: FetcherDefinition | None, selector: Selector, fetcher_id: str) -> None:
+    if fetcher and not CLASSIFICATION.is_accessible(fetcher.classification, selector.classification):
+        raise ClueValueError(
+            f"Cannot send data classified as {selector.classification} to fetcher {fetcher_id} "
+            f"at classification {fetcher.classification}.",
+            status_code=400,
+        )
+
+
 def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> FetcherResult:
     """Executes a specified fetcher.
 
@@ -178,7 +187,9 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
         )
 
     try:
-        Selector.model_validate(parameters)
+        selector = Selector.model_validate(parameters)
+        fetcher = get_supported_fetchers(plugin, user, access_token=access_token).get(fetcher_id)
+        _validate_fetcher_classification(fetcher, selector, fetcher_id)
 
         response = requests.post(
             urljoin(plugin.url, f"fetchers/{fetcher_id}"),

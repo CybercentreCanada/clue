@@ -209,6 +209,24 @@ def test_invalid_input(host, access_token):
     assert res.json()["api_error_message"].startswith("Validation error encountered on request body")
 
 
+def test_run_fetcher_rejects_selector_above_fetcher_classification(host, access_token):
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    fetcher_classification = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
+    res = requests.post(
+        f"{host}/api/v1/fetchers/test/json",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"type": "ip", "value": "127.0.0.1", "classification": "TLP:AMBER"},
+    )
+
+    assert res.status_code == 400
+    assert res.json()["api_error_message"] == (
+        f"Cannot send data classified as TLP:AMBER to fetcher json at classification {fetcher_classification}."
+    )
+
+
 def test_invalid_input_direct(access_token):
     from clue.config import config
 
