@@ -470,7 +470,7 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
 
     logger.debug(
         f"Beginning enrichment for single selector on sources "
-        f"[{','.join(query_sources or [source.name for source in available_sources])}] "
+        f"[{','.join(query_sources or [source.name for source in available_sources if source.include_default])}] "
         f"excluding sources [{','.join(excluded_sources)}]"
     )
 
@@ -681,7 +681,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
 
     logger.debug(
         f"Beginning enrichment for {len(data)} selectors on sources "
-        f"[{','.join(query_sources or [source.name for source in available_sources])}] "
+        f"[{','.join(query_sources or [source.name for source in available_sources if source.include_default])}] "
         f"excluding sources [{','.join(excluded_sources)}]"
     )
 
