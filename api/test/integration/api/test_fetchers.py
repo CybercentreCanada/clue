@@ -164,7 +164,7 @@ def test_no_fetchers(host, access_token):
 
     response = res.json()
 
-    assert response["api_error_message"] == "slow_server does not support any fetchers."
+    assert response["api_error_message"] == "slow does not support any fetchers."
 
     res = requests.post(
         f"{host}/api/v1/fetchers/test/json_missing_though",
