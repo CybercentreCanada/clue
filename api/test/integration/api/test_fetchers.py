@@ -164,7 +164,7 @@ def test_no_fetchers(host, access_token):
 
     response = res.json()
 
-    assert response["api_error_message"] == "slow_server does not support any fetchers."
+    assert response["api_error_message"] == "slow does not support any fetchers."
 
     res = requests.post(
         f"{host}/api/v1/fetchers/test/json_missing_though",
@@ -192,10 +192,7 @@ def test_invalid_input(host, access_token):
 
     assert res.status_code == 400
 
-    assert (
-        res.json()["api_error_message"]
-        == "Validation error encountered on request body. Ensure your request body is properly formatted."
-    )
+    assert res.json()["api_error_message"] == "The request body must be of type application/json."
 
     res = requests.post(
         f"{host}/api/v1/fetchers/test/json",
@@ -207,6 +204,24 @@ def test_invalid_input(host, access_token):
     assert res.status_code == 400
 
     assert res.json()["api_error_message"].startswith("Validation error encountered on request body")
+
+
+def test_run_fetcher_rejects_selector_above_fetcher_classification(host, access_token):
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    fetcher_classification = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
+    res = requests.post(
+        f"{host}/api/v1/fetchers/test/json",
+        params={"max_timeout": 2.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"type": "ip", "value": "127.0.0.1", "classification": "TLP:AMBER"},
+    )
+
+    assert res.status_code == 400
+    assert res.json()["api_error_message"] == (
+        f"Cannot send data classified as TLP:AMBER to fetcher json at classification {fetcher_classification}."
+    )
 
 
 def test_invalid_input_direct(access_token):
