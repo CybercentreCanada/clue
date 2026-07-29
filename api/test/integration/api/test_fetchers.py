@@ -192,10 +192,7 @@ def test_invalid_input(host, access_token):
 
     assert res.status_code == 400
 
-    assert (
-        res.json()["api_error_message"]
-        == "Validation error encountered on request body. Ensure your request body is properly formatted."
-    )
+    assert res.json()["api_error_message"] == "The request body must be of type application/json."
 
     res = requests.post(
         f"{host}/api/v1/fetchers/test/json",
