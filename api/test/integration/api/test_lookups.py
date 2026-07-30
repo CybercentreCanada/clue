@@ -378,6 +378,38 @@ def test_bulk_enrichment_excluded_sources(host, default_sources):
             assert default_source in defaults_res
 
 
+def test_bulk_enrichment_multiple_source_entries_for_indicator(host):
+    access_token = get_token()
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    bulk_req: list[dict[str, Any]] = [
+        {"type": "ipv4", "value": "127.0.0.1", "sources": ["test", "bad", "-slow"]},
+        {"type": "ipv4", "value": "127.0.0.1", "sources": ["slow", "test-amber", "-bad"]},
+    ]
+
+    res = requests.post(
+        f"{host}/api/v1/lookup/enrich",
+        params={"max_timeout": 5.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json=bulk_req,
+    )
+
+    assert res.ok
+
+    json = res.json()["api_response"]
+    res = json["ipv4"]["127.0.0.1"]
+
+    # exclude list merged
+    assert "slow" not in res
+    assert "bad" not in res
+
+    # include list merged
+    assert "test" in res
+    assert "test-amber" in res
+
+
 def test_case_normalization_single(host):
     """Test that type and value are normalized to lowercase for single enrichment."""
     access_token = get_token()

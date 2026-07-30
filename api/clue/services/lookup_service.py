@@ -705,9 +705,22 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     if config.ui.replication:
         existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
 
-    sources_per_entry: dict[tuple[str, str], tuple[list[str], list[str]]] = {
-        (entry.type, entry.value): _parse_source_list(entry.sources) for entry in data if entry.sources is not None
-    }
+    sources_per_entry: dict[tuple[str, str], tuple[list[str], list[str]]] = {}
+    for entry in data:
+        if entry.sources is not None:
+            entry_key = (entry.type, entry.value)
+            if entry_key not in sources_per_entry:
+                sources_per_entry[entry_key] = _parse_source_list(entry.sources)
+
+            else:
+                logger.warning("Duplicate sources found for entry %s:%s. Merging sources.", entry.type, entry.value)
+
+                existing_include_list, existing_exclude_list = sources_per_entry[entry_key]
+                include_sources, exclude_sources = _parse_source_list(entry.sources)
+                sources_per_entry[entry_key] = (
+                    list(set(existing_include_list + include_sources)),
+                    list(set(existing_exclude_list + exclude_sources)),
+                )
 
     greenlets: list[tuple[list[Selector], ExternalSource, Greenlet[Any, dict[str, dict[str, QueryResult]]]]] = []
     for source in available_sources:
