@@ -222,6 +222,9 @@ class MongoDB(BaseModel):
     user: str | None = Field(description="Username to use to connect to the MongoDB instance", default=None)
     password: str | None = Field(description="Password to use to connect to the MongoDB instance", default=None)
     database: str = Field(description="The database to use in the mongodb instance", default="clue")
+    auth_source: str | None = Field(
+        description="The database where your user credentials are stored and validated", default="admin"
+    )
     max_retries: int = Field(
         description="Controls the maximum number of retries to use when an initial connection fails", default=2
     )
@@ -252,6 +255,9 @@ class MongoDB(BaseModel):
             "connectTimeoutMS": self.connect_timeout,
             "serverSelectionTimeoutMS": self.server_selection_timeout,
         }
+
+        if self.auth_source:
+            params["authSource"] = self.auth_source
 
         if self.user and self.password:
             params["username"] = self.user
