@@ -367,36 +367,6 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     ]
   );
 
-  const enrichFailedEnrichments = useCallback(async () => {
-    if (!database?.selectors || database.selectors.closed) {
-      return;
-    }
-
-    const failedEnrichments = await database.selectors.find({ selector: { error: { $exists: true } } }).exec();
-
-    const byClassification = groupBy(failedEnrichments, 'classification');
-
-    const newRequests: StatusDocType[] = [];
-    for (const [classification, selectors] of Object.entries(byClassification)) {
-      const bySelector = groupBy(selectors, _selector => `${_selector.type}:${_selector.value}`);
-
-      for (const records of Object.values(bySelector)) {
-        newRequests.push({
-          id: await computeStatusId(records[0].type, records[0].value, classification),
-          type: records[0].type,
-          value: records[0].value,
-          classification,
-          sources: uniq(records.map(_record => _record.source)).sort(),
-          status: 'pending'
-        });
-      }
-    }
-
-    await database.status.bulkInsert(newRequests);
-
-    await database.selectors.bulkRemove(failedEnrichments);
-  }, [database]);
-
   const enrichQueued: () => void = useMemo(
     () =>
       debounce(
@@ -563,6 +533,42 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     },
     [defaultClassification, database]
   );
+
+  const enrichFailedEnrichments = useCallback(async () => {
+    if (!database?.selectors || database.selectors.closed) {
+      return;
+    }
+
+    const failedEnrichments = await database.selectors.find({ selector: { error: { $exists: true } } }).exec();
+
+    const byClassification = groupBy(failedEnrichments, 'classification');
+
+    const newRequests: StatusDocType[] = [];
+    for (const [classification, selectors] of Object.entries(byClassification)) {
+      const bySelector = groupBy(selectors, _selector => `${_selector.type}:${_selector.value}`);
+
+      for (const records of Object.values(bySelector)) {
+        newRequests.push({
+          id: await computeStatusId(records[0].type, records[0].value, classification),
+          type: records[0].type,
+          value: records[0].value,
+          classification,
+          sources: uniq(records.map(_record => _record.source)).sort(),
+          status: 'pending'
+        });
+      }
+    }
+
+    if (newRequests.length > 0) {
+      await database.status.bulkInsert(newRequests);
+
+      if (enabled && isReady) {
+        enrichQueued();
+      }
+    }
+
+    await database.selectors.bulkRemove(failedEnrichments);
+  }, [database, enabled, enrichQueued, isReady]);
 
   const guessType: ClueEnrichContextType['guessType'] = useCallback(
     value => {

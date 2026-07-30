@@ -619,6 +619,103 @@ describe('enrich functionality', () => {
         expect.objectContaining({ headers: { Authorization: 'Bearer example token' } })
       );
     });
+
+    it('should not enrich unrelated pending requests when there are no failures', async () => {
+      hook.unmount();
+
+      const DisabledWrapper = ({ children }) => (
+        <ClueProvider
+          ready
+          enabled={false}
+          database={database}
+          getToken={getToken}
+          onNetworkCall={onNetworkCall}
+          pickSources={pickSources}
+          chunkSize={ENRICH_CHUNK_SIZE}
+          debugLogging={!!process.env.ENABLE_DEBUG_LOGGNIG}
+          config={MOCK_RESPONSES['/api/v1/configs']}
+          skipConfigCall
+        >
+          {children}
+        </ClueProvider>
+      );
+
+      await database.status.insert({
+        id: uuid(),
+        type: 'ip',
+        value: '127.0.0.2',
+        classification: 'TLP:CLEAR',
+        status: 'pending'
+      });
+
+      const { result, unmount } = renderHook(() => useClueEnrichSelector(ctx => ctx.enrichFailedEnrichments), {
+        wrapper: DisabledWrapper
+      });
+
+      vi.useFakeTimers();
+      try {
+        await act(async () => {
+          await result.current();
+          await vi.advanceTimersByTimeAsync(500);
+        });
+
+        expect(hpost).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+        unmount();
+      }
+    });
+
+    it('should not enrich failed enrichments while disabled', async () => {
+      const DisabledWrapper = ({ children }) => (
+        <ClueProvider
+          ready
+          enabled={false}
+          database={database}
+          getToken={getToken}
+          onNetworkCall={onNetworkCall}
+          pickSources={pickSources}
+          chunkSize={ENRICH_CHUNK_SIZE}
+          debugLogging={!!process.env.ENABLE_DEBUG_LOGGNIG}
+          config={MOCK_RESPONSES['/api/v1/configs']}
+          skipConfigCall
+        >
+          {children}
+        </ClueProvider>
+      );
+
+      await database.selectors.insert({
+        id: uuid(),
+        source: 'example',
+        type: 'ip',
+        value: '127.0.0.1',
+        annotations: [],
+        classification: 'TLP:CLEAR',
+        latency: 20,
+        count: 1,
+        error: 'example error'
+      });
+
+      const { result, unmount } = renderHook(() => useClueEnrichSelector(ctx => ctx.enrichFailedEnrichments), {
+        wrapper: DisabledWrapper
+      });
+
+      vi.useFakeTimers();
+      try {
+        await act(async () => {
+          await result.current();
+          await vi.advanceTimersByTimeAsync(500);
+        });
+
+        const status = await database.status.findOne({ selector: { value: '127.0.0.1' } }).exec();
+
+        expect(status.status).toBe('pending');
+        expect(hpost).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+        unmount();
+      }
+    });
   });
 
   /**
