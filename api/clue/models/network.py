@@ -388,7 +388,7 @@ class QueryEntry(BaseModel):
         ),
     ] = None
 
-    expiry: datetime | None = Field(description="When should this record expire?", default_factory=generate_expiry)
+    expiry: Timestamp | None = Field(description="When should this record expire?", default_factory=generate_expiry)
 
     model_config = ConfigDict(validate_assignment=True)
 
@@ -566,3 +566,9 @@ class QueryResult(ResultMetadata):
 
 class PluginResponse(BaseModel):
     pass
+
+
+if __name__ == "__main__":
+    import json
+
+    print(json.dumps(QueryEntry.model_json_schema(), indent=2))  # noqa: T201
