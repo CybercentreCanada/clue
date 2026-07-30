@@ -107,6 +107,7 @@ class ParsedParams(BaseModel):
     "Validation of parameters parsed from request"
 
     query_sources: list[str]
+    excluded_sources: list[str]
     max_timeout: float
     limit: int
     type_classification: str
@@ -153,8 +154,11 @@ def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):
     else:
         query_sources = []
 
+    include_sources, exclude_sources = _parse_source_list(query_sources)
+
     return ParsedParams(
-        query_sources=query_sources,
+        query_sources=include_sources,
+        excluded_sources=exclude_sources,
         max_timeout=parse_timeout(timeout),
         limit=limit,
         type_classification=type_classification,
@@ -456,6 +460,7 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
     """
     query_params = parse_query_params(request=request)
     query_sources = query_params.query_sources
+    excluded_sources = query_params.excluded_sources
     available_sources = get_sources(user)
 
     access_token = request.headers.get("Authorization", type=str)
@@ -465,7 +470,8 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
 
     logger.debug(
         f"Beginning enrichment for single selector on sources "
-        f"[{','.join(query_sources or [source.name for source in available_sources])}]"
+        f"[{','.join(query_sources or [source.name for source in available_sources if source.include_default])}] "
+        f"excluding sources [{','.join(excluded_sources)}]"
     )
 
     results: dict[str, QueryResult] = {}
@@ -478,7 +484,9 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
     for source in available_sources:
         if query_sources and source.name not in query_sources:
             continue
-        elif not query_sources and not source.include_default:
+        if excluded_sources and source.name in excluded_sources:
+            continue
+        if not query_sources and not source.include_default:
             continue
 
         finish_result = functools.partial(build_result, type_name, value, source)
@@ -668,11 +676,13 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     """create searches for external sources"""
     query_params = parse_query_params(request=request)
     query_sources = query_params.query_sources
+    excluded_sources = query_params.excluded_sources
     available_sources = get_sources(user)
 
     logger.debug(
         f"Beginning enrichment for {len(data)} selectors on sources "
-        f"[{','.join(query_sources or [source.name for source in available_sources])}]"
+        f"[{','.join(query_sources or [source.name for source in available_sources if source.include_default])}] "
+        f"excluding sources [{','.join(excluded_sources)}]"
     )
 
     access_token = request.headers.get("Authorization", type=str)
@@ -695,11 +705,30 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     if config.ui.replication:
         existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
 
+    sources_per_entry: dict[tuple[str, str], tuple[list[str], list[str]]] = {}
+    for entry in data:
+        if entry.sources is not None:
+            entry_key = (entry.type, entry.value)
+            if entry_key not in sources_per_entry:
+                sources_per_entry[entry_key] = _parse_source_list(entry.sources)
+
+            else:
+                logger.warning("Duplicate sources found for entry %s:%s. Merging sources.", entry.type, entry.value)
+
+                existing_include_list, existing_exclude_list = sources_per_entry[entry_key]
+                include_sources, exclude_sources = _parse_source_list(entry.sources)
+                sources_per_entry[entry_key] = (
+                    list(set(existing_include_list + include_sources)),
+                    list(set(existing_exclude_list + exclude_sources)),
+                )
+
     greenlets: list[tuple[list[Selector], ExternalSource, Greenlet[Any, dict[str, dict[str, QueryResult]]]]] = []
     for source in available_sources:
         if query_sources and source.name not in query_sources:
             continue
-        elif not query_sources and not source.include_default:
+        if excluded_sources and source.name in excluded_sources:
+            continue
+        if not query_sources and not source.include_default:
             continue
 
         obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
@@ -720,8 +749,14 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         # check query against the max supported classification of the external system
         # if this is not supported, we should let the user know.
         for entry in data:
-            if entry.sources is not None and source.name not in entry.sources:
+            if entry.sources == []:  # support old behaviour of empty entry sources -> use no sources
                 continue
+
+            parsed_sources = sources_per_entry.get((entry.type, entry.value))
+            if parsed_sources is not None:
+                include_sources, exclude_sources = parsed_sources
+                if (include_sources and source.name not in include_sources) or source.name in exclude_sources:
+                    continue
 
             if (
                 source.name in existing_results
@@ -802,3 +837,30 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     thread_pool.kill(block=False)
 
     return bulk_result
+
+
+def _parse_source_list(source_list: list[str]) -> tuple[list[str], list[str]]:
+    """Splits the provided source list into include and exclude lists.
+
+    Args:
+        source_list (list[str]): The list of sources to parse.
+
+    Returns:
+        tuple[list[str], list[str]]: (include_sources, exclude_sources)
+            The list of sources to include and the list of sources to exclude.
+    """
+    include_sources = []
+    exclude_sources = []
+
+    for source in source_list:
+        source = source.strip()
+        if not source:
+            continue
+        if source.startswith("-"):
+            excluded_source = source[1:].strip()
+            if excluded_source:
+                exclude_sources.append(excluded_source)
+        else:
+            include_sources.append(source)
+
+    return include_sources, exclude_sources

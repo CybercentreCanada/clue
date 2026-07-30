@@ -7,6 +7,11 @@ import requests
 from test.utils.oauth_credentials import get_token
 
 
+@pytest.fixture(scope="session")
+def default_sources():
+    return ("test", "bad", "slow", "test-amber")
+
+
 def test_get_types(host):
     access_token = get_token()
 
@@ -296,6 +301,113 @@ def test_bulk_enrichment_sources(host):
             assert "error" not in json[entry["type"]][entry["value"]]["test-amber"]
         else:
             assert "test-amber" not in json[entry["type"]][entry["value"]]
+
+
+def test_enrichment_excluded_sources(host, default_sources):
+    access_token = get_token()
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    res = requests.get(
+        f"{host}/api/v1/lookup/enrich/ipv4/127.0.0.1",
+        params={"max_timeout": 2.0, "sources": "-test"},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    json = res.json()["api_response"]
+    assert "test" not in json
+
+    for default_source in default_sources:
+        if default_source != "test":
+            assert default_source in json
+
+
+def test_excluded_sources_overlaps_source_list(host):
+    access_token = get_token()
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    res = requests.get(
+        f"{host}/api/v1/lookup/enrich/ipv4/127.0.0.1",
+        params={"max_timeout": 2.0, "sources": "test|bad|-test|-bad"},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+
+    json = res.json()["api_response"]
+    assert json == {}
+
+
+def test_bulk_enrichment_excluded_sources(host, default_sources):
+    access_token = get_token()
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    bulk_req: list[dict[str, Any]] = [
+        {"type": "ipv4", "value": "127.0.0.1", "sources": ["test", "bad"]},
+        {"type": "ipv4", "value": "127.0.0.2", "sources": ["-slow"]},
+    ]
+
+    res = requests.post(
+        f"{host}/api/v1/lookup/enrich",
+        params={"max_timeout": 5.0, "sources": "-test"},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json=bulk_req,
+    )
+
+    assert res.ok
+
+    json = res.json()["api_response"]
+
+    source_list_res = json["ipv4"]["127.0.0.1"]
+    defaults_res = json["ipv4"]["127.0.0.2"]
+
+    assert "test" not in source_list_res
+    assert "bad" in source_list_res
+
+    assert "test" not in defaults_res
+    assert "slow" not in defaults_res
+    for default_source in default_sources:
+        if default_source != "test" and default_source != "slow":
+            assert default_source in defaults_res
+
+
+def test_bulk_enrichment_multiple_source_entries_for_indicator(host):
+    access_token = get_token()
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    bulk_req: list[dict[str, Any]] = [
+        {"type": "ipv4", "value": "127.0.0.1", "sources": ["test", "bad", "-slow"]},
+        {"type": "ipv4", "value": "127.0.0.1", "sources": ["slow", "test-amber", "-bad"]},
+    ]
+
+    res = requests.post(
+        f"{host}/api/v1/lookup/enrich",
+        params={"max_timeout": 5.0},
+        headers={"Authorization": f"Bearer {access_token}"},
+        json=bulk_req,
+    )
+
+    assert res.ok
+
+    json = res.json()["api_response"]
+    res = json["ipv4"]["127.0.0.1"]
+
+    # exclude list merged
+    assert "slow" not in res
+    assert "bad" not in res
+
+    # include list merged
+    assert "test" in res
+    assert "test-amber" in res
 
 
 def test_case_normalization_single(host):
