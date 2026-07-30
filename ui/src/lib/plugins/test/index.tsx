@@ -1,5 +1,6 @@
 import { Typography } from '@mui/material';
-import type { ActionResult, FetcherResult } from 'lib/main';
+import type { ActionResult } from 'lib/types/action';
+import type { FetcherResult } from 'lib/types/fetcher';
 import ClueUIPlugin from '../ClueUIPlugin';
 
 class TestPlugin extends ClueUIPlugin {

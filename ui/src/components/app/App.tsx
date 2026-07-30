@@ -47,9 +47,10 @@ import { safeAddEventListener } from 'lib/utils/window';
 import type { ClueUser } from 'models/entities/ClueUser';
 import * as monaco from 'monaco-editor';
 import type { FC, PropsWithChildren } from 'react';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Routes, useLocation, useNavigate } from 'react-router';
 import { BrowserRouter, Route } from 'react-router-dom';
+import { getStored } from 'utils/localStorage';
 import AppContainer from './AppContainer';
 import LocalStorageProvider from './providers/LocalStorageProvider';
 import ModalProvider from './providers/ModalProvider';
@@ -153,14 +154,17 @@ const MyAppProvider: FC<PropsWithChildren<{ database: ClueDatabase | null }>> = 
   const mySitemap: AppSiteMapConfigs = useMySitemap();
   const myUser: AppUserService<ClueUser> = useMyUser();
 
+  const getToken = useCallback(() => getStored(StorageKey.APP_TOKEN), []);
+
   return (
     <ClueComponentProvider>
       <AppProvider preferences={myPreferences} theme={myTheme} sitemap={mySitemap} user={myUser}>
         <ModalProvider>
           <LocalStorageProvider>
-            <ClueDatabaseProvider database={database}>
+            <ClueDatabaseProvider database={database} getToken={getToken}>
               <ClueUIPluginProvider>
                 <ClueEnrichProvider
+                  getToken={getToken}
                   publicIconify={false}
                   enabled={!!database}
                   skipConfigCall

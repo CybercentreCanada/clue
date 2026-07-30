@@ -1,5 +1,5 @@
 import FileResult from 'lib/components/actions/formats/FileResult';
-import type { ActionResult } from 'lib/main';
+import { ActionResult } from 'lib/types/action';
 import type { WithActionData } from 'lib/types/WithActionData';
 import ClueUIPlugin from '../ClueUIPlugin';
 

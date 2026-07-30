@@ -1,6 +1,7 @@
 import i18nInstance from 'i18n';
 import type { i18n as I18N } from 'i18next';
-import type { ActionResult, FetcherResult } from 'lib/main';
+import type { ActionResult } from 'lib/types/action';
+import type { FetcherResult } from 'lib/types/fetcher';
 import type { WithActionData } from 'lib/types/WithActionData';
 import { difference } from 'lodash-es';
 import type { ReactNode } from 'react';

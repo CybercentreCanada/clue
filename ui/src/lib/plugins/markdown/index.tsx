@@ -1,5 +1,6 @@
 import Markdown from 'lib/components/display/markdown';
-import type { ActionResult, FetcherResult } from 'lib/main';
+import type { ActionResult } from 'lib/types/action';
+import type { FetcherResult } from 'lib/types/fetcher';
 import ClueUIPlugin from '../ClueUIPlugin';
 
 class MarkdownPlugin extends ClueUIPlugin {

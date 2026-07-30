@@ -1,5 +1,6 @@
 import Graph from 'lib/components/display/graph';
-import type { ActionResult, FetcherResult } from 'lib/main';
+import type { ActionResult } from 'lib/types/action';
+import type { FetcherResult } from 'lib/types/fetcher';
 import type { NestedDataset } from 'lib/types/graph';
 import ClueUIPlugin from '../ClueUIPlugin';
 import { validateJsonData } from '../utils';
