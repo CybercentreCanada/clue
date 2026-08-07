@@ -53,6 +53,7 @@ def enrich(type_name: str, value: str, params: Params, token: str | None):
         proc = EnrichmentProcessor(client, c12n_engine, logger)
         return proc.enrich(type_name, value, params)
 
+
 # MARK: Action Endpoint
 def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
     """Execute an action for the Assemblyline plugin.
@@ -91,6 +92,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
         output=output,
         link=url,
     )
+
 
 # MARK: Plugin Initialization
 actions = []

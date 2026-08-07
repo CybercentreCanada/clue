@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 logger = get_logger(__file__)
 CLIENT_VERSION = parse(version("assemblyline_client"))
 
+
 @contextmanager
 def get_assemblyline_client():
     """Context manager to provide an Assemblyline client with token exchange for OBO (On-Behalf-Of) authentication or API key."""
