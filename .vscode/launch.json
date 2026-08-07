@@ -21,7 +21,7 @@
             "name": "Debug: Assemblyline Plugin",
             "type": "debugpy",
             "request": "launch",
-            "program": "plugins/assemblyline/test_app.py",
+            "program": "plugins/assemblyline/local_app.py",
             "justMyCode": false,
             "cwd": "${workspaceFolder}"
         }
