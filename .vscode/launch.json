@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug: API",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "api/clue/app.py",
+            "python": "${command:python.interpreterPath}",
+            "cwd": "${workspaceFolder}",
+            "justMyCode": false,
+            "env": {
+                "GEVENT_SUPPORT": "True",
+                "API__EXTERNAL_SOURCES": "[{\"name\": \"test-plugin\", \"url\": \"http://localhost:5100\", \"classification\": \"TLP:CLEAR\", \"obo_target\": \"test-plugin\"}]"
+            }
+        },
+        {
+            "name": "Debug: Assemblyline Plugin",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "plugins/assemblyline/test_app.py",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
