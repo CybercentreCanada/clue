@@ -26,9 +26,9 @@ def get_assemblyline_client():
         # If API key and user are provided, use them to create the client
         if AL_API_KEY and AL_USER:
             client = assemblyline_client.get_client(AL_URL_BASE, apikey=(AL_USER, AL_API_KEY), verify=VERIFY)  # type: ignore
-        else:
+        elif request.headers.get("authorization"):
             # If no API key is provided, attempt to perform token exchange using the token from the request header
-            token = request.headers.get("authorization", "").split(" ")[-1]
+            token = request.headers["authorization"].split(" ")[-1]
 
             # Take token from request header from Clue and perform a token exchange for Assemblyline
             if CLIENT_VERSION <= parse("4.9.12"):

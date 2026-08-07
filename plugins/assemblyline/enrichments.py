@@ -348,7 +348,7 @@ class EnrichmentProcessor:
         Returns:
             List of QueryEntry objects with search results
         """
-        return self.search_tag("network.port", value, limit=limit, timeout=timeout, annotate=annotate, raw=raw)
+        return self.search_tag("port", value, limit=limit, timeout=timeout, annotate=annotate, raw=raw)
 
     def search_email(
         self,
@@ -372,7 +372,7 @@ class EnrichmentProcessor:
         Returns:
             List of QueryEntry objects with search results
         """
-        return self.search_tag("email.address", value, limit=limit, timeout=timeout, annotate=annotate, raw=raw)
+        return self.search_tag("email", value, limit=limit, timeout=timeout, annotate=annotate, raw=raw)
 
     def search_tag(
         self,
