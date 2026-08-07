@@ -1,7 +1,9 @@
 import datetime
-from unittest.mock import ANY
+from contextlib import contextmanager
+from unittest.mock import ANY, patch
 from urllib import parse as ul
 
+from assemblyline.consts import AL_URL_BASE
 import pytest
 
 
@@ -45,7 +47,7 @@ class FakeUser:
 
 
 class FakeClient:
-    empty_reponse = {
+    empty_response = {
         "items": [],
         "offset": 0,
         "rows": 25,
@@ -56,7 +58,7 @@ class FakeClient:
         self.current_user = "testing-user"
 
         self.responses = {
-            "alert": self.empty_reponse,
+            "alert": self.empty_response,
             "result": {
                 "items": [
                     {
@@ -154,7 +156,7 @@ class FakeClient:
                 "type": "tag",
                 "updated": datetime.datetime.now().isoformat(),
             },
-            "file": self.empty_reponse,
+            "file": self.empty_response,
             "submission_params": {
                 "classification": "some default",
                 "description": "",
@@ -213,18 +215,16 @@ def al_c12n_engine():
 def server(al_client, al_c12n_engine):
     from assemblyline import app
 
-    orig = app.AL_API_KEY
-    orig_client = app.CLIENT
-    orig_c12n_engine = app.C12N_ENGINE
-    app.CLIENT = al_client
-    app.C12N_ENGINE = al_c12n_engine
-    app.AL_API_KEY = "X"
+    @contextmanager
+    def fake_get_assemblyline_client():
+        try:
+            yield al_client, al_c12n_engine
+        finally:
+            pass
 
-    yield app
 
-    server.AL_API_KEY = orig  # type: ignore[attr-defined]
-    server.CLIENT = orig_client  # type: ignore[attr-defined]
-    server.C12N_ENGINE = orig_c12n_engine  # type: ignore[attr-defined]
+    with patch.object(app, "get_assemblyline_client", fake_get_assemblyline_client):
+        yield app
 
 
 @pytest.fixture()
@@ -262,14 +262,14 @@ def test_hash_found(test_client, al_client, server):
             },
             {
                 "classification": "TLP:CLEAR",
-                "link": f"{server.AL_URL_BASE}/manage/safelist/{digest}",
+                "link": f"{AL_URL_BASE}/manage/safelist/{digest}",
                 "count": 1,
                 "expiry": ANY,
                 "annotations": [],
             },
             {
                 "classification": "TLP:CLEAR",
-                "link": f"{server.AL_URL_BASE}/manage/badlist/{digest}",
+                "link": f"{AL_URL_BASE}/manage/badlist/{digest}",
                 "count": 1,
                 "expiry": ANY,
                 "annotations": [],
@@ -284,7 +284,7 @@ def test_hash_found(test_client, al_client, server):
 
 def test_hash_dne(test_client, al_client):
     """Validate response for a hash that does not exist."""
-    al_client.set_response("file", al_client.empty_reponse)
+    al_client.set_response("file", al_client.empty_response)
 
     rsp = test_client.get(f"/lookup/md5/{dquote('a' * 32)}/", query_string={"no_annotation": True})
     expected = {
@@ -334,7 +334,7 @@ def test_detailed(test_client, server):
             },
             {
                 "classification": "TLP:CLEAR",
-                "link": f"{server.AL_URL_BASE}/manage/safelist/9cffecf270e3553f45f5d702c204883d01"
+                "link": f"{AL_URL_BASE}/manage/safelist/9cffecf270e3553f45f5d702c204883d01"
                 "906d91c1d22dfa5d56868abcd7ff2c",
                 "count": 1,
                 "expiry": ANY,
@@ -357,7 +357,7 @@ def test_detailed(test_client, server):
             },
             {
                 "classification": "TLP:CLEAR",
-                "link": f"{server.AL_URL_BASE}/manage/badlist/9cffecf270e3553f45f5d702c204883d01906d91"
+                "link": f"{AL_URL_BASE}/manage/badlist/9cffecf270e3553f45f5d702c204883d01906d91"
                 "c1d22dfa5d56868abcd7ff2c",
                 "count": 1,
                 "expiry": ANY,
@@ -415,13 +415,13 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                         "type": "opinion",
                         "ubiquitous": False,
                         "value": "malicious",
-                        "link": f"{server.AL_URL_BASE}/file/detail/{digest}",
+                        "link": f"{AL_URL_BASE}/file/detail/{digest}",
                     }
                 ],
             },
             {
                 "classification": "TLP:CLEAR",
-                "link": f"{server.AL_URL_BASE}/manage/safelist/{digest}",
+                "link": f"{AL_URL_BASE}/manage/safelist/{digest}",
                 "count": 1,
                 "expiry": ANY,
                 "annotations": [
@@ -429,7 +429,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                         "analytic": "Assemblyline - Safelist",
                         "analytic_icon": "mdi:assembly",
                         "confidence": 1.0,
-                        "link": "https://assemblyline-ui/manage/safelist/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "link": f"{AL_URL_BASE}/manage/safelist/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                         "quantity": 1,
                         "summary": "Assemblyline's safelist flagged this SHA256 as benign in 1 "
                         "source(s): urlhaus (external)",
@@ -442,7 +442,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
             },
             {
                 "classification": "TLP:CLEAR",
-                "link": f"{server.AL_URL_BASE}/manage/badlist/{digest}",
+                "link": f"{AL_URL_BASE}/manage/badlist/{digest}",
                 "count": 1,
                 "expiry": ANY,
                 "annotations": [
@@ -450,7 +450,7 @@ def test_detailed_hash_lookup(test_client, al_client, server):
                         "analytic": "Assemblyline - Badlist",
                         "analytic_icon": "mdi:assembly",
                         "confidence": 1.0,
-                        "link": "https://assemblyline-ui/manage/badlist/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "link": f"{AL_URL_BASE}/manage/badlist/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                         "quantity": 1,
                         "summary": "Assemblyline's badlist flagged this SHA256 as malicious in 1 "
                         "source(s): urlhaus (external)",
