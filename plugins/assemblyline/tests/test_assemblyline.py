@@ -200,6 +200,9 @@ class FakeC12NEngine:
     def max_classification(*args, **kwargs):
         return "TLP:CLEAR"
 
+    def min_classification(*args, **kwargs):
+        return "TLP:CLEAR"
+
 
 @pytest.fixture()
 def al_client():
