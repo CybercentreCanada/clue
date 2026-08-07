@@ -78,8 +78,8 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
         return ActionResult(outcome="failure", summary="submit_url action requires valid URL selector.")
 
     try:
-        with get_assemblyline_client() as (client, _):
-            url, id = submit_url(client, request.selector.value, request.internet_connected)
+        with get_assemblyline_client() as (client, c12n_engine):
+            url, id = submit_url(client, c12n_engine, request)
     except ClueRuntimeError as e:
         return ActionResult(outcome="failure", summary=e.message)
 

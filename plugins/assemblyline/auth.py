@@ -20,7 +20,7 @@ CLIENT_VERSION = parse(version("assemblyline_client"))
 
 @contextmanager
 def get_assemblyline_client():
-    """Context manager to provide an Assemblyline client with token exchange for OBO (On-Behalf-Of) authentication or API key."""
+    """Context manager to provide an Assemblyline client with token exchange for OBO (On-Behalf-Of) authentication or API key."""  # noqa: E501
     client = None
     try:
         # If API key and user are provided, use them to create the client
@@ -35,7 +35,7 @@ def get_assemblyline_client():
                 # Use token provider for older client versions
                 client = assemblyline_client.get_client(AL_URL_BASE, oauth=(AL_TOKEN_PROVIDER, token), verify=VERIFY)  # type: ignore
             else:
-                # Newer version of the client is able to infer the token provider from the token itself, so we can just pass the token directly
+                # Newer version of the client is able to infer the token provider from the token itself, so we can just pass the token directly # noqa: E501
                 client = assemblyline_client.get_client(AL_URL_BASE, oauth=token, verify=VERIFY)  # type: ignore
 
         if client:

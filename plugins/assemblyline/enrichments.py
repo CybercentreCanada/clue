@@ -776,7 +776,8 @@ class EnrichmentProcessor:
 
                 # Get the max classification
                 self.logger.debug(
-                    f"Classification set to {self.c12n_engine.max_classification(classification, item['classification'])}, "
+                    "Classification set to "
+                    f"{self.c12n_engine.max_classification(classification, item['classification'])}, "
                     f"previously {classification}"
                 )
                 classification = self.c12n_engine.max_classification(classification, item["classification"])
