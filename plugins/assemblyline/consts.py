@@ -10,6 +10,7 @@ CLASSIFICATION = os.environ.get("CLASSIFICATION", "TLP:CLEAR")
 PLUGIN_PORT = os.environ.get("PLUGIN_PORT", 8000)
 
 # Assemblyline client configuration
+AL_TOKEN_PROVIDER = os.environ.get("AL_TOKEN_PROVIDER", "") # Not needed for assemblyline_client>4.9.12
 AL_API_KEY = os.environ.get("AL_API_KEY", "")
 AL_USER = os.environ.get("AL_USER", "")
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", 100))
