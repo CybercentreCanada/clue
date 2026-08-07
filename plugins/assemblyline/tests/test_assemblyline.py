@@ -196,6 +196,7 @@ class FakeClient:
 
 class FakeC12NEngine:
     UNRESTRICTED = "TLP:CLEAR"
+    RESTRICTED = "TLP:AMBER+STRICT"
 
     def max_classification(*args, **kwargs):
         return "TLP:CLEAR"
