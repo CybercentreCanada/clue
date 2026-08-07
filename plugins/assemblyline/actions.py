@@ -1,4 +1,4 @@
-from assemblyline_client.v4_client.classification import Classification
+from assemblyline_client.common.classification import Classification
 from assemblyline_client.v4_client.client import Client
 from clue.models.actions import ExecuteRequest
 from pydantic import Field
