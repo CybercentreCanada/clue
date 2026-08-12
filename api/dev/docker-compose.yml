@@ -59,4 +59,3 @@ services:
 networks:
   clue-network:
     name: clue-network
-    external: true
