@@ -44,6 +44,18 @@ services:
     networks:
       - clue-network
 
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "444:444"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - clue-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 networks:
   clue-network:
     name: clue-network

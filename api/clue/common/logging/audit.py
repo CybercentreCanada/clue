@@ -60,18 +60,21 @@ AUDIT_LOG.propagate = False
 if AUDIT:
     AUDIT_LOG.setLevel(logging.DEBUG)
 
-if not os.path.exists(config.logging.log_directory):
-    os.makedirs(config.logging.log_directory)
+if config.logging.log_to_file:
+    # When logging to file, create a log directory if it doesn't already exist
+    if not os.path.exists(config.logging.log_directory):
+        os.makedirs(config.logging.log_directory)
 
-fh = logging.FileHandler(os.path.join(config.logging.log_directory, "clue_audit.log"))
-fh.setLevel(logging.DEBUG)
-fh.setFormatter(
-    logging.Formatter(
-        CLUE_LOG_FORMAT if DEBUG else CLUE_AUDIT_FORMAT,
-        CLUE_DATE_FORMAT if DEBUG else CLUE_ISO_DATE_FORMAT,
+    # Setup a handler to emit logs to disk
+    fh = logging.FileHandler(os.path.join(config.logging.log_directory, "clue_audit.log"))
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(
+        logging.Formatter(
+            CLUE_LOG_FORMAT if DEBUG else CLUE_AUDIT_FORMAT,
+            CLUE_DATE_FORMAT if DEBUG else CLUE_ISO_DATE_FORMAT,
+        )
     )
-)
-AUDIT_LOG.addHandler(fh)
+    AUDIT_LOG.addHandler(fh)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.INFO)

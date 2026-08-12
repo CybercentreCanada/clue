@@ -1,3 +1,4 @@
 README.md
-test
+test_app.py
 mypy.ini
+tests/*
