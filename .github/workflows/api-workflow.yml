@@ -125,8 +125,8 @@ jobs:
       - name: Show dependency status
         if: always()
         run: |
-          docker compose -f api/dev/docker-compose.yml ps
-          docker compose -f api/dev/docker-compose.yml logs
+          docker compose -f dev/docker-compose.yml ps
+          docker compose -f dev/docker-compose.yml logs
 
       - name: Install Poetry
         uses: abatilo/actions-poetry@v4
