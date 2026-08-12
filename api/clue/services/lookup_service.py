@@ -703,7 +703,13 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
 
     existing_results: dict[str, list[dict[str, str]]] = {}
     if config.ui.replication:
-        existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
+        if query_params.no_cache:
+            # no_cache bypasses the mongo cache check entirely (forcing every source to be re-queried) and
+            # invalidates whatever was previously cached so the fresh results replace it, rather than piling
+            # up as duplicates alongside it.
+            mongo_service.invalidate_existing(user["uname"], "selectors", data, available_sources)
+        else:
+            existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
 
     sources_per_entry: dict[tuple[str, str], tuple[list[str], list[str]]] = {}
     for entry in data:

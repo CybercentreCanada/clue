@@ -101,12 +101,32 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseURL, onNetworkCall, skipConfigCall, isReady]);
 
+  // Tracks `database.selectors.synced`, which is mutated outside of React state by the
+  // replication pull handler. Without this, `ready` below would never re-evaluate once
+  // replication catches up, since mutating that flag in place doesn't trigger a re-render.
+  const [selectorsSynced, setSelectorsSynced] = useState(false);
+
   useEffect(() => {
     if (isReady) {
-      Object.values(REPLICATORS).forEach(replicator => {
+      const subscriptions = Object.values(REPLICATORS).map(replicator => {
         replicator.reSync();
         replicator.start();
+
+        // `active$` fires whenever a replication cycle finishes (even if no documents were
+        // pulled), so it's a reliable signal to re-check the `synced` flag on the collection.
+        return replicator.active$.subscribe(active => {
+          if (!active) {
+            setSelectorsSynced(!!database?.selectors?.synced);
+          }
+        });
       });
+
+      return () => {
+        subscriptions.forEach(subscription => subscription.unsubscribe());
+        Object.values(REPLICATORS).forEach(replicator => {
+          replicator.pause();
+        });
+      };
     }
 
     return () => {
@@ -114,7 +134,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         replicator.pause();
       });
     };
-  }, [isReady]);
+  }, [database, isReady]);
 
   const [customIconify, setCustomIconify] = useState(_customIconify);
   useEffect(() => {
@@ -610,8 +630,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       setDefaultClassification,
       setReady: setIsReady,
       defaultClassification,
-      ready:
-        isReady && !!database && !!clueConfig.config?.c12nDef && (isEmpty(REPLICATORS) || database.selectors?.synced)
+      ready: isReady && !!database && !!clueConfig.config?.c12nDef && (isEmpty(REPLICATORS) || selectorsSynced)
     }),
     [
       bulkEnrich,
@@ -627,7 +646,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
       defaultClassification,
       isReady,
       database,
-      clueConfig.config?.c12nDef
+      clueConfig.config?.c12nDef,
+      selectorsSynced
     ]
   );
 
