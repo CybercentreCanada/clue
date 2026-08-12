@@ -119,7 +119,7 @@ jobs:
       - name: Spin up test dependencies
         uses: hoverkraft-tech/compose-action@v2.2.0
         with:
-          compose-file: "dev/docker-compose.yml"
+          compose-file: "api/dev/docker-compose.yml"
           up-flags: "--build"
 
       - name: Install Poetry
