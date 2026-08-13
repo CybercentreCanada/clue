@@ -8,7 +8,7 @@ import json
 import threading
 import time
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pymongo import MongoClient
@@ -498,3 +498,50 @@ class TestExistingResults:
         ):
             result = mongo_service.existing_results("user1", "selectors", selectors, [])
         assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# invalidate_existing
+# ---------------------------------------------------------------------------
+
+
+class TestInvalidateExisting:
+    def test_skips_invalidation_when_replication_disabled(self):
+        with (
+            patch.object(config.ui, "replication", False),
+            patch("clue.services.mongo_service._get_collection") as get_collection,
+        ):
+            mongo_service.invalidate_existing("user1", "selectors", [], [])
+
+        get_collection.assert_not_called()
+
+    def test_marks_matching_cached_documents_as_deleted(self):
+        collection = MagicMock()
+        selectors = [Selector(type="ipv4", value="1.2.3.4")]
+        sources = [ExternalSource(name="plugin_a", url="http://plugin_a/")]
+
+        with (
+            patch.object(config.ui, "replication", True),
+            patch("clue.services.mongo_service._get_collection", return_value=collection),
+        ):
+            mongo_service.invalidate_existing("user1", "selectors", selectors, sources)
+
+        collection.update_many.assert_called_once()
+        query, update = collection.update_many.call_args.args
+        assert query == {
+            "type": {"$in": ["ipv4"]},
+            "value": {"$in": ["1.2.3.4"]},
+            "source": {"$in": ["plugin_a"]},
+            "_deleted": False,
+        }
+        assert update["$set"]["_deleted"] is True
+        assert update["$set"]["updated_at"]
+
+    def test_silently_ignores_mongo_runtime_errors(self):
+        selectors = [Selector(type="ipv4", value="1.2.3.4")]
+
+        with (
+            patch.object(config.ui, "replication", True),
+            patch("clue.services.mongo_service._get_collection", side_effect=ClueRuntimeError("no db")),
+        ):
+            mongo_service.invalidate_existing("user1", "selectors", selectors, [])
