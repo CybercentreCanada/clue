@@ -391,7 +391,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     ]
   );
 
-  const enrichQueued: () => void = useMemo(
+  const enrichQueued = useMemo(
     () =>
       debounce(
         async () => {
@@ -516,6 +516,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
     return () => {
       try {
         observer?.unsubscribe();
+        enrichQueued.cancel();
       } catch (e) {
         console.warn(e);
       }
