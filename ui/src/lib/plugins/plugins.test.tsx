@@ -365,8 +365,9 @@ describe('ClueUIPlugin framework', () => {
         expect(clueUIPluginStore.plugins.filter(plugin => plugin === 'MarkdownPlugin')).toHaveLength(1);
       });
 
-      expect(console.log).toHaveBeenCalledWith('Installing plugin MarkdownPlugin@9.9.9 by Custom Markdown Author');
-      expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('Installing plugin MarkdownPlugin@1.0.0'));
+      expect(clueUIPluginStore.pluginStore.getInstalledPluginNameWithVersion('MarkdownPlugin')).toBe(
+        'MarkdownPlugin@9.9.9'
+      );
     });
   });
 });
