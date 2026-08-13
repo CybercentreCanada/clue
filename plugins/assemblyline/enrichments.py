@@ -10,9 +10,8 @@ from assemblyline_client.v4_client.client import Client
 from clue.common.exceptions import InvalidDataException, NotFoundException
 from clue.models.network import Annotation, QueryEntry
 from clue.plugin.utils import Params
+from consts import AL_URL_BASE, DEPLOYMENT_NAME, ENABLED_SOURCES, ICON, MAX_LIMIT
 from pydantic_core import Url
-
-from .consts import AL_URL_BASE, DEPLOYMENT_NAME, ENABLED_SOURCES, ICON, MAX_LIMIT
 
 
 class EnrichmentProcessor:

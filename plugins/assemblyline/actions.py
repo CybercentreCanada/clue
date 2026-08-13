@@ -1,10 +1,9 @@
 from assemblyline_client.common.classification import Classification
 from assemblyline_client.v4_client.client import Client
 from clue.models.actions import ExecuteRequest
+from consts import AL_URL_BASE
 from pydantic import Field
 from pydantic_core import Url
-
-from .consts import AL_URL_BASE
 
 
 class SubmitUrl(ExecuteRequest):
