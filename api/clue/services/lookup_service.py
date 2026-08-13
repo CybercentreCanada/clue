@@ -705,9 +705,11 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         bulk_result.setdefault(entry.type, {})
         bulk_result[entry.type].setdefault(entry.value, {})
 
+    if not selected_sources:
+        raise InvalidDataException("You must provide at least one source.")
+
     pool_size = min(len(data) * len(selected_sources), int(os.environ.get("EXECUTOR_THREADS", 32)))
     thread_pool = Pool(pool_size)
-
     existing_results: dict[str, list[dict[str, str]]] = {}
     if config.ui.replication:
         if query_params.no_cache:
