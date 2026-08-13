@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Annotation } from 'lib/types/lookup';
+import { forwardRef } from 'react';
 import { createContext } from 'use-context-selector';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AssessmentIcon from './Assessment';
@@ -24,8 +25,10 @@ vi.mock('lib/hooks/CluePopupContext', () => ({
 
 // Render Icon as a plain <span data-testid="…"> so we can assert which icon is shown
 vi.mock('@iconify/react', () => ({
-  Icon: ({ icon, color, ...rest }: { icon: string; color?: string; [key: string]: unknown }) => (
-    <span id="assessment-icon" data-icon={icon} data-color={color ?? ''} {...rest} />
+  Icon: forwardRef<HTMLSpanElement, { icon: string; color?: string; [key: string]: unknown }>(
+    ({ icon, color, ...rest }, ref) => (
+      <span ref={ref} id="assessment-icon" data-icon={icon} data-color={color ?? ''} {...rest} />
+    )
   )
 }));
 

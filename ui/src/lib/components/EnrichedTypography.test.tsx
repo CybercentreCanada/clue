@@ -51,7 +51,7 @@ describe('Rendering', () => {
 
     render(<EnrichedTypography value={value} type={type} />);
 
-    verifyText(`enriched-${type}-value`, value);
+    await waitFor(() => verifyText(`enriched-${type}-value`, value));
   });
 
   it('should, with children, display the child and not the value', async () => {
@@ -64,8 +64,10 @@ describe('Rendering', () => {
       </EnrichedTypography>
     );
 
-    verifyExistence(`enriched-${type}-value`, false);
-    verifyText(`hello-world`, 'hello world');
+    await waitFor(() => {
+      verifyExistence(`enriched-${type}-value`, false);
+      verifyText(`hello-world`, 'hello world');
+    });
   });
 });
 

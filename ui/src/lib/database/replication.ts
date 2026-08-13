@@ -56,8 +56,10 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
         return;
       }
 
-      // eslint-disable-next-line no-console
-      console.log(`Retrying live connection in ${timeout}ms...`);
+      if (import.meta.env.MODE !== 'test') {
+        // eslint-disable-next-line no-console
+        console.log(`Retrying live connection in ${timeout}ms...`);
+      }
 
       setTimeout(() => {
         // Exponential increase
