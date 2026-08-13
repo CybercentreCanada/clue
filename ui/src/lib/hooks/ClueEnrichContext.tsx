@@ -104,7 +104,11 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   // Tracks `database.selectors.synced`, which is mutated outside of React state by the
   // replication pull handler. Without this, `ready` below would never re-evaluate once
   // replication catches up, since mutating that flag in place doesn't trigger a re-render.
-  const [selectorsSynced, setSelectorsSynced] = useState(false);
+  const [selectorsSynced, setSelectorsSynced] = useState(() => !!database?.selectors?.synced);
+
+  useEffect(() => {
+    setSelectorsSynced(!!database?.selectors?.synced);
+  }, [database]);
 
   useEffect(() => {
     if (isReady) {
