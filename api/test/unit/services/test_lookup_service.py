@@ -20,17 +20,26 @@ def source():
 
 
 @pytest.fixture
+def excluded_source():
+    return ExternalSource(name="excluded", url="http://excluded/", include_default=True)
+
+
+@pytest.fixture
 def user():
     return {"uname": "test-user", "classification": "TLP:CLEAR"}
 
 
-def test_bulk_enrich_invalidates_cached_results_when_no_cache(app, source, user):
+def test_bulk_enrich_invalidates_only_requested_cached_results_when_no_cache(app, source, excluded_source, user):
     selector = Selector(type="ipv4", value="127.0.0.1")
 
     with (
-        app.test_request_context("/?no_cache=true", headers={"Authorization": "Bearer access-token"}),
+        app.test_request_context(
+            "/?sources=test,-excluded&no_cache=true", headers={"Authorization": "Bearer access-token"}
+        ),
         patch.object(config.ui, "replication", True),
-        patch("clue.services.lookup_service.get_sources", return_value=[source]),
+        patch("clue.services.lookup_service.get_sources", return_value=[source, excluded_source]),
+        patch("clue.services.lookup_service.auth_service.check_obo", return_value=(None, None)),
+        patch("clue.services.lookup_service.bulk_query_external", return_value={}),
         patch("clue.services.lookup_service.mongo_service.invalidate_existing") as invalidate_existing,
         patch("clue.services.lookup_service.mongo_service.existing_results") as existing_results,
     ):
@@ -40,13 +49,15 @@ def test_bulk_enrich_invalidates_cached_results_when_no_cache(app, source, user)
     existing_results.assert_not_called()
 
 
-def test_bulk_enrich_reuses_cached_results_when_cache_is_enabled(app, source, user):
+def test_bulk_enrich_reuses_only_requested_cached_results_when_cache_is_enabled(app, source, excluded_source, user):
     selector = Selector(type="ipv4", value="127.0.0.1")
 
     with (
-        app.test_request_context("/", headers={"Authorization": "Bearer access-token"}),
+        app.test_request_context("/?sources=test,-excluded", headers={"Authorization": "Bearer access-token"}),
         patch.object(config.ui, "replication", True),
-        patch("clue.services.lookup_service.get_sources", return_value=[source]),
+        patch("clue.services.lookup_service.get_sources", return_value=[source, excluded_source]),
+        patch("clue.services.lookup_service.auth_service.check_obo", return_value=(None, None)),
+        patch("clue.services.lookup_service.bulk_query_external", return_value={}),
         patch("clue.services.lookup_service.mongo_service.invalidate_existing") as invalidate_existing,
         patch("clue.services.lookup_service.mongo_service.existing_results", return_value={}) as existing_results,
     ):

@@ -329,9 +329,8 @@ def existing_results(
         return {}
 
     try:
-        types = [selector.type for selector in selectors]
-        values = [selector.value for selector in selectors]
         sources = [source.name for source in external_sources]
+        selector_pairs = [{"type": selector.type, "value": selector.value} for selector in selectors]
 
         raw_result = (
             _get_collection(user, collection)
@@ -339,13 +338,14 @@ def existing_results(
                 [
                     {
                         "$match": {
-                            "type": {"$in": types},
-                            "value": {"$in": values},
                             "source": {"$in": sources},
                             "_deleted": False,
                             "error": None,
-                            # only records with no expiry, or one that hasn't passed yet, count as "existing"
-                            "$or": [{"expiry": None}, {"expiry": {"$gt": datetime.now(timezone.utc)}}],
+                            "$and": [
+                                {"$or": selector_pairs},
+                                # Only records with no expiry, or one that hasn't passed yet, count as "existing".
+                                {"$or": [{"expiry": None}, {"expiry": {"$gt": datetime.now(timezone.utc)}}]},
+                            ],
                         }
                     },
                     {"$group": {"_id": "$source", "records": {"$push": {"type": "$type", "value": "$value"}}}},
@@ -378,16 +378,14 @@ def invalidate_existing(
         return
 
     try:
-        types = [selector.type for selector in selectors]
-        values = [selector.value for selector in selectors]
         sources = [source.name for source in external_sources]
+        selector_pairs = [{"type": selector.type, "value": selector.value} for selector in selectors]
 
         _get_collection(user, collection).update_many(
             {
-                "type": {"$in": types},
-                "value": {"$in": values},
                 "source": {"$in": sources},
                 "_deleted": False,
+                "$or": selector_pairs,
             },
             {"$set": {"_deleted": True, "updated_at": generate_updated_at()}},
         )
