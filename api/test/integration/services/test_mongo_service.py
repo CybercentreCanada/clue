@@ -8,7 +8,7 @@ import json
 import threading
 import time
 import uuid
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pymongo import MongoClient
@@ -466,6 +466,54 @@ class TestExistingResults:
         assert "plugin_a" in result
         assert any(r["value"] == "1.2.3.4" for r in result["plugin_a"])
 
+    def test_matches_exact_selector_pairs_and_unexpired_records(self):
+        collection = MagicMock()
+        selectors = [Selector(type="ipv4", value="1.2.3.4"), Selector(type="domain", value="example.com")]
+        sources = [ExternalSource(name="plugin_a", url="http://plugin_a/")]
+
+        with (
+            patch.object(config.ui, "replication", True),
+            patch("clue.services.mongo_service._get_collection", return_value=collection),
+        ):
+            mongo_service.existing_results("user1", "selectors", selectors, sources)
+
+        match = collection.aggregate.call_args.args[0][0]["$match"]
+        assert match["$and"][0] == {
+            "$or": [
+                {"type": "ipv4", "value": "1.2.3.4"},
+                {"type": "domain", "value": "example.com"},
+            ]
+        }
+        assert {"expiry": None} in match["$and"][1]["$or"]
+        assert "expiry" in match["$and"][1]["$or"][1]
+
+    def test_excludes_cross_product_type_value_pairs(self, test_user, live_redis):
+        matching_ipv4 = _make_doc(id="matching-ipv4", source="plugin_a", type="ipv4", value="1.2.3.4")
+        matching_domain = _make_doc(id="matching-domain", source="plugin_a", type="domain", value="example.com")
+        cross_product = _make_doc(id="cross-product", source="plugin_a", type="ipv4", value="example.com")
+        mongo_service.push(
+            test_user,
+            "selectors",
+            [
+                _make_row(new_doc=matching_ipv4),
+                _make_row(new_doc=matching_domain),
+                _make_row(new_doc=cross_product),
+            ],
+        )
+
+        source = ExternalSource(name="plugin_a", url="http://plugin_a/")
+        selectors = [Selector(type="ipv4", value="1.2.3.4"), Selector(type="domain", value="example.com")]
+
+        with patch.object(config.ui, "replication", True):
+            result = mongo_service.existing_results(test_user, "selectors", selectors, [source])
+
+        assert result == {
+            "plugin_a": [
+                {"type": "ipv4", "value": "1.2.3.4"},
+                {"type": "domain", "value": "example.com"},
+            ]
+        }
+
     def test_excludes_deleted_documents(self, test_user, live_redis):
         doc = _make_doc(id="del-er-doc", source="plugin_b", deleted=True)
         mongo_service.push(test_user, "selectors", [_make_row(new_doc=doc)])
@@ -498,3 +546,52 @@ class TestExistingResults:
         ):
             result = mongo_service.existing_results("user1", "selectors", selectors, [])
         assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# invalidate_existing
+# ---------------------------------------------------------------------------
+
+
+class TestInvalidateExisting:
+    def test_skips_invalidation_when_replication_disabled(self):
+        with (
+            patch.object(config.ui, "replication", False),
+            patch("clue.services.mongo_service._get_collection") as get_collection,
+        ):
+            mongo_service.invalidate_existing("user1", "selectors", [], [])
+
+        get_collection.assert_not_called()
+
+    def test_marks_matching_cached_documents_as_deleted(self):
+        collection = MagicMock()
+        selectors = [Selector(type="ipv4", value="1.2.3.4"), Selector(type="domain", value="example.com")]
+        sources = [ExternalSource(name="plugin_a", url="http://plugin_a/")]
+
+        with (
+            patch.object(config.ui, "replication", True),
+            patch("clue.services.mongo_service._get_collection", return_value=collection),
+        ):
+            mongo_service.invalidate_existing("user1", "selectors", selectors, sources)
+
+        collection.update_many.assert_called_once()
+        query, update = collection.update_many.call_args.args
+        assert query == {
+            "source": {"$in": ["plugin_a"]},
+            "_deleted": False,
+            "$or": [
+                {"type": "ipv4", "value": "1.2.3.4"},
+                {"type": "domain", "value": "example.com"},
+            ],
+        }
+        assert update["$set"]["_deleted"] is True
+        assert update["$set"]["updated_at"]
+
+    def test_silently_ignores_mongo_runtime_errors(self):
+        selectors = [Selector(type="ipv4", value="1.2.3.4")]
+
+        with (
+            patch.object(config.ui, "replication", True),
+            patch("clue.services.mongo_service._get_collection", side_effect=ClueRuntimeError("no db")),
+        ):
+            mongo_service.invalidate_existing("user1", "selectors", selectors, [])

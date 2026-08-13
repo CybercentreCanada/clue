@@ -4,7 +4,7 @@ load_dotenv()
 
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from flask import Response
@@ -19,7 +19,7 @@ from clue.config import config, get_redis
 from clue.models.config import ExternalSource
 from clue.models.schema import get_bson_schema
 from clue.models.selector import Selector
-from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocument
+from clue.models.sync import ChangeRow, Checkpoint, PublishEvent, SelectorDocument, generate_updated_at
 
 logger = get_logger(__file__)
 
@@ -329,9 +329,8 @@ def existing_results(
         return {}
 
     try:
-        types = [selector.type for selector in selectors]
-        values = [selector.value for selector in selectors]
         sources = [source.name for source in external_sources]
+        selector_pairs = [{"type": selector.type, "value": selector.value} for selector in selectors]
 
         raw_result = (
             _get_collection(user, collection)
@@ -339,11 +338,14 @@ def existing_results(
                 [
                     {
                         "$match": {
-                            "type": {"$in": types},
-                            "value": {"$in": values},
                             "source": {"$in": sources},
                             "_deleted": False,
                             "error": None,
+                            "$and": [
+                                {"$or": selector_pairs},
+                                # Only records with no expiry, or one that hasn't passed yet, count as "existing".
+                                {"$or": [{"expiry": None}, {"expiry": {"$gt": datetime.now(timezone.utc)}}]},
+                            ],
                         }
                     },
                     {"$group": {"_id": "$source", "records": {"$push": {"type": "$type", "value": "$value"}}}},
@@ -356,3 +358,37 @@ def existing_results(
     except ClueRuntimeError:
         # ClueRuntimeError if mongodb isn't functional - we'll silently fail so enrichment can continue
         return {}
+
+
+def invalidate_existing(
+    user: str, collection: str, selectors: list[Selector], external_sources: list[ExternalSource]
+) -> None:
+    """Mark cached documents matching the given selectors/sources as deleted.
+
+    Used when a caller requests `no_cache`, so the stale cached results don't stick around
+    (as duplicates) once the freshly queried results are replicated back into the collection.
+
+    Args:
+        user (str): The username to use as the collection name.
+        collection (str): The collection name within the user's database.
+        selectors (list[Selector]): List of selectors (type/value pairs) to invalidate.
+        external_sources (list[ExternalSource]): List of external sources to filter by.
+    """
+    if not config.ui.replication:
+        return
+
+    try:
+        sources = [source.name for source in external_sources]
+        selector_pairs = [{"type": selector.type, "value": selector.value} for selector in selectors]
+
+        _get_collection(user, collection).update_many(
+            {
+                "source": {"$in": sources},
+                "_deleted": False,
+                "$or": selector_pairs,
+            },
+            {"$set": {"_deleted": True, "updated_at": generate_updated_at()}},
+        )
+    except ClueRuntimeError:
+        # ClueRuntimeError if mongodb isn't functional - we'll silently fail so enrichment can continue
+        pass

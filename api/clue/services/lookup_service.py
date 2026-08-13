@@ -678,6 +678,13 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
     query_sources = query_params.query_sources
     excluded_sources = query_params.excluded_sources
     available_sources = get_sources(user)
+    selected_sources = [
+        source
+        for source in available_sources
+        if (not query_sources or source.name in query_sources)
+        and source.name not in excluded_sources
+        and (query_sources or source.include_default)
+    ]
 
     logger.debug(
         f"Beginning enrichment for {len(data)} selectors on sources "
@@ -698,12 +705,20 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         bulk_result.setdefault(entry.type, {})
         bulk_result[entry.type].setdefault(entry.value, {})
 
-    pool_size = min(len(data) * len(query_sources or available_sources), int(os.environ.get("EXECUTOR_THREADS", 32)))
-    thread_pool = Pool(pool_size)
+    if not selected_sources:
+        raise InvalidDataException("You must provide at least one source.")
 
+    pool_size = min(len(data) * len(selected_sources), int(os.environ.get("EXECUTOR_THREADS", 32)))
+    thread_pool = Pool(pool_size)
     existing_results: dict[str, list[dict[str, str]]] = {}
     if config.ui.replication:
-        existing_results = mongo_service.existing_results(user["uname"], "selectors", data, available_sources)
+        if query_params.no_cache:
+            # no_cache bypasses the mongo cache check entirely (forcing every source to be re-queried) and
+            # invalidates whatever was previously cached so the fresh results replace it, rather than piling
+            # up as duplicates alongside it.
+            mongo_service.invalidate_existing(user["uname"], "selectors", data, selected_sources)
+        else:
+            existing_results = mongo_service.existing_results(user["uname"], "selectors", data, selected_sources)
 
     sources_per_entry: dict[tuple[str, str], tuple[list[str], list[str]]] = {}
     for entry in data:
@@ -723,14 +738,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                 )
 
     greenlets: list[tuple[list[Selector], ExternalSource, Greenlet[Any, dict[str, dict[str, QueryResult]]]]] = []
-    for source in available_sources:
-        if query_sources and source.name not in query_sources:
-            continue
-        if excluded_sources and source.name in excluded_sources:
-            continue
-        if not query_sources and not source.include_default:
-            continue
-
+    for source in selected_sources:
         obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
 
         if error:
