@@ -10,16 +10,15 @@ This plugin enriches selectors based on their presence in Assemblyline alerts.
 import os
 from typing import TYPE_CHECKING, cast
 
+from actions import SubmitUrl, submit_url
+from auth import get_assemblyline_client
 from clue.common.exceptions import ClueRuntimeError
 from clue.common.logging import get_logger
 from clue.models.actions import Action, ActionResult, ExecuteRequest
 from clue.plugin import CluePlugin
 from clue.plugin.utils import Params
-
-from .actions import SubmitUrl, submit_url
-from .auth import get_assemblyline_client
-from .consts import ACTIONS_ENABLED, CLASSIFICATION
-from .enrichments import EnrichmentProcessor
+from consts import ACTIONS_ENABLED, CLASSIFICATION
+from enrichments import EnrichmentProcessor
 
 if TYPE_CHECKING:
     pass

@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING
 import assemblyline_client
 from clue.common.exceptions import ClueRuntimeError
 from clue.common.logging import get_logger
+from consts import AL_API_KEY, AL_TOKEN_PROVIDER, AL_URL_BASE, AL_USER, VERIFY
 from flask import request
 from packaging.version import parse
-
-from .consts import AL_API_KEY, AL_TOKEN_PROVIDER, AL_URL_BASE, AL_USER, VERIFY
 
 if TYPE_CHECKING:
     pass
