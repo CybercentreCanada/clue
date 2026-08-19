@@ -6,7 +6,7 @@ Status: Stable
 
 This plugin enriches selectors based on their presence in Assemblyline alerts.
 
-## Authenication
+## Authentication
 
 This plugin supports two methods of authenticating with Assemblyline:
 - OAuth2: This takes a token from the Clue API and uses it to authenticate with Assemblyline. This is the recommended method for production use.
