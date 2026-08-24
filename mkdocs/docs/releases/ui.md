@@ -1,5 +1,13 @@
 # Clue UI Release Notes
 
+## `1.4.0`
+
+- **Standalone UI Authentication** *(bugfix)*: Propagated the stored application token to database replication, enrichment requests, and UI plugins so standalone deployments authenticate correctly.
+- **Application Links** *(bugfix)*: Fixed links in annotation detail popovers so they open normally.
+- **Replication Readiness** *(bugfix)*: Improved replication lifecycle handling and readiness tracking so the UI becomes ready reliably after selector synchronization.
+- **Synchronized Selector Model** *(improvement)*: Added selector expiry support to the local database schema to keep the UI model aligned with the API.
+- **Enrichment Cleanup** *(bugfix)*: Pending enrichment work is now cancelled during teardown to prevent stale queued operations.
+
 ## `1.3.0`
 
 - **Clue UI Plugins** *(new feature)*: Added support for UI plugins, including a route for testing plugin integrations ([#73](https://github.com/CybercentreCanada/clue/pull/73), [#79](https://github.com/CybercentreCanada/clue/pull/79)).

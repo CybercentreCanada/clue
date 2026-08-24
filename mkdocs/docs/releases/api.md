@@ -1,5 +1,13 @@
 # Clue API Release Notes
 
+## `v1.6.0`
+
+- **Source Exclusions for Enrichment** *(new feature)*: Enrichment requests can now exclude configured sources, with exclusions taking precedence over inclusions and support for per-selector source filters ([#81](https://github.com/CybercentreCanada/clue/pull/81)).
+- **Fetcher Classification Validation** *(bugfix)*: Validated fetcher availability, request bodies, and classification access before sending selector data to external fetchers ([#85](https://github.com/CybercentreCanada/clue/pull/85)).
+- **Replication Cache Improvements** *(bugfix)*: Improved replicated-result matching and expiry handling, and ensured `no_cache` enrichment invalidates stale replicated results before storing fresh ones ([#89](https://github.com/CybercentreCanada/clue/pull/89)).
+- **MongoDB Authentication Source** *(improvement)*: Added configuration for selecting the authentication source when connecting to MongoDB.
+- **Synchronized Replication Models** *(improvement)*: Updated synchronization models to support selector expiry data consistently between the API and UI.
+
 ## `v1.5.3`
 
 - **Clue Plugin Dependency Improvements** *(bugfix)*: Fixed missing dependendencies in the clue plugin library.
