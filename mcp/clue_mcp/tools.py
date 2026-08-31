@@ -1,55 +1,40 @@
-import re
 from logging import getLogger
+from pathlib import PurePosixPath
 from typing import Any
+from urllib.parse import quote
 
-import httpx
 from fastmcp.server.dependencies import get_access_token, get_http_request
 from mcp.server.auth.provider import AccessToken
 from pydantic import BaseModel, Field
 
 from clue_mcp.api import ClueApiClient
-from clue_mcp.config import CLUE_UI, ICONIFY
-
-# Safety limits to avoid oversized backend requests.
-MAXIMUM_TICKET: int = 200
-MAXIMUM_OFFSET: int = 10000
-# Reject ASCII control characters and path separators in path-bound
-# identifiers such as hit_id.
-CONTROL_OR_PATH_SEP_PATTERN = re.compile(r"[\x00-\x1F\x7F/\\]")
-
-# Dossier update allowed keys
-PERMITTED_KEYS = {
-    "title",
-    "query",
-    "leads",
-    "pivots",
-    "type",
-    "owner",
-}
-# supported languages
-INTENDED_LANGUAGE: set = {"en", "fr"}
 
 logger = getLogger(__name__)
 
 
-class WhoAmIResponse(BaseModel):
-    username: str = Field(description="Unique login name used to identify the current user in Clue.")
-    email: str = Field(description="Primary email address associated with the user account.")
-    groups: list[str] = Field(
-        default_factory=list,
-        description="Security or organizational groups the user belongs to.",
-    )
-    roles: list[str] = Field(
-        default_factory=list,
-        description="Application roles granted to the user, such as admin or user.",
-    )
+class Selector(BaseModel):
+    """Typed value sent to a Clue action, fetcher, or enrichment lookup."""
+
+    type: str = Field(description="Clue data type, such as ipv4, domain, sha256, or telemetry.")
+    value: str = Field(description="Value to process. Telemetry values must contain a JSON object string.")
+    classification: str | None = Field(default=None, description="Classification assigned to this value.")
+    sources: list[str] | None = Field(default=None, description="Sources to include or exclude for enrichment.")
 
 
-# Structured response envelope returned by ``lucene_query``.
-class ClueResponse(BaseModel):
-    rows: int = Field(description="Number of rows returned in the search results.")
-    total: int = Field(description="Total number of hits matching the search criteria.")
-    hits: list[dict[str, Any]] = Field(default_factory=list, description="List of hits matching the search criteria.")
+class EnrichmentOptions(BaseModel):
+    """Optional query parameters supported by Clue enrichment endpoints."""
+
+    classification: str | None = Field(default=None, description="Maximum classification to return.")
+    sources: list[str] | None = Field(
+        default=None,
+        description="Source IDs to include; prefix an ID with '-' to exclude it.",
+    )
+    max_timeout: float | None = Field(default=None, gt=0, description="Maximum execution time in seconds.")
+    limit: int | None = Field(default=None, ge=1, description="Maximum results returned per source.")
+    no_annotation: bool | None = Field(default=None, description="Omit annotations from results.")
+    no_cache: bool | None = Field(default=None, description="Bypass cached plugin results.")
+    include_raw: bool | None = Field(default=None, description="Include raw plugin data.")
+    exclude_unset: bool | None = Field(default=None, description="Omit values not set by a plugin.")
 
 
 def register_tools(mcp, api_client: ClueApiClient):
@@ -59,12 +44,27 @@ def register_tools(mcp, api_client: ClueApiClient):
         mcp: FastMCP server instance used to register tool handlers.
         api_client: Shared API client used by tools to call the Clue backend.
     """
-    # Cache searchable fields for this process to reduce mapping calls.
-    cached_hit_fields: set[str] | None = None
+    def _route_segment(value: str, label: str) -> str:
+        """Validate and encode one API route segment."""
+        if not value or any(character in value for character in "/\\") or any(ord(character) < 32 for character in value):
+            raise ValueError(f"{label} must be a non-empty route segment")
+        return quote(value, safe="")
 
-    def _contains_escape_characters(value: str) -> bool:
-        """Return True when value contains control chars or path separators."""
-        return bool(CONTROL_OR_PATH_SEP_PATTERN.search(value))
+    def _documentation_path(filename: str) -> str:
+        """Validate and encode a relative documentation path."""
+        path = PurePosixPath(filename)
+        if not filename or path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts) or "\\" in filename:
+            raise ValueError("filename must be a non-empty relative path without traversal segments")
+        return "/".join(quote(part, safe="") for part in path.parts)
+
+    def _enrichment_params(options: EnrichmentOptions | None) -> dict[str, Any] | None:
+        """Convert MCP enrichment options to Clue query parameters."""
+        if options is None:
+            return None
+        params = options.model_dump(exclude_none=True)
+        if sources := params.get("sources"):
+            params["sources"] = "|".join(sources)
+        return params
 
     def _proper_access_token() -> AccessToken:
         """Return the current request access token or fail consistently."""
@@ -154,15 +154,25 @@ def register_tools(mcp, api_client: ClueApiClient):
         )
 
     @mcp.tool(name="execute_action")
-    async def execute_action(plugin_id:str, action_id:str, task_id:str, selectors:list[dict]) -> dict:
-        """Execute an external-service action for a data value.
+    async def execute_action(
+        plugin_id: str,
+        action_id: str,
+        selectors: list[Selector] | None = None,
+        selector: Selector | None = None,
+        context: dict[str, Any] | None = None,
+        parameters: dict[str, Any] | None = None,
+        max_timeout: float | None = None,
+    ) -> dict[str, Any]:
+        """Execute an external-service action for one or more values.
 
         Args:
             plugin_id: ID of the plugin that provides the action.
             action_id: ID of the action to execute.
-            task_id: ID used to identify the action task.
-            type: Type of data supplied to the action, such as ``ip``.
-            value: Data value on which to execute the action.
+            selectors: Values supplied to an action that accepts multiple inputs.
+            selector: Value supplied to an action that accepts one input.
+            context: Optional execution context accepted by the action.
+            parameters: Additional top-level fields required by the action's parameter schema.
+            max_timeout: Optional backend request timeout in seconds.
 
         Returns:
             dict: The action result, including its outcome, output format,
@@ -172,21 +182,40 @@ def register_tools(mcp, api_client: ClueApiClient):
             ValueError: If an access token is not available.
             httpx.HTTPError: If the Clue API request fails.
         """
+        body = dict(parameters or {})
+        reserved_fields = {"selector", "selectors", "context"} & body.keys()
+        if reserved_fields:
+            fields = ", ".join(sorted(reserved_fields))
+            raise ValueError(f"parameters must not override reserved fields: {fields}")
+        if selectors is not None:
+            body["selectors"] = [item.model_dump(exclude_none=True) for item in selectors]
+        if selector is not None:
+            body["selector"] = selector.model_dump(exclude_none=True)
+        if context is not None:
+            body["context"] = context
+
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path= f'actions/{plugin_id}/{action_id}/status/{task_id}',
-            method= "POST",
-            body={"selectors":selectors} if selectors is not None else None
+            path=f"actions/execute/{_route_segment(plugin_id, 'plugin_id')}/{_route_segment(action_id, 'action_id')}",
+            method="POST",
+            body=body,
+            params={"max_timeout": max_timeout} if max_timeout is not None else None,
         )
 
     @mcp.tool(name="get_action_status")
-    async def get_action_status(plugin_id:str, action_id:str, task_id:str) -> dict:
+    async def get_action_status(
+        plugin_id: str,
+        action_id: str,
+        task_id: str,
+        max_timeout: float | None = None,
+    ) -> dict[str, Any]:
         """Return the status or result of a running action.
 
         Args:
             plugin_id: ID of the plugin that provides the action.
             action_id: ID of the action whose status should be retrieved.
             task_id: ID of the specific action task to retrieve.
+            max_timeout: Optional backend request timeout in seconds.
 
         Returns:
             dict: The action result, including an outcome of ``success``,
@@ -199,9 +228,13 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path = f"actions/{plugin_id}/{action_id}/status/{task_id}",
+            path=(
+                f"actions/{_route_segment(plugin_id, 'plugin_id')}/{_route_segment(action_id, 'action_id')}"
+                f"/status/{_route_segment(task_id, 'task_id')}"
+            ),
             method="GET",
-            body=None
+            body=None,
+            params={"max_timeout": max_timeout} if max_timeout is not None else None,
         )
 
     # region fetchers
@@ -228,14 +261,19 @@ def register_tools(mcp, api_client: ClueApiClient):
         )
 
     @mcp.tool(name="run_fetcher")
-    async def run_fetcher(plugin_id:str, fetcher_id:str,data_type:str,data_value:str)->dict:
+    async def run_fetcher(
+        plugin_id: str,
+        fetcher_id: str,
+        selector: Selector,
+        max_timeout: float | None = None,
+    ) -> dict[str, Any]:
         """Run an external-service fetcher for a typed data value.
 
         Args:
             plugin_id: ID of the plugin that provides the fetcher.
             fetcher_id: ID of the fetcher to run.
-            data_type: Type of data supplied to the fetcher, such as ``ip``.
-            data_value: Data value on which to run the fetcher.
+            selector: Typed value on which to run the fetcher.
+            max_timeout: Optional backend request timeout in seconds.
 
         Returns:
             dict: The fetcher result, including its outcome and, depending on
@@ -248,22 +286,26 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path=f"fetchers/{plugin_id}/{fetcher_id}",
+            path=f"fetchers/{_route_segment(plugin_id, 'plugin_id')}/{_route_segment(fetcher_id, 'fetcher_id')}",
             method="POST",
-            body={
-                "type":data_type,
-                "value":data_value
-            }
+            body=selector.model_dump(exclude_none=True),
+            params={"max_timeout": max_timeout} if max_timeout is not None else None,
         )
 
     @mcp.tool(name="get_fetcher_status")
-    async def get_fetcher_status(plugin_id:str, fetcher_id:str, task_id:str)->dict:
+    async def get_fetcher_status(
+        plugin_id: str,
+        fetcher_id: str,
+        task_id: str,
+        max_timeout: float | None = None,
+    ) -> dict[str, Any]:
         """Return the status or result of a running fetcher.
 
         Args:
             plugin_id: ID of the plugin that provides the fetcher.
             fetcher_id: ID of the fetcher whose status should be retrieved.
             task_id: ID of the specific fetcher task to retrieve.
+            max_timeout: Optional backend request timeout in seconds.
 
         Returns:
             dict: The fetcher result, including an outcome of ``success``,
@@ -276,8 +318,12 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path=f"fetchers/{plugin_id}/{fetcher_id}/status/{task_id}",
+            path=(
+                f"fetchers/{_route_segment(plugin_id, 'plugin_id')}/{_route_segment(fetcher_id, 'fetcher_id')}"
+                f"/status/{_route_segment(task_id, 'task_id')}"
+            ),
             method="GET",
+            params={"max_timeout": max_timeout} if max_timeout is not None else None,
         )
     # region lookup
 
@@ -311,22 +357,21 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path='lookup/types_detection',
-            method="GET"
+            path="lookup/types_detection/",
+            method="GET",
         )
 
     @mcp.tool(name="bulk_enrich")
-    async def bulk_enrich(data:list[dict], optional_arguments:dict[str, Any]|None=None) -> dict :
+    async def bulk_enrich(
+        data: list[Selector],
+        options: EnrichmentOptions | None = None,
+    ) -> dict[str, Any]:
         """Enrich multiple typed values through configured external sources.
 
         Args:
             data: Selectors to enrich. Each selector must contain ``type`` and
                 ``value`` and may include ``classification`` and ``sources``.
-            optional_arguments: Optional URL query parameters. Supported keys
-                are ``classification``, ``sources``, ``max_timeout``, ``limit``,
-                ``no_annotation``, ``no_cache``, ``include_raw``, and
-                ``exclude_unset``.
-
+            options: Optional filtering, timeout, cache, and output controls.
         Returns:
             dict: Enrichment results grouped by data type, value, and external
             source.
@@ -339,22 +384,22 @@ def register_tools(mcp, api_client: ClueApiClient):
             user_access_token=_proper_access_token(),
             path="lookup/enrich",
             method="POST",
-            body=data,
-            params=optional_arguments,
+            body=[selector.model_dump(exclude_none=True) for selector in data],
+            params=_enrichment_params(options),
         )
 
     @mcp.tool(name="enrich")
-    async def enrich(type_name:str, value:str, optional_arguments:dict[str, Any]|None=None) -> dict:
+    async def enrich(
+        type_name: str,
+        value: str,
+        options: EnrichmentOptions | None = None,
+    ) -> dict[str, Any]:
         """Enrich one typed value through configured external sources.
 
         Args:
             type_name: Type of value to enrich, such as ``ipv4`` or ``domain``.
-            value: Value to enrich. Values requiring URL encoding must be
-                double URL encoded for the Clue route.
-            optional_arguments: Optional URL query parameters. Supported keys
-                are ``classification``, ``sources``, ``max_timeout``, ``limit``,
-                ``no_annotation``, ``no_cache``, ``include_raw``, and
-                ``exclude_unset``.
+            value: Value to enrich. URL encoding is handled by this tool.
+            options: Optional filtering, timeout, cache, and output controls.
 
         Returns:
             dict: Enrichment results keyed by external source name.
@@ -365,10 +410,57 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path=f"lookup/enrich/{type_name}/{value}/",
+            path=f"lookup/enrich/{_route_segment(type_name, 'type_name')}/{quote(quote(value, safe=''), safe='')}/",
             method="GET",
-            params=optional_arguments,
+            params=_enrichment_params(options),
         )
 
 
+    # region static
 
+    @mcp.tool(name="serve_documentation")
+    async def serve_documentation(documentation_filter: str | None = None) -> dict:
+        """Return available Clue documentation as Markdown.
+
+        Args:
+            documentation_filter: Optional text used to include only documents
+                whose filenames contain the supplied value.
+
+        Returns:
+            dict: Markdown document contents keyed by filename. An empty
+            dictionary is returned when no filenames match the filter.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path="static/docs",
+            method="GET",
+            params={"filter": documentation_filter} if documentation_filter is not None else None,
+        )
+
+    @mcp.tool(name="serve_documentation_file")
+    async def serve_documentation_file(filename: str) -> dict:
+        """Return one Clue documentation file as Markdown.
+
+        Args:
+            filename: Filename or relative documentation path to retrieve,
+                including its extension.
+
+        Returns:
+            dict: A dictionary containing the document text under the
+            ``markdown`` key.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPStatusError: If the file does not exist, its path is
+                invalid, or the Clue API returns another error response.
+            httpx.HTTPError: If the Clue API request otherwise fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path=f"static/docs/{_documentation_path(filename)}",
+            method="GET",
+        )
