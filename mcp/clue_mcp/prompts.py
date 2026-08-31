@@ -4,213 +4,327 @@ logger = logging.getLogger(__name__)
 
 
 def register_prompts(mcp):
-    @mcp.prompt(name="whoami")
-    def whoami_prompt() -> str:
-        """Explain when and how to use the whoami tool."""
-        return """Use whoami to identify the authenticated Clue user.
+    # ------------ action.py ------------
+    # path : "action/"; variable : None
+    @mcp.prompt(name="get_actions")
+    def get_actions_prompt() -> str:
+        return """Return the supported actions of each external service.
 
-Call it when you need to verify the user's:
-- username
-- email
-- group memberships
-- roles
+    Variables:
+    None
 
-Use it before user-scoped searches, permission checks, or authorization troubleshooting.
-After the call, summarize the identity in plain language."""
+    Arguments:
+    None
 
-    @mcp.prompt(name="list_assigned_hits")
-    def list_assigned_hits_prompt() -> str:
-        """Explain when and how to use the list_assigned_hits tool."""
-        return """Use list_assigned_hits to retrieve hits assigned to the authenticated user.
+    Result Example:
+    { # A dictionary of sources with their supported actions.
+        <source_id>.<action_id>: {
+            "id": "",
+            "name": "",
+            "classification": "",
+            "summary": "",
+            "supported_types": "",
+            "params": {
+                <JSON schema>
+            }
+        },
+        ...,
+    }
+    """
+    # action/<plugin_id>/<action_id>/status/<task_id>
+    @mcp.prompt(name="execute_action")
+    def get_execute_action_prompt() -> str:
+        return"""Search other services for additional information related to the provided data.
 
-Call it when the user asks for their queue, assigned tickets, or current workload.
-After the call:
-- report the number of hits returned
-- list each hit ID and available context such as status, analytic, and escalation
-- ask whether the user wants additional filtering with lucene_query"""
+    Variables:
+    plugin_id (str): the ID of the plugin who owns the action to execute
+    action_id (str): the ID of the action to execute
 
-    @mcp.prompt(name="craft_clue_url")
-    def craft_clue_url_prompt() -> str:
-        """Explain how to build a UI link for a Clue record."""
-        return """Use craft_clue_url when a user needs a clickable Clue UI link for a hit or event.
+    Arguments:
+    None
 
-Pass the complete record returned by lucene_query or another Clue tool. The record must contain:
-- __index: hit or event
-- clue.id: the record identifier
+    Data Block:
+    {
+        type: "ip",
+        value: "127.0.0.1",
+        ...
+    }
 
-Return the generated URL without changing the record identifier."""
+    Result Example:
+    {
+        "outcome": "success | failure", # was this execution a success or failure?
+        "format": "link", # What format is the output in?
+        "output": "http://example.com" # The output of the action. Can be any data structure.
+    }
+    """
+    # action/<plugin_id>/<action_id>/status/<task_id>
+    @mcp.prompt(name="get_action_status")
+    def get_action_status_prompt() -> str :
+        return """Get the status or result of a running action.
 
-    @mcp.prompt(name="add_comment_to_hit")
-    def add_comment_to_hit_prompt() -> str:
-        """Explain when and how to use the add_comment_to_hit tool."""
-        return """Use add_comment_to_hit to append an analyst note to one hit.
+    Variables:
+    plugin_id (str): the ID of the plugin who owns the action to execute
+    action_id (str): the ID of the action to execute
+    task_id (str): the ID of the specific task to get the status of
 
-Required arguments:
-- hit_id: the hit UUID
-- comment: the note to append
+    Arguments:
+    None
 
-Use it to document findings, add triage notes, or record investigation actions.
-Before calling, confirm the correct hit_id. After calling, confirm that the comment was added."""
 
-    @mcp.prompt(name="get_field_values")
-    def get_field_values_prompt() -> str:
-        """Explain when and how to use the get_field_values tool."""
-        return """Use get_field_values(field) to retrieve the values present for a Clue hit field and their counts.
+    Result Example:
+    {
+        "outcome": "success | failure | pending", # was this execution a success or failure or is it still pending?
+        "format": "link", # What format is the output in?
+        "output": "http://example.com" # The output of the action. Can be any data structure.
+        "task_id": if the action is still running, what is the task id so that we can fetch the status again
+    }
+    """
 
-Call it before filtering on an enumerated or categorical field, including:
-clue.assignment, clue.escalation, clue.assessment, clue.status, and clue.analytic.
+# ----- fetcher.py -----
+    # fetcher/
+    @mcp.prompt(name="get_fetchers")
+    def get_fetchers_prompt() -> str : 
+        return """Return the supported fetchers of each external service.
 
-Never guess a value's spelling or casing. Use only values returned by this tool.
-After the call, summarize the most common values and use the exact selected value in lucene_query."""
+    Variables:
+    None
 
-    @mcp.prompt(name="get_hit_fields")
-    def get_hit_fields_prompt() -> str:
-        """Explain when and how to use the get_hit_fields tool."""
-        return """Use get_hit_fields to retrieve the authoritative list of fields valid in Clue Lucene queries.
+    Arguments:
+    None
 
-The response includes each field's key, type, list flag, and description.
-Call it when a field may not exist or when you need its exact dot-notation name.
-Reuse returned field keys verbatim in lucene_query. To discover values for a field, call get_field_values(field)."""
+    Result Example:
+    { # A dictionary of sources with their supported fetchers.
+        <source_id>.<fetcher_id>: {
+            "id": "<fetcher_id>",
+            "classification": "",
+            "description": "",
+            "format": ""
+            "supported_types": ["ip", ...]
+        },
+        ...,
+    }
+    """
 
-    @mcp.prompt(name="get_label_set_options")
-    def get_label_set_options_prompt() -> str:
-        """Explain when and how to use the get_label_set_options tool."""
-        return """Use get_label_set_options to retrieve the label categories accepted by add_label_to_hit.
+    # fetcher/<plugin_id>/<fetcher_id>
+    @mcp.prompt("run_fetcher")
+    def run_fetcher_prompt() -> str: 
+        return """Search other services for additional information related to the provided data.
 
-Call it when label_set is unknown, ambiguous, misspelled, or needs validation. Possible categories include generic, victim, threat, and mitigation, but treat the tool response as authoritative.
+    Variables:
+    plugin_id (str): the ID of the plugin who owns the action to execute
+    fetcher_id (str): the ID of the action to execute
 
-Do not invent categories. If the user's value is invalid, choose the closest valid returned option. Then state the label_set you will use and call add_label_to_hit."""
+    Arguments:
+    None
 
-    @mcp.prompt(name="add_label_to_hit")
-    def add_label_to_hit_prompt() -> str:
-        """Explain when and how to use the add_label_to_hit tool."""
-        return """Use add_label_to_hit to add one or more labels to a Clue hit.
+    Data Block:
+    {
+        type: "ip",
+        value: "127.0.0.1",
+        ...
+    }
 
-Required arguments:
-- hit_id: the target hit identifier
-- labels_name: a non-empty list of label values
-- label_set: a valid label category
+    Result Example:
+    {
+        "outcome": "success | failure", # was this execution a success or failure?
+        "format": "link", # What format is the output in?
+        "output": "http://example.com" # The output of the action. Can be any data structure.
+    }
+    """
+    # fetcher/<plugin_id>/<fetcher_id>/status/<task_id>
+    @mcp.prompt("get_fetcher_status")
+    def get_fetcher_status_prompt()->str:
+        return """Get the status or result of a fetcher
 
-Before calling, confirm hit_id. If label_set is uncertain, call get_label_set_options first and use only a returned category. After calling, report the labels returned for that category and mention any corrected label_set."""
+    Variables:
+    plugin_id (str): the ID of the plugin who owns the action to execute
+    fetcher_id (str): the ID of the action to execute
+    task_id (str): the ID of the specific task to get the status of
 
-    @mcp.prompt(name="create_dossier")
-    def create_dossier_prompt() -> str:
-        """Explain when and how to use the create_dossier tool."""
-        return """Use create_dossier to save a Lucene query as a new dossier that applies to a large number of alerts.
+    Arguments:
+    None
 
-Do not use this tool for a single alert. Use create_dossier_for_hit when the target alert list contains exactly one alert.
+    Result Example:
+    {
+        "outcome": "success | failure", # was this execution a success or failure?
+        "format": "link", # What format is the output in?
+        "output": "http://example.com" # The output of the action. Can be any data structure.
+    }
+    """
 
-Required arguments:
-- new_dossier_name: the dossier title
-- query: a valid Lucene query that selects hits
-- dossier_type: global or personal
+    # ---- lookup.py -----
+    # lookup/types/
+    @mcp.prompt("get_types")
+    def get_types_prompt() -> str: 
+        return """Return the supported types of each external service.
 
-Before calling:
-- verify field names with get_hit_fields when uncertain
-- verify enumerated values with get_field_values(field) when uncertain
-- confirm whether the dossier should be global or personal
+    Variables:
+    None
 
-Use this tool to save a search, create a repeatable triage filter, or share a reusable query as a global dossier.
-After the call, confirm creation and report the name, type, and query."""
+    Arguments:
+    None
 
-    @mcp.prompt(name="create_dossier_for_hit")
-    def create_dossier_for_hit_prompt() -> str:
-        """Explain when and how to add dossier leads to one hit."""
-        return """Use create_dossier_for_hit to add dossier leads to exactly one Clue alert.
+    Result Example:
+    { # A dictionary of sources with their supported types.
+        <source_name>: [
+            <type name>,
+            <type name>,
+            ...,
+        ],
+        ...,
+    }
+    """
+    # lookup/types_detection/
+    @mcp.prompt("get_types_detection")
+    def get_types_detection_prompt()->str:
+        return """Return the regular expression to detect the different types
 
-Use this tool only when the target alert list contains exactly one alert. For a dossier that should apply to a large number of alerts, use create_dossier with a Lucene query instead.
+    Variables:
+    None
 
-Required arguments:
-- hit_id: the target alert UUID
-- leads: a non-empty list of lead objects
+    Arguments:
+    None
 
-Use this instead of create_dossier when the dossier content should not match other alerts through a Lucene query. Confirm the hit_id before calling and validate lead icons with get_iconify_exist when needed. After the call, confirm that the leads were added to that alert."""
+    Result Example:
+    { # A dictionary of types with their associated regular expressions
+        <type>: <regex>,
+        ...
+    }
+    """
 
-    @mcp.prompt(name="update_dossier")
-    def update_dossier_prompt() -> str:
-        """Explain when and how to use the update_dossier tool."""
-        return """Use update_dossier to modify an existing dossier by ID.
+    # lookup/enrich
+    @mcp.prompt(name="bulk_enrich")
+    def bulk_enrich_prompt()->str:
+        return """Search other services for additional information related to the provided data.
 
-Required arguments:
-- dossier_id: the target dossier identifier
-- data_to_update: a partial update object
+    Variables:
+    None
 
-Only these data_to_update keys are allowed:
-title, query, leads, pivots, type, owner.
+    Optional Arguments:
+    classification: string  => Classification of the type [Default: minimum configured classification]
+    sources: string         => | separated list of data sources.
+        A source prefixed with '-' will be excluded. Exclusion takes precedence over inclusion.
+        If sources is empty or only exclusions, all default configured sources are used (with exclusions applied).
+        Note, a source list that includes and excludes the same sources (e.g. sources=vt|-vt) is not treated as empty.
+    max_timeout: number     => Maximum execution time for the call in seconds
+    limit: number           => limit the amount of returned results counted per source
+    no_annotation: boolean  => Do not return any anotations
+    no_cache: boolean       => Skip the cache and ask the plugins again
+    include_raw: boolean    => Return raw plugin data
+    exclude_unset: boolean  => Do not return any values that were not set by the plugin
 
-Before calling, confirm dossier_id and remove all other keys. If query is included, verify field names with get_hit_fields and enumerated values with get_field_values(field) when needed.
-Use this tool to rename a dossier, change its query, or update metadata such as type or ownership.
-After the call, confirm the update and summarize the changed fields."""
+    Data Block:
+    [
+        {"type": "ip", "value": "127.0.0.1"},
+        ...
+    ]
 
-    @mcp.prompt(name="_verify_leads")
-    def verify_leads_prompt() -> str:
-        """Explain the expected structure for lead validation payloads."""
-        return """Use _verify_leads as the local schema reference when building dossier leads for create_dossier or update_dossier.
+    Result Example:
+    {                           # Dictionary of data source queried
+        "ip": {
+            "127.0.0.1":{
+                "vt": {
+                    "error": null,          # Error message returned by data source
+                    "items": [              # list of results from the source
+                        {
+                            "link": "https://www.virustotal.com/gui/url/<id>",  # link to results
+                            "count": 1,                                         # number of hits from the search
+                            "classification": "TLP:C",                          # classification of the search result
+                            "annotations": [                                    # Semi structured details about data
+                                <Annotation data>
+                            ],
+                        },
+                        ...,
+                    ],
+                },
+                ...,
+            },
+            ...
+        },
+        ...
+    }
+    """
 
-Each lead must contain exactly:
-- icon: a valid Iconify ID string
-- label: an object with exactly en and fr keys
-- format: a non-empty string
-- content: a non-empty string
-- metadata: a dictionary, possibly empty
+    # lookup/enrich/<type_name>/<value>/
+    @mcp.prompt(name="enrich")
+    def enrich()->str:
+        return """Search other services for additional information related to the provided data.
 
-Example:
-{"icon": "mdi:file-document", "label": {"en": "Overview", "fr": "Apercu"}, "format": "markdown", "content": "Initial notes", "metadata": {"source": "manual"}}
+    Variables:
+    type_name => Type of data to lookup in the external system.
+    value => Value of the data to lookup. *Must be double URL encoded.*
 
-Do not add keys, use a string for label, or use a non-dictionary metadata value. If the icon is uncertain, validate it with query_iconify or get_iconify_exist."""
+    Optional Arguments:
+    classification: string  => Classification of the type [Default: minimum configured classification]
+    sources: string         => | separated list of data sources.
+        A source prefixed with '-' will be excluded. Exclusion takes precedence over inclusion.
+        If sources is empty or only exclusions, all default configured sources are used (with exclusions applied).
+        Note, a source list that includes and excludes the same sources (e.g. sources=vt|-vt) is not treated as empty.
+    max_timeout: number     => Maximum execution time for the call in seconds
+    limit: number           => limit the amount of returned results counted per source
+    no_annotation: boolean  => Do not return any anotations
+    no_cache: boolean       => Skip the cache and ask the plugins again
+    include_raw: boolean    => Return raw plugin data
+    exclude_unset: boolean  => Do not return any values that were not set by the plugin
 
-    @mcp.prompt(name="_verify_pivots")
-    def verify_pivots_prompt() -> str:
-        """Explain the expected structure for pivot validation payloads."""
-        return """Use _verify_pivots as the local schema reference when building dossier pivots for create_dossier or update_dossier.
+    API Call Examples:
+    /api/v1/lookup/enrich/domain/malicious.domain/
+    /api/v1/lookup/enrich/ip/1.1.1.1/?sources=vt|malware_bazar
 
-Each pivot must contain exactly:
-- icon: a valid Iconify ID string
-- label: an object with exactly en and fr keys
-- value: a non-empty string
-- format: a non-empty string
-- mappings: the nested mapping configuration
+    Result Example:
+    {                           # Dictionary of data source queried
+        "vt": {
+            "error": null,          # Error message returned by data source
+            "items": [              # list of results from the source
+                {
+                    "link": "https://www.virustotal.com/gui/url/<id>",   # link to results
+                    "count": 1,                                          # number of hits from the search
+                    "classification": "TLP:C",                           # classification of the search result
+                    "annotations": [                                      # Semi structured details about type of data
+                        <Annotation data>
+                    ],
+                },
+                ...,
+            ],
+        },
+        ...,
+    }
+    """
 
-Example:
-{"icon": "mdi:open-in-new", "label": {"en": "Pivot Link", "fr": "Lien Pivot"}, "value": "https://example.local?q={ioc}", "format": "link", "mappings": [{"key": "ioc", "field": "clue.outline.indicators"}]}
+    # ---- static.py ----
 
-Do not add keys or use a string for label. Ensure value and format are non-empty. If the icon is uncertain, validate it with query_iconify or get_iconify_exist."""
+    # static/docs
+    @mcp.prompt(name="serve_documentation")
+    def serve_documentation()->str:
+        return """Returns all documentation or filtered documentation if given a url param of a file name or a path
 
-    @mcp.prompt(name="lucene_query")
-    def search_lucene_prompt() -> str:
-        """Build a Lucene query from the user's request and search for matching hits."""
-        return """Use lucene_query to search Clue hits based on the user's request.
+    Variables:
+    None
 
-Available tools:
-- get_hit_fields: retrieve valid field names and metadata
-- get_field_values(field): retrieve accepted values and counts
-- lucene_query: execute the final search
+    Arguments:
+    None
 
-Build the query as follows:
-- use valid Lucene field:value syntax
-- quote values containing spaces
-- use AND, OR, NOT, and range syntax as needed
-- never invent field names
-- never invent enumerated values; verify them first
-- search only Clue hits
+    Result Example:
+    URL Link: /api/v1/static/docs?filter="howler"
 
-Call get_hit_fields when a field name is uncertain. Call get_field_values first for categorical fields such as:
-clue.detection, clue.escalation, clue.assessment, clue.status, clue.scrutiny, clue.analytic, and clue.assignment.
+    {"howler-docs.md": "Markdown documentation of howler-docs.md"}
 
-lucene_query arguments:
-- query: required Lucene expression
-- fl: required comma-separated list of output fields
-- rows: optional result count
-- offset: optional pagination offset
-- sort: optional sort expression, such as event.created desc
+    """
 
-Projection rules:
-- always include clue.id in fl
-- request only fields the user asked for
+    # static/docs/<path:filename>
+    @mcp.prompt(name="serve_documentation_file")
+    def serve_documentation_file_prompt()->str:
+        return """Returns the specific file asked for within the route param
 
-Examples:
-- IDs only: fl="clue.id"
-- IDs and status: fl="clue.id,clue.status"
-- IDs, indicators, and threat: fl="clue.id,clue.outline.indicators,clue.outline.threat"
+    Variables:
+    filename (str): the specific file requested with an extension (i.e. *.md)
 
-After the search, report the query used, total matches, and returned hits clearly."""
+    Arguments:
+    None
+
+    Result Example:
+    URL Link: /api/v1/static/docs/howler-docs.md
+
+    {"markdown": "Markdown documentation of howler-docs.md"}
+
+    """
