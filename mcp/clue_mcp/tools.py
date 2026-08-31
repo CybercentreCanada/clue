@@ -132,6 +132,7 @@ def register_tools(mcp, api_client: ClueApiClient):
 
         return access_token
 
+    # region actions
     @mcp.tool(name="get_actions")
     async def get_actions() -> dict:
         """Return the actions supported by configured external services.
@@ -147,13 +148,13 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path="action/",
+            path="actions/",
             method="GET",
             body=None,
         )
 
     @mcp.tool(name="execute_action")
-    async def execute_action(plugin_id:str, action_id:str, task_id:str, type:str,value:str) -> dict:
+    async def execute_action(plugin_id:str, action_id:str, task_id:str, selectors:list[dict]) -> dict:
         """Execute an external-service action for a data value.
 
         Args:
@@ -173,12 +174,9 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path= f'action/{plugin_id}/{action_id}/status/{task_id}',
+            path= f'actions/{plugin_id}/{action_id}/status/{task_id}',
             method= "POST",
-            body={
-                "type":type,
-                "value":value
-            }
+            body={"selectors":selectors} if selectors is not None else None
         )
 
     @mcp.tool(name="get_action_status")
@@ -201,7 +199,176 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         return await api_client.call(
             user_access_token=_proper_access_token(),
-            path = f"action/{plugin_id}/{action_id}/status/{task_id}",
+            path = f"actions/{plugin_id}/{action_id}/status/{task_id}",
             method="GET",
             body=None
         )
+
+    # region fetchers
+
+    @mcp.tool(name="get_fetchers")
+    async def get_fetchers()->dict:
+        """Return the fetchers supported by configured external services.
+
+        Returns:
+            dict: Fetchers keyed by ``<plugin_id>.<fetcher_id>``. Each value
+            describes the fetcher, including its classification, description,
+            output format, supported data types, and whether it runs
+            asynchronously.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path="fetchers/",
+            method="GET",
+            body=None
+        )
+
+    @mcp.tool(name="run_fetcher")
+    async def run_fetcher(plugin_id:str, fetcher_id:str,data_type:str,data_value:str)->dict:
+        """Run an external-service fetcher for a typed data value.
+
+        Args:
+            plugin_id: ID of the plugin that provides the fetcher.
+            fetcher_id: ID of the fetcher to run.
+            data_type: Type of data supplied to the fetcher, such as ``ip``.
+            data_value: Data value on which to run the fetcher.
+
+        Returns:
+            dict: The fetcher result, including its outcome and, depending on
+            that outcome, returned data, an error, its output format, a link,
+            or a task ID when execution is pending.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path=f"fetchers/{plugin_id}/{fetcher_id}",
+            method="POST",
+            body={
+                "type":data_type,
+                "value":data_value
+            }
+        )
+
+    @mcp.tool(name="get_fetcher_status")
+    async def get_fetcher_status(plugin_id:str, fetcher_id:str, task_id:str)->dict:
+        """Return the status or result of a running fetcher.
+
+        Args:
+            plugin_id: ID of the plugin that provides the fetcher.
+            fetcher_id: ID of the fetcher whose status should be retrieved.
+            task_id: ID of the specific fetcher task to retrieve.
+
+        Returns:
+            dict: The fetcher result, including an outcome of ``success``,
+            ``failure``, or ``pending`` and any returned data, error, output
+            format, link, or pending task ID.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path=f"fetchers/{plugin_id}/{fetcher_id}/status/{task_id}",
+            method="GET",
+        )
+    # region lookup
+
+    @mcp.tool(name="get_types")
+    async def get_types() -> dict :
+        """Return the data types supported by each external service.
+
+        Returns:
+            dict: Supported type names grouped by external source name.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path = "lookup/types/",
+            method="GET"
+        )
+
+    @mcp.tool(name="get_types_detection")
+    async def get_types_detection()->dict:
+        """Return regular expressions used to detect supported data types.
+
+        Returns:
+            dict: Regular-expression patterns keyed by data type name.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path='lookup/types_detection',
+            method="GET"
+        )
+
+    @mcp.tool(name="bulk_enrich")
+    async def bulk_enrich(data:list[dict], optional_arguments:dict[str, Any]|None=None) -> dict :
+        """Enrich multiple typed values through configured external sources.
+
+        Args:
+            data: Selectors to enrich. Each selector must contain ``type`` and
+                ``value`` and may include ``classification`` and ``sources``.
+            optional_arguments: Optional URL query parameters. Supported keys
+                are ``classification``, ``sources``, ``max_timeout``, ``limit``,
+                ``no_annotation``, ``no_cache``, ``include_raw``, and
+                ``exclude_unset``.
+
+        Returns:
+            dict: Enrichment results grouped by data type, value, and external
+            source.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path="lookup/enrich",
+            method="POST",
+            body=data,
+            params=optional_arguments,
+        )
+
+    @mcp.tool(name="enrich")
+    async def enrich(type_name:str, value:str, optional_arguments:dict[str, Any]|None=None) -> dict:
+        """Enrich one typed value through configured external sources.
+
+        Args:
+            type_name: Type of value to enrich, such as ``ipv4`` or ``domain``.
+            value: Value to enrich. Values requiring URL encoding must be
+                double URL encoded for the Clue route.
+            optional_arguments: Optional URL query parameters. Supported keys
+                are ``classification``, ``sources``, ``max_timeout``, ``limit``,
+                ``no_annotation``, ``no_cache``, ``include_raw``, and
+                ``exclude_unset``.
+
+        Returns:
+            dict: Enrichment results keyed by external source name.
+
+        Raises:
+            ValueError: If an access token is not available.
+            httpx.HTTPError: If the Clue API request fails.
+        """
+        return await api_client.call(
+            user_access_token=_proper_access_token(),
+            path=f"lookup/enrich/{type_name}/{value}/",
+            method="GET",
+            params=optional_arguments,
+        )
+
+
+
