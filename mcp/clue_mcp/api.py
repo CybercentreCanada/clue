@@ -88,7 +88,7 @@ class ClueApiClient:
         api_response = None
         status_code: int = -1  # Initialised to known impossible answer value
         route = f"/{path.lstrip('/')}"
-        logger.info(f"api_request_sroutetart method={method} route={route} timeout={self.timeout:.2f}")
+        logger.info("api_request_start method=%s route=%s timeout=%.2f", method, route, self.timeout)
 
         try:
             if method in {"GET", "OPTIONS"} and body is not None:
@@ -106,16 +106,14 @@ class ClueApiClient:
             )
             status_code = response.status_code
             response.raise_for_status()
-            _json = response.json()
-            if "api_response" not in _json:
+            payload = response.json()
+            if not isinstance(payload, dict) or "api_response" not in payload:
                 outcome = "invalid_envelope"
-                logger.error(
-                    f"api_request_invalid_envelope method={method} route={route} status={response.status_code}"
-                )
+                logger.error("api_request_invalid_envelope method=%s route=%s status=%s", method, route, status_code)
                 raise ValueError("Clue API did not return in expected format")
 
             outcome = "success"
-            api_response = _json["api_response"]
+            api_response = payload["api_response"]
 
         except httpx.HTTPStatusError as e:
             code = e.response.status_code
@@ -123,29 +121,37 @@ class ClueApiClient:
             status_class = _status_class(code)
             outcome = f"http_{status_class}"
             logger.warning(
-                f"api_request_http_error method={method} route={route} status_code={code} "
-                f"outcome={outcome} response={e.response.content.decode()}"
+                "api_request_http_error method=%s route=%s status_code=%s outcome=%s",
+                method,
+                route,
+                code,
+                outcome,
             )
             raise
 
         except httpx.TimeoutException:
             outcome = "timeout"
-            logger.warning(f"api_request_timeout method={method} route={route} outcome={outcome}")
+            logger.warning("api_request_timeout method=%s route=%s outcome=%s", method, route, outcome)
             raise
 
         except httpx.HTTPError:
             outcome = "network_error"
-            logger.exception(f"api_request_http_error method={method} route={route} outcome={outcome}")
+            logger.exception("api_request_http_error method=%s route=%s outcome=%s", method, route, outcome)
             raise
 
         except ValueError:
             outcome = "value_error"
-            logger.warning(f"api_request_value_error method={method} route={route} outcome={outcome}")
+            logger.warning("api_request_value_error method=%s route=%s outcome=%s", method, route, outcome)
             raise
 
         finally:
             duration_seconds = time.perf_counter() - started
             logger.info(
-                f"api_request_end method={method} route={route} outcome={outcome} status={status_code} duration_ms={duration_seconds * 1000.0:.2f}"
+                "api_request_end method=%s route=%s outcome=%s status=%s duration_ms=%.2f",
+                method,
+                route,
+                outcome,
+                status_code,
+                duration_seconds * 1000.0,
             )
         return api_response
