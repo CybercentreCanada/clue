@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/plugin/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/plugin/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/plugin/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/releases/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/releases/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/releases/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/backend/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/backend/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/backend/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/backend/extensions/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/backend/extensions/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/backend/extensions/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/design/caching/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/design/caching/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/design/caching/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/design/replication/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/design/replication/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/design/replication/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/frontend/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/frontend/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/frontend/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/developer/frontend/testing/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/frontend/testing/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/frontend/testing/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/installation/helm/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/installation/helm/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/installation/helm/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/overview/integration/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/overview/integration/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/overview/integration/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/overview/plugin_developers/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/overview/plugin_developers/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/overview/plugin_developers/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/overview/users/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/overview/users/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/overview/users/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/proposals/deployment-ui/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/proposals/deployment-ui/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/proposals/deployment-ui/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/releases/api/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/releases/api/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/releases/api/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/releases/ui/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/releases/ui/"/>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/releases/ui/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/plugin/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/plugin/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/plugin/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/releases/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/releases/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/releases/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/backend/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/backend/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/backend/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/backend/extensions/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/backend/extensions/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/backend/extensions/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/design/caching/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/design/caching/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/design/caching/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/design/replication/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/design/replication/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/design/replication/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/frontend/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/frontend/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/frontend/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/developer/frontend/testing/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/developer/frontend/testing/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/developer/frontend/testing/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/installation/helm/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/installation/helm/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/installation/helm/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/overview/integration/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/overview/integration/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/overview/integration/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/overview/plugin_developers/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/overview/plugin_developers/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/overview/plugin_developers/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/overview/users/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/overview/users/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/overview/users/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/proposals/deployment-ui/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/proposals/deployment-ui/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/proposals/deployment-ui/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/releases/api/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/releases/api/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/releases/api/"/>
+    </url>
+    <url>
+        <loc>https://cybercentrecanada.github.io/clue/fr/releases/ui/</loc>
+        <lastmod>2026-09-01</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="fr" href="https://cybercentrecanada.github.io/clue/fr/releases/ui/"/>
+        <xhtml:link rel="alternate" hreflang="en" href="https://cybercentrecanada.github.io/clue/releases/ui/"/>
+    </url>
+</urlset>
