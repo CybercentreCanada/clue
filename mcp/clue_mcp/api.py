@@ -45,13 +45,27 @@ class ClueApiClient:
         self.base_url = base_url.rstrip("/")
         self.auth_provider = auth_provider or AuthProvider()
         self.timeout = timeout
-        self._client = client or httpx.AsyncClient(timeout=timeout)
+        self._client = client
         self._owns_client = client is None
 
+    async def start(self, limits: httpx.Limits | None = None) -> None:
+        if self._client is not None:
+            return
+
+        if limits is None:
+            self._client = httpx.AsyncClient(timeout=self.timeout)
+        else:
+            self._client = httpx.AsyncClient(timeout=self.timeout, limits=limits)
+        self._owns_client = True
+
     async def aclose(self) -> None:
-        """Close the underlying HTTP client if it is owned by this instance."""
-        if self._owns_client:
-            await self._client.aclose()
+        client = self._client
+        owns_client = self._owns_client
+        self._client = None
+        self._owns_client = False
+
+        if owns_client and client is not None:
+            await client.aclose()
 
     async def call(
         self,
@@ -76,7 +90,6 @@ class ClueApiClient:
         Returns:
             Any: The ``api_response`` value extracted from the Clue JSON
             envelope.
-
         Raises:
             ValueError: If a body is supplied for a ``GET`` or ``OPTIONS``
                 request, or if
@@ -88,16 +101,19 @@ class ClueApiClient:
         api_response = None
         status_code: int = -1  # Initialised to known impossible answer value
         route = f"/{path.lstrip('/')}"
-        logger.info("api_request_start method=%s route=%s timeout=%.2f", method, route, self.timeout)
+        logger.info(f"api_request_sroutetart method={method} route={route} timeout={self.timeout:.2f}")
 
         try:
             if method in {"GET", "OPTIONS"} and body is not None:
                 outcome = "body_error"
                 raise ValueError("Request body is not allowed for GET or OPTIONS")
+            client = self._client
+            if client is None:
+                raise RuntimeError("Clue API client has not been started")
             exchanged_token = await self.auth_provider.get_clue_token(user_access_token.token)
             headers = {"Authorization": f"Bearer {exchanged_token}"}
             url = f"{self.base_url}/{route.lstrip('/')}"
-            response = await self._client.request(
+            response = await client.request(
                 method=method,
                 url=url,
                 headers=headers,
@@ -106,14 +122,16 @@ class ClueApiClient:
             )
             status_code = response.status_code
             response.raise_for_status()
-            payload = response.json()
-            if not isinstance(payload, dict) or "api_response" not in payload:
+            _json = response.json()
+            if "api_response" not in _json:
                 outcome = "invalid_envelope"
-                logger.error("api_request_invalid_envelope method=%s route=%s status=%s", method, route, status_code)
+                logger.error(
+                    f"api_request_invalid_envelope method={method} route={route} status={response.status_code}"
+                )
                 raise ValueError("Clue API did not return in expected format")
 
             outcome = "success"
-            api_response = payload["api_response"]
+            api_response = _json["api_response"]
 
         except httpx.HTTPStatusError as e:
             code = e.response.status_code
@@ -121,37 +139,29 @@ class ClueApiClient:
             status_class = _status_class(code)
             outcome = f"http_{status_class}"
             logger.warning(
-                "api_request_http_error method=%s route=%s status_code=%s outcome=%s",
-                method,
-                route,
-                code,
-                outcome,
+                f"api_request_http_error method={method} route={route} status_code={code} "
+                f"outcome={outcome} response={e.response.content.decode()}"
             )
             raise
 
         except httpx.TimeoutException:
             outcome = "timeout"
-            logger.warning("api_request_timeout method=%s route=%s outcome=%s", method, route, outcome)
+            logger.warning(f"api_request_timeout method={method} route={route} outcome={outcome}")
             raise
 
         except httpx.HTTPError:
             outcome = "network_error"
-            logger.exception("api_request_http_error method=%s route=%s outcome=%s", method, route, outcome)
+            logger.exception(f"api_request_http_error method={method} route={route} outcome={outcome}")
             raise
 
         except ValueError:
             outcome = "value_error"
-            logger.warning("api_request_value_error method=%s route=%s outcome=%s", method, route, outcome)
+            logger.warning(f"api_request_value_error method={method} route={route} outcome={outcome}")
             raise
 
         finally:
             duration_seconds = time.perf_counter() - started
             logger.info(
-                "api_request_end method=%s route=%s outcome=%s status=%s duration_ms=%.2f",
-                method,
-                route,
-                outcome,
-                status_code,
-                duration_seconds * 1000.0,
+                f"api_request_end method={method} route={route} outcome={outcome} status={status_code} duration_ms={duration_seconds * 1000.0:.2f}"
             )
         return api_response

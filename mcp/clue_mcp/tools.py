@@ -3,11 +3,10 @@ from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import quote
 
+from api import ClueApiClient
 from fastmcp.server.dependencies import get_access_token, get_http_request
 from mcp.server.auth.provider import AccessToken
 from pydantic import BaseModel, Field
-
-from clue_mcp.api import ClueApiClient
 
 logger = getLogger(__name__)
 
