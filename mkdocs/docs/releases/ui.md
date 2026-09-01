@@ -1,5 +1,10 @@
 # Clue UI Release Notes
 
+## `1.4.1`
+
+- **Classification Chip Safety** *(bugfix)*: Prevented classification chips from accessing level data when a classification cannot be parsed, preserving default styling instead of causing a runtime error.
+- **Silent Plugin Loading** *(improvement)*: Added a `silent` option to `ClueUIPluginProvider` to suppress plugin author installation logs for applications that manage plugin logging themselves.
+
 ## `1.4.0`
 
 - **Standalone UI Authentication** *(bugfix)*: Propagated the stored application token to database replication, enrichment requests, and UI plugins so standalone deployments authenticate correctly.

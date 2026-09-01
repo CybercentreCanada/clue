@@ -26,12 +26,12 @@ export class ClueUIPluginStore {
     this.fetcherPlugins = [];
   }
 
-  install(plugin: ClueUIPlugin) {
+  install(plugin: ClueUIPlugin, silent = false) {
     if (this.plugins.includes(plugin.name)) {
       return;
     }
 
-    if (import.meta.env.MODE !== 'test') {
+    if (import.meta.env.MODE !== 'test' && !silent) {
       console.log(`Installing plugin ${plugin.getPluginName()} by ${plugin.author}`);
     }
 

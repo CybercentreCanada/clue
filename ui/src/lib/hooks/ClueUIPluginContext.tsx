@@ -21,6 +21,10 @@ export type ClueUIPluginProviderProps = {
    * If true, do not load any plugins from the ClueUIPluginsRegistry, only load plugins passed in via props
    */
   excludeBuiltInPlugins?: boolean;
+  /**
+   * If true, don't print the author information of loaded plugins
+   */
+  silent?: boolean;
 };
 
 export type ClueUIPluginContextType = {
@@ -33,6 +37,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
   plugins,
   excludePlugins,
   excludeBuiltInPlugins,
+  silent,
   children
 }) => {
   const [pluginStore, setPluginStore] = useState<PluginStore>(() => clueUIPluginStore.pluginStore);
@@ -46,7 +51,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
         if (abortController.signal.aborted) return; // Exit if effect was cancelled
 
         const plugin = new pluginModule.default() as ClueUIPlugin;
-        clueUIPluginStore.install(plugin);
+        clueUIPluginStore.install(plugin, silent);
       } catch (err) {
         if (abortController.signal.aborted) return;
         // eslint-disable-next-line no-console
@@ -88,7 +93,7 @@ const ClueUIPluginProvider: FC<PropsWithChildren<ClueUIPluginProviderProps>> = (
     });
 
     return () => abortController.abort(); // Cleanup: abort on unmount or re-run
-  }, [excludeBuiltInPlugins, excludePlugins, plugins]);
+  }, [excludeBuiltInPlugins, excludePlugins, plugins, silent]);
 
   return (
     <ClueUIPluginContext.Provider value={{ clueUIPluginStore }}>
