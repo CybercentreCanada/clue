@@ -51,6 +51,9 @@ class CLUE_API:
     AUDIENCE = os.environ.get("CLUE_API_AUDIENCE", "clue")
     SCOPE = os.environ.get("CLUE_API_SCOPE", "clue")
     TIMEOUT = float(os.environ.get("CLUE_API_TIMEOUT", "5.0"))
+    MAX_CONNECTIONS = int(os.environ.get("CLUE_API_MAX_CONNECTIONS", "100"))
+    MAX_KEEPALIVE_CONNECTIONS = int(os.environ.get("CLUE_API_MAX_KEEPALIVE_CONNECTIONS", "20"))
+    KEEPALIVE_EXPIRY = float(os.environ.get("CLUE_API_KEEPALIVE_EXPIRY", "5.0"))
 
 
 class CLUE_UI:
