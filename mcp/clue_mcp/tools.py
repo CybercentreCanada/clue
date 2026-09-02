@@ -3,10 +3,11 @@ from pathlib import PurePosixPath
 from typing import Any
 from urllib.parse import quote
 
-from api import ClueApiClient
-from fastmcp.server.dependencies import get_access_token, get_http_request
+from fastmcp.server.dependencies import get_access_token
 from mcp.server.auth.provider import AccessToken
 from pydantic import BaseModel, Field
+
+from clue_mcp.api import ClueApiClient
 
 logger = getLogger(__name__)
 
@@ -43,16 +44,26 @@ def register_tools(mcp, api_client: ClueApiClient):
         mcp: FastMCP server instance used to register tool handlers.
         api_client: Shared API client used by tools to call the Clue backend.
     """
+
     def _route_segment(value: str, label: str) -> str:
         """Validate and encode one API route segment."""
-        if not value or any(character in value for character in "/\\") or any(ord(character) < 32 for character in value):
+        if (
+            not value
+            or any(character in value for character in "/\\")
+            or any(ord(character) < 32 for character in value)
+        ):
             raise ValueError(f"{label} must be a non-empty route segment")
         return quote(value, safe="")
 
     def _documentation_path(filename: str) -> str:
         """Validate and encode a relative documentation path."""
         path = PurePosixPath(filename)
-        if not filename or path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts) or "\\" in filename:
+        if (
+            not filename
+            or path.is_absolute()
+            or any(part in {"", ".", ".."} for part in path.parts)
+            or "\\" in filename
+        ):
             raise ValueError("filename must be a non-empty relative path without traversal segments")
         return "/".join(quote(part, safe="") for part in path.parts)
 
@@ -67,67 +78,9 @@ def register_tools(mcp, api_client: ClueApiClient):
 
     def _proper_access_token() -> AccessToken:
         """Return the current request access token or fail consistently."""
-        request_available = False
-        scope_user_available = False
-        scope_token_type = "NoneType"
-        auth_header_present = False
-        request_path = "unknown"
-        scope_access_token: Any = None
-
-        try:
-            request = get_http_request()
-            # was not able to get request
-            if not request:
-                raise ValueError("request was receive empty")
-            request_available = True
-
-            scope_user = request.scope.get("user")
-            # was not able to get user scope
-            if not scope_user:
-                raise ValueError("request did not contain the scope user")
-            scope_user_available = True
-
-            scope_access_token = getattr(scope_user, "access_token", None)
-            scope_token_type = type(scope_access_token).__name__
-            auth_header_present = bool(request.headers.get("authorization"))
-
-            request_path = request.url.path
-        except RuntimeError as e:
-            logger.warning(f"auth_context_probe_failed error={e}")
-        except ValueError as e:
-            logger.warning(f"Server did not answer properly : {e}")
-
-        access_token: AccessToken | None = None
-        error: str = ""
-        try:
-            access_token = get_access_token()
-        except (ValueError, TypeError) as e:
-            # FastMCP may fail internal type checks even when request.scope.user
-            # is present. Recover using the raw token value from the request
-            # scope; only ``token`` is used downstream by ClueApiClient.
-            error = str(e)
-            token_value = getattr(scope_access_token, "token", None)
-            if token_value:
-                access_token = AccessToken(
-                    token=token_value,
-                    client_id=getattr(scope_access_token, "client_id", "unknown-client"),
-                    scopes=list(getattr(scope_access_token, "scopes", [])),
-                    expires_at=getattr(scope_access_token, "expires_at", None),
-                    resource=getattr(scope_access_token, "resource", None),
-                )
-
-        # get_access_token may return None without raising (expired background-task snapshot)
+        access_token = get_access_token()
         if not access_token:
-            raise ValueError(
-                "Access token is not available. "
-                f"request_available={request_available} "
-                f"scope_user_available={scope_user_available} "
-                f"scope_token_available={scope_access_token is not None} "
-                f"scope_token_type={scope_token_type} "
-                f"auth_header_present={auth_header_present} "
-                f"request_path={request_path} "
-                f"upstream_error={error}"
-            )
+            raise ValueError("Access token is not available")
 
         return access_token
 
@@ -239,7 +192,7 @@ def register_tools(mcp, api_client: ClueApiClient):
     # region fetchers
 
     @mcp.tool(name="get_fetchers")
-    async def get_fetchers()->dict:
+    async def get_fetchers() -> dict:
         """Return the fetchers supported by configured external services.
 
         Returns:
@@ -253,10 +206,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             httpx.HTTPError: If the Clue API request fails.
         """
         return await api_client.call(
-            user_access_token=_proper_access_token(),
-            path="fetchers/",
-            method="GET",
-            body=None
+            user_access_token=_proper_access_token(), path="fetchers/", method="GET", body=None
         )
 
     @mcp.tool(name="run_fetcher")
@@ -324,10 +274,11 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="GET",
             params={"max_timeout": max_timeout} if max_timeout is not None else None,
         )
+
     # region lookup
 
     @mcp.tool(name="get_types")
-    async def get_types() -> dict :
+    async def get_types() -> dict:
         """Return the data types supported by each external service.
 
         Returns:
@@ -337,14 +288,10 @@ def register_tools(mcp, api_client: ClueApiClient):
             ValueError: If an access token is not available.
             httpx.HTTPError: If the Clue API request fails.
         """
-        return await api_client.call(
-            user_access_token=_proper_access_token(),
-            path = "lookup/types/",
-            method="GET"
-        )
+        return await api_client.call(user_access_token=_proper_access_token(), path="lookup/types/", method="GET")
 
     @mcp.tool(name="get_types_detection")
-    async def get_types_detection()->dict:
+    async def get_types_detection() -> dict:
         """Return regular expressions used to detect supported data types.
 
         Returns:
@@ -413,7 +360,6 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="GET",
             params=_enrichment_params(options),
         )
-
 
     # region static
 

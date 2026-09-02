@@ -1,0 +1,127 @@
+services:
+  clue-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://bagofholding-pb.cse-cst.gc.ca/repository/pypi/simple}
+      secrets:
+        - pip_ca
+    image: clue-mcp-server:latest
+    ports:
+      - "${MCP_PUBLIC_PORT:-8000}:8000"
+    networks:
+      - clue-mcp-network
+    environment:
+      # Clue API configuration
+      CLUE_API_VERSION: ${CLUE_API_VERSION:-v1}
+      CLUE_API_HOST: ${CLUE_API_HOST:-clue-api}
+      CLUE_API_PORT: ${CLUE_API_PORT:-5000}
+      CLUE_API_BASE_URL: ${CLUE_API_BASE_URL:-http://clue-api:5000/api/v1}
+      CLUE_API_AUDIENCE: ${CLUE_API_AUDIENCE:-clue}
+      CLUE_API_SCOPE: ${CLUE_API_SCOPE:-clue}
+      CLUE_API_TIMEOUT: ${CLUE_API_TIMEOUT:-5.0}
+      CLUE_UI_BASE_URL: ${CLUE_UI_BASE_URL:-http://localhost:3000}
+      CLUE_API_MAX_CONNECTIONS: ${CLUE_API_MAX_CONNECTIONS:-100}
+      CLUE_API_MAX_KEEPALIVE_CONNECTIONS: ${CLUE_API_MAX_KEEPALIVE_CONNECTIONS:-20}
+      CLUE_API_KEEPALIVE_EXPIRY: ${CLUE_API_KEEPALIVE_EXPIRY:-5.0}
+
+      # Auth / Keycloak configuration
+      AUTH_HOST: ${AUTH_HOST:-keycloak}
+      AUTH_PORT: ${AUTH_PORT:-8080}
+      AUTH_REALM: ${AUTH_REALM:-HogwartsMini}
+      AUTH_TOKEN_URL: ${AUTH_TOKEN_URL:-http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/token}
+      AUTH_CLIENT_ID: ${AUTH_CLIENT_ID:-clue}
+      AUTH_CLIENT_SECRET: ${AUTH_CLIENT_SECRET}
+      AUTH_JWKS_URI: ${AUTH_JWKS_URI:-http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/certs}
+      AUTH_ISSUER: ${AUTH_ISSUER:-http://localhost:9100/realms/HogwartsMini}
+      AUTH_AS_SERVER_URL: ${AUTH_AS_SERVER_URL:-http://localhost:9100/realms/HogwartsMini}
+      AUTH_TIMEOUT: ${AUTH_TIMEOUT:-5.0}
+
+      # MCP server configuration
+      MCP_HOST: ${MCP_HOST:-0.0.0.0}
+      MCP_PUBLIC_HOST: ${MCP_PUBLIC_HOST:-localhost}
+      MCP_PORT: ${MCP_PORT:-8000}
+      MCP_LOG_LEVEL: ${MCP_LOG_LEVEL:-INFO}
+      MCP_BASE_URL: ${MCP_BASE_URL:-http://localhost:8000/mcp}
+      MCP_SCOPE: ${MCP_SCOPE:-openid offline_access}
+      MCP_AUDIENCE: ${MCP_AUDIENCE:-clue}
+    depends_on:
+      clue-api:
+        condition: service_started
+      keycloak:
+        condition: service_healthy
+
+  clue-api:
+    image: cccs/clue-api:latest
+    ports:
+      - "${CLUE_API_PUBLIC_PORT:-5000}:5000"
+    networks:
+      - clue-mcp-network
+    environment:
+      PORT: "5000"
+      CORE__REDIS__HOST: redis
+      CORE__REDIS__PORT: "6379"
+      CORE__MONGODB__HOST: mongodb
+      CORE__MONGODB__PORT: "27017"
+      LOGGING__LOG_LEVEL: DEBUG
+      AUTH__OAUTH__PROVIDERS__KEYCLOAK__ACCESS_TOKEN_URL: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/token
+      AUTH__OAUTH__PROVIDERS__KEYCLOAK__API_BASE_URL: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/
+      AUTH__OAUTH__PROVIDERS__KEYCLOAK__AUTHORIZE_URL: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/auth
+      AUTH__OAUTH__PROVIDERS__KEYCLOAK__JWKS_URI: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/certs
+    volumes:
+      - ../api/test/unit/config.yml:/etc/clue/conf/config.yml:ro
+      - ../api/clue/common/classification.yml:/etc/clue/conf/classification.yml:ro
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  mongodb:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "try { rs.status().ok } catch(e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}).ok }"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+    networks:
+      - clue-mcp-network
+
+  redis:
+    image: redis
+    networks:
+      - clue-mcp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  keycloak:
+    build:
+      context: ../api/dev/keycloak
+      dockerfile: Dockerfile
+    ports:
+      - "${AUTH_PUBLIC_PORT:-9100}:8080"
+    networks:
+      - clue-mcp-network
+    environment:
+      KC_HEALTH_ENABLED: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+networks:
+  clue-mcp-network:
+    driver: bridge
+
+secrets:
+  pip_ca:
+    file: ${PIP_CERT:-/etc/ssl/certs/ca-certificates.crt}

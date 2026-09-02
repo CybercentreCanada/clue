@@ -30,8 +30,10 @@ def _require_https_for_non_local(url: str, env_name: str) -> str:
             "127.0.0.1",
             "::1",
             # Support for docker compose/k8s pods
+            "clue-api",
             "clue-rest",
             "clue-rest.clue.svc.cluster.local",
+            "keycloak",
         }
         and not hostname.endswith("svc.cluster.local")
     ):
@@ -43,7 +45,7 @@ def _require_https_for_non_local(url: str, env_name: str) -> str:
 class CLUE_API:
     VERSION = os.environ.get("CLUE_API_VERSION", "v1")
     HOST = os.environ.get("CLUE_API_HOST", "localhost")
-    PORT = os.environ.get("CLUE_API_PORT", "3000")
+    PORT = os.environ.get("CLUE_API_PORT", "5000")
     BASE_URL = _require_https_for_non_local(
         os.environ.get("CLUE_API_BASE_URL", f"http://{HOST}:{PORT}/api/{VERSION}"),
         "CLUE_API_BASE_URL",
@@ -58,7 +60,7 @@ class CLUE_API:
 
 class CLUE_UI:
     BASE_URL = _require_https_for_non_local(
-        os.environ.get("CLUE_UI_BASE_URL", "http://localhost:3000"),
+        os.environ.get("CLUE_UI_BASE_URL", "http://localhost:5000"),
         "CLUE_UI_BASE_URL",
     ).rstrip("/")
 

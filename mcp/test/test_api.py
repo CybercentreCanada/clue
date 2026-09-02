@@ -1,68 +1,208 @@
+from unittest.mock import AsyncMock, Mock, patch
+
 import httpx
 import pytest
 from mcp.server.auth.provider import AccessToken
 
 from clue_mcp.api import ClueApiClient
-from clue_mcp.auth import AuthProvider
+from clue_mcp.config import CLUE_API
+
+FAKE_TOKEN = AccessToken(token="fake-bearer", client_id="test-client", scopes=[])
 
 
-class AuthProviderStub(AuthProvider):
-    async def get_clue_token(self, user_token: str) -> str:
-        assert user_token == "user-token"
-        return "clue-token"
+@pytest.mark.asyncio
+async def test_call_reuses_and_closes_owned_http_client():
+    http_client = Mock()
+    http_client.request = AsyncMock()
+    http_client.aclose = AsyncMock()
+    http_client.request.return_value = Mock(json=Mock(return_value={"api_response": {"status": "ok"}}))
+    auth_provider = Mock()
+    auth_provider.get_clue_token = AsyncMock(return_value="clue-token")
+
+    with patch("clue_mcp.api.httpx.AsyncClient", return_value=http_client) as client_class:
+        api_client = ClueApiClient(auth_provider=auth_provider, timeout=2.0)
+        limits = httpx.Limits(
+            max_connections=10,
+            max_keepalive_connections=4,
+            keepalive_expiry=3.0,
+        )
+        await api_client.start(limits=limits)
+        await api_client.start(limits=httpx.Limits(max_connections=1))
+        first_response = await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        second_response = await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.aclose()
+        await api_client.aclose()
+
+    assert first_response == {"status": "ok"}
+    assert second_response == {"status": "ok"}
+    client_class.assert_called_once_with(timeout=2.0, limits=limits)
+    assert http_client.request.await_count == 2
+    http_client.aclose.assert_awaited_once()
 
 
-TOKEN = AccessToken(token="user-token", client_id="test", scopes=[])
+@pytest.mark.asyncio
+async def test_call_rejects_body_for_non_post_methods():
+    auth_provider = Mock()
+    auth_provider.get_clue_token = AsyncMock(return_value="clue-token")
 
+    with patch("clue_mcp.api.httpx.AsyncClient", return_value=Mock()):
+        api_client = ClueApiClient(auth_provider=auth_provider)
 
-@pytest.mark.parametrize("payload", [["not", "an", "envelope"], {"unexpected": "shape"}])
-async def test_call_rejects_invalid_response_envelope(payload):
-    transport = httpx.MockTransport(lambda request: httpx.Response(200, json=payload))
-    async with httpx.AsyncClient(transport=transport) as http_client:
-        client = ClueApiClient(
-            base_url="https://clue.test/api/v1",
-            auth_provider=AuthProviderStub(),
-            client=http_client,
+    with pytest.raises(ValueError, match="Request body is not allowed for GET or OPTIONS"):
+        await api_client.call(
+            FAKE_TOKEN,
+            "/whoami",
+            "GET",
+            body={"not": "allowed"},
         )
 
-        with pytest.raises(ValueError, match="expected format"):
-            await client.call(TOKEN, "actions/", "GET")
+
+@pytest.mark.asyncio
+async def test_call_rejects_missing_api_response_envelope():
+    http_client = Mock()
+    http_client.request = AsyncMock()
+    http_client.aclose = AsyncMock()
+    http_client.request.return_value = Mock(json=Mock(return_value={"wrong": "shape"}))
+    auth_provider = Mock()
+    auth_provider.get_clue_token = AsyncMock(return_value="clue-token")
+
+    with patch("clue_mcp.api.httpx.AsyncClient", return_value=http_client):
+        api_client = ClueApiClient(auth_provider=auth_provider)
+        await api_client.start()
+
+    with pytest.raises(ValueError, match="expected format"):
+        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
 
 
-async def test_call_sends_auth_query_and_json_body():
-    def handle(request):
-        assert request.url == "https://clue.test/api/v1/lookup/enrich?limit=2"
-        assert request.headers["Authorization"] == "Bearer clue-token"
-        assert request.read() == b'[{"type":"domain","value":"example.test"}]'
-        return httpx.Response(200, json={"api_response": {"domain": {}}})
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("content_type", "response_content", "logged_response"),
+    [
+        ("application/json", b'{"api_error_message":"invalid query"}', '{"api_error_message":"invalid query"}'),
+        ("application/json", b"not json", "not json"),
+        ("text/plain", b"invalid query", "invalid query"),
+    ],
+)
+async def test_call_logs_http_error_response(caplog, content_type, response_content, logged_response):
+    request = httpx.Request("GET", "https://api/whoami")
+    response = httpx.Response(
+        400,
+        headers={"content-type": content_type},
+        content=response_content,
+        request=request,
+    )
+    http_client = Mock()
+    http_client.request = AsyncMock(return_value=response)
+    auth_provider = Mock()
+    auth_provider.get_clue_token = AsyncMock(return_value="clue-token")
+    api_client = ClueApiClient(auth_provider=auth_provider, client=http_client)
 
-    transport = httpx.MockTransport(handle)
-    async with httpx.AsyncClient(transport=transport) as http_client:
-        client = ClueApiClient(
-            base_url="https://clue.test/api/v1/",
-            auth_provider=AuthProviderStub(),
-            client=http_client,
-        )
+    with caplog.at_level("WARNING", logger="clue_mcp.api"), pytest.raises(httpx.HTTPStatusError):
+        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
 
-        result = await client.call(
-            TOKEN,
-            "/lookup/enrich",
-            "POST",
-            body=[{"type": "domain", "value": "example.test"}],
-            params={"limit": 2},
-        )
-
-    assert result == {"domain": {}}
+    assert f"response={logged_response}" in caplog.text
 
 
-async def test_call_rejects_get_body_before_sending_request():
-    transport = httpx.MockTransport(lambda request: pytest.fail("request should not be sent"))
-    async with httpx.AsyncClient(transport=transport) as http_client:
-        client = ClueApiClient(
-            base_url="https://clue.test/api/v1",
-            auth_provider=AuthProviderStub(),
-            client=http_client,
-        )
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error",
+    [
+        httpx.ReadTimeout("timed out", request=httpx.Request("GET", "https://api")),
+        httpx.ConnectError("connection failed", request=httpx.Request("GET", "https://api")),
+        httpx.HTTPStatusError(
+            "server error",
+            request=httpx.Request("GET", "https://api"),
+            response=httpx.Response(500, request=httpx.Request("GET", "https://api")),
+        ),
+    ],
+)
+async def test_call_reraises_original_httpx_error(error: httpx.HTTPError):
+    http_client = Mock()
+    http_client.request = AsyncMock(side_effect=error)
+    auth_provider = Mock()
+    auth_provider.get_clue_token = AsyncMock(return_value="clue-token")
+    api_client = ClueApiClient(auth_provider=auth_provider, client=http_client)
 
-        with pytest.raises(ValueError, match="not allowed"):
-            await client.call(TOKEN, "lookup/types/", "GET", body={})
+    with pytest.raises(type(error)) as raised_error:
+        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+
+    assert raised_error.value is error
+    assert raised_error.value.request is error.request
+
+
+@pytest.mark.asyncio
+async def test_call_requires_started_http_client():
+    api_client = ClueApiClient()
+
+    with pytest.raises(RuntimeError, match="has not been started"):
+        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+
+
+@pytest.mark.asyncio
+async def test_call_fails_after_owned_http_client_is_closed():
+    http_client = Mock()
+    http_client.aclose = AsyncMock()
+
+    with patch("clue_mcp.api.httpx.AsyncClient", return_value=http_client):
+        api_client = ClueApiClient()
+        await api_client.start()
+        await api_client.aclose()
+
+    with pytest.raises(RuntimeError, match="has not been started"):
+        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+
+
+@pytest.mark.asyncio
+async def test_client_startup_error_is_propagated():
+    startup_error = RuntimeError("unable to create HTTP client")
+
+    with patch("clue_mcp.api.httpx.AsyncClient", side_effect=startup_error) as client_class:
+        api_client = ClueApiClient()
+
+        with pytest.raises(RuntimeError, match="unable to create HTTP client"):
+            await api_client.start()
+
+    client_class.assert_called_once_with(timeout=CLUE_API.TIMEOUT)
+
+
+@pytest.mark.asyncio
+async def test_injected_http_client_is_detached_but_not_closed():
+    http_client = Mock()
+    http_client.aclose = AsyncMock()
+    api_client = ClueApiClient(client=http_client)
+
+    await api_client.start(limits=httpx.Limits(max_connections=1))
+    await api_client.aclose()
+
+    assert api_client._client is None
+    http_client.aclose.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_restart_after_injected_client_is_owned_and_closed():
+    injected_client = Mock()
+    injected_client.aclose = AsyncMock()
+    restarted_client = Mock()
+    restarted_client.aclose = AsyncMock()
+    limits = httpx.Limits(max_connections=3)
+
+    with patch("clue_mcp.api.httpx.AsyncClient", return_value=restarted_client) as client_class:
+        api_client = ClueApiClient(client=injected_client)
+        await api_client.aclose()
+        await api_client.start(limits=limits)
+        await api_client.aclose()
+
+    client_class.assert_called_once_with(timeout=CLUE_API.TIMEOUT, limits=limits)
+    injected_client.aclose.assert_not_awaited()
+    restarted_client.aclose.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_call_fails_after_injected_http_client_is_closed():
+    http_client = Mock()
+    api_client = ClueApiClient(client=http_client)
+
+    await api_client.aclose()
+
+    with pytest.raises(RuntimeError, match="has not been started"):
+        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
