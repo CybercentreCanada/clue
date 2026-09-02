@@ -28,8 +28,8 @@ async def test_call_reuses_and_closes_owned_http_client():
         )
         await api_client.start(limits=limits)
         await api_client.start(limits=httpx.Limits(max_connections=1))
-        first_response = await api_client.call(FAKE_TOKEN, "/whoami", "GET")
-        second_response = await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        first_response = await api_client.call(FAKE_TOKEN, "/actions/", "GET")
+        second_response = await api_client.call(FAKE_TOKEN, "/actions/", "GET")
         await api_client.aclose()
         await api_client.aclose()
 
@@ -51,7 +51,7 @@ async def test_call_rejects_body_for_non_post_methods():
     with pytest.raises(ValueError, match="Request body is not allowed for GET or OPTIONS"):
         await api_client.call(
             FAKE_TOKEN,
-            "/whoami",
+            "/actions/",
             "GET",
             body={"not": "allowed"},
         )
@@ -71,7 +71,7 @@ async def test_call_rejects_missing_api_response_envelope():
         await api_client.start()
 
     with pytest.raises(ValueError, match="expected format"):
-        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.call(FAKE_TOKEN, "/actions/", "GET")
 
 
 @pytest.mark.asyncio
@@ -84,7 +84,7 @@ async def test_call_rejects_missing_api_response_envelope():
     ],
 )
 async def test_call_logs_http_error_response(caplog, content_type, response_content, logged_response):
-    request = httpx.Request("GET", "https://api/whoami")
+    request = httpx.Request("GET", "https://api/actions/")
     response = httpx.Response(
         400,
         headers={"content-type": content_type},
@@ -98,7 +98,7 @@ async def test_call_logs_http_error_response(caplog, content_type, response_cont
     api_client = ClueApiClient(auth_provider=auth_provider, client=http_client)
 
     with caplog.at_level("WARNING", logger="clue_mcp.api"), pytest.raises(httpx.HTTPStatusError):
-        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.call(FAKE_TOKEN, "/actions/", "GET")
 
     assert f"response={logged_response}" in caplog.text
 
@@ -124,7 +124,7 @@ async def test_call_reraises_original_httpx_error(error: httpx.HTTPError):
     api_client = ClueApiClient(auth_provider=auth_provider, client=http_client)
 
     with pytest.raises(type(error)) as raised_error:
-        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.call(FAKE_TOKEN, "/actions/", "GET")
 
     assert raised_error.value is error
     assert raised_error.value.request is error.request
@@ -135,7 +135,7 @@ async def test_call_requires_started_http_client():
     api_client = ClueApiClient()
 
     with pytest.raises(RuntimeError, match="has not been started"):
-        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.call(FAKE_TOKEN, "/actions/", "GET")
 
 
 @pytest.mark.asyncio
@@ -149,7 +149,7 @@ async def test_call_fails_after_owned_http_client_is_closed():
         await api_client.aclose()
 
     with pytest.raises(RuntimeError, match="has not been started"):
-        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.call(FAKE_TOKEN, "/actions/", "GET")
 
 
 @pytest.mark.asyncio
@@ -205,4 +205,4 @@ async def test_call_fails_after_injected_http_client_is_closed():
     await api_client.aclose()
 
     with pytest.raises(RuntimeError, match="has not been started"):
-        await api_client.call(FAKE_TOKEN, "/whoami", "GET")
+        await api_client.call(FAKE_TOKEN, "/actions/", "GET")

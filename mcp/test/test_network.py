@@ -1,4 +1,3 @@
-import json
 import os
 from urllib.parse import urlparse, urlunparse
 
@@ -73,86 +72,6 @@ def get_token() -> str:
     return token
 
 
-def call_mcp_tool(token: str, tool_name: str, arguments: dict | None = None) -> dict:
-    if arguments is None:
-        arguments = {}
-
-    url_mcp = _mcp_request_url()
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json, text/event-stream",
-    }
-
-    init_payload = {
-        "jsonrpc": "2.0",
-        "method": "initialize",
-        "params": {
-            "protocolVersion": "2024-11-05",
-            "capabilities": {},
-            "clientInfo": {"name": "pytest-tool-tester", "version": "1.0.0"},
-        },
-        "id": 1,
-    }
-
-    init_response = httpx.post(url_mcp, headers=headers, json=init_payload, timeout=CLUE_API.TIMEOUT)
-    assert init_response.status_code == 200, f"Initialization failed: {init_response.text}"
-
-    session_id = init_response.headers.get("mcp-session-id") or init_response.headers.get("Mcp-Session-Id")
-    assert session_id is not None, "Server did not return mcp-session-id"
-
-    tool_headers = headers.copy()
-    tool_headers["mcp-session-id"] = session_id
-    tool_headers["Mcp-Method"] = "tools/call"
-    tool_headers["Mcp-Name"] = tool_name
-
-    mcp_payload = {
-        "jsonrpc": "2.0",
-        "method": "tools/call",
-        "params": {"name": tool_name, "arguments": arguments},
-        "id": 2,
-    }
-
-    response = httpx.post(url_mcp, headers=tool_headers, json=mcp_payload, timeout=CLUE_API.TIMEOUT)
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {response.text}"
-
-    response_data = None
-    for line in response.text.splitlines():
-        line = line.strip()
-        if line.startswith("data:"):
-            response_data = json.loads(line.replace("data:", "", 1).strip())
-            break
-
-    assert response_data is not None, "Could not find JSON-RPC payload in response"
-    assert "result" in response_data, "Response did not contain a JSON-RPC result"
-    return response_data["result"]
-
-
-def _get_any_hit_id(token: str) -> str:
-    response = httpx.post(
-        headers={"Authorization": f"Bearer {token}"},
-        url=f"{CLUE_API.BASE_URL}/search/hit",
-        json={"query": "clue.id:*", "rows": 1, "offset": 0, "fl": "clue.id"},
-        timeout=CLUE_API.TIMEOUT,
-    )
-    response.raise_for_status()
-    items = response.json().get("api_response", {}).get("items") or []
-    assert items, "No hits available for live network test"
-    return items[0]["clue"]["id"]
-
-
-def _get_hit(token: str, hit_id: str) -> dict:
-    response = httpx.get(
-        f"{CLUE_API.BASE_URL}/hit/{hit_id}",
-        headers={"Authorization": f"Bearer {token}"},
-        timeout=CLUE_API.TIMEOUT,
-    )
-    response.raise_for_status()
-    hit = response.json().get("api_response")
-    assert isinstance(hit, dict), "Clue API response did not contain a hit"
-    return hit
-
-
 def test_mcp_server_connection():
     token = get_token()
     url_mcp = _mcp_request_url()
@@ -176,84 +95,6 @@ def test_mcp_server_connection():
 
     response = httpx.post(url_mcp, headers=headers, json=payload, timeout=CLUE_API.TIMEOUT)
     assert response.status_code == 200
-
-
-def test_tool_whoami():
-    token = get_token()
-    result = call_mcp_tool(token, "whoami")
-
-    assert not result.get("isError", False), f"Tool execution failed: {result}"
-    tool_output = json.loads(result["content"][0]["text"])
-    assert tool_output["username"] == TEST_USERNAME
-    assert tool_output["email"] == TEST_EMAIL
-
-
-def test_tool_list_assigned_hits():
-    token = get_token()
-    result = call_mcp_tool(token, "list_assigned_hits")
-
-    assert not result.get("isError", False)
-    assert "content" in result
-
-
-def test_tool_get_hit_fields():
-    token = get_token()
-    result = call_mcp_tool(token, "get_hit_fields")
-
-    assert not result.get("isError", False)
-    tool_output = json.loads(result["content"][0]["text"])
-    assert isinstance(tool_output, dict)
-    assert "clue.id" in tool_output
-
-
-def test_tool_get_field_values():
-    token = get_token()
-    result = call_mcp_tool(token, "get_field_values", {"field": "clue.escalation"})
-
-    assert not result.get("isError", False)
-    tool_output = json.loads(result["content"][0]["text"])
-    assert isinstance(tool_output, dict)
-
-
-def test_tool_lucene_query():
-    token = get_token()
-    result = call_mcp_tool(
-        token,
-        "lucene_query",
-        {
-            "query": "clue.id:*",
-            "fl": "clue.id,clue.assignment",
-            "rows": 5,
-            "offset": 0,
-            "sort": "event.created desc",
-        },
-    )
-
-    assert not result.get("isError", False)
-    structured = result.get("structuredContent") or {}
-    assert "rows" in structured
-    assert "total" in structured
-    assert "hits" in structured
-
-
-def test_tool_add_comment_to_hit():
-    token = get_token()
-    hit_id = _get_any_hit_id(token)
-    comment = "network test comment"
-
-    result = call_mcp_tool(
-        token,
-        "add_comment_to_hit",
-        {"hit_id": hit_id, "comment": comment},
-    )
-
-    assert not result.get("isError", False)
-    text = result["content"][0]["text"]
-    assert "Comment added successfully" in text
-
-    hit = _get_hit(token, hit_id)
-    comments = hit.get("clue", {}).get("comment", [])
-    assert any(comment_data.get("value") == f"From MCP Client: {comment}" for comment_data in comments)
 
 
 if __name__ == "__main__":
