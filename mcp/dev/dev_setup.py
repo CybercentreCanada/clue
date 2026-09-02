@@ -289,7 +289,7 @@ def main() -> None:
         ok = verify_keycloak()
         if not ok:
             print(
-                "  Start dependencies first: docker compose up -d  (from the mcp directory)",
+                "  Start dependencies first: docker compose up -d  (from api/dev/)",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -318,7 +318,7 @@ def main() -> None:
     print("  # Option A — start the MCP server directly for fast development:")
     print("  poetry run python -m dev.dev_setup --start\n")
     print("  # Start dependencies separately when they are not already running:")
-    print("  docker compose up -d  # (from the mcp directory)\n")
+    print("  docker compose up -d  # (from api/dev/)\n")
 
 
 if __name__ == "__main__":
