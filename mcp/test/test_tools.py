@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from mcp.server.auth.provider import AccessToken
 
-from clue_mcp.tools import EnrichmentOptions, Selector, register_tools
+from clue_mcp.tools import REQUEST_TIMEOUT_BUFFER, EnrichmentOptions, Selector, register_tools
 
 FAKE_TOKEN = AccessToken(token="fake-bearer", client_id="test-client", scopes=["clue"])
 TOOL_NAMES = {
@@ -86,13 +86,15 @@ async def test_listing_tools_forward_to_clue_api(registered_tools, tool_name, ex
 async def test_execute_action_serializes_inputs_and_plugin_parameters(registered_tools):
     tools, api_client = registered_tools
 
+    timeout: float = 12.5
+
     await tools["execute_action"](
         plugin_id="virustotal",
         action_id="submit",
         selectors=[Selector(type="sha256", value="abc")],
         context={"case": "123"},
         parameters={"priority": "high"},
-        max_timeout=12.5,
+        max_timeout=timeout,
     )
 
     api_client.call.assert_awaited_once_with(
@@ -104,8 +106,8 @@ async def test_execute_action_serializes_inputs_and_plugin_parameters(registered
             "selectors": [{"type": "sha256", "value": "abc"}],
             "context": {"case": "123"},
         },
-        params={"max_timeout": 12.5},
-        request_timeout=12.5,
+        params={"max_timeout": timeout},
+        request_timeout=timeout + REQUEST_TIMEOUT_BUFFER,
     )
 
 
@@ -133,7 +135,7 @@ async def test_action_status_encodes_identifiers_and_timeout(registered_tools):
         method="GET",
         body=None,
         params={"max_timeout": 3},
-        request_timeout=3,
+        request_timeout=3 + REQUEST_TIMEOUT_BUFFER,
     )
 
 
@@ -163,7 +165,7 @@ async def test_fetcher_status_forwards_task_and_timeout(registered_tools):
         path="fetchers/plugin/fetcher/status/task",
         method="GET",
         params={"max_timeout": 4},
-        request_timeout=4,
+        request_timeout=6,
     )
 
 
@@ -181,7 +183,7 @@ async def test_bulk_enrich_serializes_data_and_options(registered_tools):
         method="POST",
         body=[{"type": "ipv4", "value": "192.0.2.1"}],
         params={"sources": "source-a|-source-b", "max_timeout": 8.0, "limit": 5, "no_cache": True},
-        request_timeout=8.0,
+        request_timeout=10.0,
     )
 
 

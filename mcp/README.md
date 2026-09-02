@@ -174,7 +174,7 @@ Run Ruff linting and formatting from `mcp/`:
 Container:
 
 - docker build --secret id=pip_ca,src=${PIP_CERT:-/etc/ssl/certs/ca-certificates.crt} -t clue-mcp-server:latest .
-- docker compose up -d
+- docker compose --profile full up -d
 
 Repository compose currently uses an explicit bridge network for communication between services. For production, also apply ingress and egress policy controls appropriate to the deployment environment.
 
