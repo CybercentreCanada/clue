@@ -202,6 +202,7 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         body = dict(parameters or {})
         reserved_fields = {"selector", "selectors", "context"} & body.keys()
+        max_timeout = _request_timeout(max_timeout)
         if reserved_fields:
             fields = ", ".join(sorted(reserved_fields))
             raise ValueError(f"parameters must not override reserved fields: {fields}")
@@ -218,7 +219,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=body,
             params={"max_timeout": max_timeout} if max_timeout is not None else None,
-            request_timeout=_request_timeout(max_timeout),
+            request_timeout=max_timeout,
         )
 
     @mcp.tool(name="get_action_status")
@@ -245,6 +246,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             ValueError: If an access token is not available.
             httpx.HTTPError: If the Clue API request fails.
         """
+        max_timeout = _request_timeout(max_timeout)
         return await api_client.call(
             user_access_token=_proper_access_token(),
             path=(
@@ -301,6 +303,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             ValueError: If an access token is not available.
             httpx.HTTPError: If the Clue API request fails.
         """
+        max_timeout = _request_timeout(max_timeout)
         return await api_client.call(
             user_access_token=_proper_access_token(),
             path=f"fetchers/{_route_segment(plugin_id, 'plugin_id')}/{_route_segment(fetcher_id, 'fetcher_id')}",
@@ -334,6 +337,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             ValueError: If an access token is not available.
             httpx.HTTPError: If the Clue API request fails.
         """
+        max_timeout = _request_timeout(max_timeout)
         return await api_client.call(
             user_access_token=_proper_access_token(),
             path=(
