@@ -76,6 +76,14 @@ def register_tools(mcp, api_client: ClueApiClient):
             params["sources"] = "|".join(sources)
         return params
 
+    def _request_timeout(max_timeout: float | None) -> float | None:
+        """Allow the backend timeout plus time for HTTP transport overhead."""
+        if max_timeout is None:
+            return None
+        if max_timeout <= 0:
+            raise ValueError("max_timeout must be greater than zero")
+        return max_timeout
+
     def _proper_access_token() -> AccessToken:
         """Return the current request access token or fail consistently."""
         request_available = False
@@ -182,7 +190,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             selector: Value supplied to an action that accepts one input.
             context: Optional execution context accepted by the action.
             parameters: Additional top-level fields required by the action's parameter schema.
-            max_timeout: Optional backend request timeout in seconds.
+            max_timeout: Optional backend request timeout in seconds if not input, will use the setup timeout from config file.
 
         Returns:
             dict: The action result, including its outcome, output format,
@@ -210,6 +218,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=body,
             params={"max_timeout": max_timeout} if max_timeout is not None else None,
+            request_timeout=_request_timeout(max_timeout),
         )
 
     @mcp.tool(name="get_action_status")
@@ -225,7 +234,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             plugin_id: ID of the plugin that provides the action.
             action_id: ID of the action whose status should be retrieved.
             task_id: ID of the specific action task to retrieve.
-            max_timeout: Optional backend request timeout in seconds.
+            max_timeout: Optional backend request timeout in seconds if not input, will use the setup timeout from config file.
 
         Returns:
             dict: The action result, including an outcome of ``success``,
@@ -245,6 +254,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="GET",
             body=None,
             params={"max_timeout": max_timeout} if max_timeout is not None else None,
+            request_timeout=_request_timeout(max_timeout),
         )
 
     # region fetchers
@@ -280,7 +290,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             plugin_id: ID of the plugin that provides the fetcher.
             fetcher_id: ID of the fetcher to run.
             selector: Typed value on which to run the fetcher.
-            max_timeout: Optional backend request timeout in seconds.
+            max_timeout: Optional backend request timeout in seconds if not input, will use the setup timeout from config file.
 
         Returns:
             dict: The fetcher result, including its outcome and, depending on
@@ -297,6 +307,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=selector.model_dump(exclude_none=True),
             params={"max_timeout": max_timeout} if max_timeout is not None else None,
+            request_timeout=_request_timeout(max_timeout),
         )
 
     @mcp.tool(name="get_fetcher_status")
@@ -312,7 +323,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             plugin_id: ID of the plugin that provides the fetcher.
             fetcher_id: ID of the fetcher whose status should be retrieved.
             task_id: ID of the specific fetcher task to retrieve.
-            max_timeout: Optional backend request timeout in seconds.
+            max_timeout: Optional backend request timeout in seconds if not input, will use the setup timeout from config file.
 
         Returns:
             dict: The fetcher result, including an outcome of ``success``,
@@ -331,6 +342,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             ),
             method="GET",
             params={"max_timeout": max_timeout} if max_timeout is not None else None,
+            request_timeout=_request_timeout(max_timeout),
         )
 
     # region lookup
@@ -390,6 +402,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=[selector.model_dump(exclude_none=True) for selector in data],
             params=_enrichment_params(options),
+            request_timeout=_request_timeout(options.max_timeout if options is not None else None),
         )
 
     @mcp.tool(name="enrich")
@@ -417,6 +430,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             path=f"lookup/enrich/{_route_segment(type_name, 'type_name')}/{quote(quote(value, safe=''), safe='')}/",
             method="GET",
             params=_enrichment_params(options),
+            request_timeout=_request_timeout(options.max_timeout if options is not None else None),
         )
 
     # region static
