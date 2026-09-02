@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from mcp.server.auth.provider import AccessToken
 
+from clue_mcp.config import CLUE_API
 from clue_mcp.tools import REQUEST_TIMEOUT_BUFFER, EnrichmentOptions, Selector, register_tools
 
 FAKE_TOKEN = AccessToken(token="fake-bearer", client_id="test-client", scopes=["clue"])
@@ -150,8 +151,8 @@ async def test_run_fetcher_serializes_selector(registered_tools):
         path="fetchers/plugin/fetcher",
         method="POST",
         body={"type": "domain", "value": "example.ca", "classification": "TLP:CLEAR"},
-        params=None,
-        request_timeout=None,
+        params={"max_timeout": CLUE_API.TIMEOUT},
+        request_timeout=CLUE_API.TIMEOUT + REQUEST_TIMEOUT_BUFFER,
     )
 
 
@@ -187,6 +188,21 @@ async def test_bulk_enrich_serializes_data_and_options(registered_tools):
     )
 
 
+async def test_bulk_enrich_uses_base_timeout_without_options(registered_tools):
+    tools, api_client = registered_tools
+
+    await tools["bulk_enrich"]([Selector(type="ipv4", value="192.0.2.1")])
+
+    api_client.call.assert_awaited_once_with(
+        user_access_token=FAKE_TOKEN,
+        path="lookup/enrich",
+        method="POST",
+        body=[{"type": "ipv4", "value": "192.0.2.1"}],
+        params={"max_timeout": CLUE_API.TIMEOUT},
+        request_timeout=CLUE_API.TIMEOUT + REQUEST_TIMEOUT_BUFFER,
+    )
+
+
 async def test_enrich_applies_clue_double_encoding(registered_tools):
     tools, api_client = registered_tools
 
@@ -196,8 +212,8 @@ async def test_enrich_applies_clue_double_encoding(registered_tools):
         user_access_token=FAKE_TOKEN,
         path="lookup/enrich/domain/example.ca%252Fpath%2520value/",
         method="GET",
-        params=None,
-        request_timeout=None,
+        params={"max_timeout": CLUE_API.TIMEOUT},
+        request_timeout=CLUE_API.TIMEOUT + REQUEST_TIMEOUT_BUFFER,
     )
 
 
