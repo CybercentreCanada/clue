@@ -74,6 +74,7 @@ class ClueApiClient:
         method: HttpVerb,
         body: Any = None,
         params: dict[str, Any] | None = None,
+        request_timeout: float | None = None,
     ) -> Any:
         """Execute an authenticated request against the Clue API.
 
@@ -86,6 +87,8 @@ class ClueApiClient:
             body: JSON-serialisable request body. Must be ``None`` for
                     ``GET`` and ``OPTIONS`` requests.
             params: Optional URL query parameters.
+            request_timeout: Optional timeout for this HTTP request. Defaults
+                to the client's configured timeout.
 
         Returns:
             Any: The ``api_response`` value extracted from the Clue JSON
@@ -101,7 +104,8 @@ class ClueApiClient:
         api_response = None
         status_code: int = -1  # Initialised to known impossible answer value
         route = f"/{path.lstrip('/')}"
-        logger.info(f"api_request_start method={method} route={route} timeout={self.timeout:.2f}")
+        effective_timeout = request_timeout if request_timeout is not None else self.timeout
+        logger.info(f"api_request_start method={method} route={route} timeout={effective_timeout:.2f}")
 
         try:
             if method in {"GET", "OPTIONS"} and body is not None:
@@ -119,6 +123,7 @@ class ClueApiClient:
                 headers=headers,
                 params=params,
                 json=body if body is not None else None,
+                timeout=effective_timeout,
             )
             status_code = response.status_code
             response.raise_for_status()
@@ -140,7 +145,7 @@ class ClueApiClient:
             outcome = f"http_{status_class}"
             logger.warning(
                 f"api_request_http_error method={method} route={route} status_code={code} "
-                f"outcome={outcome} response={e.response.content.decode()}"
+                f"outcome={outcome} response={e.response.content.decode('utf-8',errors='replace')}"
             )
             raise
 

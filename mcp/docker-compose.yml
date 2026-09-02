@@ -1,5 +1,7 @@
 services:
   clue-mcp:
+    profiles:
+      - full
     build:
       context: .
       dockerfile: Dockerfile
@@ -53,6 +55,8 @@ services:
         condition: service_healthy
 
   clue-api:
+    profiles:
+      - full
     image: cccs/clue-api:latest
     ports:
       - "${CLUE_API_PUBLIC_PORT:-5000}:5000"
@@ -81,6 +85,8 @@ services:
         condition: service_healthy
 
   mongodb:
+    profiles:
+      - full
     image: mongo:7
     command: ["--replSet", "rs0", "--bind_ip_all"]
     healthcheck:
@@ -93,6 +99,8 @@ services:
       - clue-mcp-network
 
   redis:
+    profiles:
+      - full
     image: redis
     networks:
       - clue-mcp-network
@@ -103,6 +111,8 @@ services:
       retries: 20
 
   keycloak:
+    profiles:
+      - full
     build:
       context: ../api/dev/keycloak
       dockerfile: Dockerfile

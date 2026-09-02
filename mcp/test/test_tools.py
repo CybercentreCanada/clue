@@ -105,6 +105,7 @@ async def test_execute_action_serializes_inputs_and_plugin_parameters(registered
             "context": {"case": "123"},
         },
         params={"max_timeout": 12.5},
+        request_timeout=12.5,
     )
 
 
@@ -132,6 +133,7 @@ async def test_action_status_encodes_identifiers_and_timeout(registered_tools):
         method="GET",
         body=None,
         params={"max_timeout": 3},
+        request_timeout=3,
     )
 
 
@@ -147,6 +149,7 @@ async def test_run_fetcher_serializes_selector(registered_tools):
         method="POST",
         body={"type": "domain", "value": "example.ca", "classification": "TLP:CLEAR"},
         params=None,
+        request_timeout=None,
     )
 
 
@@ -160,6 +163,7 @@ async def test_fetcher_status_forwards_task_and_timeout(registered_tools):
         path="fetchers/plugin/fetcher/status/task",
         method="GET",
         params={"max_timeout": 4},
+        request_timeout=4,
     )
 
 
@@ -168,7 +172,7 @@ async def test_bulk_enrich_serializes_data_and_options(registered_tools):
 
     await tools["bulk_enrich"](
         [Selector(type="ipv4", value="192.0.2.1")],
-        EnrichmentOptions(sources=["source-a", "-source-b"], limit=5, no_cache=True),
+        EnrichmentOptions(sources=["source-a", "-source-b"], limit=5, no_cache=True, max_timeout=8),
     )
 
     api_client.call.assert_awaited_once_with(
@@ -176,7 +180,8 @@ async def test_bulk_enrich_serializes_data_and_options(registered_tools):
         path="lookup/enrich",
         method="POST",
         body=[{"type": "ipv4", "value": "192.0.2.1"}],
-        params={"sources": "source-a|-source-b", "limit": 5, "no_cache": True},
+        params={"sources": "source-a|-source-b", "max_timeout": 8.0, "limit": 5, "no_cache": True},
+        request_timeout=8.0,
     )
 
 
@@ -190,6 +195,7 @@ async def test_enrich_applies_clue_double_encoding(registered_tools):
         path="lookup/enrich/domain/example.ca%252Fpath%2520value/",
         method="GET",
         params=None,
+        request_timeout=None,
     )
 
 

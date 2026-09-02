@@ -41,6 +41,26 @@ async def test_call_reuses_and_closes_owned_http_client():
 
 
 @pytest.mark.asyncio
+async def test_call_uses_per_request_timeout_override():
+    response = Mock(status_code=200, json=Mock(return_value={"api_response": {"status": "ok"}}))
+    response.raise_for_status = Mock()
+    http_client = Mock(request=AsyncMock(return_value=response))
+    auth_provider = Mock(get_clue_token=AsyncMock(return_value="clue-token"))
+    api_client = ClueApiClient(auth_provider=auth_provider, timeout=5.0, client=http_client)
+
+    await api_client.call(FAKE_TOKEN, "/actions/", "GET", request_timeout=14.5)
+
+    http_client.request.assert_awaited_once_with(
+        method="GET",
+        url=f"{api_client.base_url}/actions/",
+        headers={"Authorization": "Bearer clue-token"},
+        params=None,
+        json=None,
+        timeout=14.5,
+    )
+
+
+@pytest.mark.asyncio
 async def test_call_rejects_body_for_non_post_methods():
     auth_provider = Mock()
     auth_provider.get_clue_token = AsyncMock(return_value="clue-token")
