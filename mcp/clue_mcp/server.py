@@ -21,14 +21,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Validate and convert the port to an integer, defaulting to 8000 if invalid
-try:
-    port: int = int(MCPSettings.PORT)
-except ValueError:
-    logger.error(f"server_config_error invalid_port={MCPSettings.PORT}")
-    port = 8000
-
-
 api_client = ClueApiClient()
 
 
@@ -47,7 +39,7 @@ mcp = FastMCP(
         required_scopes=MCPSettings.SCOPE.split(),
     ),
     host=MCPSettings.HOST,
-    port=port,
+    port=MCPSettings.PORT,
 )
 
 
@@ -90,6 +82,6 @@ register_prompts(mcp)
 if __name__ == "__main__":
     # Start the MCP server using streamable-HTTP transport.
 
-    logger.info(f"server_start host={MCPSettings.HOST} port={port}")
+    logger.info(f"server_start host={MCPSettings.HOST} port={MCPSettings.PORT}")
     logger.info(f"server_backend_target base_url={CLUE_API.BASE_URL}")
     mcp.run(transport="streamable-http")

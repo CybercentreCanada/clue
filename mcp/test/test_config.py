@@ -72,3 +72,17 @@ def test_auth_timeout_is_validated_at_import(monkeypatch, timeout, message):
     finally:
         monkeypatch.delenv("AUTH_TIMEOUT", raising=False)
         importlib.reload(config)
+
+
+def test_invalid_mcp_port_uses_default_for_generated_base_url(monkeypatch):
+    with monkeypatch.context() as environment:
+        environment.setenv("MCP_PORT", "not-a-port")
+        environment.delenv("MCP_BASE_URL", raising=False)
+        environment.delenv("MCP_HOST", raising=False)
+        environment.delenv("MCP_PUBLIC_HOST", raising=False)
+        reloaded_config = importlib.reload(config)
+
+        assert reloaded_config.MCPSettings.PORT == 8000
+        assert reloaded_config.MCPSettings.BASE_URL == "http://localhost:8000/mcp"
+
+    importlib.reload(config)
