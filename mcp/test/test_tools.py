@@ -230,7 +230,7 @@ async def test_documentation_file_rejects_paths_llm_should_not_send(registered_t
     api_client.call.assert_not_awaited()
 
 
-@pytest.mark.parametrize("identifier", ["", "plugin/action", r"plugin\action", "plugin\nname"])
+@pytest.mark.parametrize("identifier", ["", ".", "..", "plugin/action", r"plugin\action", "plugin\nname"])
 async def test_route_identifiers_reject_invalid_segments(registered_tools, identifier):
     tools, api_client = registered_tools
 
