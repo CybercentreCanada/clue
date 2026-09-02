@@ -238,17 +238,18 @@ def update_mcp_json(token: str, mcp_json_path: Path | None = None) -> None:
     print(f"  Updated {mcp_json_path}")
 
 
-def start_server(env_path: Path) -> None:
+def start_server(env_path: Path) -> int:
     """Start the MCP server with the current Python environment."""
     print("\n5. Starting MCP server:")
     print("\tPress Ctrl+C to stop.\n")
     mcp_dir = env_path.parent
     print(f"\tUsing interpreter: {sys.executable}")
     print(f"\tWorking directory: {mcp_dir}")
-    subprocess.run(
+    result = subprocess.run(
         [sys.executable, "-m", "clue_mcp.server"],
         cwd=mcp_dir,
     )
+    return result.returncode
 
 
 def main() -> None:
@@ -311,8 +312,7 @@ def main() -> None:
         if args.yes or _confirm(f"Stop any process/container using port {MCPSettings.PORT} to free it?"):
             clear_port(int(MCPSettings.PORT))
 
-        start_server(env_path)
-        return
+        sys.exit(start_server(env_path))
 
     print("\nDone. To start the MCP server:\n")
     print("  # Option A — start the MCP server directly for fast development:")

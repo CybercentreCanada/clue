@@ -73,3 +73,15 @@ def test_clear_port_does_not_stop_compose_when_mcp_service_not_running(monkeypat
     dev_setup.clear_port(8000)
 
     assert not any(call[0] == "docker" and "stop" in call for call in calls)
+
+
+def test_start_server_returns_subprocess_exit_code(monkeypatch, tmp_path):
+    failure_code = 1
+
+    monkeypatch.setattr(
+        dev_setup.subprocess,
+        "run",
+        lambda command, **kwargs: subprocess.CompletedProcess(command, failure_code),
+    )
+
+    assert dev_setup.start_server(tmp_path / ".env") == failure_code
