@@ -1,7 +1,6 @@
 """Dev environment setup for the Clue MCP server.
 
-Mirrors the purpose of api/clue/odm/random_data.py — a single script
-that bootstraps everything needed for local development.
+This script bootstraps the local development settings needed by the MCP server.
 
 What it does:
   1. Writes a .env file. docker compose reads it automatically, and
@@ -11,10 +10,10 @@ What it does:
      .vscode/mcp.json so VS Code can authenticate immediately (no prompts).
 
 Usage:
-  python3 dev_setup.py              # write .env
-  python3 dev_setup.py --verify     # also verify Keycloak connectivity
-  python3 dev_setup.py --token      # also fetch token and update mcp.json
-  python3 dev_setup.py --start      # do all above, then start the MCP server
+    poetry run python -m dev.dev_setup          # write .env
+    poetry run python -m dev.dev_setup --verify # also verify Keycloak connectivity
+    poetry run python -m dev.dev_setup --token  # also fetch token and update mcp.json
+    poetry run python -m dev.dev_setup --start  # do all above, then start the MCP server
 
 Why the token is written literally into mcp.json:
   VS Code's "http" server type only accepts "headers"/"oauth" fields (no
@@ -175,7 +174,7 @@ def clear_port(port: int) -> None:
     if docker:
         try:
             result = subprocess.run(
-                [docker, "compose", "--profile", "full", "ps", "--format", "{{.Service}}"],
+                [docker, "compose", "ps", "--format", "{{.Service}}"],
                 cwd=mcp_dir,
                 capture_output=True,
                 text=True,
@@ -183,7 +182,7 @@ def clear_port(port: int) -> None:
             )
             if _MCP_SERVICE in result.stdout.split():
                 subprocess.run(
-                    [docker, "compose", "--profile", "full", "stop", _MCP_SERVICE],
+                    [docker, "compose", "stop", _MCP_SERVICE],
                     cwd=mcp_dir,
                     capture_output=True,
                     timeout=15,
@@ -207,11 +206,6 @@ def clear_port(port: int) -> None:
 
         except Exception as exc:
             print(f"  Could not inspect port {port} with lsof: {exc}", file=sys.stderr)
-
-    # Last resort: fuser -k
-    fuser = _find_executable("fuser")
-    if fuser:
-        subprocess.run([fuser, "-k", f"{port}/tcp"], capture_output=True)
 
     print(f"  Port {port} is free")
 
@@ -245,7 +239,7 @@ def update_mcp_json(token: str, mcp_json_path: Path | None = None) -> None:
 
 
 def start_server(env_path: Path) -> None:
-    """Start the MCP server via poetry; clue_mcp.config loads env_path's .env itself."""
+    """Start the MCP server with the current Python environment."""
     print("\n5. Starting MCP server:")
     print("\tPress Ctrl+C to stop.\n")
     mcp_dir = env_path.parent
@@ -272,7 +266,7 @@ def main() -> None:
     parser.add_argument(
         "--start",
         action="store_true",
-        help="Write .env, verify Keycloak, fetch token, update mcp.json, then start the server with poetry",
+        help="Write .env, verify Keycloak, fetch token, update mcp.json, then start the MCP server",
     )
     parser.add_argument(
         "-y",
@@ -295,7 +289,7 @@ def main() -> None:
         ok = verify_keycloak()
         if not ok:
             print(
-                "  Start dependencies first: docker compose up -d  (from api/dev/)",
+                "  Start dependencies first: docker compose up -d  (from the mcp directory)",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -321,11 +315,10 @@ def main() -> None:
         return
 
     print("\nDone. To start the MCP server:\n")
-    print("  # Option A — start both dependencies and server (recommended):")
-    print("  python3 dev_setup.py --start\n")
-    print("  # Option B — start dependencies and server separately:")
-    print("  docker compose up -d  # (from api/dev/)")
-    print("  poetry run python -m clue_mcp.server\n")
+    print("  # Option A — start the MCP server directly for fast development:")
+    print("  poetry run python -m dev.dev_setup --start\n")
+    print("  # Start dependencies separately when they are not already running:")
+    print("  docker compose up -d  # (from the mcp directory)\n")
 
 
 if __name__ == "__main__":

@@ -101,7 +101,7 @@ class ClueApiClient:
         api_response = None
         status_code: int = -1  # Initialised to known impossible answer value
         route = f"/{path.lstrip('/')}"
-        logger.info(f"api_request_sroutetart method={method} route={route} timeout={self.timeout:.2f}")
+        logger.info(f"api_request_start method={method} route={route} timeout={self.timeout:.2f}")
 
         try:
             if method in {"GET", "OPTIONS"} and body is not None:
