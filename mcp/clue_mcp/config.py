@@ -1,3 +1,4 @@
+import logging
 import os
 from urllib.parse import urlparse
 
@@ -5,6 +6,8 @@ from dotenv import load_dotenv
 
 # Mirrors api/clue/app.py: loads mcp/.env (if present) without overriding already-exported vars.
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 
 def _require_https_for_non_local(url: str, env_name: str) -> str:
@@ -111,7 +114,11 @@ class ICONIFY:
 class MCPSettings:
     HOST = os.environ.get("MCP_HOST", "0.0.0.0")
     PUBLIC_HOST = os.environ.get("MCP_PUBLIC_HOST", "localhost" if HOST in {"0.0.0.0", "::"} else HOST)
-    PORT = os.environ.get("MCP_PORT", "8000")
+    try:
+        PORT = int(os.environ.get("MCP_PORT", "8000"))
+    except ValueError:
+        logger.error(f"server_config_error invalid_port={os.environ.get("MCP_PORT")}")
+        PORT = 8000
     LOG_LEVEL = os.environ.get("MCP_LOG_LEVEL", "INFO").upper()
     BASE_URL = _require_https_for_non_local(
         os.environ.get("MCP_BASE_URL", f"http://{PUBLIC_HOST}:{PORT}/mcp"),
