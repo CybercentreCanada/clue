@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 import pytest
+from flask import Flask
 from pydantic import ValidationError
 
 from clue.api.v1.registration import (
@@ -74,3 +75,18 @@ def test_runtime_registration_rejects_an_existing_source_name():
 
         assert not is_registration_name_available("built-in")
         assert is_registration_name_available("new-plugin")
+
+
+def test_registration_handler_rejects_disallowed_origin():
+    app = Flask(__name__)
+    payload = {"name": "attacker", "url": "http://attacker.example/"}
+
+    with (
+        app.test_request_context("/register/", method="POST", json=payload),
+        patch("clue.api.v1.registration.config") as mock_config,
+    ):
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
+        response = handler()
+
+    assert response.status_code == 400

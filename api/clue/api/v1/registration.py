@@ -93,13 +93,7 @@ def register_application(**kwargs):
         registration_request = ExternalSource(**request.json, built_in=False)
     except ValidationError:
         return bad_request(err="Request data could not be converted to an ExternalSource object")
-    origin = _url_origin(registration_request.url)
-
-    if not origin is not None and origin in {
-        allowed_origin
-        for configured_origin in config.api.registration_allowed_origins
-        if (allowed_origin := _url_origin(configured_origin)) is not None
-    }:
+    if not is_registration_url_allowed(registration_request.url):
         return bad_request(err="External source URL origin is not permitted for runtime registration")
 
     if not is_registration_name_available(registration_request.name):
