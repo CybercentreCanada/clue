@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from flask import Flask
 
-from clue.models.auth import AuthResult, AuthUser, Privilege, UserRole
+from clue.models.AuthUser import AuthResult, AuthUser, Privilege, UserRole
 from clue.security import api_login
 
 

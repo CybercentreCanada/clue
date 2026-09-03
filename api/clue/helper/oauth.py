@@ -7,7 +7,7 @@ import elasticapm
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION as CL_ENGINE
 from clue.config import config
-from clue.models.auth import UserRole
+from clue.models.AuthUser import UserRole
 from clue.models.config import (
     DEFAULT_EMAIL_FIELDS,
     DEFAULT_USER_FIELDS,

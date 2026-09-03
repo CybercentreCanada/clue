@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from clue.helper.oauth import parse_profile
-from clue.models.auth import AuthUser, UserRole
+from clue.models.AuthUser import AuthUser, UserRole
 from clue.models.config import OAuthProvider
 
 

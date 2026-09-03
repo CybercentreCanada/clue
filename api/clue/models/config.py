@@ -19,7 +19,7 @@ from clue.common import forge
 from clue.common.exceptions import ClueValueError
 from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
-from clue.models.auth import APIKeyConf, UserRole
+from clue.models.AuthUser import APIKeyConf, UserRole
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
 DEFAULT_EMAIL_FIELDS = ["email", "emails", "extension_selectedEmailAddress", "otherMails", "preferred_username", "upn"]

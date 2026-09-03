@@ -11,7 +11,7 @@ from clue.common.exceptions import (
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config, get_redis
 from clue.helper.oauth import parse_profile
-from clue.models.auth import AuthUser
+from clue.models.AuthUser import AuthUser
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.user_quota_tracker import UserQuotaTracker
 
@@ -38,7 +38,7 @@ def parse_user_data(
             and the user doesn't exist in the database.
 
     Returns:
-        User: The parsed User ODM
+        Normalized identity used after successful authentication. [AuthUser]
     """
     if not data or not oauth_provider:
         raise InvalidDataException("Both the JWT and OAuth provider must be supplied")

@@ -15,7 +15,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
-from clue.models.auth import AuthResult, AuthUser, Privilege, UserRole
+from clue.models.AuthUser import AuthResult, AuthUser, Privilege, UserRole
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.obo import get_obo_token

@@ -26,6 +26,7 @@ from clue.common.logging import get_logger
 from clue.common.str_utils import default_string_value
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
+from clue.models.AuthUser import AuthUser, Privilege
 from clue.security.utils import generate_random_secret
 
 logger = get_logger(__file__)
@@ -176,9 +177,12 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
             # Get a useful dict of user data from the web token
             cur_user = user_service.parse_user_data(token_data, oauth_provider)
 
+            if not isinstance(cur_user, AuthUser):
+                raise ClueValueError("The authenticated user information is invalid.")
+
             logged_in_uname = cur_user.uname
 
-            priv = ["R", "W"]
+            priv = [Privilege.READ, Privilege.WRITE]
 
         # No oauth provider was specified, so we fall back to user/pass or user/apikey
         # elif user and (password or apikey):
