@@ -12,9 +12,8 @@ from test.utils.oauth_credentials import get_token
 
 def test_get_jwk_refreshes_the_cache_for_an_unknown_key():
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    jwk = jwt.PyJWK.from_dict(jwt.algorithms.RSAAlgorithm.to_jwk(private_key.public_key(), as_dict=True))
-    token = jwt.encode({"sub": "user"}, private_key, algorithm="RS256", headers={"kid": jwk.key_id or "new-key"})
-    key_data = jwk._jwk_data | {"kid": jwt.get_unverified_header(token)["kid"]}
+    key_data = jwt.algorithms.RSAAlgorithm.to_jwk(private_key.public_key(), as_dict=True) | {"kid": "new-key"}
+    token = jwt.encode({"sub": "user"}, private_key, algorithm="RS256", headers={"kid": key_data["kid"]})
 
     with (
         patch.object(jwt_service, "get_jwks", side_effect=[({}, {}), ({key_data["kid"]: key_data}, {})]) as get_jwks,

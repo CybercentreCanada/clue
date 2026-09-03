@@ -211,7 +211,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
         email = request.headers.get("X-EMAIL", None)
         if not uname or not classification:
             raise AccessDeniedException(
-                "You must also provide X-USERID and X-CLASSIFICATION headers along with you API key."
+                "You must also provide X-USERID and X-CLASSIFICATION headers along with your API key."
             )
 
         roles = {UserRole.USER} if isinstance(config_apikey, str) else {UserRole.USER, *config_apikey.roles}

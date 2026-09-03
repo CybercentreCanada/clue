@@ -115,6 +115,25 @@ def test_registration_handler_persists_allowlisted_source():
     add_plugin.assert_called_once_with(mock_config.api.external_sources[0].model_dump(mode="json", exclude_none=True))
 
 
+def test_registration_handler_forces_runtime_source_to_not_built_in():
+    app = Flask(__name__)
+    payload = {"name": "approved", "url": "https://plugins.example/", "built_in": True}
+
+    with (
+        app.test_request_context("/register/", method="POST", json=payload),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+    ):
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        mock_config.api.external_sources = []
+        handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
+        response = handler()
+
+    assert response.status_code == 200
+    assert mock_config.api.external_sources[0].built_in is False
+    assert add_plugin.call_args.args[0]["built_in"] is False
+
+
 def test_registration_handler_rejects_duplicate_without_mutation():
     app = Flask(__name__)
     existing = ExternalSource(name="existing", url="https://plugins.example/")

@@ -90,7 +90,7 @@ def register_application(**kwargs):
         return bad_request(err="No data provided")
 
     try:
-        registration_request = ExternalSource(**request.json, built_in=False)
+        registration_request = ExternalSource.model_validate({**request.json, "built_in": False})
     except ValidationError:
         return bad_request(err="Request data could not be converted to an ExternalSource object")
     if not is_registration_url_allowed(registration_request.url):

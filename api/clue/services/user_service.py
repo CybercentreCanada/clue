@@ -20,25 +20,21 @@ logger = get_logger(__file__)
 
 @capture_span(span_type="authentication")
 def parse_user_data(
-    data: dict,
+    data: dict[str, Any],
     oauth_provider: str,
 ) -> AuthUser:
-    """Convert a JSON Web Token into a Clue User
+    """Convert OAuth user data into a normalized Clue identity.
 
     Args:
-        data (dict): The JWT to parse
-        oauth_provider (str): The provider of the JWT
-        skip_setup (bool, optional): Skip the extra setup steps we run at login, for performance reasons.
-            Defaults to True.
-        access_token (str, optional): The access token to use when fetching the user's avatar. Defaults to None.
+        data: The token data or decoded OAuth profile to parse.
+        oauth_provider: The configured provider that issued the data.
 
     Raises:
-        InvalidDataException: Some required data was missing.
-        AccessDeniedException: The user is not permitted to access the application, or user auto-creation is disabled
-            and the user doesn't exist in the database.
+        InvalidDataException: If required authentication data is missing.
+        AccessDeniedException: If the authenticated identity is not permitted to access Clue.
 
     Returns:
-        Normalized identity used after successful authentication. [AuthUser]
+        The normalized authenticated identity.
     """
     if not data or not oauth_provider:
         raise InvalidDataException("Both the JWT and OAuth provider must be supplied")
@@ -70,26 +66,20 @@ def parse_user_data(
             raise AccessDeniedException("This user is not allowed access to the system")
 
     has_access = user_data.pop("access", False)
-    if has_access and user_data["email"] is not None:
-        user_data["uname"]
-
-        # Add add dynamic classification group
-        get_dynamic_classification(user_data, oauth_provider)
-    else:
+    if not has_access:
         raise AccessDeniedException("This user is not allowed access to the system")
+
+    get_dynamic_classification(user_data, oauth_provider)
 
     return AuthUser.model_validate(user_data)
 
 
 def get_dynamic_classification(user_data: dict[str, Any], oauth_provider: str):
-    """Get the classification of the user
+    """Apply configured group-based classification to normalized user data.
 
     Args:
-        current_c12n (str): The current classification of the user
-        email (str): The user's email
-
-    Returns:
-        str: The classification
+        user_data: The normalized user data to update.
+        oauth_provider: The configured OAuth provider name.
     """
     classification_map = config.auth.oauth.providers[oauth_provider].classification_map
     if len(user_data["groups"]) > 0 and classification_map:

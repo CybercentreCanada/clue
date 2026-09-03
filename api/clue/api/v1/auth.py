@@ -3,6 +3,7 @@ from urllib.parse import urlparse
 
 from authlib.integrations.base_client import OAuthError
 from flask import current_app, request
+from pydantic import ValidationError
 
 import clue.services.user_service as user_service
 from clue.api import (
@@ -24,7 +25,7 @@ from clue.common.logging import get_logger
 from clue.common.str_utils import default_string_value
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
-from clue.models.auth_user import AuthUser, Privilege
+from clue.models.auth_user import Privilege
 from clue.security.utils import generate_random_secret
 
 logger = get_logger(__file__)
@@ -181,10 +182,10 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
                 raise AuthenticationException("The OAuth provider did not return an access token.")
 
             # Get a useful dict of user data from the web token
-            cur_user = user_service.parse_user_data(token_data, oauth_provider)
-
-            if not isinstance(cur_user, AuthUser):
-                raise ClueValueError("The authenticated user information is invalid.")
+            try:
+                cur_user = user_service.parse_user_data(token_data, oauth_provider)
+            except ValidationError as e:
+                raise AuthenticationException("The OAuth provider returned invalid user information.") from e
 
             logged_in_uname = cur_user.uname
 
