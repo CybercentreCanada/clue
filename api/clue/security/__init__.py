@@ -20,6 +20,7 @@ from clue.common.exceptions import (
 )
 from clue.common.forge import APP_NAME
 from clue.config import AUDIT, config
+from clue.models.auth import Privilege, UserRole
 
 SUCCESSFUL_ATTEMPTS = Counter(
     f"{APP_NAME.replace('-', '_')}_auth_success_total",
@@ -43,20 +44,18 @@ class api_login(object):  # noqa: N801
 
     def __init__(
         self,  # noqa: ANN101
-        # TODO: Fix type parsing and checks
-        # required_type: Optional[list[str]] = None,
         username_key: str = "username",
         audit: bool = True,
-        required_priv: Optional[list[str]] = None,
+        required_priv: Optional[list[Privilege]] = None,
+        required_roles: Optional[list[UserRole]] = None,
         required_method: Optional[list[str]] = None,
         check_xsrf_token: bool = XSRF_ENABLED,
     ):
         if required_priv is None:
-            required_priv = ["R", "W"]
+            required_priv = [Privilege.READ, Privilege.WRITE]
 
-        # TODO: Fix type parsing and checks
-        # if required_type is None:
-        #     required_type = ["admin", "user"]
+        if required_roles is None:
+            required_roles = [UserRole.USER]
 
         required_method_set: set[str]
         if required_method is None:
@@ -67,10 +66,9 @@ class api_login(object):  # noqa: N801
         if len(required_method_set - {"userpass", "apikey", "internal", "oauth"}) > 0:
             raise ClueAttributeError("required_method must be a subset of {userpass, apikey, internal, oauth}")
 
-        # TODO: Fix type parsing and checks
-        # self.required_type = required_type
         self.audit = audit and AUDIT
         self.required_priv = required_priv
+        self.required_roles = required_roles
         self.required_method = required_method_set
         self.username_key = username_key
         self.check_xsrf_token = check_xsrf_token
@@ -119,10 +117,9 @@ class api_login(object):  # noqa: N801
 
                 [auth_type, data] = authorization.split(" ")
 
-                user = None
                 if auth_type == "Basic" and len(self.required_method & {"userpass", "apikey"}) > 0:
                     # Authenticate case (1) and (2) above
-                    user, priv = auth_service.basic_auth(
+                    result = auth_service.basic_auth(
                         data,
                         skip_apikey="apikey" not in self.required_method,
                         skip_password="userpass" not in self.required_method,
@@ -130,7 +127,7 @@ class api_login(object):  # noqa: N801
                 elif auth_type == "Bearer" and len(self.required_method & {"internal", "oauth"}) > 0:
                     # Authenticate case (3) and (4) above
                     try:
-                        user, priv = auth_service.bearer_auth(
+                        result = auth_service.bearer_auth(
                             data,
                             skip_jwt="oauth" not in self.required_method,
                             skip_internal="internal" not in self.required_method,
@@ -143,23 +140,19 @@ class api_login(object):  # noqa: N801
                 else:
                     raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
-                if not user:
-                    raise AuthenticationException("No authenticated user found")
-
-                # Ensure that the provided api key allows access to this API
-                if not priv or not set(self.required_priv) & set(priv):
+                if set(self.required_priv).isdisjoint(result.privileges):
                     raise AccessDeniedException("You do not have access to this API.")
 
-                # Make sure the user has the correct type for this endpoint
-                # TODO: Fix type parsing and checks
-                # if not set(self.required_type) & set(user["type"]):
-                #     logger.warning(
-                #         f"{user['uname']} is missing one of the types: {', '.join(self.required_type)}. "
-                #         "Cannot access {request.path}"
-                #     )
-                #     raise AccessDeniedException(
-                #         f"{request.path} requires one of the following user types: {', '.join(self.required_type)}"
-                #     )
+                if set(self.required_roles).isdisjoint(result.user.roles):
+                    logger.warning(
+                        "%s is missing one of the roles %s and cannot access %s",
+                        result.user.uname,
+                        ", ".join(self.required_roles),
+                        request.path,
+                    )
+                    raise AccessDeniedException("You do not have the required role to access this API.")
+
+                user = result.user.model_dump(mode="python")
 
                 ip = request.headers.get("X-Forwarded-For", request.remote_addr)
                 logger.info(f"Logged in as {user['uname']} from {ip}")
@@ -202,10 +195,9 @@ class api_login(object):  # noqa: N801
             return func(*args, **kwargs)
 
         base.protected = True  # type: ignore
-        # TODO: Fix type parsing and checks
-        # base.required_type = self.required_type
         base.audit = self.audit  # type: ignore
         base.required_priv = self.required_priv  # type: ignore
+        base.required_roles = self.required_roles  # type: ignore
         base.required_method = self.required_method  # type: ignore
         base.check_xsrf_token = self.check_xsrf_token  # type: ignore
         return base

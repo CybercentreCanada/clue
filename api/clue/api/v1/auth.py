@@ -33,7 +33,7 @@ logger = get_logger(__file__)
 
 SUB_API = "auth"
 auth_api = make_subapi_blueprint(SUB_API, api_version=1)
-auth_api._doc = "Allow user to authenticate to the web server"
+auth_api.__doc__ = "Allow user to authenticate to the web server"
 
 logger = get_logger(__file__)
 
@@ -176,7 +176,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
             # Get a useful dict of user data from the web token
             cur_user = user_service.parse_user_data(token_data, oauth_provider)
 
-            logged_in_uname = cur_user["uname"]
+            logged_in_uname = cur_user.uname
 
             priv = ["R", "W"]
 
@@ -237,7 +237,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
             "provider": oauth_provider,
             "refresh_token": refresh_token,
             "privileges": priv,
-            "user": cur_user,
+            "user": cur_user.model_dump(mode="json"),
         },
         cookies={"XSRF-TOKEN": xsrf_token},
     )

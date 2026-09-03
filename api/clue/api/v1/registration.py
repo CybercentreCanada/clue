@@ -5,6 +5,7 @@ from clue.api import bad_request, make_subapi_blueprint, no_content, ok
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config, get_redis
+from clue.models.auth import Privilege, UserRole
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import Set
 from clue.security import api_login
@@ -15,12 +16,12 @@ EXTERNAL_PLUGIN_SET = Set("plugin_set", host=get_redis())
 
 SUB_API = "registration"
 registration_api = make_subapi_blueprint(SUB_API, api_version=1)
-registration_api._doc = "Register external plugins"
+registration_api.__doc__ = "Register external plugins"
 
 
 @generate_swagger_docs()
 @registration_api.route("/register/", methods=["POST"])
-@api_login()
+@api_login(required_priv=[Privilege.WRITE], required_roles=[UserRole.ADMIN])
 def register_application(**kwargs):
     """Register the plugin given the provided data via REST API.
 
@@ -72,7 +73,7 @@ def register_application(**kwargs):
 
 @generate_swagger_docs()
 @registration_api.route("<plugin_id>", methods=["DELETE"])
-@api_login()
+@api_login(required_priv=[Privilege.WRITE], required_roles=[UserRole.ADMIN])
 def remove_application(plugin_id: str, **kwargs):
     """Remove the given plugin from the external_sources list via REST API.
 

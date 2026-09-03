@@ -1,9 +1,10 @@
 import base64
 import hashlib
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from elasticapm.traces import capture_span
 from flask import request
+from pydantic import ValidationError
 
 from clue.common.exceptions import (
     AccessDeniedException,
@@ -14,6 +15,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
+from clue.models.auth import AuthResult, AuthUser, Privilege, UserRole
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.obo import get_obo_token
@@ -124,9 +126,7 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
 
 
 @capture_span(span_type="authentication")
-def bearer_auth(
-    data: str, skip_jwt: bool = False, skip_internal: bool = False
-) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
+def bearer_auth(data: str, skip_jwt: bool = False, skip_internal: bool = False) -> AuthResult:
     """This function handles Bearer type Authorization headers.
 
     Args:
@@ -152,9 +152,15 @@ def bearer_auth(
 
             logger.debug("User successfully authenticated using JWT.")
 
-            cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
+            try:
+                cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
+            except ValidationError as e:
+                raise AuthenticationException("The token contains invalid user information.", cause=e) from e
 
-            return cur_user, ["R", "W"]
+            return AuthResult(
+                user=cur_user,
+                privileges={Privilege.READ, Privilege.WRITE},
+            )
         else:
             raise InvalidDataException("Not a valid authentication type for this endpoint.")
     else:
@@ -165,7 +171,7 @@ def bearer_auth(
 
 
 @capture_span(span_type="authentication")
-def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
+def validate_apikey(name: str, apikey: str) -> AuthResult:
     """This function identifies the user via the internal API key functionality.
 
     Args:
@@ -187,7 +193,8 @@ def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], O
         if not config_apikey:
             raise AccessDeniedException("API Key does not exist")
 
-        if config_apikey != apikey:
+        secret = config_apikey if isinstance(config_apikey, str) else config_apikey.secret
+        if secret != apikey:
             raise AccessDeniedException("Invalid API key")
 
         uname = request.headers.get("X-USERID", None)
@@ -199,12 +206,23 @@ def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], O
                 "You must also provide X-USERID and X-CLASSIFICATION headers along with you API key."
             )
 
-        return {"uname": uname, "name": user_name, "classification": classification, "email": email}, ["R", "W"]
+        roles = {UserRole.USER} if isinstance(config_apikey, str) else config_apikey.roles
+        privileges = {Privilege.READ, Privilege.WRITE} if isinstance(config_apikey, str) else config_apikey.privileges
+        return AuthResult(
+            user=AuthUser(
+                uname=uname,
+                name=user_name,
+                classification=classification,
+                email=email,
+                roles=roles,
+            ),
+            privileges=privileges,
+        )
     else:
         raise AccessDeniedException("You must provide your API key in the proper format in the Authorization header.")
 
 
-def validate_userpass(username: str, password: str) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
+def validate_userpass(username: str, password: str) -> AuthResult:
     """This function identifies the user via the user/pass functionality. (NOT IMPLEMENTED)
 
     Args:
@@ -244,9 +262,7 @@ def decode_b64(b64_str: str) -> str:
 
 
 @capture_span(span_type="authentication")
-def basic_auth(
-    data: str, is_base64: bool = True, skip_apikey: bool = False, skip_password: bool = False
-) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
+def basic_auth(data: str, is_base64: bool = True, skip_apikey: bool = False, skip_password: bool = False) -> AuthResult:
     """This function handles Basic type Authorization headers.
 
     Args:
@@ -266,10 +282,9 @@ def basic_auth(
 
     [username, data] = key_pair.split(":", maxsplit=1)
 
-    validated_user = None
-    priv = None
+    result = None
     if not skip_apikey:
-        validated_user, priv = validate_apikey(username, data)
+        result = validate_apikey(username, data)
 
     # Bruteforce protection
     # auth_fail_queue: NamedQueue = NamedQueue(f"ui-failed-{username}", **redis_config)  # type: ignore
@@ -284,10 +299,10 @@ def basic_auth(
     #         )
     #     )
 
-    if not validated_user and not skip_password:
-        validated_user, priv = validate_userpass(username, data)
+    if not result and not skip_password:
+        result = validate_userpass(username, data)
 
-    if not validated_user:
+    if not result:
         # auth_fail_queue.push(
         #     {
         #         "remote_addr": request.remote_addr,
@@ -297,7 +312,7 @@ def basic_auth(
         # )
         raise AuthenticationException("Invalid login information")
 
-    return validated_user, priv
+    return result
 
 
 # TODO: sa-clue support

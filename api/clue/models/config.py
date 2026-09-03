@@ -19,6 +19,7 @@ from clue.common import forge
 from clue.common.exceptions import ClueValueError
 from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
+from clue.models.auth import APIKeyConf, UserRole
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
 DEFAULT_EMAIL_FIELDS = ["email", "emails", "extension_selectedEmailAddress", "otherMails", "preferred_username", "upn"]
@@ -66,7 +67,7 @@ class OAuthProvider(BaseModel):
     required_groups: list[str] = Field(
         default=[], description="The groups the JWT must contain in order to allow access"
     )
-    role_map: dict[str, str] = Field(default={}, description="A mapping of OAuth groups to clue roles")
+    role_map: dict[UserRole, str] = Field(default={}, description="A mapping of Clue roles to OAuth groups")
     classification_map: dict[str, str] = Field(
         default={}, description="A mapping of OAuth groups to classification levels"
     )
@@ -168,7 +169,7 @@ class ServiceAccount(BaseModel):
 
 class Auth(BaseModel):
     allow_apikeys: bool = Field(description="Allow API keys?", default=False)
-    apikeys: dict[str, str] = Field(default={}, description="API Keys available in the system")
+    apikeys: dict[str, str | APIKeyConf] = Field(default={}, description="API keys available in the system")
     propagate_clue_key: bool = Field(
         default=True, description="Should clue include the root clue token in requests when OBO is used?"
     )

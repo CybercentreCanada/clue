@@ -11,6 +11,7 @@ from clue.common.exceptions import (
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config, get_redis
 from clue.helper.oauth import parse_profile
+from clue.models.auth import AuthUser
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.user_quota_tracker import UserQuotaTracker
 
@@ -21,7 +22,7 @@ logger = get_logger(__file__)
 def parse_user_data(
     data: dict,
     oauth_provider: str,
-) -> dict[str, Any]:
+) -> AuthUser:
     """Convert a JSON Web Token into a Clue User
 
     Args:
@@ -77,7 +78,7 @@ def parse_user_data(
     else:
         raise AccessDeniedException("This user is not allowed access to the system")
 
-    return user_data
+    return AuthUser.model_validate(user_data)
 
 
 def get_dynamic_classification(user_data: dict[str, Any], oauth_provider: str):
