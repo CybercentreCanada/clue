@@ -6,7 +6,7 @@ from flask import Flask
 
 import clue.api.v1.auth as auth_api
 import clue.services.auth_service as auth_service
-from clue.common.exceptions import AccessDeniedException
+from clue.common.exceptions import AccessDeniedException, InvalidDataException
 from clue.config import config
 
 
@@ -50,3 +50,8 @@ def test_validate_apikey_uses_constant_time_secret_comparison():
         auth_service.validate_apikey("test-key", "provided-secret")
 
     compare_digest.assert_called_once_with(b"expected-secret", b"provided-secret")
+
+
+def test_basic_auth_rejects_credentials_without_separator():
+    with pytest.raises(InvalidDataException, match="key_name:key_secret"):
+        auth_service.basic_auth("malformed", is_base64=False)

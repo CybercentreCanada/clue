@@ -128,13 +128,20 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
 
 @capture_span(span_type="authentication")
 def bearer_auth(data: str, skip_jwt: bool = False, skip_internal: bool = False) -> AuthResult:
-    """This function handles Bearer type Authorization headers.
+    """Authenticate a bearer token as an OAuth access token.
 
     Args:
-        data (str): The corresponding data in the Authorization header.
+        data: The bearer token from the Authorization header.
+        skip_jwt: Whether OAuth access-token authentication is disabled.
+        skip_internal: Whether internal bearer authentication is disabled.
 
     Returns:
-        tuple[Optional[User], Optional[list[str]]]: The user odm object and privileges, if validated
+        The authenticated user and effective privileges.
+
+    Raises:
+        AuthenticationException: If the token cannot be decoded or contains invalid user information.
+        InvalidDataException: If OAuth authentication is disabled for the endpoint.
+        ClueNotImplementedError: If internal bearer authentication is requested.
     """
     if "." in data:
         if not skip_jwt:
@@ -173,18 +180,18 @@ def bearer_auth(data: str, skip_jwt: bool = False, skip_internal: bool = False) 
 
 @capture_span(span_type="authentication")
 def validate_apikey(name: str, apikey: str) -> AuthResult:
-    """This function identifies the user via the internal API key functionality.
+    """Authenticate a configured API key.
 
     Args:
-        name (str): Name of the APIKey to check against
-        apikey (str): The apikey used to authenticate as the user
+        name: Name of the API key to check.
+        apikey: Secret associated with the API key.
 
     Raises:
-        AccessDeniedException: Api Key authentication was disabled, or the api was not valid for impersonation,
-                               or it was an impersonation api key incorrectly provided in the Authorization header.
+        AccessDeniedException: If API-key authentication is disabled, the key is invalid, or required identity
+            headers are absent.
 
     Returns:
-        tuple[Optional[User], Optional[list[str]]]: The user odm object and privileges, if validated
+        The authenticated user and effective privileges.
     """
     if not config.auth.allow_apikeys:
         raise AccessDeniedException("API Key authentication disabled")
@@ -264,23 +271,27 @@ def decode_b64(b64_str: str) -> str:
 
 @capture_span(span_type="authentication")
 def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
-    """This function handles Basic type Authorization headers.
+    """Authenticate a Basic authorization value containing an API key.
 
     Args:
-        data (str): The corresponding data in the Authorization header.
-        is_base64 (bool, optional): Whether the provided data is base64 encoded. Defaults to True.
+        data: A base64-encoded ``key_name:key_secret`` value, or the decoded value when ``is_base64`` is false.
+        is_base64: Whether ``data`` is base64 encoded.
 
     Raises:
-        AuthenticationException: The login information is invalid, or the maximum password retry for the account
-                                 has been reached.
+        InvalidDataException: If the decoded value is not in ``key_name:key_secret`` format.
+        AccessDeniedException: If the API key is invalid or cannot authenticate the request.
 
     Returns:
-        tuple[Optional[User], Optional[list[str]]]: The user odm object and privileges, if validated
+        The authenticated user and effective privileges.
     """
     key_pair = decode_b64(data) if is_base64 else data
 
-    [username, data] = key_pair.split(":", maxsplit=1)
-    return validate_apikey(username, data)
+    try:
+        key_name, key_secret = key_pair.split(":", maxsplit=1)
+    except ValueError as e:
+        raise InvalidDataException("Basic authentication data must use key_name:key_secret format") from e
+
+    return validate_apikey(key_name, key_secret)
 
 
 # TODO: sa-clue support

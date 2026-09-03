@@ -32,10 +32,10 @@ def get_jwk(access_token: str) -> PyJWK:
         # We don't, so we need to refresh the key set
         cache.delete(key="get_jwks")
         try:
-            jwks, _ = get_jwks()
-            key = jwks[kid]
-        except KeyError:
-            raise ClueKeyError("There is no valid JWK for this token.")
+            jwks, _ = _fetch_jwks()
+            key = PyJWK(jwks[kid])
+        except KeyError as e:
+            raise ClueKeyError("There is no valid JWK for this token.") from e
 
     return key
 
@@ -66,10 +66,10 @@ def get_provider(access_token: str) -> str:
         # We don't, so we need to refresh the key set
         cache.delete(key="get_jwks")
         try:
-            _, providers = get_jwks()
+            _, providers = _fetch_jwks()
             oauth_provider = providers[kid]
-        except KeyError:
-            raise ClueValueError("The provider of this access token does not match any supported providers")
+        except KeyError as e:
+            raise ClueValueError("The provider of this access token does not match any supported providers") from e
 
     return oauth_provider
 
@@ -81,6 +81,11 @@ def get_jwks() -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
     Returns:
         tuple[dict[str, str], dict[str, str]]: The JWKS and the providers that are included in it
     """
+    return _fetch_jwks()
+
+
+def _fetch_jwks() -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    """Fetch the current JSON Web Key Set for all supported providers."""
     # JWKS = JSON Web Key Set. We merge the key set from all oauth providers
     jwks: dict[str, dict[str, Any]] = {}
     # Mapping of keys to their provider (i.e. azure, keycloak)

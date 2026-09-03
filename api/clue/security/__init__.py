@@ -97,14 +97,9 @@ class api_login(object):  # noqa: N801
         @functools.wraps(func)
         def base(*args, **kwargs):  # noqa: C901
             try:
-                # All authorization (except impersonation) must go through the Authorization header, in one of
-                # three formats:
-                # 1. Basic user/apikey authentication
-                #       Authorization: Basic username:keyname:keydata (but in base64)
-                # 2. Bearer internal token authentication (obtained from the login endpoint)
-                #       Authorization: Bearer username:token
-                # 3. Bearer OAuth authentication (obtained from external authentication provider i.e. azure, keycloak)
-                #       Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ (example)
+                # Authorization uses either a base64-encoded API key pair or an OAuth access token:
+                #     Authorization: Basic base64(key_name:key_secret)
+                #     Authorization: Bearer <oauth_access_token>
                 authorization = request.headers.get("Authorization", None)
                 if not authorization:
                     raise AuthenticationException("No Authorization header present")
