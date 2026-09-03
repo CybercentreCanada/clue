@@ -17,20 +17,6 @@ class Privilege(StrEnum):
     WRITE = "W"
 
 
-class AuthUser(BaseModel):
-    """Normalized identity used after successful authentication."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    uname: str
-    name: str | None = None
-    email: str | None = None
-    classification: str
-    groups: list[str] = Field(default_factory=list)
-    roles: set[UserRole] = Field(default_factory=lambda: {UserRole.USER})
-    avatar: str | None = None
-
-
 class APIKeyConf(BaseModel):
     """Server-side API key and its access policy."""
 
@@ -44,6 +30,20 @@ class APIKeyConf(BaseModel):
         }
     )
     secret: str
+
+
+class AuthUser(BaseModel):
+    """Normalized identity used after successful authentication."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    uname: str
+    name: str | None = None
+    email: str | None = None
+    classification: str
+    groups: list[str] = Field(default_factory=list)
+    roles: set[UserRole] = Field(default_factory=lambda: {UserRole.USER})
+    avatar: str | None = None
 
 
 class AuthResult(BaseModel):

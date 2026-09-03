@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from clue.helper.oauth import parse_profile
-from clue.models.AuthUser import AuthUser, UserRole
+from clue.models.auth_user import AuthUser, UserRole
 from clue.models.config import OAuthProvider
 
 
@@ -25,7 +25,7 @@ def test_parse_profile_maps_configured_group_to_admin_role():
     assert set(profile["roles"]) == {UserRole.USER, UserRole.ADMIN}
 
 
-def test_auth_user_rejects_unknown_role():
+def test_AuthUser_rejects_unknown_role():
     with pytest.raises(ValidationError):
         AuthUser(
             uname="analyst",

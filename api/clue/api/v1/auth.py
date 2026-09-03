@@ -26,7 +26,7 @@ from clue.common.logging import get_logger
 from clue.common.str_utils import default_string_value
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
-from clue.models.AuthUser import AuthUser, Privilege
+from clue.models.auth_user import AuthUser, Privilege
 from clue.security.utils import generate_random_secret
 
 logger = get_logger(__file__)

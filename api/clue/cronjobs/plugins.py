@@ -22,7 +22,7 @@ def update_external_source_list():
 
     for item in EXTERNAL_PLUGIN_SET.members():
         try:
-            source = ExternalSource.model_validate(item)
+            source = ExternalSource.model_validate({**item, "built_in": False})
         except ValidationError:
             logger.warning("Ignoring invalid runtime external source configuration")
             continue

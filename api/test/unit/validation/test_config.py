@@ -3,6 +3,7 @@ import os
 import pytest
 from pydantic import ValidationError
 
+from clue.models.auth_user import UserRole
 from clue.models.config import (
     Auth,
     OAuth,
@@ -10,6 +11,21 @@ from clue.models.config import (
     ServiceAccount,
     ServiceAccountCreds,
 )
+
+
+def test_oauth_provider_accepts_legacy_role_map():
+    provider = OAuthProvider(
+        client_id="client",
+        access_token_url="https://oauth.example/token",
+        authorize_url="https://oauth.example/authorize",
+        api_base_url="https://oauth.example/",
+        audience="clue",
+        scope="openid",
+        jwks_uri="https://oauth.example/jwks",
+        role_map={"clue_admin": "admin"},
+    )
+
+    assert provider.role_map == {UserRole.ADMIN: "clue_admin"}
 
 
 def test_service_account():

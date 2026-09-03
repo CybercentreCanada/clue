@@ -19,7 +19,7 @@ from clue.common import forge
 from clue.common.exceptions import ClueValueError
 from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
-from clue.models.AuthUser import APIKeyConf, UserRole
+from clue.models.auth_user import APIKeyConf, UserRole
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
 DEFAULT_EMAIL_FIELDS = ["email", "emails", "extension_selectedEmailAddress", "otherMails", "preferred_username", "upn"]
@@ -80,6 +80,23 @@ class OAuthProvider(BaseModel):
     scope: str = Field(description="The scope to validate against")
     iss: str | None = Field(description="Optional issuer field for JWT validation", default=None)
     jwks_uri: str = Field(description="URL used to verify if a returned JWKS token is valid")
+
+    @field_validator("role_map", mode="before")
+    @classmethod
+    def normalize_role_map(cls, role_map: Any) -> Any:  # noqa: ANN102
+        """Accept legacy OAuth-group-to-role mappings and normalize their direction."""
+        if not isinstance(role_map, dict) or not role_map:
+            return role_map
+
+        try:
+            for role in role_map:
+                UserRole(role)
+            return role_map
+        except ValueError:
+            try:
+                return {UserRole(role): group for group, role in role_map.items()}
+            except ValueError:
+                return role_map
 
 
 class OAuth(BaseModel):

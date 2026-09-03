@@ -11,7 +11,7 @@ from clue.common.exceptions import (
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config, get_redis
 from clue.helper.oauth import parse_profile
-from clue.models.AuthUser import AuthUser
+from clue.models.auth_user import AuthUser
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.user_quota_tracker import UserQuotaTracker
 

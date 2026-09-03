@@ -20,7 +20,7 @@ from clue.common.exceptions import (
 )
 from clue.common.forge import APP_NAME
 from clue.config import AUDIT, config
-from clue.models.AuthUser import Privilege, UserRole
+from clue.models.auth_user import Privilege, UserRole
 
 SUCCESSFUL_ATTEMPTS = Counter(
     f"{APP_NAME.replace('-', '_')}_auth_success_total",

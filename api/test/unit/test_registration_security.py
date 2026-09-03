@@ -11,7 +11,7 @@ from clue.api.v1.registration import (
     remove_application,
 )
 from clue.cronjobs.plugins import update_external_source_list
-from clue.models.AuthUser import Privilege, UserRole
+from clue.models.auth_user import Privilege, UserRole
 from clue.models.config import ExternalSource
 
 

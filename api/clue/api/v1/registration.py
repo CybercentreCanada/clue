@@ -7,7 +7,7 @@ from clue.api import bad_request, make_subapi_blueprint, no_content, ok
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config, get_redis
-from clue.models.AuthUser import Privilege, UserRole
+from clue.models.auth_user import Privilege, UserRole
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import Set
 from clue.security import api_login
