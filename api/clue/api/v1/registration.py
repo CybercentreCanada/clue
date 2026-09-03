@@ -106,7 +106,7 @@ def register_application(**kwargs):
 
 
 @generate_swagger_docs()
-@registration_api.route("<plugin_id>", methods=["DELETE"])
+@registration_api.route("/<plugin_id>", methods=["DELETE"])
 @api_login(required_priv=[Privilege.WRITE], required_roles=[UserRole.ADMIN])
 def remove_application(plugin_id: str, **kwargs):
     """Remove the given plugin from the external_sources list via REST API.
