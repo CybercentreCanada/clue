@@ -17,20 +17,6 @@ class Privilege(StrEnum):
     WRITE = "W"
 
 
-class AccessPolicy(BaseModel):
-    """Roles and privileges assigned by trusted server-side configuration."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    roles: set[UserRole] = Field(default_factory=lambda: {UserRole.USER})
-    privileges: set[Privilege] = Field(
-        default_factory=lambda: {
-            Privilege.READ,
-            Privilege.WRITE,
-        }
-    )
-
-
 class AuthUser(BaseModel):
     """Normalized identity used after successful authentication."""
 
@@ -45,9 +31,18 @@ class AuthUser(BaseModel):
     avatar: str | None = None
 
 
-class APIKeyConf(AccessPolicy):
+class APIKeyConf(BaseModel):
     """Server-side API key and its access policy."""
 
+    model_config = ConfigDict(extra="forbid")
+
+    roles: set[UserRole] = Field(default_factory=lambda: {UserRole.USER})
+    privileges: set[Privilege] = Field(
+        default_factory=lambda: {
+            Privilege.READ,
+            Privilege.WRITE,
+        }
+    )
     secret: str
 
 
