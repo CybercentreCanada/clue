@@ -84,9 +84,52 @@ def test_registration_handler_rejects_disallowed_origin():
     with (
         app.test_request_context("/register/", method="POST", json=payload),
         patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        mock_config.api.external_sources = []
         handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
         response = handler()
 
     assert response.status_code == 400
+    assert mock_config.api.external_sources == []
+    add_plugin.assert_not_called()
+
+
+def test_registration_handler_persists_allowlisted_source():
+    app = Flask(__name__)
+    payload = {"name": "approved", "url": "https://plugins.example/"}
+
+    with (
+        app.test_request_context("/register/", method="POST", json=payload),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+    ):
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        mock_config.api.external_sources = []
+        handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
+        response = handler()
+
+    assert response.status_code == 200
+    assert [source.name for source in mock_config.api.external_sources] == ["approved"]
+    add_plugin.assert_called_once_with(mock_config.api.external_sources[0].model_dump(mode="json", exclude_none=True))
+
+
+def test_registration_handler_rejects_duplicate_without_mutation():
+    app = Flask(__name__)
+    existing = ExternalSource(name="existing", url="https://plugins.example/")
+    payload = {"name": "existing", "url": "https://plugins.example/"}
+
+    with (
+        app.test_request_context("/register/", method="POST", json=payload),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+    ):
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        mock_config.api.external_sources = [existing]
+        handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
+        response = handler()
+
+    assert response.status_code == 400
+    assert mock_config.api.external_sources == [existing]
+    add_plugin.assert_not_called()

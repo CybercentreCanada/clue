@@ -255,9 +255,12 @@ api:
 auth:
   # API Key authentication
   allow_apikeys: false               # Enable API key authentication
-  apikeys:                          # Map of API keys to user identifiers
-    "api-key-1": "user1"
-    "api-key-2": "user2"
+  apikeys:                           # API key names mapped to secrets or access policies
+    legacy-key: "secret"
+    registration-key:
+      secret: "secret"
+      roles: ["admin"]
+      privileges: ["W"]
 
   # OAuth settings
   oauth:
@@ -380,9 +383,9 @@ auth:
         required_groups: ["clue-users"]          # Required OAuth groups
 
         # Role and classification mapping
-        role_map:                                # Map OAuth groups to Clue roles
-          "clue-admins": "admin"
-          "clue-analysts": "analyst"
+        role_map:                                # Map Clue roles to OAuth groups
+          admin: "clue-admins"
+          user: "clue-users"
         classification_map:                      # Map OAuth groups to clearance levels
           "clue-admins": "TLP:RED"
           "clue-analysts": "TLP:AMBER"

@@ -401,7 +401,7 @@ class ExternalSource(BaseModel):
 EXAMPLE_EXTERNAL_SOURCE_VT = {
     # This is an example on how this would work with VirusTotal
     "name": "VirusTotal",
-    "url": "vt-lookup.namespace.svc.cluster.local",
+    "url": "http://vt-lookup.namespace.svc.cluster.local",
     "classification": "TLP:CLEAR",
     "max_classification": "TLP:CLEAR",
 }
@@ -409,7 +409,7 @@ EXAMPLE_EXTERNAL_SOURCE_VT = {
 EXAMPLE_EXTERNAL_SOURCE_MB = {
     # This is an example on how this would work with Malware Bazaar
     "name": "Malware Bazaar",
-    "url": "mb-lookup.namespace.scv.cluster.local",
+    "url": "http://mb-lookup.namespace.svc.cluster.local",
     "classification": "TLP:CLEAR",
     "max_classification": "TLP:CLEAR",
 }
