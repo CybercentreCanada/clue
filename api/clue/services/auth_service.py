@@ -1,6 +1,7 @@
 import base64
 import hashlib
-from typing import Optional, Union
+import hmac
+from typing import Any, Optional, Union
 
 from elasticapm.traces import capture_span
 from flask import request
@@ -194,7 +195,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
             raise AccessDeniedException("API Key does not exist")
 
         secret = config_apikey if isinstance(config_apikey, str) else config_apikey.secret
-        if secret != apikey:
+        if not hmac.compare_digest(secret.encode("utf-8"), apikey.encode("utf-8")):
             raise AccessDeniedException("Invalid API key")
 
         uname = request.headers.get("X-USERID", None)
@@ -222,7 +223,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
         raise AccessDeniedException("You must provide your API key in the proper format in the Authorization header.")
 
 
-def validate_userpass(username: str, password: str) -> AuthResult:
+def validate_userpass(username: str, password: str) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
     """This function identifies the user via the user/pass functionality. (NOT IMPLEMENTED)
 
     Args:
@@ -262,14 +263,12 @@ def decode_b64(b64_str: str) -> str:
 
 
 @capture_span(span_type="authentication")
-def basic_auth(data: str, is_base64: bool = True, skip_apikey: bool = False, skip_password: bool = False) -> AuthResult:
+def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
     """This function handles Basic type Authorization headers.
 
     Args:
         data (str): The corresponding data in the Authorization header.
         is_base64 (bool, optional): Whether the provided data is base64 encoded. Defaults to True.
-        skip_apikey (bool, optional): Whether to skip apikey validation. Defaults to False.
-        skip_password (bool, optional): Whether to skip password validation. Defaults to False.
 
     Raises:
         AuthenticationException: The login information is invalid, or the maximum password retry for the account
@@ -281,38 +280,7 @@ def basic_auth(data: str, is_base64: bool = True, skip_apikey: bool = False, ski
     key_pair = decode_b64(data) if is_base64 else data
 
     [username, data] = key_pair.split(":", maxsplit=1)
-
-    result = None
-    if not skip_apikey:
-        result = validate_apikey(username, data)
-
-    # Bruteforce protection
-    # auth_fail_queue: NamedQueue = NamedQueue(f"ui-failed-{username}", **redis_config)  # type: ignore
-    # if auth_fail_queue.length() >= config.auth.internal.max_failures:
-    #     # Failed 'max_failures' times, stop trying... This will timeout in 'failure_ttl' seconds
-    #     raise AuthenticationException(
-    #         "Maximum password retry of {retry} was reached. "
-    #         "This account is locked for the next {ttl} "
-    #         "seconds...".format(
-    #             retry=config.auth.internal.max_failures,
-    #             ttl=config.auth.internal.failure_ttl,
-    #         )
-    #     )
-
-    if not result and not skip_password:
-        result = validate_userpass(username, data)
-
-    if not result:
-        # auth_fail_queue.push(
-        #     {
-        #         "remote_addr": request.remote_addr,
-        #         "host": request.host,
-        #         "full_path": request.full_path,
-        #     }
-        # )
-        raise AuthenticationException("Invalid login information")
-
-    return result
+    return validate_apikey(username, data)
 
 
 # TODO: sa-clue support

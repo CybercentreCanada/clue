@@ -59,12 +59,12 @@ class api_login(object):  # noqa: N801
 
         required_method_set: set[str]
         if required_method is None:
-            required_method_set = {"userpass", "apikey", "internal", "oauth"}
+            required_method_set = {"apikey", "internal", "oauth"}
         else:
             required_method_set = set(required_method)
 
-        if len(required_method_set - {"userpass", "apikey", "internal", "oauth"}) > 0:
-            raise ClueAttributeError("required_method must be a subset of {userpass, apikey, internal, oauth}")
+        if len(required_method_set - {"apikey", "internal", "oauth"}) > 0:
+            raise ClueAttributeError("required_method must be a subset of {apikey, internal, oauth}")
 
         self.audit = audit and AUDIT
         self.required_priv = required_priv
@@ -74,7 +74,7 @@ class api_login(object):  # noqa: N801
         self.check_xsrf_token = check_xsrf_token
 
     def __call__(self, func: Callable) -> Callable:  # noqa: ANN101, C901
-        """Wraps any function calls with authentication logic that uses either userpass, apikey, internal or oauth.
+        """Wraps any function calls with authentication logic that uses either apikey, internal or oauth.
 
         Args:
             func (Callable): The function to wrap with auth.
@@ -98,14 +98,12 @@ class api_login(object):  # noqa: N801
         def base(*args, **kwargs):  # noqa: C901
             try:
                 # All authorization (except impersonation) must go through the Authorization header, in one of
-                # four formats:
-                # 1. Basic user/pass authentication
-                #       Authorization: Basic username:password (but in base64)
-                # 2. Basic user/apikey authentication
+                # three formats:
+                # 1. Basic user/apikey authentication
                 #       Authorization: Basic username:keyname:keydata (but in base64)
-                # 3. Bearer internal token authentication (obtained from the login endpoint)
+                # 2. Bearer internal token authentication (obtained from the login endpoint)
                 #       Authorization: Bearer username:token
-                # 4. Bearer OAuth authentication (obtained from external authentication provider i.e. azure, keycloak)
+                # 3. Bearer OAuth authentication (obtained from external authentication provider i.e. azure, keycloak)
                 #       Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjMifQ (example)
                 authorization = request.headers.get("Authorization", None)
                 if not authorization:
@@ -117,13 +115,9 @@ class api_login(object):  # noqa: N801
 
                 [auth_type, data] = authorization.split(" ")
 
-                if auth_type == "Basic" and len(self.required_method & {"userpass", "apikey"}) > 0:
-                    # Authenticate case (1) and (2) above
-                    result = auth_service.basic_auth(
-                        data,
-                        skip_apikey="apikey" not in self.required_method,
-                        skip_password="userpass" not in self.required_method,
-                    )
+                if auth_type == "Basic" and "apikey" in self.required_method:
+                    # Authenticate case (1) above
+                    result = auth_service.basic_auth(data)
                 elif auth_type == "Bearer" and len(self.required_method & {"internal", "oauth"}) > 0:
                     # Authenticate case (3) and (4) above
                     try:

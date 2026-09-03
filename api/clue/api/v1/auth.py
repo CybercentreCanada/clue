@@ -1,11 +1,9 @@
-import typing
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 from authlib.integrations.base_client import OAuthError
 from flask import current_app, request
 
-import clue.services.auth_service as auth_service
 import clue.services.user_service as user_service
 from clue.api import (
     bad_request,
@@ -174,6 +172,9 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
             access_token = token_data.get("access_token", None)
             refresh_token = token_data.get("refresh_token", None)
 
+            if not access_token:
+                raise AuthenticationException("The OAuth provider did not return an access token.")
+
             # Get a useful dict of user data from the web token
             cur_user = user_service.parse_user_data(token_data, oauth_provider)
 
@@ -230,14 +231,9 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
 
     # Generate the token this user can use to authenticate from now on
 
-    if access_token:
-        app_token = access_token
-    else:
-        app_token = f"{logged_in_uname}:{auth_service.create_token(logged_in_uname, typing.cast(list[str], priv))}"
-
     return ok(
         {
-            "app_token": app_token,
+            "app_token": access_token,
             "provider": oauth_provider,
             "refresh_token": refresh_token,
             "privileges": priv,

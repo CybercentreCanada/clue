@@ -1,12 +1,14 @@
 from unittest.mock import patch
 
+import pytest
 from flask import Flask
 
+from clue.common.exceptions import ClueAttributeError
 from clue.models.auth_user import AuthResult, AuthUser, Privilege, UserRole
 from clue.security import api_login
 
 
-def _AuthResult(*roles: UserRole) -> AuthResult:
+def _auth_result(*roles: UserRole) -> AuthResult:
     return AuthResult(
         user=AuthUser(
             uname="analyst",
@@ -27,7 +29,7 @@ def test_api_login_rejects_user_from_admin_endpoint():
 
     with (
         app.test_request_context("/admin", headers={"Authorization": "Bearer token.value.signature"}),
-        patch("clue.security.auth_service.bearer_auth", return_value=_AuthResult(UserRole.USER)),
+        patch("clue.security.auth_service.bearer_auth", return_value=_auth_result(UserRole.USER)),
     ):
         response = admin_endpoint()
 
@@ -45,9 +47,14 @@ def test_api_login_allows_admin_to_reach_endpoint():
         app.test_request_context("/admin", headers={"Authorization": "Bearer token.value.signature"}),
         patch(
             "clue.security.auth_service.bearer_auth",
-            return_value=_AuthResult(UserRole.USER, UserRole.ADMIN),
+            return_value=_auth_result(UserRole.USER, UserRole.ADMIN),
         ),
     ):
         user = admin_endpoint()
 
     assert UserRole.ADMIN in user["roles"]
+
+
+def test_api_login_rejects_unimplemented_userpass_authentication():
+    with pytest.raises(ClueAttributeError, match="required_method must be a subset"):
+        api_login(required_method=["userpass"])
