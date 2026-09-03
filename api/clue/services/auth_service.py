@@ -214,7 +214,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
                 "You must also provide X-USERID and X-CLASSIFICATION headers along with you API key."
             )
 
-        roles = {UserRole.USER} if isinstance(config_apikey, str) else config_apikey.roles
+        roles = {UserRole.USER} if isinstance(config_apikey, str) else {UserRole.USER, *config_apikey.roles}
         privileges = {Privilege.READ, Privilege.WRITE} if isinstance(config_apikey, str) else config_apikey.privileges
         return AuthResult(
             user=AuthUser(

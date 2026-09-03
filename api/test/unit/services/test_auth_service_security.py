@@ -8,6 +8,7 @@ import clue.api.v1.auth as auth_api
 import clue.services.auth_service as auth_service
 from clue.common.exceptions import AccessDeniedException, InvalidDataException
 from clue.config import config
+from clue.models.auth_user import APIKeyConf, UserRole
 
 
 def test_login_rejects_oauth_response_without_access_token():
@@ -50,6 +51,27 @@ def test_validate_apikey_uses_constant_time_secret_comparison():
         auth_service.validate_apikey("test-key", "provided-secret")
 
     compare_digest.assert_called_once_with(b"expected-secret", b"provided-secret")
+
+
+def test_validate_apikey_adds_user_role_to_admin_key():
+    app = Flask(__name__)
+    auth_config = SimpleNamespace(
+        allow_apikeys=True,
+        apikeys={"admin-key": APIKeyConf(secret="expected-secret", roles={UserRole.ADMIN})},
+    )
+
+    with (
+        app.test_request_context(
+            headers={
+                "X-USERID": "administrator",
+                "X-CLASSIFICATION": "TLP:CLEAR",
+            }
+        ),
+        patch.object(config, "auth", auth_config),
+    ):
+        result = auth_service.validate_apikey("admin-key", "expected-secret")
+
+    assert result.user.roles == {UserRole.USER, UserRole.ADMIN}
 
 
 def test_basic_auth_rejects_credentials_without_separator():
