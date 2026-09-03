@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Any, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, TypeAdapter, field_validator, model_validator
 from pydantic_core import Url
 from pydantic_settings import (
     BaseSettings,
@@ -19,6 +19,7 @@ from clue.common import forge
 from clue.common.exceptions import ClueValueError
 from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
+from clue.models.auth_user import APIKeyConf, UserRole
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
 DEFAULT_EMAIL_FIELDS = ["email", "emails", "extension_selectedEmailAddress", "otherMails", "preferred_username", "upn"]
@@ -66,7 +67,7 @@ class OAuthProvider(BaseModel):
     required_groups: list[str] = Field(
         default=[], description="The groups the JWT must contain in order to allow access"
     )
-    role_map: dict[str, str] = Field(default={}, description="A mapping of OAuth groups to clue roles")
+    role_map: dict[UserRole, str] = Field(default={}, description="A mapping of Clue roles to OAuth groups")
     classification_map: dict[str, str] = Field(
         default={}, description="A mapping of OAuth groups to classification levels"
     )
@@ -79,6 +80,23 @@ class OAuthProvider(BaseModel):
     scope: str = Field(description="The scope to validate against")
     iss: str | None = Field(description="Optional issuer field for JWT validation", default=None)
     jwks_uri: str = Field(description="URL used to verify if a returned JWKS token is valid")
+
+    @field_validator("role_map", mode="before")
+    @classmethod
+    def normalize_role_map(cls, role_map: Any) -> Any:  # noqa: ANN102
+        """Accept legacy OAuth-group-to-role mappings and normalize their direction."""
+        if not isinstance(role_map, dict) or not role_map:
+            return role_map
+
+        try:
+            for role in role_map:
+                UserRole(role)
+            return role_map
+        except ValueError:
+            try:
+                return {UserRole(role): group for group, role in role_map.items()}
+            except ValueError:
+                return role_map
 
 
 class OAuth(BaseModel):
@@ -168,7 +186,7 @@ class ServiceAccount(BaseModel):
 
 class Auth(BaseModel):
     allow_apikeys: bool = Field(description="Allow API keys?", default=False)
-    apikeys: dict[str, str] = Field(default={}, description="API Keys available in the system")
+    apikeys: dict[str, str | APIKeyConf] = Field(default={}, description="API keys available in the system")
     propagate_clue_key: bool = Field(
         default=True, description="Should clue include the root clue token in requests when OBO is used?"
     )
@@ -348,6 +366,12 @@ class ExternalSource(BaseModel):
 
     model_config = ConfigDict(validate_assignment=True)
 
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, url: str) -> str:  # noqa: ANN102
+        """Normalize and restrict external source URLs to HTTP or HTTPS."""
+        return str(TypeAdapter(HttpUrl).validate_python(url))
+
     @field_validator("maintainer")
     @classmethod
     def validate_maintainer(cls, maintainer: str | None) -> str | None:  # noqa: ANN102
@@ -394,7 +418,7 @@ class ExternalSource(BaseModel):
 EXAMPLE_EXTERNAL_SOURCE_VT = {
     # This is an example on how this would work with VirusTotal
     "name": "VirusTotal",
-    "url": "vt-lookup.namespace.svc.cluster.local",
+    "url": "http://vt-lookup.namespace.svc.cluster.local",
     "classification": "TLP:CLEAR",
     "max_classification": "TLP:CLEAR",
 }
@@ -402,7 +426,7 @@ EXAMPLE_EXTERNAL_SOURCE_VT = {
 EXAMPLE_EXTERNAL_SOURCE_MB = {
     # This is an example on how this would work with Malware Bazaar
     "name": "Malware Bazaar",
-    "url": "mb-lookup.namespace.scv.cluster.local",
+    "url": "http://mb-lookup.namespace.svc.cluster.local",
     "classification": "TLP:CLEAR",
     "max_classification": "TLP:CLEAR",
 }
@@ -426,6 +450,9 @@ class API(BaseModel):
     debug: bool = Field(description="Enable debugging?", default=False)
     discover_url: str | None = Field(description="Discover URL", default=None)
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
+    registration_allowed_origins: list[str] = Field(
+        description="Exact URL origins permitted for runtime external source registration", default=[]
+    )
     obo_targets: dict[str, OBOService] = Field(description="List of targets clue can OBO to", default={})
     secret_key: str = Field(description="Flask secret key to store cookies, etc.", default_factory=lambda: uuid4().hex)
     session_duration: int = Field(

@@ -17,7 +17,7 @@ from clue.models.config import ExternalSource
 @pytest.fixture()
 def sample_external_source():
     return ExternalSource(
-        name="test",
+        name="runtime-test",
         classification="TLP:CLEAR",
         max_classification="TLP:CLEAR",
         url="http://localhost:5008/",

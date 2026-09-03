@@ -75,7 +75,7 @@ def get_supported_fetchers(
 
     with elasticapm.capture_span(f"GET {url}", span_type="http"):
         try:
-            rsp = requests.get(url, headers=headers, timeout=5.0)
+            rsp = requests.get(url, headers=headers, timeout=5.0, allow_redirects=False)
             result = rsp.json()
 
             if not rsp.ok:
@@ -211,6 +211,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
             json=parameters,
             headers=headers,
             timeout=request.args.get("max_timeout", 60.0, type=float),
+            allow_redirects=False,
         )
 
         result = response.json()
@@ -269,6 +270,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
             req_url,
             headers=headers,
             timeout=request.args.get("max_timeout", 60.0, type=float),
+            allow_redirects=False,
         )
 
         result = response.json()

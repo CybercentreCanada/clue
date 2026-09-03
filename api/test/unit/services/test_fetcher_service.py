@@ -91,7 +91,9 @@ def test_get_supported_fetchers_parses_upstream_response(plugin, user, fetcher):
         result = get_supported_fetchers_uncached(plugin, user)
 
     assert result == {"test_fetcher": fetcher}
-    get.assert_called_once_with("http://plugin/fetchers/", headers={"Accept": "application/json"}, timeout=5.0)
+    get.assert_called_once_with(
+        "http://plugin/fetchers/", headers={"Accept": "application/json"}, timeout=5.0, allow_redirects=False
+    )
 
 
 def test_get_supported_fetchers_returns_empty_when_obo_fails(plugin, user):
@@ -180,6 +182,7 @@ def test_run_fetcher_returns_upstream_result(app, configured_plugin, user, fetch
         json=parameters,
         headers={"Accept": "application/json", "Authorization": "Bearer obo-token"},
         timeout=60.0,
+        allow_redirects=False,
     )
 
 
@@ -267,6 +270,7 @@ def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user
         "http://plugin/fetchers/test_fetcher/status/task-123",
         headers={"Accept": "application/json"},
         timeout=12.5,
+        allow_redirects=False,
     )
 
 

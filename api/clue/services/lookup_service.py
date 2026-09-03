@@ -407,6 +407,7 @@ def query_external(
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     headers=generate_headers(access_token, clue_access_token),
                     timeout=(timeout, timeout * 3),
+                    allow_redirects=False,
                 )
                 rsp.raise_for_status()
 
@@ -626,6 +627,7 @@ def bulk_query_external(  # noqa: C901
                     json=[entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data],
                     headers=generate_headers(access_token, clue_access_token),
                     timeout=(timeout * 3, timeout * 3),
+                    allow_redirects=False,
                 )
                 rsp.raise_for_status()
 
