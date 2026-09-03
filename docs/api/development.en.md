@@ -336,6 +336,10 @@ When configuring external enrichment sources, each source supports these options
 
 ```yaml
 api:
+  # Runtime registration is disabled when this list is empty. Entries must be
+  # exact origins, including scheme and non-default port.
+  registration_allowed_origins:
+    - "https://plugins.example.com"
   external_sources:
     - name: "example-source"              # Unique source name
       url: "https://api.example.com"      # Source API URL

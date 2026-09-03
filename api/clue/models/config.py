@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Annotated, Any, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, TypeAdapter, field_validator, model_validator
 from pydantic_core import Url
 from pydantic_settings import (
     BaseSettings,
@@ -349,6 +349,12 @@ class ExternalSource(BaseModel):
 
     model_config = ConfigDict(validate_assignment=True)
 
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, url: str) -> str:  # noqa: ANN102
+        """Normalize and restrict external source URLs to HTTP or HTTPS."""
+        return str(TypeAdapter(HttpUrl).validate_python(url))
+
     @field_validator("maintainer")
     @classmethod
     def validate_maintainer(cls, maintainer: str | None) -> str | None:  # noqa: ANN102
@@ -427,6 +433,9 @@ class API(BaseModel):
     debug: bool = Field(description="Enable debugging?", default=False)
     discover_url: str | None = Field(description="Discover URL", default=None)
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
+    registration_allowed_origins: list[str] = Field(
+        description="Exact URL origins permitted for runtime external source registration", default=[]
+    )
     obo_targets: dict[str, OBOService] = Field(description="List of targets clue can OBO to", default={})
     secret_key: str = Field(description="Flask secret key to store cookies, etc.", default_factory=lambda: uuid4().hex)
     session_duration: int = Field(

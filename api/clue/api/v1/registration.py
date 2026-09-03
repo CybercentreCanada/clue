@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from flask import request
 from pydantic import ValidationError
 
@@ -17,6 +19,33 @@ EXTERNAL_PLUGIN_SET = Set("plugin_set", host=get_redis())
 SUB_API = "registration"
 registration_api = make_subapi_blueprint(SUB_API, api_version=1)
 registration_api.__doc__ = "Register external plugins"
+
+
+def _url_origin(url: str) -> tuple[str, str, int] | None:
+    """Return a normalized HTTP origin, rejecting ambiguous or credentialed URLs."""
+    try:
+        parsed = urlsplit(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+            return None
+
+        return parsed.scheme, parsed.hostname.lower(), parsed.port or (443 if parsed.scheme == "https" else 80)
+    except ValueError:
+        return None
+
+
+def is_registration_url_allowed(url: str) -> bool:
+    """Check a runtime source URL against exact origins configured by an administrator."""
+    origin = _url_origin(url)
+    return origin is not None and origin in {
+        allowed_origin
+        for configured_origin in config.api.registration_allowed_origins
+        if (allowed_origin := _url_origin(configured_origin)) is not None
+    }
+
+
+def is_registration_name_available(name: str) -> bool:
+    """Check that a runtime source cannot shadow an existing source."""
+    return all(source.name != name for source in config.api.external_sources)
 
 
 @generate_swagger_docs()
@@ -64,6 +93,17 @@ def register_application(**kwargs):
         registration_request = ExternalSource(**request.json, built_in=False)
     except ValidationError:
         return bad_request(err="Request data could not be converted to an ExternalSource object")
+    origin = _url_origin(registration_request.url)
+
+    if not origin is not None and origin in {
+        allowed_origin
+        for configured_origin in config.api.registration_allowed_origins
+        if (allowed_origin := _url_origin(configured_origin)) is not None
+    }:
+        return bad_request(err="External source URL origin is not permitted for runtime registration")
+
+    if not is_registration_name_available(registration_request.name):
+        return bad_request(err=f"An external source named {registration_request.name} already exists")
 
     config.api.external_sources.append(registration_request)
     EXTERNAL_PLUGIN_SET.add(registration_request.model_dump(mode="json", exclude_none=True))

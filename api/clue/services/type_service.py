@@ -67,7 +67,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
         headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
         try:
-            rsp = requests.get(url, headers=headers, timeout=3.0)
+            rsp = requests.get(url, headers=headers, timeout=3.0, allow_redirects=False)
         except (exceptions.ConnectionError, exceptions.ReadTimeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception(f"Unable to connect: {url}")
