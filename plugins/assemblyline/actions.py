@@ -1,7 +1,7 @@
 from assemblyline_client.common.classification import Classification
 from assemblyline_client.v4_client.client import Client
 from clue.models.actions import ExecuteRequest
-from consts import AL_URL_BASE
+from consts import AL_URL_BASE, OFFLINE_SUBMISSION_PROFILE, ONLINE_SUBMISSION_PROFILE
 from pydantic import Field
 from pydantic_core import Url
 
@@ -28,18 +28,25 @@ def submit_url(client: Client, c12n_engine: Classification, request: SubmitUrl) 
     # Mutate with local state
     submission_params["classification"] = request.selector.classification
     submission_params["description"] = "Forwarded from Clue"
-    del submission_params["submitter"]  # This will be filled in by AL and is messy when proxying user creds
+
+    # Delete the submitter field as this will be filled in by Assemblyline
+    submission_params.pop("submitter", None)
+
+    # Service selection and specification will be handled by the submission profile
+    submission_params.pop("service_spec", None)
+    submission_params.pop("services", None)
 
     # If the request is for internet-connected analysis,
     # ensure that the classification is not above the maximum allowed for submission with internet access
+    submission_profile = OFFLINE_SUBMISSION_PROFILE
     if (
         request.internet_connected
         and c12n_engine.min_classification(request.selector.classification, c12n_engine.RESTRICTED)
         != c12n_engine.RESTRICTED
     ):
-        submission_params["services"]["selected"].append("Internet Connected")
+        submission_profile = ONLINE_SUBMISSION_PROFILE
 
-    result = client.submit(url=request.selector.value, params=submission_params)
+    result = client.submit(url=request.selector.value, params=submission_params, submission_profile=submission_profile)
 
     sid = result["sid"]
     report_url = Url(f"{AL_URL_BASE}/submission/detail/{sid}")

@@ -17,6 +17,10 @@ MAX_LIMIT = int(os.environ.get("MAX_LIMIT", 100))
 MAX_TIMEOUT = float(os.environ.get("MAX_TIMEOUT", 3))
 AL_URL_BASE = os.environ.get("AL_URL_BASE", "https://assemblyline-ui")
 
+# Submission profiles for Assemblyline submissions
+OFFLINE_SUBMISSION_PROFILE = os.environ.get("OFFLINE_SUBMISSION_PROFILE", "static")
+ONLINE_SUBMISSION_PROFILE = os.environ.get("ONLINE_SUBMISSION_PROFILE", "static_with_internet")
+
 verify: Union[str, bool] = str(os.environ.get("VERIFY", "true")).lower()
 if verify in ("true", "1"):
     verify = True
