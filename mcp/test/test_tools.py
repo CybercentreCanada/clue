@@ -184,7 +184,7 @@ async def test_bulk_enrich_serializes_data_and_options(registered_tools):
         method="POST",
         body=[{"type": "ipv4", "value": "192.0.2.1"}],
         params={"sources": "source-a|-source-b", "max_timeout": 8.0, "limit": 5, "no_cache": True},
-        request_timeout=10.0,
+        request_timeout=8.0 * 2.2 + REQUEST_TIMEOUT_BUFFER,
     )
 
 
@@ -199,7 +199,7 @@ async def test_bulk_enrich_uses_base_timeout_without_options(registered_tools):
         method="POST",
         body=[{"type": "ipv4", "value": "192.0.2.1"}],
         params={"max_timeout": CLUE_API.TIMEOUT},
-        request_timeout=CLUE_API.TIMEOUT + REQUEST_TIMEOUT_BUFFER,
+        request_timeout=CLUE_API.TIMEOUT * 2.2 + REQUEST_TIMEOUT_BUFFER,
     )
 
 
@@ -213,8 +213,17 @@ async def test_enrich_applies_clue_double_encoding(registered_tools):
         path="lookup/enrich/domain/example.ca%252Fpath%2520value/",
         method="GET",
         params={"max_timeout": CLUE_API.TIMEOUT},
-        request_timeout=CLUE_API.TIMEOUT + REQUEST_TIMEOUT_BUFFER,
+        request_timeout=CLUE_API.TIMEOUT * 2 + REQUEST_TIMEOUT_BUFFER,
     )
+
+
+async def test_enrich_rejects_empty_value(registered_tools):
+    tools, api_client = registered_tools
+
+    with pytest.raises(ValueError, match="value must be non-empty"):
+        await tools["enrich"]("domain", "")
+
+    api_client.call.assert_not_awaited()
 
 
 async def test_documentation_tools_forward_filter_and_safe_nested_path(registered_tools):

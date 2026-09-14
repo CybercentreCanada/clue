@@ -416,7 +416,8 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=[selector.model_dump(exclude_none=True) for selector in data],
             params=_enrichment_params(options),
-            request_timeout=options.max_timeout + REQUEST_TIMEOUT_BUFFER,
+            # Clue waits up to 2.2 times the source timeout before returning bulk results.
+            request_timeout=options.max_timeout * 2.2 + REQUEST_TIMEOUT_BUFFER,
         )
 
     @mcp.tool(name="enrich")
@@ -441,13 +442,16 @@ def register_tools(mcp, api_client: ClueApiClient):
         """
         options = options or EnrichmentOptions()
         options.max_timeout = _request_timeout(options.max_timeout)
+        if not value:
+            raise ValueError("value must be non-empty")
 
         return await api_client.call(
             user_access_token=_proper_access_token(),
             path=f"lookup/enrich/{_route_segment(type_name, 'type_name')}/{quote(quote(value, safe=''), safe='')}/",
             method="GET",
             params=_enrichment_params(options),
-            request_timeout=options.max_timeout + REQUEST_TIMEOUT_BUFFER,
+            # Clue waits up to twice the source timeout before returning enrichment results.
+            request_timeout=options.max_timeout * 2 + REQUEST_TIMEOUT_BUFFER,
         )
 
     # region static

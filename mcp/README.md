@@ -159,8 +159,7 @@ Optional live network tests:
 1. export RUN_MCP_NETWORK_TESTS=1
 2. export TEST_AUTH_USERNAME=<username>
 3. export TEST_AUTH_PASSWORD=<password>
-4. export TEST_AUTH_EMAIL=<email>
-5. poetry run pytest test/test_network.py -v
+4. poetry run pytest test/test_network.py -v
 
 ## Linting and Validation
 

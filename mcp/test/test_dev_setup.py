@@ -40,6 +40,20 @@ def test_update_mcp_json_starts_fresh_on_invalid_json(tmp_path):
     assert config["servers"]["clueMcp"]["headers"]["Authorization"] == f"Bearer {token}"
 
 
+def test_write_env_file_preserves_existing_configuration(monkeypatch, tmp_path):
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "CLUE_API_BASE_URL=http://clue-api.example/api/v1\nAUTH_CLIENT_SECRET=old-secret\nMCP_PORT=9000\n"
+    )
+    monkeypatch.setattr(dev_setup, "_get_client_secret", lambda: "new-secret")
+
+    dev_setup.write_env_file(env_path)
+
+    assert env_path.read_text() == (
+        "CLUE_API_BASE_URL=http://clue-api.example/api/v1\nAUTH_CLIENT_SECRET=new-secret\nMCP_PORT=9000\n"
+    )
+
+
 def test_clear_port_only_targets_the_mcp_service(monkeypatch):
     monkeypatch.setattr(dev_setup, "_find_executable", lambda name: name)
     calls = []

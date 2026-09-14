@@ -24,6 +24,15 @@ def generate_badge(title, percentage, color):
     )
 
 
+def _diff_coverage_summary(report: str) -> tuple[str, str]:
+    """Return the displayed diff coverage and badge color, preserving NA defaults."""
+    try:
+        percentage = [line for line in report.splitlines() if "Coverage:" in line].pop().split()[-1]
+        return percentage, get_color(int(percentage.removesuffix("%")))
+    except (IndexError, ValueError):
+        return "NA%", "grey"
+
+
 def main() -> None:
     diff_exists = Path("diff.txt").exists()
     try:
@@ -35,7 +44,6 @@ def main() -> None:
 
         diff_report_result = ""
         diff_percentage = "NA%"
-        diff_percentage_int = 0
         diff_color = "grey"
         diff_badge = ""
         diff_result = ""
@@ -47,16 +55,7 @@ def main() -> None:
             ).decode()
             sys.stdout.write(diff_report_result + "\n")
 
-            try:
-                diff_percentage = (
-                    [line for line in diff_report_result.splitlines() if "Coverage:" in line].pop().split(" ").pop()
-                )
-                diff_percentage_int = int(diff_percentage.replace("%", ""))
-            except IndexError:
-                # Keep defaults when the coverage token is malformed.
-                pass
-
-            diff_color = get_color(diff_percentage_int)
+            diff_percentage, diff_color = _diff_coverage_summary(diff_report_result)
 
             with open("diff-cover-report.md") as diff_report:
                 diff_result = diff_report.read().replace("# ", "## ").replace("__init__.py", "\\_\\_init\\_\\_.py")
