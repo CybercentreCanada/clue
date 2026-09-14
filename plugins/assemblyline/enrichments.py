@@ -82,8 +82,12 @@ class EnrichmentProcessor:
 
             if tag_type in ["ip", "domain", "uri"]:
                 query = (
+                    # Informative and above
                     f'result.sections.tags.network.static.{tag_type}:"{value}" OR '
-                    f'result.sections.tags.network.dynamic.{tag_type}:"{value}"'
+                    f'result.sections.tags.network.dynamic.{tag_type}:"{value}" OR '
+                    # Safelisted
+                    f'result.sections.safelisted_tags.network.static.{tag_type}:"{value}" OR '
+                    f'result.sections.safelisted_tags.network.dynamic.{tag_type}:"{value}"'
                 )
                 sha256 = None
                 tag = (tag_type, value)
@@ -743,25 +747,29 @@ class EnrichmentProcessor:
 
                     for section in item["result"]["sections"]:
                         heuristic = section.get("heuristic") or {}
-                        if not heuristic:
-                            continue
-
                         section_score = heuristic.get("score", 0)
-                        if section_score == 0:
-                            continue
-
                         network_tags = section["tags"].get("network") or {}
+                        safe_tags = section["safelisted_tags"]
                         static_network_tags = network_tags.get("static") or {}
                         dynamic_network_tags = network_tags.get("dynamic") or {}
+                        safe_static_network_tags = safe_tags.get(f"network.static.{tag_type}", [])
+                        safe_dynamic_network_tags = safe_tags.get(f"network.dynamic.{tag_type}", [])
                         tag_values = (
                             self._get_value(network_tags, tag_type)
                             or self._get_value(static_network_tags, tag_type)
                             or self._get_value(dynamic_network_tags, tag_type)
+                            or safe_static_network_tags
+                            or safe_dynamic_network_tags
                             or []
                         )
                         if tag_value in tag_values:
                             verdict = None
-                            if section_score >= 1000:
+
+                            if tag_value in safe_dynamic_network_tags + safe_static_network_tags:
+                                # If the tag is safelisted by the system, we consider it benign regardless of the score
+                                verdict = "benign"
+                                analytic = "System Safelist"
+                            elif section_score >= 1000:
                                 verdict = "malicious"
                             elif section_score >= 300:
                                 verdict = "suspicious"
