@@ -1,3 +1,4 @@
+import json
 import os
 from urllib.parse import urlparse, urlunparse
 
@@ -20,7 +21,6 @@ pytestmark = pytest.mark.skipif(
 TEST_USERNAME = os.environ.get("TEST_AUTH_USERNAME")
 TEST_PASSWORD = os.environ.get("TEST_AUTH_PASSWORD")
 TEST_SCOPE = os.environ.get("TEST_AUTH_SCOPE", MCPSettings.SCOPE)
-TEST_EMAIL = os.environ.get("TEST_AUTH_EMAIL")
 
 if RUN_MCP_NETWORK_TESTS:
     missing_vars = [
@@ -28,7 +28,6 @@ if RUN_MCP_NETWORK_TESTS:
         for name, value in {
             "TEST_AUTH_USERNAME": TEST_USERNAME,
             "TEST_AUTH_PASSWORD": TEST_PASSWORD,
-            "TEST_AUTH_EMAIL": TEST_EMAIL,
         }.items()
         if not value
     ]
@@ -72,6 +71,25 @@ def get_token() -> str:
     return token
 
 
+def _initialize_response_messages(response: httpx.Response) -> list[dict]:
+    """Extract JSON-RPC responses from either JSON or streamable-HTTP SSE output."""
+    content_type = response.headers.get("content-type", "").lower()
+    if "application/json" in content_type:
+        payload = response.json()
+        messages = payload if isinstance(payload, list) else [payload]
+    elif "text/event-stream" in content_type:
+        messages = [
+            json.loads(line.removeprefix("data:").strip())
+            for line in response.text.splitlines()
+            if line.startswith("data:") and line.removeprefix("data:").strip()
+        ]
+    else:
+        pytest.fail(f"Unexpected MCP response content type: {content_type or 'missing'}")
+
+    assert all(isinstance(message, dict) for message in messages), "MCP response was not a JSON-RPC object"
+    return messages
+
+
 def test_mcp_server_connection():
     token = get_token()
     url_mcp = _mcp_request_url()
@@ -95,6 +113,12 @@ def test_mcp_server_connection():
 
     response = httpx.post(url_mcp, headers=headers, json=payload, timeout=CLUE_API.TIMEOUT)
     assert response.status_code == 200
+    responses = _initialize_response_messages(response)
+    matching_responses = [response for response in responses if str(response.get("id")) == "1"]
+    assert matching_responses, "MCP initialize response did not include request ID 1"
+    initialize_response = matching_responses[-1]
+    assert "error" not in initialize_response, f"MCP initialization failed: {initialize_response['error']}"
+    assert "result" in initialize_response, "MCP initialize response did not include a result"
 
 
 if __name__ == "__main__":
