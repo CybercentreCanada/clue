@@ -117,7 +117,7 @@ class MCPSettings:
     try:
         PORT = int(os.environ.get("MCP_PORT", "8000"))
     except ValueError:
-        logger.error(f"server_config_error invalid_port={os.environ.get("MCP_PORT")}")
+        logger.error(f"server_config_error invalid_port={os.environ.get('MCP_PORT')}")
         PORT = 8000
     LOG_LEVEL = os.environ.get("MCP_LOG_LEVEL", "INFO").upper()
     BASE_URL = _require_https_for_non_local(

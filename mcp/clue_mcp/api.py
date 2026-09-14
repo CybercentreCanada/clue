@@ -145,7 +145,7 @@ class ClueApiClient:
             outcome = f"http_{status_class}"
             logger.warning(
                 f"api_request_http_error method={method} route={route} status_code={code} "
-                f"outcome={outcome} response={e.response.content.decode('utf-8',errors='replace')}"
+                f"outcome={outcome} response={e.response.content.decode('utf-8', errors='replace')}"
             )
             raise
 
