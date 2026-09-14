@@ -56,9 +56,7 @@ def test_clear_port_only_targets_the_mcp_service(monkeypatch):
     docker_calls = [call for call in calls if call[0] == "docker"]
     assert docker_calls[-1] == ["docker", "compose", "stop", "clue-mcp"]
     # Never reference dependency services; clear_port must not touch them.
-    assert not any(
-        service in call for call in calls for service in ("mongodb", "redis", "keycloak", "clue-api")
-    )
+    assert not any(service in call for call in calls for service in ("mongodb", "redis", "keycloak", "clue-api"))
 
 
 def test_clear_port_does_not_stop_compose_when_mcp_service_not_running(monkeypatch):

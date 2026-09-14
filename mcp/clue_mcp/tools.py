@@ -90,7 +90,6 @@ def register_tools(mcp, api_client: ClueApiClient):
             raise ValueError("max_timeout must be greater than zero")
         return max_timeout
 
-
     def _proper_access_token() -> AccessToken:
         """Return the current request access token or fail consistently."""
         request_available = False
@@ -226,7 +225,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=body,
             params={"max_timeout": max_timeout},
-            request_timeout= max_timeout + REQUEST_TIMEOUT_BUFFER
+            request_timeout=max_timeout + REQUEST_TIMEOUT_BUFFER,
         )
 
     @mcp.tool(name="get_action_status")
@@ -318,7 +317,7 @@ def register_tools(mcp, api_client: ClueApiClient):
             method="POST",
             body=selector.model_dump(exclude_none=True),
             params={"max_timeout": max_timeout},
-            request_timeout=max_timeout+REQUEST_TIMEOUT_BUFFER
+            request_timeout=max_timeout + REQUEST_TIMEOUT_BUFFER,
         )
 
     @mcp.tool(name="get_fetcher_status")
