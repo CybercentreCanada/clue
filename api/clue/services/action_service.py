@@ -47,7 +47,7 @@ def get_supported_actions(
     with elasticapm.capture_span(f"GET {url}", span_type="http"):
         rsp = None
         try:
-            rsp = requests.get(url, headers=headers, timeout=10.0)
+            rsp = requests.get(url, headers=headers, timeout=10.0, allow_redirects=False)
             result = rsp.json()
 
             if not rsp.ok:
@@ -175,6 +175,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             json=parameters,
             headers=headers,
             timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
+            allow_redirects=False,
         )
 
         result = response.json()
@@ -233,6 +234,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
             req_url,
             headers=headers,
             timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
+            allow_redirects=False,
         )
 
         result = response.json()

@@ -36,6 +36,8 @@ api:
   audit: false
   debug: true
   validate_session_useragent: false
+  registration_allowed_origins:
+    - http://localhost:5008
   external_sources:
     - name: test
       classification: TLP:CLEAR

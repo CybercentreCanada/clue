@@ -1,9 +1,11 @@
 import base64
 import hashlib
+import hmac
 from typing import Any, Optional, Union
 
 from elasticapm.traces import capture_span
 from flask import request
+from pydantic import ValidationError
 
 from clue.common.exceptions import (
     AccessDeniedException,
@@ -14,6 +16,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
+from clue.models.auth_user import AuthResult, AuthUser, Privilege, UserRole
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.obo import get_obo_token
@@ -124,16 +127,21 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
 
 
 @capture_span(span_type="authentication")
-def bearer_auth(
-    data: str, skip_jwt: bool = False, skip_internal: bool = False
-) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
-    """This function handles Bearer type Authorization headers.
+def bearer_auth(data: str, skip_jwt: bool = False, skip_internal: bool = False) -> AuthResult:
+    """Authenticate a bearer token as an OAuth access token.
 
     Args:
-        data (str): The corresponding data in the Authorization header.
+        data: The bearer token from the Authorization header.
+        skip_jwt: Whether OAuth access-token authentication is disabled.
+        skip_internal: Whether internal bearer authentication is disabled.
 
     Returns:
-        tuple[Optional[User], Optional[list[str]]]: The user odm object and privileges, if validated
+        The authenticated user and effective privileges.
+
+    Raises:
+        AuthenticationException: If the token cannot be decoded or contains invalid user information.
+        InvalidDataException: If OAuth authentication is disabled for the endpoint.
+        ClueNotImplementedError: If internal bearer authentication is requested.
     """
     if "." in data:
         if not skip_jwt:
@@ -152,9 +160,15 @@ def bearer_auth(
 
             logger.debug("User successfully authenticated using JWT.")
 
-            cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
+            try:
+                cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
+            except ValidationError as e:
+                raise AuthenticationException("The token contains invalid user information.", cause=e) from e
 
-            return cur_user, ["R", "W"]
+            return AuthResult(
+                user=cur_user,
+                privileges={Privilege.READ, Privilege.WRITE},
+            )
         else:
             raise InvalidDataException("Not a valid authentication type for this endpoint.")
     else:
@@ -165,19 +179,19 @@ def bearer_auth(
 
 
 @capture_span(span_type="authentication")
-def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
-    """This function identifies the user via the internal API key functionality.
+def validate_apikey(name: str, apikey: str) -> AuthResult:
+    """Authenticate a configured API key.
 
     Args:
-        name (str): Name of the APIKey to check against
-        apikey (str): The apikey used to authenticate as the user
+        name: Name of the API key to check.
+        apikey: Secret associated with the API key.
 
     Raises:
-        AccessDeniedException: Api Key authentication was disabled, or the api was not valid for impersonation,
-                               or it was an impersonation api key incorrectly provided in the Authorization header.
+        AccessDeniedException: If API-key authentication is disabled, the key is invalid, or required identity
+            headers are absent.
 
     Returns:
-        tuple[Optional[User], Optional[list[str]]]: The user odm object and privileges, if validated
+        The authenticated user and effective privileges.
     """
     if not config.auth.allow_apikeys:
         raise AccessDeniedException("API Key authentication disabled")
@@ -187,7 +201,8 @@ def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], O
         if not config_apikey:
             raise AccessDeniedException("API Key does not exist")
 
-        if config_apikey != apikey:
+        secret = config_apikey if isinstance(config_apikey, str) else config_apikey.secret
+        if not hmac.compare_digest(secret.encode("utf-8"), apikey.encode("utf-8")):
             raise AccessDeniedException("Invalid API key")
 
         uname = request.headers.get("X-USERID", None)
@@ -196,10 +211,21 @@ def validate_apikey(name: str, apikey: str) -> tuple[Optional[dict[str, Any]], O
         email = request.headers.get("X-EMAIL", None)
         if not uname or not classification:
             raise AccessDeniedException(
-                "You must also provide X-USERID and X-CLASSIFICATION headers along with you API key."
+                "You must also provide X-USERID and X-CLASSIFICATION headers along with your API key."
             )
 
-        return {"uname": uname, "name": user_name, "classification": classification, "email": email}, ["R", "W"]
+        roles = {UserRole.USER} if isinstance(config_apikey, str) else {UserRole.USER, *config_apikey.roles}
+        privileges = {Privilege.READ, Privilege.WRITE} if isinstance(config_apikey, str) else config_apikey.privileges
+        return AuthResult(
+            user=AuthUser(
+                uname=uname,
+                name=user_name,
+                classification=classification,
+                email=email,
+                roles=roles,
+            ),
+            privileges=privileges,
+        )
     else:
         raise AccessDeniedException("You must provide your API key in the proper format in the Authorization header.")
 
@@ -244,60 +270,28 @@ def decode_b64(b64_str: str) -> str:
 
 
 @capture_span(span_type="authentication")
-def basic_auth(
-    data: str, is_base64: bool = True, skip_apikey: bool = False, skip_password: bool = False
-) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
-    """This function handles Basic type Authorization headers.
+def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
+    """Authenticate a Basic authorization value containing an API key.
 
     Args:
-        data (str): The corresponding data in the Authorization header.
-        is_base64 (bool, optional): Whether the provided data is base64 encoded. Defaults to True.
-        skip_apikey (bool, optional): Whether to skip apikey validation. Defaults to False.
-        skip_password (bool, optional): Whether to skip password validation. Defaults to False.
+        data: A base64-encoded ``key_name:key_secret`` value, or the decoded value when ``is_base64`` is false.
+        is_base64: Whether ``data`` is base64 encoded.
 
     Raises:
-        AuthenticationException: The login information is invalid, or the maximum password retry for the account
-                                 has been reached.
+        InvalidDataException: If the decoded value is not in ``key_name:key_secret`` format.
+        AccessDeniedException: If the API key is invalid or cannot authenticate the request.
 
     Returns:
-        tuple[Optional[User], Optional[list[str]]]: The user odm object and privileges, if validated
+        The authenticated user and effective privileges.
     """
     key_pair = decode_b64(data) if is_base64 else data
 
-    [username, data] = key_pair.split(":", maxsplit=1)
+    try:
+        key_name, key_secret = key_pair.split(":", maxsplit=1)
+    except ValueError as e:
+        raise InvalidDataException("Basic authentication data must use key_name:key_secret format") from e
 
-    validated_user = None
-    priv = None
-    if not skip_apikey:
-        validated_user, priv = validate_apikey(username, data)
-
-    # Bruteforce protection
-    # auth_fail_queue: NamedQueue = NamedQueue(f"ui-failed-{username}", **redis_config)  # type: ignore
-    # if auth_fail_queue.length() >= config.auth.internal.max_failures:
-    #     # Failed 'max_failures' times, stop trying... This will timeout in 'failure_ttl' seconds
-    #     raise AuthenticationException(
-    #         "Maximum password retry of {retry} was reached. "
-    #         "This account is locked for the next {ttl} "
-    #         "seconds...".format(
-    #             retry=config.auth.internal.max_failures,
-    #             ttl=config.auth.internal.failure_ttl,
-    #         )
-    #     )
-
-    if not validated_user and not skip_password:
-        validated_user, priv = validate_userpass(username, data)
-
-    if not validated_user:
-        # auth_fail_queue.push(
-        #     {
-        #         "remote_addr": request.remote_addr,
-        #         "host": request.host,
-        #         "full_path": request.full_path,
-        #     }
-        # )
-        raise AuthenticationException("Invalid login information")
-
-    return validated_user, priv
+    return validate_apikey(key_name, key_secret)
 
 
 # TODO: sa-clue support
