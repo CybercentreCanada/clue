@@ -123,6 +123,10 @@ jobs:
             mongodb
             redis
             keycloak
+            test-plugin
+            bad-plugin
+            slow-plugin
+            telemetry-plugin
 
       - name: Start Clue MCP server
         run: |
@@ -146,7 +150,6 @@ jobs:
           RUN_MCP_NETWORK_TESTS: "1"
           TEST_AUTH_USERNAME: goose
           TEST_AUTH_PASSWORD: goose
-          TEST_AUTH_EMAIL: goose@clue.cyber.gc.ca
           CLUE_API_BASE_URL: http://localhost:5000/api/v1
           COVERAGE_FILE: .coverage.tests
 
@@ -154,7 +157,7 @@ jobs:
         if: steps.tests.outcome == 'failure'
         run: |
           echo "--- Clue API and dependency logs ---"
-          docker compose -f docker-compose.yml logs --no-color clue-api mongodb redis keycloak
+          docker compose -f docker-compose.yml logs --no-color clue-api mongodb redis keycloak test-plugin bad-plugin slow-plugin telemetry-plugin
           echo "--- Clue MCP server logs ---"
           if [ -f /tmp/clue-mcp-server.log ]; then
             cat /tmp/clue-mcp-server.log

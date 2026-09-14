@@ -1,4 +1,79 @@
+x-test-plugin-common: &test-plugin
+  profiles:
+    - full
+  image: cccs/clue-api:latest
+  working_dir: /workspace
+  environment:
+    PYTHONPATH: /workspace:/var/lib/clue/.local/lib/python3.12/site-packages
+    SKIP_DISCOVERY: "true"
+    TESTING: "true"
+  volumes:
+    - ../api/clue:/workspace/clue:ro
+    - ../api/test:/workspace/test:ro
+    - ../api/clue/common/classification.yml:/etc/clue/conf/classification.yml:ro
+  networks:
+    - clue-mcp-network
+  depends_on:
+    redis:
+      condition: service_healthy
+
 services:
+  test-plugin:
+    <<: *test-plugin
+    command: python -m test.utils.test_server
+    environment:
+      PYTHONPATH: /workspace:/var/lib/clue/.local/lib/python3.12/site-packages
+      PLUGIN_PORT: "5008"
+      SKIP_DISCOVERY: "true"
+      TESTING: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from urllib.request import urlopen; urlopen('http://localhost:5008/healthz/ready').read()\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  bad-plugin:
+    <<: *test-plugin
+    command: python -m test.utils.bad_server
+    environment:
+      PYTHONPATH: /workspace:/var/lib/clue/.local/lib/python3.12/site-packages
+      PLUGIN_PORT: "5009"
+      SKIP_DISCOVERY: "true"
+      TESTING: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from urllib.request import urlopen; urlopen('http://localhost:5009/healthz/ready').read()\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  slow-plugin:
+    <<: *test-plugin
+    command: python -m test.utils.slow_server
+    environment:
+      PYTHONPATH: /workspace:/var/lib/clue/.local/lib/python3.12/site-packages
+      PLUGIN_PORT: "5010"
+      SKIP_DISCOVERY: "true"
+      TESTING: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from urllib.request import urlopen; urlopen('http://localhost:5010/healthz/ready').read()\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  telemetry-plugin:
+    <<: *test-plugin
+    command: python -m test.utils.telemetry_server
+    environment:
+      PYTHONPATH: /workspace:/var/lib/clue/.local/lib/python3.12/site-packages
+      PLUGIN_PORT: "5011"
+      SKIP_DISCOVERY: "true"
+      TESTING: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from urllib.request import urlopen; urlopen('http://localhost:5011/healthz/ready').read()\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   clue-mcp:
     profiles:
       - full
@@ -74,7 +149,7 @@ services:
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__AUTHORIZE_URL: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/auth
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__JWKS_URI: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/certs
     volumes:
-      - ../api/test/unit/config.yml:/etc/clue/conf/config.yml:ro
+      - ./dev/api-config.yml:/etc/clue/conf/config.yml:ro
       - ../api/clue/common/classification.yml:/etc/clue/conf/classification.yml:ro
     depends_on:
       mongodb:
@@ -82,6 +157,14 @@ services:
       redis:
         condition: service_healthy
       keycloak:
+        condition: service_healthy
+      test-plugin:
+        condition: service_healthy
+      bad-plugin:
+        condition: service_healthy
+      slow-plugin:
+        condition: service_healthy
+      telemetry-plugin:
         condition: service_healthy
 
   mongodb:

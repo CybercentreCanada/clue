@@ -175,7 +175,7 @@ Container:
 - docker build --secret id=pip_ca,src=${PIP_CERT:-/etc/ssl/certs/ca-certificates.crt} -t clue-mcp-server:latest .
 - docker compose --profile full up -d
 
-Repository compose currently uses an explicit bridge network for communication between services. For production, also apply ingress and egress policy controls appropriate to the deployment environment.
+Repository compose starts representative Clue test plugins alongside the API, allowing local action, fetcher, type-discovery, and enrichment requests to reach configured sources. For production, replace these test plugins with deployment-specific external sources and apply ingress and egress policy controls appropriate to the deployment environment.
 
 The shared Clue API HTTP client is created when the streamable-HTTP application starts, using the configured connection limits, and is closed when the application shuts down.
 
