@@ -67,6 +67,7 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> list[QueryEntr
 
     return entries
 
+
 @plugin.use
 def run_action(action: Action, request: ExecuteRequest, token: str | None) -> ActionResult:
     """Execute an action for the MISP plugin.
