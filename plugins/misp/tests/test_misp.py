@@ -53,16 +53,22 @@ def app():
 
     return app
 
+@pytest.fixture()
+def enrichments():
+    from misp import enrichments
+
+    return enrichments
+
 
 @pytest.fixture()
 def mock_lookup(app, monkeypatch):
-    monkeypatch.setattr(app, "_lookup_type", lambda *a, **kw: MISP_RESPONSE["Attribute"])
+    monkeypatch.setattr(app, "lookup_attributes", lambda *a, **kw: MISP_RESPONSE["Attribute"])
     return app
 
 
 def override_attr(app, overrides):
     """Mock lookup_type with attribute field overrides"""
-    app._lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
+    app.lookup_attributes = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
 
 
 @pytest.fixture()
@@ -174,15 +180,15 @@ def test_enrich_active_range_in_details(mock_lookup, base_params):
         ("adversary:infrastructure-type='C2'", "adversary", "infrastructure-type", "C2"),
     ],
 )
-def test__parse_misp_tag(app, tag_name, exp_ns, exp_pred, exp_val):
-    ns, pred, val = app._parse_misp_tag(tag_name)
+def test__parse_misp_tag(enrichments, tag_name, exp_ns, exp_pred, exp_val):
+    ns, pred, val = enrichments._parse_misp_tag(tag_name)
     assert ns == exp_ns
     assert pred == exp_pred
     assert val == exp_val
 
 
-def test__process_tags(app, monkeypatch):
-    monkeypatch.setattr(app, "ALLOW_TAGS", {"misp-galaxy:threat-actor"})
+def test__process_tags(enrichments, monkeypatch):
+    monkeypatch.setattr(enrichments, "ALLOW_TAGS", {"misp-galaxy:threat-actor"})
     sample_tags = [
         {"name": "type:OSINT"},
         {"name": "tlp:red"},
@@ -190,38 +196,38 @@ def test__process_tags(app, monkeypatch):
         {"name": 'misp-galaxy:threat-actor="APT 29"'},
     ]
 
-    tags, labels = app._process_tags(sample_tags)
+    tags, labels = enrichments._process_tags(sample_tags)
     assert tags == {"threat-actor:APT 29"}
     assert labels == {"APT 29", "OSINT"}
 
 
-def test__process_tags_namespace_only(app):
-    tags, _ = app._process_tags([{"name": 'ecsirt="malware"'}])
+def test__process_tags_namespace_only(enrichments):
+    tags, _ = enrichments._process_tags([{"name": 'ecsirt="malware"'}])
     assert tags == {"ecsirt:malware"}
 
 
-def test__process_tags_no_match(app):
+def test__process_tags_no_match(enrichments):
     sample_tags = [
         {"name": "tlp:red"},
         {"name": 'osint:lifetime="perpetual"'},
     ]
-    tags, labels = app._process_tags(sample_tags)
+    tags, labels = enrichments._process_tags(sample_tags)
     assert tags == set()
     assert labels == set()
 
 
-def test__process_tags_empty(app):
-    tags, labels = app._process_tags([])
+def test__process_tags_empty(enrichments):
+    tags, labels = enrichments._process_tags([])
     assert tags == set()
     assert labels == set()
 
 
-def test__highest_tlp(app):
-    assert app._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
-    assert app._highest_tlp(["TLP:AMBER+STRICT", "TLP:AMBER"]) == "TLP:AMBER+STRICT"
-    assert app._highest_tlp(["TLP:GREEN"]) == "TLP:GREEN"
-    assert app._highest_tlp(["tlp:green"]) == "TLP:GREEN"
-    assert app._highest_tlp([]) is None
+def test__highest_tlp(enrichments):
+    assert enrichments._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
+    assert enrichments._highest_tlp(["TLP:AMBER+STRICT", "TLP:AMBER"]) == "TLP:AMBER+STRICT"
+    assert enrichments._highest_tlp(["TLP:GREEN"]) == "TLP:GREEN"
+    assert enrichments._highest_tlp(["tlp:green"]) == "TLP:GREEN"
+    assert enrichments._highest_tlp([]) is None
 
 
 # Client
