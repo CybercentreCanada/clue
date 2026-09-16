@@ -1,5 +1,9 @@
 # Clue UI Release Notes
 
+## `1.4.2`
+
+- **`baseURL` Propagation to ClueDatabaseContext** *(bugfix)*: Fixed propagation of baseURL from `ClueProvider` to `ClueDatabaseContext` for replication.
+
 ## `1.4.1`
 
 - **Classification Chip Safety** *(bugfix)*: Prevented classification chips from accessing level data when a classification cannot be parsed, preserving default styling instead of causing a runtime error.
