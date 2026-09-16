@@ -63,18 +63,23 @@ def enrichments():
 
 @pytest.fixture()
 def mock_lookup(app, monkeypatch):
-    monkeypatch.setattr(app, "lookup_attributes", lambda *a, **kw: MISP_RESPONSE["Attribute"])
-    return app
+    """Patch lookup_attributes to return a sample attribute, merged with optional overrides"""
 
+    def _mock(overrides=None):
+        def _patched(*args, **kwargs):
+            return [{**MISP_RESPONSE["Attribute"][0], **(overrides or {})}]
 
-def override_attr(app, overrides):
-    """Mock lookup_type with attribute field overrides"""
-    app.lookup_attributes = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
+        monkeypatch.setattr(app, "lookup_attributes", _patched)
+        return app
+
+    return _mock
 
 
 @pytest.fixture()
-def base_params(mock_lookup):
-    return mock_lookup.Params(
+def base_params():
+    from clue.plugin.utils import Params
+
+    return Params(
         deadline=0,
         max_timeout=1,
         annotate=True,
@@ -86,7 +91,7 @@ def base_params(mock_lookup):
 
 @pytest.fixture()
 def enrich_result(mock_lookup, base_params):
-    return mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    return mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)[0]
 
 
 def test_enrich(enrich_result):
@@ -94,9 +99,7 @@ def test_enrich(enrich_result):
     assert enrich_result.classification == "TLP:GREEN"
 
     annotation = enrich_result.annotations[0]
-    assert annotation.summary == (
-        "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
-    )
+    assert annotation.summary == "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
     assert annotation.value == "C2 beacon observed during Cobalt Strike campaign"
     assert annotation.confidence == 0.9
     assert annotation.quantity == 2
@@ -105,52 +108,50 @@ def test_enrich(enrich_result):
 
 def test_enrich_no_annotate(mock_lookup, base_params):
     base_params.annotate = False
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)
+    result = mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)
     assert len(result) == 1
     assert result[0].annotations == []
 
 
 def test_enrich_raw_data(mock_lookup, base_params):
     base_params.raw = True
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    result = mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.raw_data is not None
 
 
 def test_enrich_freetext_comment_ignored(mock_lookup, base_params):
-    override_attr(mock_lookup, {"comment": "Imported via the Freetext Import Tool"})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"comment": "Imported via the Freetext Import Tool"})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].value != "Imported via the Freetext Import Tool"
 
 
 def test_enrich_confidence_no_sighting(mock_lookup, base_params):
-    override_attr(mock_lookup, {"Sighting": []})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"Sighting": []})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].confidence == 0.5
 
 
 def test_enrich_severity_none(mock_lookup, base_params):
-    override_attr(
-        mock_lookup,
+    app = mock_lookup(
         {
             "Event": {
-                "date": "2026-06-01",
                 "threat_level_id": "0",
             }
         },
     )
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].severity is None
 
 
 def test_enrich_timestamp_no_sightings(mock_lookup, base_params):
-    override_attr(mock_lookup, {"last_seen": None, "timestamp": "1576589519"})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"last_seen": None, "timestamp": "1576589519"})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].timestamp == datetime.fromtimestamp(1576589519, tz=timezone.utc)
 
 
 def test_enrich_active_range_in_details(mock_lookup, base_params):
-    override_attr(mock_lookup, {"first_seen": "2026-01-01T00:00:00Z", "last_seen": "2026-06-01T00:00:00Z"})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"first_seen": "2026-01-01T00:00:00Z", "last_seen": "2026-06-01T00:00:00Z"})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
 
 

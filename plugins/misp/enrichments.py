@@ -101,7 +101,7 @@ def lookup_attributes(misp_types: list[str], value: str, limit: int, timeout: fl
 
     Raises:
         NotFoundException: no attribute matched
-        ClueException: MISP returned a unexpected response
+        ClueException: MISP returned an unexpected response
     """
     payload = {
         "type": misp_types,
