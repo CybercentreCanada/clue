@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from client import misp_request
-from clue.common.exceptions import ClueException, NotFoundException
+from clue.common.exceptions import ClueException, NotFoundException, UnprocessableException
 from clue.models.network import Annotation, QueryEntry
 from clue.plugin.utils import Params
 from consts import (
@@ -65,8 +65,10 @@ def to_query_entry(attr: dict[str, Any], params: Params) -> QueryEntry:
         # Last seen preferred, fallback to attribute modification time
         if last_seen_iso:
             timestamp = datetime.fromisoformat(last_seen_iso.replace("Z", "+00:00"))
+        elif attr_ts := attr.get("timestamp"):
+            timestamp = datetime.fromtimestamp(int(attr_ts), tz=timezone.utc)
         else:
-            timestamp = datetime.fromtimestamp(int(attr["timestamp"]), tz=timezone.utc)
+            raise UnprocessableException(f"MISP attribute {attr.get('id')} missing timestamp")
 
         org = event.get("Orgc", {}).get("name", "Unknown")
         event_title = event.get("info", "Unknown")

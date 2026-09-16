@@ -50,14 +50,14 @@ MISP_RESPONSE = {
 
 @pytest.fixture()
 def app():
-    from misp import app
+    import app
 
     return app
 
 
 @pytest.fixture()
 def enrichments():
-    from misp import enrichments
+    import enrichments
 
     return enrichments
 
