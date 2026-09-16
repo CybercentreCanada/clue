@@ -3,15 +3,9 @@ import logging
 from copy import copy
 from typing import Any, KeysView
 
+from clue.common.exceptions import InvalidClassification, InvalidDefinition
+
 log = logging.getLogger("clue.classification")
-
-
-class InvalidClassification(Exception):
-    pass
-
-
-class InvalidDefinition(Exception):
-    pass
 
 
 class Classification(object):
