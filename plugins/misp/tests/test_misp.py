@@ -185,7 +185,7 @@ def test__parse_misp_tag(enrichments, tag_name, exp_ns, exp_pred, exp_val):
     ],
     ids=["allowlisted", "namespace_only", "no_match", "empty"],
 )
-def test__proces_tags(enrichments, monkeypatch, sample_tags, exp_tags, exp_labels):
+def test__process_tags(enrichments, monkeypatch, sample_tags, exp_tags, exp_labels):
     monkeypatch.setattr(enrichments, "ALLOW_TAGS", {"misp-galaxy:threat-actor", "ecsirt"})
     tags, labels = enrichments._process_tags(sample_tags)
     assert tags == exp_tags
