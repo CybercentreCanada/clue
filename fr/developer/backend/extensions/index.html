@@ -1,0 +1,2794 @@
+<!-- Elements added to main will be displayed on all pages --><!DOCTYPE html><html lang="fr" class="no-js"><head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://cybercentrecanada.github.io/clue/fr/developer/backend/extensions/">
+      
+      
+        <link rel="prev" href="../../frontend/testing/">
+      
+      
+        <link rel="next" href="../">
+      
+      
+        
+          <link rel="alternate" href="../../../../developer/backend/extensions/" hreflang="en">
+        
+          <link rel="alternate" href="./" hreflang="fr">
+        
+      
+      
+      <link rel="icon" href="../../../../images/clue-icon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Extensions de l'API Clue - Clue</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../css/extra.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <link href="../../../../assets/stylesheets/glightbox.min.css" rel="stylesheet"><script src="../../../../assets/javascripts/glightbox.min.js"></script><style id="glightbox-style">
+            html.glightbox-open { overflow: initial; height: 100%; }
+            .gslide-title { margin-top: 0px; user-select: text; }
+            .gslide-desc { color: #666; user-select: text; }
+            .gslide-image img { background: white; }
+            .gscrollbar-fixer { padding-right: 15px; }
+            .gdesc-inner { font-size: 0.75rem; }
+            body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color); }
+            body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color); }
+            body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color); }
+        </style></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="dark" data-md-color-primary="custom" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#extensions-de-lapi-clue" class="md-skip">
+          Aller au contenu
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="En-tête">
+    <a href="../../../" title="Clue" class="md-header__button md-logo" aria-label="Clue" data-md-component="logo">
+      
+  <img src="../../../../images/clue-icon.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"></path></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Clue
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Extensions de l'API Clue
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="dark" data-md-color-primary="custom" data-md-color-accent="indigo" aria-label="Switch to light mode" type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 6H7c-3.31 0-6 2.69-6 6s2.69 6 6 6h10c3.31 0 6-2.69 6-6s-2.69-6-6-6m0 10H7c-2.21 0-4-1.79-4-4s1.79-4 4-4h10c2.21 0 4 1.79 4 4s-1.79 4-4 4M7 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3"></path></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="light" data-md-color-primary="custom" data-md-color-accent="indigo" aria-label="Switch to dark mode" type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden="">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 7H7a5 5 0 0 0-5 5 5 5 0 0 0 5 5h10a5 5 0 0 0 5-5 5 5 0 0 0-5-5m0 8a3 3 0 0 1-3-3 3 3 0 0 1 3-3 3 3 0 0 1 3 3 3 3 0 0 1-3 3"></path></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+      <div class="md-header__option">
+  <div class="md-select">
+    
+    <button class="md-header__button md-icon" aria-label="Sélectionner la langue">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m12.87 15.07-2.54-2.51.03-.03A17.5 17.5 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2zm-2.62 7 1.62-4.33L19.12 17z"></path></svg>
+    </button>
+    <div class="md-select__inner">
+      <ul class="md-select__list">
+        
+          <li class="md-select__item">
+            <a href="../../../../developer/backend/extensions/" hreflang="en" class="md-select__link">
+              English
+            </a>
+          </li>
+        
+          <li class="md-select__item">
+            <a href="./" hreflang="fr" class="md-select__link">
+              Français
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</div>
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Rechercher" placeholder="Rechercher" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required="">
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"></path></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"></path></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Recherche">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Effacer" aria-label="Effacer" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix="">
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initialisation de la recherche
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CybercentreCanada/clue" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Onglets" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../../" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Accueil
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../overview/integration/" class="md-tabs__link">
+          
+  
+  
+  Aperçu
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../installation/helm/" class="md-tabs__link">
+          
+  
+  
+  Installation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../" class="md-tabs__link">
+          
+  
+  
+  Guide du développeur
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../" title="Clue" class="md-nav__button md-logo" aria-label="Clue" data-md-component="logo">
+      
+  <img src="../../../../images/clue-icon.svg" alt="logo">
+
+    </a>
+    Clue
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CybercentreCanada/clue" title="Aller au dépôt" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"></path></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix="">
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accueil
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2">
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Aperçu
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Aperçu
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clue du point de vue de l'intégrateur
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/plugin_developers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clue du point de vue du développeur de plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../overview/users/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Clue du point de vue de l'utilisateur
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3">
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Installation
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../installation/helm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide de déploiement Kubernetes (utilisant Helm)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide du développeur
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guide du développeur
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Commencer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../plugin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Créer un nouveau plugin Clue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3">
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Frontend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Frontend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../frontend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide de développement de l'interface utilisateur Clue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../frontend/testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tester Clue dans une autre application
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" checked="">
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Backend
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix="">
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions de l'API Clue
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extensions de l'API Clue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#apercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aperçu
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fonctionnalites-cles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fonctionnalités clés
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structure-dextension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure d'extension
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Structure d'extension">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disposition-de-repertoire-de-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disposition de répertoire de base
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fichier-de-configuration-de-lextension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fichier de configuration de l'extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#classe-de-configuration-de-lextension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classe de configuration de l'extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types-de-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types de modules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Types de modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-module-dinitialisation-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Module d'initialisation (init)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-module-de-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Module de routes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-module-dauthentification-obo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Module d'authentification OBO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enregistrement-de-types-de-donnees-personnalises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enregistrement de types de données personnalisés
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enregistrement de types de données personnalisés">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#utilisation-de-add_supported_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilisation de add_supported_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#activation-des-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activation des extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#processus-de-chargement-des-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Processus de chargement des extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bonnes-pratiques" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bonnes pratiques
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bonnes pratiques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-utiliser-la-journalisation-appropriee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Utiliser la journalisation appropriée
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-gerer-les-erreurs-avec-elegance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Gérer les erreurs avec élégance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-utiliser-des-espaces-de-noms-pour-les-types-personnalises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Utiliser des espaces de noms pour les types personnalisés
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-documenter-votre-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Documenter votre extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-tester-votre-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Tester votre extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemple-extension-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemple : Extension complète
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemple : Extension complète">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structure-de-repertoire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure de répertoire
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extensionyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        extension.yml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        init.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routesticket_routepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        routes/ticket_route.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obo.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#depannage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dépannage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dépannage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extension-ne-se-charge-pas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension ne se charge pas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routes-non-accessibles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routes non accessibles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#types-personnalises-non-reconnus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types personnalisés non reconnus
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#considerations-de-securite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Considérations de sécurité
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Considérations de sécurité">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-authentification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Authentification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-validation-des-entrees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Validation des entrées
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-gestion-des-erreurs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Gestion des erreurs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conseils-de-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conseils de performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Conseils de performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-chargement-paresseux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Chargement paresseux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-mise-en-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Mise en cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-taches-en-arriere-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Tâches en arrière-plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-de-lapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Référence de l'API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Référence de l'API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#baseextensionconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BaseExtensionConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add_supported_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_supported_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ressources-supplementaires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ressources supplémentaires
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guide de développement de l'API Clue
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../releases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table des matières">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table des matières
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix="">
+      
+        <li class="md-nav__item">
+  <a href="#apercu" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Aperçu
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fonctionnalites-cles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fonctionnalités clés
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#structure-dextension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure d'extension
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Structure d'extension">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disposition-de-repertoire-de-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disposition de répertoire de base
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fichier-de-configuration-de-lextension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fichier de configuration de l'extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#classe-de-configuration-de-lextension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Classe de configuration de l'extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#types-de-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types de modules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Types de modules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-module-dinitialisation-init" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Module d'initialisation (init)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-module-de-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Module de routes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-module-dauthentification-obo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Module d'authentification OBO
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enregistrement-de-types-de-donnees-personnalises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enregistrement de types de données personnalisés
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Enregistrement de types de données personnalisés">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#utilisation-de-add_supported_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Utilisation de add_supported_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#activation-des-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Activation des extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#processus-de-chargement-des-extensions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Processus de chargement des extensions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bonnes-pratiques" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bonnes pratiques
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bonnes pratiques">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-utiliser-la-journalisation-appropriee" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Utiliser la journalisation appropriée
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-gerer-les-erreurs-avec-elegance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Gérer les erreurs avec élégance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-utiliser-des-espaces-de-noms-pour-les-types-personnalises" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Utiliser des espaces de noms pour les types personnalisés
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-documenter-votre-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Documenter votre extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-tester-votre-extension" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Tester votre extension
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exemple-extension-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exemple : Extension complète
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Exemple : Extension complète">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#structure-de-repertoire" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structure de répertoire
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extensionyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        extension.yml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        config.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        init.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routesticket_routepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        routes/ticket_route.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#obopy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        obo.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#depannage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dépannage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Dépannage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#extension-ne-se-charge-pas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extension ne se charge pas
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routes-non-accessibles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routes non accessibles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#types-personnalises-non-reconnus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Types personnalisés non reconnus
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#considerations-de-securite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Considérations de sécurité
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Considérations de sécurité">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-authentification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Authentification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-validation-des-entrees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Validation des entrées
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-gestion-des-erreurs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Gestion des erreurs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conseils-de-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conseils de performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Conseils de performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-chargement-paresseux" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Chargement paresseux
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-mise-en-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Mise en cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-taches-en-arriere-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Tâches en arrière-plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-de-lapi" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Référence de l'API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Référence de l'API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#baseextensionconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BaseExtensionConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#add_supported_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add_supported_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ressources-supplementaires" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ressources supplémentaires
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="extensions-de-lapi-clue">Extensions de l'API Clue<a class="headerlink" href="#extensions-de-lapi-clue" title="Permanent link">¶</a></h1>
+<h2 id="apercu">Aperçu<a class="headerlink" href="#apercu" title="Permanent link">¶</a></h2>
+<p>Le système d'extensions de Clue vous permet d'ajouter des fonctionnalités personnalisées à l'API centrale sans modifier le code de base. Les extensions peuvent enregistrer de nouvelles routes API, ajouter des types de données personnalisés, intégrer des mécanismes d'authentification et effectuer des tâches d'initialisation au démarrage de l'application.</p>
+<p>Les extensions sont chargées dynamiquement au démarrage en fonction de la configuration et peuvent s'intégrer de manière transparente à l'infrastructure existante de Clue.</p>
+<h2 id="fonctionnalites-cles">Fonctionnalités clés<a class="headerlink" href="#fonctionnalites-cles" title="Permanent link">¶</a></h2>
+<p>Les extensions prennent en charge les capacités suivantes :</p>
+<ul>
+<li><strong>Routes API personnalisées</strong> : Ajoutez de nouveaux points de terminaison API pour étendre les fonctionnalités de Clue</li>
+<li><strong>Hooks d'initialisation</strong> : Exécutez du code lors du démarrage de l'application</li>
+<li><strong>Intégration d'authentification</strong> : Implémentez l'échange de jetons On-Behalf-Of (OBO) pour les services externes</li>
+<li><strong>Types de données personnalisés</strong> : Enregistrez de nouveaux types pris en charge avec des modèles de validation</li>
+<li><strong>Indicateurs de fonctionnalités</strong> : Contrôlez le comportement de l'extension via des fonctionnalités configurables</li>
+</ul>
+<h2 id="structure-dextension">Structure d'extension<a class="headerlink" href="#structure-dextension" title="Permanent link">¶</a></h2>
+<h3 id="disposition-de-repertoire-de-base">Disposition de répertoire de base<a class="headerlink" href="#disposition-de-repertoire-de-base" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>my-extension/
+├── __init__.py
+├── config.py              # Configuration de l'extension
+├── routes/                # Routes API personnalisées (optionnel)
+│   └── my_route.py
+├── obo.py                 # Module d'authentification OBO (optionnel)
+└── extension.yml          # Fichier de configuration de l'extension
+</code></pre></div>
+<h3 id="fichier-de-configuration-de-lextension">Fichier de configuration de l'extension<a class="headerlink" href="#fichier-de-configuration-de-lextension" title="Permanent link">¶</a></h3>
+<p>Les extensions utilisent un fichier de configuration YAML pour définir leur comportement et leurs modules :</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"my-extension"</span>
+
+<span class="c1"># Indicateurs de fonctionnalités optionnels</span>
+<span class="nt">features</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable_feature_x</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">enable_feature_y</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="c1"># Modules optionnels</span>
+<span class="nt">modules</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Fonction d'initialisation appelée au démarrage de l'application</span>
+<span class="w">  </span><span class="nt">init</span><span class="p">:</span><span class="w"> </span><span class="s">"my_extension.init:initialize"</span>
+
+<span class="w">  </span><span class="c1"># Routes API personnalisées à enregistrer</span>
+<span class="w">  </span><span class="nt">routes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"my_route"</span><span class="w">  </span><span class="c1"># Forme courte : sera préfixée avec le nom de l'extension</span>
+<span class="w">    </span><span class="c1"># - "other_package.routes.custom_route"  # Forme complète : utilisée telle quelle</span>
+
+<span class="w">  </span><span class="c1"># Module d'authentification OBO</span>
+<span class="w">  </span><span class="nt">obo_module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Forme courte : utilise &lt;extension&gt;.obo:get_obo_token</span>
+<span class="w">  </span><span class="c1"># obo_module: "my_extension.auth:custom_obo"  # Forme complète : chemin personnalisé</span>
+</code></pre></div>
+<h3 id="classe-de-configuration-de-lextension">Classe de configuration de l'extension<a class="headerlink" href="#classe-de-configuration-de-lextension" title="Permanent link">¶</a></h3>
+<p>Créez un fichier <code>config.py</code> dans votre extension :</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">SettingsConfigDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.extensions.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseExtensionConfig</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyExtensionConfig</span><span class="p">(</span><span class="n">BaseExtensionConfig</span><span class="p">):</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span>
+        <span class="n">yaml_file</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"extension.yml"</span><span class="p">,</span>
+        <span class="n">yaml_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span>
+        <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+<span class="c1"># Exporter l'instance de configuration</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">MyExtensionConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"my-extension"</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="types-de-modules">Types de modules<a class="headerlink" href="#types-de-modules" title="Permanent link">¶</a></h2>
+<h3 id="1-module-dinitialisation-init">1. Module d'initialisation (init)<a class="headerlink" href="#1-module-dinitialisation-init" title="Permanent link">¶</a></h3>
+<p>Le module d'initialisation est appelé une fois au démarrage de l'application Flask. Ceci est utile pour :</p>
+<ul>
+<li>Enregistrer des types de données personnalisés</li>
+<li>Établir des connexions aux services externes</li>
+<li>Configurer des ressources spécifiques à l'extension</li>
+<li>Effectuer des tâches de configuration uniques</li>
+</ul>
+<p><strong>Signature de fonction :</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="n">flask_app</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Initialise l'extension.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        flask_app: L'instance de l'application Flask</span>
+<span class="sd">    """</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<p><strong>Exemple :</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># my_extension/init.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.constants.supported_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_supported_type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="n">flask_app</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Initialise mon extension."""</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Initialisation de my-extension"</span><span class="p">)</span>
+
+    <span class="c1"># Enregistrer des types de données personnalisés</span>
+    <span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"ticket_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^TICKET-\d</span><span class="si">{6}</span><span class="s2">$"</span><span class="p">)</span>
+    <span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"custom_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^\d</span><span class="si">{10}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my-extension"</span><span class="p">)</span>
+
+    <span class="c1"># Effectuer d'autres initialisations</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Mon extension initialisée avec succès"</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="2-module-de-routes">2. Module de routes<a class="headerlink" href="#2-module-de-routes" title="Permanent link">¶</a></h3>
+<p>Les routes vous permettent d'ajouter des points de terminaison API personnalisés à Clue. Les routes sont des Blueprints Flask qui sont enregistrés avec l'application principale.</p>
+<p><strong>Exemple :</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># my_extension/routes/my_route.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_subapi_blueprint</span><span class="p">,</span> <span class="n">ok</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">SUB_API</span> <span class="o">=</span> <span class="s2">"myapi"</span>
+<span class="n">my_route</span> <span class="o">=</span> <span class="n">make_subapi_blueprint</span><span class="p">(</span><span class="n">SUB_API</span><span class="p">,</span> <span class="n">api_version</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">my_route</span><span class="o">.</span><span class="n">_doc</span> <span class="o">=</span> <span class="s2">"Mon API personnalisée"</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="nd">@my_route</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/example"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">example_endpoint</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Point de terminaison d'exemple.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Réponse API avec statut de succès</span>
+<span class="sd">    """</span>
+    <span class="c1"># Votre logique personnalisée ici</span>
+    <span class="k">return</span> <span class="n">ok</span><span class="p">({</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Bonjour de mon extension !"</span><span class="p">})</span>
+
+<span class="nd">@my_route</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/process/&lt;data_id&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"POST"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_endpoint</span><span class="p">(</span><span class="n">data_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Traiter les données par ID.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data_id: L'ID des données à traiter</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Réponse API avec résultats de traitement</span>
+<span class="sd">    """</span>
+    <span class="c1"># Votre logique de traitement personnalisée</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"data_id"</span><span class="p">:</span> <span class="n">data_id</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"processed"</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">ok</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+<p>Les routes seront disponibles à :
+- <code>/api/v1/myapi/example</code>
+- <code>/api/v1/myapi/process/&lt;data_id&gt;</code></p>
+<h3 id="3-module-dauthentification-obo">3. Module d'authentification OBO<a class="headerlink" href="#3-module-dauthentification-obo" title="Permanent link">¶</a></h3>
+<p>Le module On-Behalf-Of (OBO) permet à votre extension d'implémenter une logique d'échange de jetons personnalisée pour accéder aux services externes au nom des utilisateurs.</p>
+<p><strong>Signature de fonction :</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_obo_token</span><span class="p">(</span><span class="n">service</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">access_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Échange un jeton d'accès pour un jeton OBO spécifique au service.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        service: Le nom du service pour lequel obtenir un jeton</span>
+<span class="sd">        access_token: Le jeton d'accès de l'utilisateur</span>
+<span class="sd">        user: Le nom d'utilisateur</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Le jeton OBO pour le service, ou None si l'échange échoue</span>
+<span class="sd">    """</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<p><strong>Exemple :</strong></p>
+<div class="highlight"><pre><span></span><code><span class="c1"># my_extension/obo.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_obo_token</span><span class="p">(</span><span class="n">service</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">access_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Obtenir un jeton OBO pour le service spécifié."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">service</span> <span class="o">==</span> <span class="s2">"my-external-service"</span><span class="p">:</span>
+            <span class="c1"># Implémentez votre logique d'échange de jetons OBO</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="s2">"https://auth.example.com/obo/token"</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">access_token</span><span class="si">}</span><span class="s2">"</span><span class="p">},</span>
+                <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="s2">"service"</span><span class="p">:</span> <span class="n">service</span><span class="p">}</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"access_token"</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"L'échange de jetons OBO a échoué : </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Laisser d'autres extensions ou le noyau gérer d'autres services</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Exception lors de l'échange de jetons OBO pour </span><span class="si">%s</span><span class="s2"> : </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">service</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+<h2 id="enregistrement-de-types-de-donnees-personnalises">Enregistrement de types de données personnalisés<a class="headerlink" href="#enregistrement-de-types-de-donnees-personnalises" title="Permanent link">¶</a></h2>
+<p>Les extensions peuvent enregistrer des types de données personnalisés que Clue reconnaîtra et validera. Ceci est généralement effectué dans le module d'initialisation.</p>
+<h3 id="utilisation-de-add_supported_type">Utilisation de add_supported_type<a class="headerlink" href="#utilisation-de-add_supported_type" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">clue.constants.supported_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_supported_type</span>
+
+<span class="c1"># Ajouter un type à l'espace de noms par défaut</span>
+<span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"email"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^[\w\.-]+@[\w\.-]+\.\w+$"</span><span class="p">)</span>
+
+<span class="c1"># Ajouter un type avec un espace de noms personnalisé</span>
+<span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"custom_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^\d</span><span class="si">{5}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my-extension"</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Paramètres :</strong>
+- <code>type</code> (str) : Le nom du type à enregistrer
+- <code>regex</code> (str | None) : Un modèle regex pour valider les valeurs de ce type (optionnel)
+- <code>namespace</code> (str | None) : Un espace de noms pour regrouper le type (optionnel)</p>
+<p><strong>Types avec espace de noms :</strong></p>
+<p>Les types enregistrés avec un espace de noms sont stockés sous <code>namespace/type</code> (par exemple, <code>my-extension/custom_id</code>). Cela aide à éviter les conflits de nommage avec les types de base ou d'autres extensions.</p>
+<p><strong>Types sans regex :</strong></p>
+<p>Certains types ne nécessitent pas de validation de modèle. Définissez <code>regex=None</code> pour ces cas :</p>
+<div class="highlight"><pre><span></span><code><span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"generic_id"</span><span class="p">,</span> <span class="n">regex</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="activation-des-extensions">Activation des extensions<a class="headerlink" href="#activation-des-extensions" title="Permanent link">¶</a></h2>
+<p>Les extensions sont activées via le fichier de configuration principal de Clue :</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># /etc/clue/conf/config.yml</span>
+<span class="nt">core</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">extensions</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"my-extension"</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"another-extension"</span>
+</code></pre></div>
+<p>Lorsque Clue démarre, il va :</p>
+<ol>
+<li>Rechercher un module nommé <code>my-extension</code></li>
+<li>Charger l'objet <code>config</code> depuis <code>my-extension.config</code></li>
+<li>Appeler la fonction <code>init</code> si elle est définie</li>
+<li>Enregistrer toutes les routes spécifiées dans la configuration</li>
+<li>Enregistrer le module OBO s'il est défini</li>
+</ol>
+<h2 id="processus-de-chargement-des-extensions">Processus de chargement des extensions<a class="headerlink" href="#processus-de-chargement-des-extensions" title="Permanent link">¶</a></h2>
+<p>La séquence de chargement des extensions est la suivante :</p>
+<ol>
+<li><strong>Chargement de la configuration</strong> : Clue lit <code>core.extensions</code> depuis le fichier de configuration principal</li>
+<li><strong>Importation de module</strong> : Pour chaque extension, Clue importe <code>&lt;nom-extension&gt;.config</code></li>
+<li><strong>Validation</strong> : La configuration YAML de l'extension est chargée et validée</li>
+<li><strong>Initialisation</strong> : Si un module <code>init</code> est défini, il est appelé avec l'application Flask</li>
+<li><strong>Enregistrement des routes</strong> : Toutes les routes définies dans l'extension sont enregistrées avec Flask</li>
+<li><strong>Enregistrement OBO</strong> : Si un <code>obo_module</code> est défini, il est enregistré pour l'échange de jetons</li>
+</ol>
+<h2 id="bonnes-pratiques">Bonnes pratiques<a class="headerlink" href="#bonnes-pratiques" title="Permanent link">¶</a></h2>
+<h3 id="1-utiliser-la-journalisation-appropriee">1. Utiliser la journalisation appropriée<a class="headerlink" href="#1-utiliser-la-journalisation-appropriee" title="Permanent link">¶</a></h3>
+<p>Utilisez toujours l'infrastructure de journalisation de Clue :</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">my_function</span><span class="p">():</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Traitement démarré"</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Une erreur s'est produite : </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">error_message</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="2-gerer-les-erreurs-avec-elegance">2. Gérer les erreurs avec élégance<a class="headerlink" href="#2-gerer-les-erreurs-avec-elegance" title="Permanent link">¶</a></h3>
+<p>Les échecs d'extension ne doivent pas faire planter l'application entière :</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="n">flask_app</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Votre logique d'initialisation</span>
+        <span class="n">setup_resources</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Échec de l'initialisation de l'extension : </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="c1"># Ne pas relancer - permettre à Clue de continuer</span>
+</code></pre></div>
+<h3 id="3-utiliser-des-espaces-de-noms-pour-les-types-personnalises">3. Utiliser des espaces de noms pour les types personnalisés<a class="headerlink" href="#3-utiliser-des-espaces-de-noms-pour-les-types-personnalises" title="Permanent link">¶</a></h3>
+<p>Évitez les conflits de nommage en utilisant des types avec espace de noms :</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Bon : Utilise un espace de noms</span>
+<span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^\d</span><span class="si">{8}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my-extension"</span><span class="p">)</span>
+
+<span class="c1"># Risqué : Pourrait entrer en conflit avec le noyau ou d'autres extensions</span>
+<span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^\d</span><span class="si">{8}</span><span class="s2">$"</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="4-documenter-votre-extension">4. Documenter votre extension<a class="headerlink" href="#4-documenter-votre-extension" title="Permanent link">¶</a></h3>
+<p>Incluez une documentation claire dans votre extension :</p>
+<div class="highlight"><pre><span></span><code><span class="sd">"""</span>
+<span class="sd">Mon extension pour Clue</span>
+
+<span class="sd">Cette extension ajoute la prise en charge du traitement des ID de tickets personnalisés</span>
+<span class="sd">et fournit une intégration avec le système de tickets externe.</span>
+
+<span class="sd">Configuration :</span>
+<span class="sd">    - feature_x : Activer la fonctionnalité expérimentale X</span>
+
+<span class="sd">Routes :</span>
+<span class="sd">    - GET /api/v1/tickets/status/&lt;ticket_id&gt;</span>
+<span class="sd">    - POST /api/v1/tickets/create</span>
+
+<span class="sd">Types personnalisés :</span>
+<span class="sd">    - ticket_id : Format TICKET-######</span>
+<span class="sd">    - case_id : Format CASE-########</span>
+<span class="sd">"""</span>
+</code></pre></div>
+<h3 id="5-tester-votre-extension">5. Tester votre extension<a class="headerlink" href="#5-tester-votre-extension" title="Permanent link">¶</a></h3>
+<p>Créez des tests complets pour votre extension en suivant les modèles de la suite de tests de Clue :</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># test/test_my_extension.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.extensions</span><span class="w"> </span><span class="kn">import</span> <span class="n">EXTENSIONS</span>
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mock_extension</span><span class="p">():</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">my_extension.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+    <span class="n">EXTENSIONS</span><span class="p">[</span><span class="s2">"my-extension"</span><span class="p">]</span> <span class="o">=</span> <span class="n">config</span>
+    <span class="k">yield</span>
+    <span class="k">del</span> <span class="n">EXTENSIONS</span><span class="p">[</span><span class="s2">"my-extension"</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_extension_initialization</span><span class="p">(</span><span class="n">mock_extension</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Tester que l'extension s'initialise correctement."""</span>
+    <span class="c1"># Votre logique de test</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<h2 id="exemple-extension-complete">Exemple : Extension complète<a class="headerlink" href="#exemple-extension-complete" title="Permanent link">¶</a></h2>
+<p>Voici un exemple d'extension complète qui démontre toutes les fonctionnalités :</p>
+<h3 id="structure-de-repertoire">Structure de répertoire<a class="headerlink" href="#structure-de-repertoire" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code>ticket_extension/
+├── __init__.py
+├── config.py
+├── init.py
+├── obo.py
+├── extension.yml
+└── routes/
+    └── ticket_route.py
+</code></pre></div>
+<h3 id="extensionyml">extension.yml<a class="headerlink" href="#extensionyml" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"ticket-extension"</span>
+
+<span class="nt">features</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enable_notifications</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">enable_auto_assign</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+
+<span class="nt">modules</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">init</span><span class="p">:</span><span class="w"> </span><span class="s">"ticket_extension.init:initialize"</span>
+<span class="w">  </span><span class="nt">routes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"ticket_route"</span>
+<span class="w">  </span><span class="nt">obo_module</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+<h3 id="configpy">config.py<a class="headerlink" href="#configpy" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">SettingsConfigDict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.extensions.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseExtensionConfig</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TicketExtensionConfig</span><span class="p">(</span><span class="n">BaseExtensionConfig</span><span class="p">):</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">SettingsConfigDict</span><span class="p">(</span>
+        <span class="n">yaml_file</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"extension.yml"</span><span class="p">,</span>
+        <span class="n">yaml_file_encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span>
+        <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">TicketExtensionConfig</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"ticket-extension"</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="initpy">init.py<a class="headerlink" href="#initpy" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">clue.constants.supported_types</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_supported_type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">initialize</span><span class="p">(</span><span class="n">flask_app</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Initialise l'extension de ticket."""</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Initialisation de ticket-extension"</span><span class="p">)</span>
+
+    <span class="c1"># Enregistrer des types personnalisés</span>
+    <span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"ticket_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^TICKET-\d</span><span class="si">{6}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"ticket-extension"</span><span class="p">)</span>
+    <span class="n">add_supported_type</span><span class="p">(</span><span class="s2">"case_id"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"^CASE-\d</span><span class="si">{8}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"ticket-extension"</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Types de tickets personnalisés enregistrés"</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Extension de ticket initialisée avec succès"</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="routesticket_routepy">routes/ticket_route.py<a class="headerlink" href="#routesticket_routepy" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_subapi_blueprint</span><span class="p">,</span> <span class="n">ok</span><span class="p">,</span> <span class="n">fail</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">SUB_API</span> <span class="o">=</span> <span class="s2">"tickets"</span>
+<span class="n">ticket_route</span> <span class="o">=</span> <span class="n">make_subapi_blueprint</span><span class="p">(</span><span class="n">SUB_API</span><span class="p">,</span> <span class="n">api_version</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ticket_route</span><span class="o">.</span><span class="n">_doc</span> <span class="o">=</span> <span class="s2">"API de gestion des tickets"</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="nd">@ticket_route</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/status/&lt;ticket_id&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_ticket_status</span><span class="p">(</span><span class="n">ticket_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Obtenir le statut d'un ticket.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ticket_id: L'ID du ticket à interroger</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Réponse API avec statut du ticket</span>
+<span class="sd">    """</span>
+    <span class="c1"># Votre logique pour récupérer le statut du ticket</span>
+    <span class="k">return</span> <span class="n">ok</span><span class="p">({</span>
+        <span class="s2">"ticket_id"</span><span class="p">:</span> <span class="n">ticket_id</span><span class="p">,</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"open"</span><span class="p">,</span>
+        <span class="s2">"assignee"</span><span class="p">:</span> <span class="s2">"analyst1"</span>
+    <span class="p">})</span>
+
+<span class="nd">@ticket_route</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/create"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"POST"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_ticket</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Créer un nouveau ticket.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Réponse API avec détails du nouveau ticket</span>
+<span class="sd">    """</span>
+    <span class="c1"># Votre logique pour créer un ticket</span>
+    <span class="k">return</span> <span class="n">ok</span><span class="p">({</span>
+        <span class="s2">"ticket_id"</span><span class="p">:</span> <span class="s2">"TICKET-123456"</span><span class="p">,</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"created"</span>
+    <span class="p">})</span>
+</code></pre></div>
+<h3 id="obopy">obo.py<a class="headerlink" href="#obopy" title="Permanent link">¶</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">clue.common.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_obo_token</span><span class="p">(</span><span class="n">service</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">access_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Obtenir un jeton OBO pour les services du système de tickets."""</span>
+    <span class="k">if</span> <span class="n">service</span> <span class="o">!=</span> <span class="s2">"ticket-system"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+            <span class="s2">"https://tickets.example.com/auth/obo"</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">access_token</span><span class="si">}</span><span class="s2">"</span><span class="p">},</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="n">user</span><span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"token"</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"L'échange OBO a échoué : </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"Exception lors de l'échange OBO : </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+<h2 id="depannage">Dépannage<a class="headerlink" href="#depannage" title="Permanent link">¶</a></h2>
+<h3 id="extension-ne-se-charge-pas">Extension ne se charge pas<a class="headerlink" href="#extension-ne-se-charge-pas" title="Permanent link">¶</a></h3>
+<p>Vérifiez les éléments suivants :</p>
+<ol>
+<li>L'extension est listée dans <code>core.extensions</code> dans la configuration principale</li>
+<li>Le module d'extension est dans le sys.path de Python</li>
+<li>Le fichier <code>config.py</code> exporte un objet <code>config</code></li>
+<li>Vérifiez les journaux pour les erreurs d'importation</li>
+</ol>
+<h3 id="routes-non-accessibles">Routes non accessibles<a class="headerlink" href="#routes-non-accessibles" title="Permanent link">¶</a></h3>
+<p>Vérifiez :</p>
+<ol>
+<li>Les routes sont listées dans <code>modules.routes</code> de l'extension</li>
+<li>Le module de route exporte un objet Blueprint</li>
+<li>Vérifiez les journaux pour les messages "Enabling additional endpoint"</li>
+<li>Assurez-vous de la structure d'URL appropriée (<code>/api/v1/&lt;subapi&gt;/&lt;endpoint&gt;</code>)</li>
+</ol>
+<h3 id="types-personnalises-non-reconnus">Types personnalisés non reconnus<a class="headerlink" href="#types-personnalises-non-reconnus" title="Permanent link">¶</a></h3>
+<p>Assurez-vous que :</p>
+<ol>
+<li>Les types sont enregistrés dans la fonction <code>init</code></li>
+<li>La fonction <code>init</code> est appelée (vérifiez les journaux)</li>
+<li>Les modèles regex sont des regex Python valides</li>
+<li>L'espace de noms est correctement spécifié s'il est utilisé</li>
+</ol>
+<h2 id="considerations-de-securite">Considérations de sécurité<a class="headerlink" href="#considerations-de-securite" title="Permanent link">¶</a></h2>
+<h3 id="1-authentification">1. Authentification<a class="headerlink" href="#1-authentification" title="Permanent link">¶</a></h3>
+<p>Les routes doivent valider l'authentification de l'utilisateur :</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">clue.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_auth</span>
+
+<span class="nd">@ticket_route</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/sensitive"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">])</span>
+<span class="nd">@requires_auth</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sensitive_endpoint</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Votre logique de point de terminaison protégé</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<h3 id="2-validation-des-entrees">2. Validation des entrées<a class="headerlink" href="#2-validation-des-entrees" title="Permanent link">¶</a></h3>
+<p>Validez et nettoyez toujours les entrées :</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="nd">@ticket_route</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">"/process/&lt;ticket_id&gt;"</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_ticket</span><span class="p">(</span><span class="n">ticket_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="c1"># Valider le format</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^TICKET-\d</span><span class="si">{6}</span><span class="s2">$"</span><span class="p">,</span> <span class="n">ticket_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">fail</span><span class="p">(</span><span class="s2">"Format d'ID de ticket invalide"</span><span class="p">),</span> <span class="mi">400</span>
+
+    <span class="c1"># Traiter le ticket</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<h3 id="3-gestion-des-erreurs">3. Gestion des erreurs<a class="headerlink" href="#3-gestion-des-erreurs" title="Permanent link">¶</a></h3>
+<p>N'exposez pas d'informations sensibles dans les messages d'erreur :</p>
+<div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">external_api_call</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">"L'appel API externe a échoué"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fail</span><span class="p">(</span><span class="s2">"Service temporairement indisponible"</span><span class="p">),</span> <span class="mi">503</span>
+</code></pre></div>
+<h2 id="conseils-de-performance">Conseils de performance<a class="headerlink" href="#conseils-de-performance" title="Permanent link">¶</a></h2>
+<h3 id="1-chargement-paresseux">1. Chargement paresseux<a class="headerlink" href="#1-chargement-paresseux" title="Permanent link">¶</a></h3>
+<p>Chargez les ressources lourdes uniquement lorsque nécessaire :</p>
+<div class="highlight"><pre><span></span><code><span class="n">_heavy_resource</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_heavy_resource</span><span class="p">():</span>
+    <span class="k">global</span> <span class="n">_heavy_resource</span>
+    <span class="k">if</span> <span class="n">_heavy_resource</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_heavy_resource</span> <span class="o">=</span> <span class="n">load_heavy_resource</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_heavy_resource</span>
+</code></pre></div>
+<h3 id="2-mise-en-cache">2. Mise en cache<a class="headerlink" href="#2-mise-en-cache" title="Permanent link">¶</a></h3>
+<p>Utilisez l'infrastructure de mise en cache de Clue :</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">clue.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
+
+<span class="nd">@cache</span><span class="o">.</span><span class="n">memoize</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">expensive_operation</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
+    <span class="c1"># Votre opération coûteuse</span>
+    <span class="k">pass</span>
+</code></pre></div>
+<h3 id="3-taches-en-arriere-plan">3. Tâches en arrière-plan<a class="headerlink" href="#3-taches-en-arriere-plan" title="Permanent link">¶</a></h3>
+<p>Pour les opérations de longue durée, envisagez d'utiliser des tâches en arrière-plan ou des files d'attente plutôt que de bloquer les requêtes API.</p>
+<h2 id="reference-de-lapi">Référence de l'API<a class="headerlink" href="#reference-de-lapi" title="Permanent link">¶</a></h2>
+<h3 id="baseextensionconfig">BaseExtensionConfig<a class="headerlink" href="#baseextensionconfig" title="Permanent link">¶</a></h3>
+<p>Classe de base pour la configuration de l'extension.</p>
+<p><strong>Attributs :</strong>
+- <code>name</code> (str) : Nom de l'extension
+- <code>features</code> (dict[str, bool]) : Indicateurs de fonctionnalités
+- <code>modules</code> (Modules) : Configuration des modules d'extension</p>
+<h3 id="modules">Modules<a class="headerlink" href="#modules" title="Permanent link">¶</a></h3>
+<p>Configuration des modules d'extension.</p>
+<p><strong>Attributs :</strong>
+- <code>init</code> (ImportString | None) : Fonction d'initialisation
+- <code>routes</code> (list[ImportString]) : Liste des modules de routes
+- <code>obo_module</code> (ImportString | None) : Module d'authentification OBO</p>
+<h3 id="add_supported_type">add_supported_type<a class="headerlink" href="#add_supported_type" title="Permanent link">¶</a></h3>
+<p>Enregistrer un type de données personnalisé.</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_supported_type</span><span class="p">(</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">regex</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+<p><strong>Paramètres :</strong>
+- <code>type</code> : Nom du type
+- <code>regex</code> : Modèle regex de validation (optionnel)
+- <code>namespace</code> : Espace de noms du type (optionnel)</p>
+<h2 id="ressources-supplementaires">Ressources supplémentaires<a class="headerlink" href="#ressources-supplementaires" title="Permanent link">¶</a></h2>
+<ul>
+<li><a href="development.fr.md">Guide de développement de l'API Clue</a></li>
+<li><a href="../../plugins/">Guide de développement de plugins</a></li>
+<li><a href="../../api/test/integration/extensions/">Exemples de tests</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden="">
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"></path></svg>
+  Retour en haut de la page
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["navigation.tabs", "navigation.expand", "navigation.top"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copi\u00e9 dans le presse-papier", "clipboard.copy": "Copier dans le presse-papier", "search.result.more.one": "1 de plus sur cette page", "search.result.more.other": "# de plus sur cette page", "search.result.none": "Aucun document trouv\u00e9", "search.result.one": "1 document trouv\u00e9", "search.result.other": "# documents trouv\u00e9s", "search.result.placeholder": "Taper pour d\u00e9marrer la recherche", "search.result.term.missing": "Non trouv\u00e9", "select.version": "S\u00e9lectionner la version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tablesort/5.2.1/tablesort.min.js"></script>
+      
+        <script src="../../../../js/tables.js"></script>
+      
+    
+  
+<script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": false, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(()=>{ lightbox.reload(); });
+</script></body></html>
