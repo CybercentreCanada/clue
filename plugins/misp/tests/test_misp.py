@@ -112,6 +112,12 @@ def test_enrich_no_annotate(mock_lookup, base_params):
     assert result[0].annotations == []
 
 
+def test_enrich_missing_timestamp(mock_lookup, base_params):
+    app = mock_lookup({"last_seen": None, "timestamp": None})
+    with pytest.raises(UnprocessableException):
+        app.enrich(TEST_TYPE, TEST_IP, base_params)
+
+
 def test_enrich_raw_data(mock_lookup, base_params):
     base_params.raw = True
     result = mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)[0]
