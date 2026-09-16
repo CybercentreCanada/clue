@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from clue.common.exceptions import UnprocessableException
 from clue.models.selector import Selector
+from clue.plugin.utils import Params
 
 TEST_PATH = "/attributes/restSearch"
 
@@ -77,8 +78,6 @@ def mock_lookup(app, monkeypatch):
 
 @pytest.fixture()
 def base_params():
-    from clue.plugin.utils import Params
-
     return Params(
         deadline=0,
         max_timeout=1,
@@ -132,13 +131,7 @@ def test_enrich_confidence_no_sighting(mock_lookup, base_params):
 
 
 def test_enrich_severity_none(mock_lookup, base_params):
-    app = mock_lookup(
-        {
-            "Event": {
-                "threat_level_id": "0",
-            }
-        },
-    )
+    app = mock_lookup({"Event": {"threat_level_id": "0"}})
     result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].severity is None
 
@@ -173,39 +166,30 @@ def test__parse_misp_tag(enrichments, tag_name, exp_ns, exp_pred, exp_val):
     assert val == exp_val
 
 
-def test__process_tags(enrichments, monkeypatch):
-    monkeypatch.setattr(enrichments, "ALLOW_TAGS", {"misp-galaxy:threat-actor"})
-    sample_tags = [
-        {"name": "type:OSINT"},
-        {"name": "tlp:red"},
-        {"name": 'osint:lifetime="perpetual"'},
-        {"name": 'misp-galaxy:threat-actor="APT 29"'},
-    ]
-
+@pytest.mark.parametrize(
+    ("sample_tags", "exp_tags", "exp_labels"),
+    [
+        (
+            [
+                {"name": "type:OSINT"},
+                {"name": "tlp:red"},
+                {"name": 'osint:lifetime="perpetual"'},
+                {"name": 'misp-galaxy:threat-actor="APT 29"'},
+            ],
+            {"threat-actor:APT 29"},
+            {"APT 29", "OSINT"},
+        ),
+        ([{"name": 'ecsirt="malware"'}], {"ecsirt:malware"}, set()),
+        ([{"name": "tlp:red"}, {"name": 'osint:lifetime="perpetual"'}], set(), set()),
+        ([], set(), set()),
+    ],
+    ids=["allowlisted", "namespace_only", "no_match", "empty"],
+)
+def test__proces_tags(enrichments, monkeypatch, sample_tags, exp_tags, exp_labels):
+    monkeypatch.setattr(enrichments, "ALLOW_TAGS", {"misp-galaxy:threat-actor", "ecsirt"})
     tags, labels = enrichments._process_tags(sample_tags)
-    assert tags == {"threat-actor:APT 29"}
-    assert labels == {"APT 29", "OSINT"}
-
-
-def test__process_tags_namespace_only(enrichments):
-    tags, _ = enrichments._process_tags([{"name": 'ecsirt="malware"'}])
-    assert tags == {"ecsirt:malware"}
-
-
-def test__process_tags_no_match(enrichments):
-    sample_tags = [
-        {"name": "tlp:red"},
-        {"name": 'osint:lifetime="perpetual"'},
-    ]
-    tags, labels = enrichments._process_tags(sample_tags)
-    assert tags == set()
-    assert labels == set()
-
-
-def test__process_tags_empty(enrichments):
-    tags, labels = enrichments._process_tags([])
-    assert tags == set()
-    assert labels == set()
+    assert tags == exp_tags
+    assert labels == exp_labels
 
 
 def test__highest_tlp(enrichments):
