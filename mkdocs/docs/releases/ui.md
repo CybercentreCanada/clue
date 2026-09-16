@@ -1,5 +1,10 @@
 # Clue UI Release Notes
 
+## `1.4.3`
+
+- **Database Initialization Check** *(bugfix)*: Fixed duplicated database initialization on null database.
+- **Enrichment Enabling** *(bugfix)*: Fixed bug where changing the enabled state after load would not cause clue to initialize.
+
 ## `1.4.2`
 
 - **`baseURL` Propagation to ClueDatabaseContext** *(bugfix)*: Fixed propagation of baseURL from `ClueProvider` to `ClueDatabaseContext` for replication.
