@@ -17,7 +17,7 @@ class ReportSighting(ExecuteRequest):
     """Parameters for the report_sighting action
 
     Sightings are submitted by value, MISP records one against every attribute
-    matching it, a single reporting can span multiple events.
+    matching it, a single report can span multiple events.
 
     Attributes:
         sighting_type: What type of sighting is being reported
