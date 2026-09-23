@@ -111,7 +111,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   }, [database]);
 
   useEffect(() => {
-    if (isReady) {
+    if (enabled && isReady) {
       const subscriptions = Object.values(REPLICATORS).map(replicator => {
         replicator.reSync();
         replicator.start();
@@ -138,7 +138,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
         replicator.pause();
       });
     };
-  }, [database, isReady]);
+  }, [database, enabled, isReady]);
 
   const [customIconify, setCustomIconify] = useState(_customIconify);
   useEffect(() => {

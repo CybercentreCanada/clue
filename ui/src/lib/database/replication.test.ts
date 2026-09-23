@@ -33,7 +33,10 @@ vi.mock('rxdb/plugins/replication', () => ({
     capturedConfig = config;
     return {
       error$: mockErrorSubject,
-      isStoppedOrPaused: vi.fn(() => false)
+      isStoppedOrPaused: vi.fn(() => false),
+      start: vi.fn(async () => {
+        capturedConfig.pull.stream$.subscribe();
+      })
     };
   })
 }));
@@ -183,6 +186,15 @@ describe('replicateSelectorCollection', () => {
       expect(calledConfig.headers!.Authorization).toBeUndefined();
     });
 
+    it('should reject before setup when getToken returns a falsey token', async () => {
+      const config = buildMockConfig({ getToken: () => '' });
+
+      await expect(replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config)).rejects.toThrow(
+        'getToken must return a token when configured'
+      );
+      expect(api.sync.post).not.toHaveBeenCalled();
+    });
+
     it('should apply onNetworkCall transform to request config', async () => {
       vi.mocked(api.sync.post).mockResolvedValueOnce([]);
       const config = buildMockConfig({
@@ -240,6 +252,15 @@ describe('replicateSelectorCollection', () => {
 
       const calledConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
       expect(calledConfig.headers!.Authorization).toBe('Bearer pull-token');
+    });
+
+    it('should reject before setup when getToken returns a falsey token', async () => {
+      const config = buildMockConfig({ getToken: () => '' });
+
+      await expect(replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config)).rejects.toThrow(
+        'getToken must return a token when configured'
+      );
+      expect(api.sync.get).not.toHaveBeenCalled();
     });
 
     it('should apply onNetworkCall transform to request config', async () => {
@@ -333,16 +354,43 @@ describe('replicateSelectorCollection', () => {
       globalThis.XMLHttpRequest = OriginalXHR;
     });
 
+    it('should not open a stream until replication starts', async () => {
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+
+      expect(xhrInstances).toHaveLength(0);
+    });
+
     it('should open connection without auth header when getToken is undefined', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ getToken: undefined }));
+      const replication = await replicateSelectorCollection(
+        DUMMY_ID,
+        buildMockCollection(),
+        buildMockConfig({ getToken: undefined })
+      );
+      await replication.start();
 
       expect(xhrInstances).toHaveLength(1);
       const xhr = xhrInstances[0];
       expect(xhr.setRequestHeader).not.toHaveBeenCalledWith('Authorization', expect.any(String));
     });
 
+    it('should reject without opening a stream when getToken returns a falsey token', async () => {
+      const config = buildMockConfig({ getToken: () => '' });
+
+      await expect(replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config)).rejects.toThrow(
+        'getToken must return a token when configured'
+      );
+      expect(xhrInstances).toHaveLength(0);
+      expect(api.sync.get).not.toHaveBeenCalled();
+      expect(api.sync.post).not.toHaveBeenCalled();
+    });
+
     it('should open connection with correct URL and auth header', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection({ name: 'selectors' } as any), buildMockConfig());
+      const replication = await replicateSelectorCollection(
+        DUMMY_ID,
+        buildMockCollection({ name: 'selectors' } as any),
+        buildMockConfig()
+      );
+      await replication.start();
 
       expect(xhrInstances).toHaveLength(1);
       const xhr = xhrInstances[0];
@@ -355,7 +403,8 @@ describe('replicateSelectorCollection', () => {
     it('should register an abort handler on collection.onClose', async () => {
       const collection = buildMockCollection();
 
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      await replication.start();
 
       expect(collection.onClose.length).toBeGreaterThan(1);
 
@@ -368,7 +417,8 @@ describe('replicateSelectorCollection', () => {
     it('should reconnect on load event', async () => {
       const collection = buildMockCollection();
 
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      await replication.start();
 
       expect(xhrInstances).toHaveLength(1);
       const xhr = xhrInstances[0];
@@ -386,7 +436,8 @@ describe('replicateSelectorCollection', () => {
     it('should reconnect on error event', async () => {
       const collection = buildMockCollection();
 
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      await replication.start();
 
       expect(xhrInstances).toHaveLength(1);
       const xhr = xhrInstances[0];
@@ -401,7 +452,8 @@ describe('replicateSelectorCollection', () => {
     it('should not reconnect when collection is closed', async () => {
       const collection = buildMockCollection();
 
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      await replication.start();
 
       const xhr = xhrInstances[0];
 
@@ -416,7 +468,8 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should use exponential backoff for reconnections capped at 60 seconds', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      await replication.start();
 
       // First connection
       expect(xhrInstances).toHaveLength(1);
@@ -442,7 +495,8 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should parse and emit events from progress data', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      await replication.start();
 
       const xhr = xhrInstances[0];
       const event = {
@@ -462,7 +516,8 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should deduplicate events with the same id', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      await replication.start();
 
       const xhr = xhrInstances[0];
 
@@ -480,7 +535,8 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should handle malformed JSON gracefully', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      await replication.start();
 
       const xhr = xhrInstances[0];
       xhr.responseText = 'not-valid-json\n';
@@ -490,7 +546,8 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should reset timeout to 1000ms when data is received', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      await replication.start();
 
       const xhr = xhrInstances[0];
 
@@ -515,7 +572,8 @@ describe('replicateSelectorCollection', () => {
     });
 
     it('should only process new text on progress', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const replication = await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      await replication.start();
 
       const xhr = xhrInstances[0];
 

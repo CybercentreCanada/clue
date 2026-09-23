@@ -1,5 +1,11 @@
 # Clue UI Release Notes
 
+## `1.4.4`
+
+- **Replication Authentication Guard** *(bugfix)*: Prevented replication from starting when a configured token is missing or falsey.
+- **Replication Lifecycle Gating** *(bugfix)*: Deferred stream connections and gated replication startup until the UI is enabled and ready.
+- **Database Initialization Error Handling** *(bugfix)*: Handled database initialization failures to prevent unhandled promise rejections.
+
 ## `1.4.3`
 
 - **Database Initialization Check** *(bugfix)*: Fixed duplicated database initialization on null database.

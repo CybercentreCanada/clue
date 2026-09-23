@@ -4,16 +4,25 @@ import type { AxiosRequestConfig } from 'axios';
 import { last } from 'lodash-es';
 import type { DocumentsWithCheckpoint, ReplicationPullHandlerResult } from 'rxdb';
 import { replicateRxCollection } from 'rxdb/plugins/replication';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { REPLICATORS } from './globals';
 import type { Checkpoint } from './sync';
 import type { DatabaseConfig, SelectorCollection, SelectorDocType } from './types';
 
 const PULL_BATCH_SIZE = 250;
 
+const getToken = (config: DatabaseConfig): string | undefined => {
+  const token = config.getToken?.();
+  if (config.getToken && !token) {
+    throw new Error('getToken must return a token when configured');
+  }
+
+  return token;
+};
+
 const buildRequestConfig = (config: DatabaseConfig): AxiosRequestConfig => {
   const headers: AxiosRequestConfig['headers'] = {};
-  const token = config.getToken?.();
+  const token = getToken(config);
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -39,6 +48,7 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
   const MAX_RETRY_DELAY = 60000; // Cap at 60 seconds
 
   const loggedEvents: number[] = [];
+  let started = false;
 
   let currentXhr: XMLHttpRequest | null = null;
   collection.onClose.push(() => {
@@ -46,6 +56,7 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
   });
 
   const connect = (timeout = 1000) => {
+    const token = getToken(config);
     let lastProcessedIndex = 0;
     const _xhr = new XMLHttpRequest();
     currentXhr = _xhr;
@@ -72,7 +83,6 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
 
     _xhr.setRequestHeader('Accept', 'text/event-stream');
 
-    const token = config.getToken?.();
     if (token) {
       _xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
@@ -129,9 +139,16 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
     _xhr.send();
   };
 
-  connect();
+  return new Observable<EventStreamEntry | 'RESYNC'>(subscriber => {
+    const subscription = stream$.subscribe(subscriber);
 
-  return stream$;
+    if (!started) {
+      started = true;
+      connect();
+    }
+
+    return subscription;
+  });
 };
 
 export const replicateSelectorCollection = async (
@@ -139,6 +156,8 @@ export const replicateSelectorCollection = async (
   collection: SelectorCollection,
   config: DatabaseConfig
 ) => {
+  getToken(config);
+
   collection.onClose.push(() => {
     delete REPLICATORS[replicationId];
   });
@@ -187,7 +206,7 @@ export const replicateSelectorCollection = async (
                 }
         };
       },
-      stream$: pullStream$.asObservable()
+      stream$: pullStream$
     }
   });
 

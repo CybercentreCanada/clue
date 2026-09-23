@@ -27,7 +27,7 @@ export interface ClueDatabaseContextProps {
   /**
    * The Clue Database instance used for data operations and queries. Optional.
    */
-  database?: ClueDatabase;
+  database?: ClueDatabase | null;
 
   /**
    * Configuration settings for the database connection and behavior.
@@ -81,11 +81,18 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
     if (_database === undefined) {
       // eslint-disable-next-line no-console
       console.warn('It is heavily suggested to initialize the database outside of the React component tree.');
-      buildDatabase({ baseURL, ...databaseConfig, getToken: getTokenRef.current }).then(_db => {
-        if (!cancelled) {
-          setDatabase(_db);
-        }
-      });
+      buildDatabase({ baseURL, ...databaseConfig, getToken: getTokenRef.current })
+        .then(_db => {
+          if (!cancelled) {
+            setDatabase(_db);
+          }
+        })
+        .catch(error => {
+          if (!cancelled) {
+            // eslint-disable-next-line no-console
+            console.warn('Error initializing database:', error);
+          }
+        });
 
       return () => {
         cancelled = true;
