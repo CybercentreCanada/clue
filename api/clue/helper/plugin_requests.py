@@ -110,7 +110,7 @@ def request_with_safe_redirects(
     deadline = monotonic() + budget if budget is not None else None
 
     for redirect_count in range(6):
-        if deadline is not None:
+        if deadline is not None and redirect_count > 0:
             remaining = deadline - monotonic()
             if remaining <= 0:
                 raise Timeout("Plugin request exceeded its total timeout")

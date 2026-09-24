@@ -256,6 +256,17 @@ def test_run_fetcher_wraps_connection_errors(app, configured_plugin, user, fetch
             fetcher_service.run_fetcher("test", "test_fetcher", user)
 
 
+def test_run_fetcher_wraps_timeout_errors(app, configured_plugin, user, fetcher):
+    with (
+        app.test_request_context(json={"type": "ipv4", "value": "127.0.0.1"}),
+        patch("clue.services.fetcher_service.get_supported_fetchers", return_value={"test_fetcher": fetcher}),
+        patch("clue.services.fetcher_service.CLASSIFICATION.is_accessible", return_value=True),
+        patch("clue.services.fetcher_service.requests.post", side_effect=exceptions.Timeout),
+    ):
+        with pytest.raises(ClueException, match="Timeout"):
+            fetcher_service.run_fetcher("test", "test_fetcher", user)
+
+
 def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user):
     response = make_response({"outcome": "success", "data": {"result": "ok"}, "format": "json"})
 

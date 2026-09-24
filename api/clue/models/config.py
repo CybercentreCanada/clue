@@ -101,7 +101,6 @@ class OAuthProvider(BaseModel):
         try:
             for role in role_map:
                 UserRole(role)
-            return role_map
         except ValueError:
             # Older configurations map OAuth group names to Clue roles. Only
             # roles supported by this version are retained; unsupported legacy
@@ -113,6 +112,14 @@ class OAuthProvider(BaseModel):
                 except ValueError:
                     continue
             return normalized
+
+        # If both sides look like role names, the old and new orientations are
+        # indistinguishable (for example, {"admin": "user"}). Reject rather
+        # than silently assigning a different role to an OAuth group.
+        if all(value in {role.value for role in UserRole} for value in role_map.values()):
+            raise ValueError("OAuth role_map is ambiguous when both keys and values are Clue roles")
+
+        return role_map
 
 
 class OAuth(BaseModel):

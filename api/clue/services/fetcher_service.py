@@ -84,7 +84,7 @@ def get_supported_fetchers(
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
 
             return TypeAdapter(dict[str, FetcherDefinition]).validate_python(result["api_response"])
-        except exceptions.ConnectionError:
+        except (exceptions.ConnectionError, exceptions.Timeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception("Unable to connect: %s", url)
             return {}
@@ -230,7 +230,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
             "Validation error encountered on request body. Ensure your request body is properly formatted.",
             status_code=400,
         ) from err
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when running fetcher from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong when running fetcher from plugin '{plugin_id}': {err.__class__.__name__}."
@@ -289,7 +289,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
             "Validation error encountered on response body.",
             status_code=400,
         ) from err
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when getting the status of the fetcher from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong getting the status of fetcher from plugin '{plugin_id}': {err.__class__.__name__}."

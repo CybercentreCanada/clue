@@ -56,7 +56,7 @@ def get_supported_actions(
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
 
             return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
-        except exceptions.ConnectionError:
+        except (exceptions.ConnectionError, exceptions.Timeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception("Unable to connect: %s", url)
             return {}
@@ -186,7 +186,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             raise ClueException(result["api_error_message"])
 
         return ActionResult.model_validate(result["api_response"], context={"is_response": True})
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when retrieving the result from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong when retrieving the result from plugin '{plugin_id}': {err.__class__.__name__}."
@@ -245,7 +245,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
             raise ClueException(result["api_error_message"])
 
         return ActionResult.model_validate(result["api_response"], context={"is_response": True})
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when retrieving the status from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong when retrieving the status from plugin '{plugin_id}': {err.__class__.__name__}."

@@ -28,6 +28,20 @@ def test_oauth_provider_accepts_legacy_role_map():
     assert provider.role_map == {UserRole.ADMIN: "clue_admin"}
 
 
+def test_oauth_provider_rejects_ambiguous_role_map():
+    with pytest.raises(ValidationError, match="role_map is ambiguous"):
+        OAuthProvider(
+            client_id="client",
+            access_token_url="https://oauth.example/token",
+            authorize_url="https://oauth.example/authorize",
+            api_base_url="https://oauth.example/",
+            audience="clue",
+            scope="openid",
+            jwks_uri="https://oauth.example/jwks",
+            role_map={"admin": "user"},
+        )
+
+
 def test_oauth_provider_ignores_unsupported_legacy_roles():
     provider = OAuthProvider(
         client_id="client",

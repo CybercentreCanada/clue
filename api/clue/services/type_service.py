@@ -69,7 +69,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
 
         try:
             rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=3.0)
-        except (exceptions.ConnectionError, exceptions.ReadTimeout):
+        except (exceptions.ConnectionError, exceptions.Timeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception(f"Unable to connect: {url}")
             return None
