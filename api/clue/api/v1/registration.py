@@ -60,12 +60,19 @@ def register_application(**kwargs):
     if not request.json:
         return bad_request(err="No data provided")
 
+    existing_source_names = {source.name for source in config.api.external_sources}
+    existing_source_names.update(
+        source["name"]
+        for source in EXTERNAL_PLUGIN_SET.members()
+        if isinstance(source, dict) and isinstance(source.get("name"), str)
+    )
+
     try:
         registration_request = ExternalSource.model_validate(
             {**request.json, "built_in": False},
             context={
                 "registration_allowed_origins": config.api.registration_allowed_origins,
-                "existing_source_names": {source.name for source in config.api.external_sources},
+                "existing_source_names": existing_source_names,
             },
         )
     except ValidationError as error:
