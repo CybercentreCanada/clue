@@ -28,6 +28,21 @@ def test_oauth_provider_accepts_legacy_role_map():
     assert provider.role_map == {UserRole.ADMIN: "clue_admin"}
 
 
+def test_oauth_provider_ignores_unsupported_legacy_roles():
+    provider = OAuthProvider(
+        client_id="client",
+        access_token_url="https://oauth.example/token",
+        authorize_url="https://oauth.example/authorize",
+        api_base_url="https://oauth.example/",
+        audience="clue",
+        scope="openid",
+        jwks_uri="https://oauth.example/jwks",
+        role_map={"clue-admins": "admin", "clue-analysts": "analyst"},
+    )
+
+    assert provider.role_map == {UserRole.ADMIN: "clue-admins"}
+
+
 def test_service_account():
     with pytest.raises(ValidationError) as err:
         ServiceAccount(enabled=True, accounts=[ServiceAccountCreds(username="potato", provider="keycloak")])

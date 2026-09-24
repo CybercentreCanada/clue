@@ -117,7 +117,7 @@ def test_registration_handler_rejects_disallowed_origin():
         app.test_request_context("/register/", method="POST", json=payload),
         patch("clue.api.v1.registration.config") as mock_config,
         patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[]),
-        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent", return_value=True) as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
         mock_config.api.external_sources = []
@@ -136,7 +136,7 @@ def test_registration_handler_returns_invalid_url_error():
         app.test_request_context("/register/", method="POST", json={"name": "bad", "url": "file:///etc/passwd"}),
         patch("clue.api.v1.registration.config") as mock_config,
         patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[]),
-        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent") as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
         mock_config.api.external_sources = []
@@ -156,7 +156,7 @@ def test_registration_handler_persists_allowlisted_source():
         app.test_request_context("/register/", method="POST", json=payload),
         patch("clue.api.v1.registration.config") as mock_config,
         patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[]),
-        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent", return_value=True) as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
         mock_config.api.external_sources = []
@@ -165,7 +165,9 @@ def test_registration_handler_persists_allowlisted_source():
 
     assert response.status_code == 200
     assert [source.name for source in mock_config.api.external_sources] == ["approved"]
-    add_plugin.assert_called_once_with(mock_config.api.external_sources[0].model_dump(mode="json", exclude_none=True))
+    add_plugin.assert_called_once_with(
+        mock_config.api.external_sources[0].model_dump(mode="json", exclude_none=True), "name", "approved"
+    )
 
 
 def test_registration_handler_forces_runtime_source_to_not_built_in():
@@ -176,7 +178,7 @@ def test_registration_handler_forces_runtime_source_to_not_built_in():
         app.test_request_context("/register/", method="POST", json=payload),
         patch("clue.api.v1.registration.config") as mock_config,
         patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[]),
-        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent", return_value=True) as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
         mock_config.api.external_sources = []
@@ -197,7 +199,7 @@ def test_registration_handler_rejects_duplicate_without_mutation():
         app.test_request_context("/register/", method="POST", json=payload),
         patch("clue.api.v1.registration.config") as mock_config,
         patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[]),
-        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent") as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
         mock_config.api.external_sources = [existing]
@@ -219,7 +221,7 @@ def test_registration_handler_rejects_persisted_duplicate_without_mutation():
         app.test_request_context("/register/", method="POST", json=payload),
         patch("clue.api.v1.registration.config") as mock_config,
         patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[persisted]),
-        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent") as add_plugin,
     ):
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
         mock_config.api.external_sources = []
@@ -230,3 +232,62 @@ def test_registration_handler_rejects_persisted_duplicate_without_mutation():
     assert response.json["api_error_message"] == "An external source with that name already exists"
     assert mock_config.api.external_sources == []
     add_plugin.assert_not_called()
+
+
+def test_registration_handler_rejects_atomic_duplicate_without_mutation():
+    app = Flask(__name__)
+    payload = {"name": "raced", "url": "https://plugins.example/"}
+
+    with (
+        app.test_request_context("/register/", method="POST", json=payload),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[]),
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add_if_field_absent", return_value=False) as add_source,
+    ):
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        mock_config.api.external_sources = []
+        handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
+        response = handler()
+
+    assert response.status_code == 400
+    assert response.json["api_error_message"] == "An external source with that name already exists"
+    assert mock_config.api.external_sources == []
+    add_source.assert_called_once()
+
+
+def test_remove_application_removes_pre_normalized_persisted_source():
+    app = Flask(__name__)
+    existing = ExternalSource.model_validate(
+        {"name": "legacy", "url": "http://plugins.example", "built_in": False},
+        context={"registration_allowed_origins": ["http://plugins.example"]},
+    )
+    persisted = {"name": "legacy", "url": "http://plugins.example", "built_in": False}
+
+    with (
+        app.test_request_context("/legacy", method="DELETE"),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[persisted]),
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.remove") as remove_source,
+    ):
+        mock_config.api.external_sources = [existing]
+        handler = getattr(getattr(remove_application, "__wrapped__"), "__wrapped__")
+        response = handler(plugin_id="legacy")
+
+    assert response.status_code == 204
+    assert mock_config.api.external_sources == []
+    remove_source.assert_called_once_with(persisted)
+
+
+def test_plugin_refresh_skips_non_mapping_members_and_continues():
+    built_in = ExternalSource(name="built-in", url="https://plugins.example/")
+    valid = {"name": "valid", "url": "https://plugins.example/", "built_in": False}
+
+    with (
+        patch("clue.cronjobs.plugins.config") as mock_config,
+        patch("clue.cronjobs.plugins.EXTERNAL_PLUGIN_SET.members", return_value=["malformed", valid]),
+    ):
+        mock_config.api.external_sources = [built_in]
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        update_external_source_list()
+
+    assert [source.name for source in mock_config.api.external_sources] == ["built-in", "valid"]

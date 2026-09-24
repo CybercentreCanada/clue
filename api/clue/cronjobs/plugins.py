@@ -21,6 +21,10 @@ def update_external_source_list():
     plugin_list: list[ExternalSource] = []
 
     for item in EXTERNAL_PLUGIN_SET.members():
+        if not isinstance(item, dict):
+            logger.warning("Ignoring invalid runtime external source configuration: expected an object")
+            continue
+
         try:
             source = ExternalSource.model_validate(
                 {**item, "built_in": False},

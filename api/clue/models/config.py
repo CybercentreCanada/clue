@@ -103,10 +103,16 @@ class OAuthProvider(BaseModel):
                 UserRole(role)
             return role_map
         except ValueError:
-            try:
-                return {UserRole(role): group for group, role in role_map.items()}
-            except ValueError:
-                return role_map
+            # Older configurations map OAuth group names to Clue roles. Only
+            # roles supported by this version are retained; unsupported legacy
+            # roles were previously ignored by role resolution.
+            normalized: dict[UserRole, str] = {}
+            for group, role in role_map.items():
+                try:
+                    normalized[UserRole(role)] = group
+                except ValueError:
+                    continue
+            return normalized
 
 
 class OAuth(BaseModel):

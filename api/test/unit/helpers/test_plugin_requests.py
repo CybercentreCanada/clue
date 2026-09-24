@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 from requests import Response
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, Timeout
 
 from clue.helper.plugin_requests import request_with_safe_redirects
 
@@ -101,6 +101,44 @@ def test_stops_after_five_redirects():
         request_with_safe_redirects(get, start_url)
 
     assert get.call_count == 6
+
+
+def test_redirect_hops_share_a_total_timeout_budget(monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr("clue.helper.plugin_requests.monotonic", lambda: now[0])
+    start_url = "http://plugin.example/types/"
+
+    def slow_redirect(url, **kwargs):
+        now[0] += 0.6
+        return redirect(url, "/types/")
+
+    get = Mock(side_effect=slow_redirect)
+
+    with pytest.raises(Timeout, match="total timeout"):
+        request_with_safe_redirects(get, start_url, timeout=1.0)
+
+    assert get.call_count == 2
+    assert get.call_args_list[0].kwargs["timeout"] == 1.0
+    assert get.call_args_list[1].kwargs["timeout"] == pytest.approx(0.4)
+
+
+def test_redirect_hops_shrink_connect_and_read_timeouts_together(monkeypatch):
+    now = [0.0]
+    monkeypatch.setattr("clue.helper.plugin_requests.monotonic", lambda: now[0])
+    start_url = "http://plugin.example/types/"
+
+    def slow_redirect(url, **kwargs):
+        now[0] += 4.0
+        return redirect(url, "/types/")
+
+    get = Mock(side_effect=slow_redirect)
+
+    with pytest.raises(Timeout, match="total timeout"):
+        request_with_safe_redirects(get, start_url, timeout=(2.0, 6.0))
+
+    assert get.call_count == 2
+    assert get.call_args_list[0].kwargs["timeout"] == (2.0, 6.0)
+    assert get.call_args_list[1].kwargs["timeout"] == pytest.approx((1.0, 3.0))
 
 
 def test_rejects_malformed_redirect_url():

@@ -23,6 +23,23 @@ end
 return false
 """
 
+_add_if_field_absent = """
+local set_name = KEYS[1]
+local encoded_value = ARGV[1]
+local field_name = ARGV[2]
+local field_value = ARGV[3]
+
+for _, member in ipairs(redis.call('smembers', set_name)) do
+    local ok, decoded = pcall(cjson.decode, member)
+    if ok and type(decoded) == 'table' and decoded[field_name] == field_value then
+        return 0
+    end
+end
+
+redis.call('sadd', set_name, encoded_value)
+return 1
+"""
+
 
 class Set(object):
     def __init__(self, name, host=None, port=None):
@@ -30,6 +47,7 @@ class Set(object):
         self.name = name
         self._drop_card = self.c.register_script(_drop_card_script)
         self._limited_add = self.c.register_script(_limited_add)
+        self._add_if_field_absent = self.c.register_script(_add_if_field_absent)
 
     def __enter__(self):
         return self
@@ -43,6 +61,16 @@ class Set(object):
     def limited_add(self, value, size_limit):
         """Add a single value to the set, but only if that wouldn't make the set grow past a given size."""
         return retry_call(self._limited_add, keys=[self.name], args=[json.dumps(value), size_limit])
+
+    def add_if_field_absent(self, value, field, field_value):
+        """Atomically add a JSON member only when no set member has the same field value."""
+        return bool(
+            retry_call(
+                self._add_if_field_absent,
+                keys=[self.name],
+                args=[json.dumps(value), field, field_value],
+            )
+        )
 
     def exist(self, value):
         return retry_call(self.c.sismember, self.name, json.dumps(value))

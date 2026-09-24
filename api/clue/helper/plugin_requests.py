@@ -1,9 +1,75 @@
 from collections.abc import Callable
+from time import monotonic
 from typing import Any
 from urllib.parse import urljoin, urlsplit
 
 from requests import Response
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, Timeout
+
+
+def _timeout_budget(timeout: Any) -> float | None:
+    if isinstance(timeout, tuple):
+        if any(value is None for value in timeout):
+            return None
+        return sum(float(value) for value in timeout if value is not None) or None
+    return float(timeout) if timeout else None
+
+
+def _remaining_timeout(timeout: Any, remaining: float) -> Any:
+    if isinstance(timeout, tuple):
+        budget = _timeout_budget(timeout)
+        if budget is None:
+            return timeout
+        scale = min(1.0, remaining / budget)
+        return tuple(float(value) * scale for value in timeout)
+    if timeout is None:
+        return None
+    return min(float(timeout), remaining)
+
+
+def _switch_to_get(status_code: int, get_method: Callable[..., Response] | None) -> bool:
+    return get_method is not None and status_code in {301, 302, 303}
+
+
+def _clear_request_body(kwargs: dict[str, Any]) -> None:
+    for key in ("json", "data", "files", "params"):
+        kwargs.pop(key, None)
+
+
+def _next_redirect(
+    response: Response,
+    url: str,
+    request_method: Callable[..., Response],
+    get_method: Callable[..., Response] | None,
+    kwargs: dict[str, Any],
+    redirect_count: int,
+) -> tuple[Callable[..., Response], str]:
+    location = response.headers.get("Location")
+    if not location:
+        return request_method, url
+
+    try:
+        target_url = urljoin(response.url or url, location)
+    except ValueError as err:
+        response.close()
+        raise ConnectionError("Plugin redirected to an untrusted URL") from err
+    if not _safe_redirect(url, target_url):
+        response.close()
+        raise ConnectionError("Plugin redirected to an untrusted URL")
+    if redirect_count == 5:
+        response.close()
+        raise ConnectionError("Plugin exceeded the redirect limit")
+
+    switch_to_get = _switch_to_get(response.status_code, get_method)
+    if switch_to_get:
+        request_method = get_method  # type: ignore[assignment]
+    if response.status_code == 303 or switch_to_get:
+        _clear_request_body(kwargs)
+    else:
+        kwargs.pop("params", None)
+
+    response.close()
+    return request_method, target_url
 
 
 def _safe_redirect(current_url: str, target_url: str) -> bool:
@@ -39,34 +105,24 @@ def request_with_safe_redirects(
 ) -> Response:
     """Follow bounded plugin redirects without forwarding credentials to another origin."""
     kwargs["allow_redirects"] = False
+    timeout = kwargs.get("timeout")
+    budget = _timeout_budget(timeout)
+    deadline = monotonic() + budget if budget is not None else None
+
     for redirect_count in range(6):
+        if deadline is not None:
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise Timeout("Plugin request exceeded its total timeout")
+            kwargs["timeout"] = _remaining_timeout(timeout, remaining)
+
         response = request_method(url, **kwargs)
         if response.status_code not in {301, 302, 303, 307, 308}:
             return response
 
-        location = response.headers.get("Location")
-        if not location:
+        next_method, next_url = _next_redirect(response, url, request_method, get_method, kwargs, redirect_count)
+        if next_url == url and not response.headers.get("Location"):
             return response
-        try:
-            target_url = urljoin(response.url or url, location)
-        except ValueError as err:
-            response.close()
-            raise ConnectionError("Plugin redirected to an untrusted URL") from err
-        if not _safe_redirect(url, target_url):
-            response.close()
-            raise ConnectionError("Plugin redirected to an untrusted URL")
-        if redirect_count == 5:
-            response.close()
-            raise ConnectionError("Plugin exceeded the redirect limit")
-
-        if response.status_code == 303 or (response.status_code in {301, 302} and get_method is not None):
-            if get_method is not None:
-                request_method = get_method
-            for key in ("json", "data", "files"):
-                kwargs.pop(key, None)
-
-        kwargs.pop("params", None)
-        response.close()
-        url = target_url
+        request_method, url = next_method, next_url
 
     raise ConnectionError("Plugin exceeded the redirect limit")

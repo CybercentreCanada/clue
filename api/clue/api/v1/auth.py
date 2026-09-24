@@ -100,7 +100,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
     logged_in_uname = None
     access_token = None
     refresh_token = data.get("refresh_token", None)
-    priv: Optional[list[str]] = []
+    priv: Optional[list[Privilege]] = []
 
     try:
         # First, we'll try oauth

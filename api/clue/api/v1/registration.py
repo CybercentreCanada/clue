@@ -78,8 +78,11 @@ def register_application(**kwargs):
     except ValidationError as error:
         return bad_request(err="; ".join(item["msg"] for item in error.errors()))
 
+    persisted_source = registration_request.model_dump(mode="json", exclude_none=True)
+    if not EXTERNAL_PLUGIN_SET.add_if_field_absent(persisted_source, "name", registration_request.name):
+        return bad_request(err="An external source with that name already exists")
+
     config.api.external_sources.append(registration_request)
-    EXTERNAL_PLUGIN_SET.add(registration_request.model_dump(mode="json", exclude_none=True))
 
     return ok(data=registration_request.name)
 
@@ -111,12 +114,19 @@ def remove_application(plugin_id: str, **kwargs):
             source_to_remove = source
             break
 
-    if (
-        source_to_remove is not None
-        and source_to_remove.model_dump(mode="json", exclude_none=True) in EXTERNAL_PLUGIN_SET.members()
-    ):
-        config.api.external_sources.remove(source_to_remove)
-        EXTERNAL_PLUGIN_SET.remove(source_to_remove.model_dump(mode="json", exclude_none=True))
+    persisted_sources = []
+    if source_to_remove is not None:
+        persisted_sources = [
+            source
+            for source in EXTERNAL_PLUGIN_SET.members()
+            if isinstance(source, dict) and source.get("name") == plugin_id
+        ]
+
+    if source_to_remove is not None and persisted_sources:
+        config.api.external_sources = [
+            source for source in config.api.external_sources if source.name != plugin_id or source.built_in is True
+        ]
+        EXTERNAL_PLUGIN_SET.remove(*persisted_sources)
         logger.info(no_content(data=source_to_remove.name))
         return no_content(data=source_to_remove.name)
 
