@@ -39,6 +39,13 @@ export interface DatabaseConfig {
   replicate?: boolean;
 
   /**
+   * The number of selector documents requested in each replication pull batch.
+   *
+   * @default 250
+   */
+  pullBatchSize?: number;
+
+  /**
    * The base URL of the clue API server used for replication and remote operations.
    *
    * @example 'https://api.clue.example.com'

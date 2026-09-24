@@ -9,7 +9,7 @@ import { REPLICATORS } from './globals';
 import type { Checkpoint } from './sync';
 import type { DatabaseConfig, SelectorCollection, SelectorDocType } from './types';
 
-const PULL_BATCH_SIZE = 250;
+const DEFAULT_PULL_BATCH_SIZE = 250;
 
 const getToken = (config: DatabaseConfig): string | undefined => {
   const token = config.getToken?.();
@@ -156,7 +156,11 @@ export const replicateSelectorCollection = async (
   collection: SelectorCollection,
   config: DatabaseConfig
 ) => {
+<<<<<<< HEAD
   getToken(config);
+=======
+  const pullBatchSize = config.pullBatchSize ?? DEFAULT_PULL_BATCH_SIZE;
+>>>>>>> 7553cb6 (feat(ui): add configurable replication batch size)
 
   collection.onClose.push(() => {
     delete REPLICATORS[replicationId];
@@ -176,7 +180,7 @@ export const replicateSelectorCollection = async (
       handler: async docs => api.sync.post<SelectorDocType>(collection.name, docs, buildRequestConfig(config))
     },
     pull: {
-      batchSize: PULL_BATCH_SIZE,
+      batchSize: pullBatchSize,
       handler: async (
         lastCheckpoint: Checkpoint
       ): Promise<ReplicationPullHandlerResult<SelectorDocType, Checkpoint>> => {
@@ -191,7 +195,7 @@ export const replicateSelectorCollection = async (
           buildRequestConfig(config)
         );
 
-        if (result.length < PULL_BATCH_SIZE) {
+        if (result.length < pullBatchSize) {
           collection.synced = true;
         }
 
