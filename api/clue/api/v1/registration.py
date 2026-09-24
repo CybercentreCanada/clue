@@ -16,7 +16,7 @@ EXTERNAL_PLUGIN_SET = Set("plugin_set", host=get_redis())
 
 SUB_API = "registration"
 registration_api = make_subapi_blueprint(SUB_API, api_version=1)
-registration_api._doc = "Register external plugins"
+registration_api._doc = "Register external plugins"  # type: ignore
 
 
 @generate_swagger_docs()
