@@ -26,6 +26,7 @@ from clue.common.logging.audit import audit
 from clue.config import CLASSIFICATION as CLASSIFICATION
 from clue.config import DEBUG, config
 from clue.helper.headers import generate_headers
+from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.network import QueryEntry, QueryResult
 from clue.models.selector import Selector
@@ -396,18 +397,18 @@ def query_external(
             return finish_result(error=quota_error)
 
         # perform the lookup, ensuring access controls are applied
-        url = f"{source.url}/lookup/{type_name}/{value}/"
+        url = f"{source.url.rstrip('/')}/lookup/{type_name}/{value}/"
         response: Any = None
         rsp: Response | None = None
         start = time.perf_counter()
         try:
             with capture_span(url, "http"):
-                rsp = get_client(source.url, timeout).get(
+                rsp = request_with_safe_redirects(
+                    get_client(source.url, timeout).get,
                     url,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     headers=generate_headers(access_token, clue_access_token),
                     timeout=(timeout, timeout * 3),
-                    allow_redirects=False,
                 )
                 rsp.raise_for_status()
 
@@ -615,19 +616,21 @@ def bulk_query_external(  # noqa: C901
         error = None
         latency = None
 
-        url = f"{source.url}/lookup/"
+        url = f"{source.url.rstrip('/')}/lookup/"
         response: Any = None
         start = time.perf_counter()
         rsp: Response | None = None
         try:
             with capture_span(url, "http"):
-                rsp = get_client(source.url, timeout).post(
+                client = get_client(source.url, timeout)
+                rsp = request_with_safe_redirects(
+                    client.post,
                     url,
+                    get_method=client.get,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     json=[entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data],
                     headers=generate_headers(access_token, clue_access_token),
                     timeout=(timeout * 3, timeout * 3),
-                    allow_redirects=False,
                 )
                 rsp.raise_for_status()
 

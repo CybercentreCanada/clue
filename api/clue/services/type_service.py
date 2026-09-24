@@ -10,6 +10,7 @@ from clue.config import CLASSIFICATION, DEBUG, cache, config
 from clue.constants.env import DISABLE_CACHE
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.helper.headers import generate_headers
+from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.cache import RedisCache
 from clue.services import auth_service
@@ -67,7 +68,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
         headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
         try:
-            rsp = requests.get(url, headers=headers, timeout=3.0, allow_redirects=False)
+            rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=3.0)
         except (exceptions.ConnectionError, exceptions.ReadTimeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception(f"Unable to connect: {url}")
@@ -81,8 +82,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
                 return None
             except requests.exceptions.JSONDecodeError:
                 logger.exception(
-                    f"Parsing error in error ({rsp.status_code}) response - unknown format\n"
-                    f"Raw response: {rsp.text}"
+                    f"Parsing error in error ({rsp.status_code}) response - unknown format\nRaw response: {rsp.text}"
                 )
                 return None
             except KeyError:
@@ -95,7 +95,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
                 content = rsp.content
                 if isinstance(content, (bytes, bytearray)):
                     content = content.decode()
-                logger.exception(f"{source_url} encountered an unknown error.\n" f"Full response: {content}")
+                logger.exception(f"{source_url} encountered an unknown error.\nFull response: {content}")
                 return None
 
         try:
@@ -104,7 +104,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             CACHE.set(url, types_result)
             return types_result
         except requests.exceptions.JSONDecodeError:
-            logger.exception("Parsing error in OK response - unknown format\n" f"Raw response: {rsp.text}")
+            logger.exception(f"Parsing error in OK response - unknown format\nRaw response: {rsp.text}")
             return None
         except Exception:
             logger.exception("External API did not return expected format:")

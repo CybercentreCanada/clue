@@ -1,8 +1,8 @@
 from typing import Any, Optional
 from urllib.parse import urljoin
 
-import elasticapm
 import requests
+from elasticapm.traces import capture_span
 from flask import has_request_context, request
 from pydantic import TypeAdapter, ValidationError
 from requests import JSONDecodeError, exceptions
@@ -16,6 +16,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, DEBUG, cache, config
+from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
@@ -73,9 +74,9 @@ def get_supported_fetchers(
     if obo_access_token or access_token:
         headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
 
-    with elasticapm.capture_span(f"GET {url}", span_type="http"):
+    with capture_span(f"GET {url}", span_type="http"):
         try:
-            rsp = requests.get(url, headers=headers, timeout=5.0, allow_redirects=False)
+            rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=5.0)
             result = rsp.json()
 
             if not rsp.ok:
@@ -206,12 +207,13 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
             raise NotFoundException(f"Fetcher {fetcher_id} does not exist", status_code=404)
         _validate_fetcher_classification(fetcher, selector, fetcher_id)
 
-        response = requests.post(
+        response = request_with_safe_redirects(
+            requests.post,
             urljoin(plugin.url, f"fetchers/{fetcher_id}"),
+            get_method=requests.get,
             json=parameters,
             headers=headers,
             timeout=request.args.get("max_timeout", 60.0, type=float),
-            allow_redirects=False,
         )
 
         result = response.json()
@@ -266,11 +268,11 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
         req_url = urljoin(plugin.url, f"fetchers/{fetcher_id}/status/{task_id}")
         logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
 
-        response = requests.get(
+        response = request_with_safe_redirects(
+            requests.get,
             req_url,
             headers=headers,
             timeout=request.args.get("max_timeout", 60.0, type=float),
-            allow_redirects=False,
         )
 
         result = response.json()
