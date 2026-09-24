@@ -4,12 +4,7 @@ import pytest
 from flask import Flask
 from pydantic import ValidationError
 
-from clue.api.v1.registration import (
-    is_registration_name_available,
-    is_registration_url_allowed,
-    register_application,
-    remove_application,
-)
+from clue.api.v1.registration import register_application, remove_application
 from clue.cronjobs.plugins import update_external_source_list
 from clue.models.auth_user import Privilege, UserRole
 from clue.models.config import ExternalSource
@@ -38,43 +33,80 @@ def test_plugin_refresh_ignores_legacy_invalid_runtime_source():
         ),
     ):
         mock_config.api.external_sources = [built_in]
+        mock_config.api.registration_allowed_origins = ["http://plugin"]
         update_external_source_list()
 
         assert mock_config.api.external_sources == [built_in]
 
 
-def test_runtime_registration_requires_an_allowed_exact_origin():
-    with patch("clue.api.v1.registration.config") as mock_config:
-        mock_config.api.registration_allowed_origins = ["https://plugins.example:8443"]
+@pytest.mark.parametrize(
+    "url",
+    ["http://plugins.example:8443/lookup", "https://plugins.example/lookup", "https://attacker.example/lookup"],
+)
+def test_runtime_source_requires_an_allowed_exact_origin(url):
+    context = {"registration_allowed_origins": ["https://plugins.example:8443"]}
 
-        assert is_registration_url_allowed("https://plugins.example:8443/lookup")
-        assert not is_registration_url_allowed("http://plugins.example:8443/lookup")
-        assert not is_registration_url_allowed("https://plugins.example/lookup")
-        assert not is_registration_url_allowed("https://attacker.example/lookup")
+    with pytest.raises(ValidationError, match="External source URL origin is not permitted"):
+        ExternalSource.model_validate({"name": "test", "url": url, "built_in": False}, context=context)
+
+    assert (
+        ExternalSource.model_validate(
+            {"name": "test", "url": "https://plugins.example:8443/lookup", "built_in": False}, context=context
+        ).name
+        == "test"
+    )
 
 
-def test_runtime_registration_rejects_credentialed_and_malformed_urls():
-    with patch("clue.api.v1.registration.config") as mock_config:
+def test_runtime_source_rejects_credentialed_urls():
+    with pytest.raises(ValidationError, match="External source URL origin is not permitted"):
+        ExternalSource.model_validate(
+            {"name": "test", "url": "https://user:password@plugins.example/", "built_in": False},
+            context={"registration_allowed_origins": ["https://plugins.example"]},
+        )
+
+
+def test_runtime_source_is_disabled_without_allowed_origins():
+    with pytest.raises(ValidationError, match="External source URL origin is not permitted"):
+        ExternalSource(name="test", url="https://plugins.example/", built_in=False)
+
+
+def test_runtime_source_rejects_an_existing_source_name():
+    with pytest.raises(ValidationError, match="An external source named built-in already exists"):
+        ExternalSource.model_validate(
+            {"name": "built-in", "url": "https://plugins.example/", "built_in": False},
+            context={
+                "registration_allowed_origins": ["https://plugins.example"],
+                "existing_source_names": {"built-in"},
+            },
+        )
+
+
+def test_built_in_source_skips_runtime_origin_and_name_checks():
+    source = ExternalSource.model_validate(
+        {"name": "built-in", "url": "https://plugins.example/", "built_in": True},
+        context={"registration_allowed_origins": [], "existing_source_names": {"built-in"}},
+    )
+
+    assert source.name == "built-in"
+
+
+def test_plugin_refresh_ignores_disallowed_and_duplicate_runtime_sources():
+    built_in = ExternalSource(name="built-in", url="https://plugins.example/")
+    entries = [
+        {"name": "disallowed", "url": "https://other.example/"},
+        {"name": "built-in", "url": "https://plugins.example/"},
+        {"name": "approved", "url": "https://plugins.example/"},
+        {"name": "approved", "url": "https://plugins.example/"},
+    ]
+    with (
+        patch("clue.cronjobs.plugins.config") as mock_config,
+        patch("clue.cronjobs.plugins.EXTERNAL_PLUGIN_SET.members", return_value=entries),
+    ):
+        mock_config.api.external_sources = [built_in]
         mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        update_external_source_list()
 
-        assert not is_registration_url_allowed("https://user:password@plugins.example/")
-        assert not is_registration_url_allowed("file:///etc/passwd")
-        assert not is_registration_url_allowed("not-a-url")
-
-
-def test_runtime_registration_is_disabled_without_allowed_origins():
-    with patch("clue.api.v1.registration.config") as mock_config:
-        mock_config.api.registration_allowed_origins = []
-
-        assert not is_registration_url_allowed("https://plugins.example/")
-
-
-def test_runtime_registration_rejects_an_existing_source_name():
-    with patch("clue.api.v1.registration.config") as mock_config:
-        mock_config.api.external_sources = [ExternalSource(name="built-in", url="http://plugin/")]
-
-        assert not is_registration_name_available("built-in")
-        assert is_registration_name_available("new-plugin")
+    assert [source.name for source in mock_config.api.external_sources] == ["built-in", "approved"]
 
 
 def test_registration_handler_rejects_disallowed_origin():
@@ -92,7 +124,25 @@ def test_registration_handler_rejects_disallowed_origin():
         response = handler()
 
     assert response.status_code == 400
+    assert response.json["api_error_message"] == "External source URL origin is not permitted for runtime registration"
     assert mock_config.api.external_sources == []
+    add_plugin.assert_not_called()
+
+
+def test_registration_handler_returns_invalid_url_error():
+    app = Flask(__name__)
+    with (
+        app.test_request_context("/register/", method="POST", json={"name": "bad", "url": "file:///etc/passwd"}),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.add") as add_plugin,
+    ):
+        mock_config.api.registration_allowed_origins = ["https://plugins.example"]
+        mock_config.api.external_sources = []
+        handler = getattr(getattr(register_application, "__wrapped__"), "__wrapped__")
+        response = handler()
+
+    assert response.status_code == 400
+    assert "URL scheme should be 'http' or 'https'" in response.json["api_error_message"]
     add_plugin.assert_not_called()
 
 
@@ -150,5 +200,6 @@ def test_registration_handler_rejects_duplicate_without_mutation():
         response = handler()
 
     assert response.status_code == 400
+    assert response.json["api_error_message"] == "An external source named existing already exists"
     assert mock_config.api.external_sources == [existing]
     add_plugin.assert_not_called()

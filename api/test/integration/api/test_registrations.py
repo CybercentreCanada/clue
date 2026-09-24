@@ -39,9 +39,12 @@ def test_registration(host):
         json=sample_plugin,
     )
     assert res.ok
-    assert (ExternalSource(**sample_plugin, built_in=False)).model_dump(
-        mode="json", exclude_none=True
-    ) in EXTERNAL_PLUGIN_SET.members()
+    assert (
+        ExternalSource.model_validate(
+            {**sample_plugin, "built_in": False}, context={"registration_allowed_origins": ["http://localhost:5008"]}
+        ).model_dump(mode="json", exclude_none=True)
+        in EXTERNAL_PLUGIN_SET.members()
+    )
 
 
 def test_registration_incorrect_json(host):
@@ -170,9 +173,12 @@ def test_remove_application(host):
     )
 
     assert res.ok
-    assert (ExternalSource(**sample_plugin, built_in=False)).model_dump(
-        mode="json", exclude_none=True
-    ) not in EXTERNAL_PLUGIN_SET.members()
+    assert (
+        ExternalSource.model_validate(
+            {**sample_plugin, "built_in": False}, context={"registration_allowed_origins": ["http://localhost:5008"]}
+        ).model_dump(mode="json", exclude_none=True)
+        not in EXTERNAL_PLUGIN_SET.members()
+    )
 
 
 def test_remove_application_when_no_plugin_found(host):

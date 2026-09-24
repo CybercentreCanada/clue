@@ -79,11 +79,6 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
                     "avatar": "data:image/png;base64, ..."
                 }
             }
-
-    Raises:
-        AuthenticationException: If the OAuth provider does not return an access
-            token or the authentication information is invalid.
-        InvalidDataException: If OAuth is disabled.
     """
     data: dict[str, Any]
     if request.is_json and len(request.data) > 0:

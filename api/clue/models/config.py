@@ -4,10 +4,20 @@ from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Self
+from urllib.parse import urlsplit
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, TypeAdapter, field_validator, model_validator
-from pydantic_core import Url
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    TypeAdapter,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
+from pydantic_core import PydanticCustomError, Url
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -154,7 +164,7 @@ class ServiceAccountCreds(BaseModel):
             dict[str, str]: The data including the password.
         """
         if "password" not in data and "provider" in data:
-            if env_pass := os.getenv(f'SA_{data["provider"].upper()}_PASSWORD'):
+            if env_pass := os.getenv(f"SA_{data['provider'].upper()}_PASSWORD"):
                 data["password"] = env_pass
 
         return data
@@ -371,6 +381,43 @@ class ExternalSource(BaseModel):
     def validate_url(cls, url: str) -> str:  # noqa: ANN102
         """Normalize and restrict external source URLs to HTTP or HTTPS."""
         return str(TypeAdapter(HttpUrl).validate_python(url))
+
+    @staticmethod
+    def _url_origin(url: str) -> tuple[str, str, int] | None:
+        """Return a normalized HTTP origin, rejecting ambiguous or credentialed URLs."""
+        try:
+            parsed = urlsplit(url)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username is not None
+                or parsed.password is not None
+            ):
+                return None
+
+            return parsed.scheme, parsed.hostname.lower(), parsed.port or (443 if parsed.scheme == "https" else 80)
+        except ValueError:
+            return None
+
+    @model_validator(mode="after")
+    def validate_runtime_registration(self: Self, info: ValidationInfo) -> Self:
+        """Apply administrator-controlled origin and name checks to runtime sources only."""
+        if self.built_in:
+            return self
+
+        context = info.context or {}
+        origin = self._url_origin(self.url)
+        allowed_origins = context.get("registration_allowed_origins", ())
+        if origin is None or not any(origin == self._url_origin(url) for url in allowed_origins):
+            raise PydanticCustomError(
+                "external_source_origin", "External source URL origin is not permitted for runtime registration"
+            )
+
+        if self.name in context.get("existing_source_names", ()):
+            logger.warning("Duplicate name %s", self.name)
+            raise PydanticCustomError("external_source_name", "An external source with that name already exists")
+
+        return self
 
     @field_validator("maintainer")
     @classmethod

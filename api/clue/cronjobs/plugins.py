@@ -2,7 +2,7 @@ from apscheduler.schedulers.base import BaseScheduler
 from gevent.queue import Queue
 from pydantic import ValidationError
 
-from clue.api.v1.registration import EXTERNAL_PLUGIN_SET, is_registration_url_allowed
+from clue.api.v1.registration import EXTERNAL_PLUGIN_SET
 from clue.common.logging import get_logger
 from clue.config import config
 from clue.models.config import ExternalSource
@@ -22,15 +22,18 @@ def update_external_source_list():
 
     for item in EXTERNAL_PLUGIN_SET.members():
         try:
-            source = ExternalSource.model_validate({**item, "built_in": False})
-        except ValidationError:
-            logger.warning("Ignoring invalid runtime external source configuration")
-            continue
-        if not is_registration_url_allowed(source.url):
-            logger.warning("Ignoring runtime source %s because its origin is not allowed", source.name)
-            continue
-        if source.name in source_names:
-            logger.warning("Ignoring duplicate runtime source name %s", source.name)
+            source = ExternalSource.model_validate(
+                {**item, "built_in": False},
+                context={
+                    "registration_allowed_origins": config.api.registration_allowed_origins,
+                    "existing_source_names": source_names,
+                },
+            )
+        except ValidationError as error:
+            logger.warning(
+                "Ignoring invalid runtime external source configuration: %s",
+                "; ".join(item["msg"] for item in error.errors()),
+            )
             continue
 
         source_names.add(source.name)
