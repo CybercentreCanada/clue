@@ -99,7 +99,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
 
     api.configs.get(requestConfig).then(clueConfig.setConfig);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseURL, onNetworkCall, skipConfigCall, isReady]);
+  }, [baseURL, onNetworkCall, skipConfigCall, enabled, isReady]);
 
   // Tracks `database.selectors.synced`, which is mutated outside of React state by the
   // replication pull handler. Without this, `ready` below would never re-evaluate once

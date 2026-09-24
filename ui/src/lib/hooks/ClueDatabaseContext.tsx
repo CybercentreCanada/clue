@@ -41,6 +41,11 @@ export interface ClueDatabaseContextProps {
    * @returns An access token valid for use with the clue API.
    */
   getToken?: () => string;
+
+  /**
+   * The base URL that refers to the clue API. leaving this empty will forward requests to the current origin.
+   */
+  baseURL?: string;
 }
 
 export type ClueDatabaseContextType = ClueDatabase;
@@ -51,7 +56,8 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
   children,
   database: _database,
   databaseConfig,
-  getToken
+  getToken,
+  baseURL
 }) => {
   const [database, setDatabase] = useState<ClueDatabase>();
 
@@ -72,10 +78,10 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
 
   useEffect(() => {
     let cancelled = false;
-    if (!_database) {
+    if (_database === undefined) {
       // eslint-disable-next-line no-console
       console.warn('It is heavily suggested to initialize the database outside of the React component tree.');
-      buildDatabase({ ...databaseConfig, getToken: getTokenRef.current }).then(_db => {
+      buildDatabase({ baseURL, ...databaseConfig, getToken: getTokenRef.current }).then(_db => {
         if (!cancelled) {
           setDatabase(_db);
         }
@@ -86,7 +92,7 @@ export const ClueDatabaseProvider: FC<PropsWithChildren<ClueDatabaseContextProps
       };
     }
     // getToken is intentionally omitted from deps — reads from getTokenRef instead.
-  }, [_database, databaseConfig]);
+  }, [_database, baseURL, databaseConfig]);
 
   return <ClueDatabaseContext.Provider value={database}>{children}</ClueDatabaseContext.Provider>;
 };

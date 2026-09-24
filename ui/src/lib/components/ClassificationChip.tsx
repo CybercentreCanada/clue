@@ -32,6 +32,10 @@ const ClassificationChip: FC<EnrichedChipProps & Exclude<ChipProps, 'label'>> = 
     }, [classification, config.c12nDef, parts]);
 
     const chipProps: ChipProps = useMemo(() => {
+      if (!parts) {
+        return { color: 'default' };
+      }
+
       const definedColor = config.c12nDef?.levels_styles_map[config.c12nDef?.levels_map[parts.lvlIdx]]?.color;
 
       if (THEME_TYPES.includes(definedColor)) {
@@ -43,7 +47,7 @@ const ClassificationChip: FC<EnrichedChipProps & Exclude<ChipProps, 'label'>> = 
       }
 
       return { color: 'default' };
-    }, [config.c12nDef?.levels_map, config.c12nDef?.levels_styles_map, parts.lvlIdx]);
+    }, [config.c12nDef?.levels_map, config.c12nDef?.levels_styles_map, parts]);
 
     return (
       <Tooltip title={classification}>
