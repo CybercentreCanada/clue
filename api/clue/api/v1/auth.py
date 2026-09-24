@@ -33,7 +33,7 @@ logger = get_logger(__file__)
 
 SUB_API = "auth"
 auth_api = make_subapi_blueprint(SUB_API, api_version=1)
-auth_api.__doc__ = "Allow user to authenticate to the web server"
+auth_api._doc = "Allow user to authenticate to the web server"
 
 logger = get_logger(__file__)
 
