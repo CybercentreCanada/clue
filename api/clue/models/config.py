@@ -4,10 +4,20 @@ from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any, Self
+from urllib.parse import urlsplit
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from pydantic_core import Url
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    TypeAdapter,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
+from pydantic_core import PydanticCustomError, Url
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -19,6 +29,7 @@ from clue.common import forge
 from clue.common.exceptions import ClueValueError
 from clue.common.logging import get_module_logger
 from clue.common.str_utils import default_string_value
+from clue.models.auth_user import APIKeyConf, UserRole
 
 AUTO_PROPERTY_TYPE = ["access", "classification", "type", "role", "remove_role", "group"]
 DEFAULT_EMAIL_FIELDS = ["email", "emails", "extension_selectedEmailAddress", "otherMails", "preferred_username", "upn"]
@@ -66,7 +77,7 @@ class OAuthProvider(BaseModel):
     required_groups: list[str] = Field(
         default=[], description="The groups the JWT must contain in order to allow access"
     )
-    role_map: dict[str, str] = Field(default={}, description="A mapping of OAuth groups to clue roles")
+    role_map: dict[UserRole, str] = Field(default={}, description="A mapping of Clue roles to OAuth groups")
     classification_map: dict[str, str] = Field(
         default={}, description="A mapping of OAuth groups to classification levels"
     )
@@ -79,6 +90,36 @@ class OAuthProvider(BaseModel):
     scope: str = Field(description="The scope to validate against")
     iss: str | None = Field(description="Optional issuer field for JWT validation", default=None)
     jwks_uri: str = Field(description="URL used to verify if a returned JWKS token is valid")
+
+    @field_validator("role_map", mode="before")
+    @classmethod
+    def normalize_role_map(cls, role_map: Any) -> Any:  # noqa: ANN102
+        """Accept legacy OAuth-group-to-role mappings and normalize their direction."""
+        if not isinstance(role_map, dict) or not role_map:
+            return role_map
+
+        try:
+            for role in role_map:
+                UserRole(role)
+        except ValueError:
+            # Older configurations map OAuth group names to Clue roles. Only
+            # roles supported by this version are retained; unsupported legacy
+            # roles were previously ignored by role resolution.
+            normalized: dict[UserRole, str] = {}
+            for group, role in role_map.items():
+                try:
+                    normalized[UserRole(role)] = group
+                except ValueError:
+                    continue
+            return normalized
+
+        # If both sides look like role names, the old and new orientations are
+        # indistinguishable (for example, {"admin": "user"}). Reject rather
+        # than silently assigning a different role to an OAuth group.
+        if all(value in {role.value for role in UserRole} for value in role_map.values()):
+            raise ValueError("OAuth role_map is ambiguous when both keys and values are Clue roles")
+
+        return role_map
 
 
 class OAuth(BaseModel):
@@ -136,7 +177,7 @@ class ServiceAccountCreds(BaseModel):
             dict[str, str]: The data including the password.
         """
         if "password" not in data and "provider" in data:
-            if env_pass := os.getenv(f'SA_{data["provider"].upper()}_PASSWORD'):
+            if env_pass := os.getenv(f"SA_{data['provider'].upper()}_PASSWORD"):
                 data["password"] = env_pass
 
         return data
@@ -168,7 +209,7 @@ class ServiceAccount(BaseModel):
 
 class Auth(BaseModel):
     allow_apikeys: bool = Field(description="Allow API keys?", default=False)
-    apikeys: dict[str, str] = Field(default={}, description="API Keys available in the system")
+    apikeys: dict[str, str | APIKeyConf] = Field(default={}, description="API keys available in the system")
     propagate_clue_key: bool = Field(
         default=True, description="Should clue include the root clue token in requests when OBO is used?"
     )
@@ -348,6 +389,49 @@ class ExternalSource(BaseModel):
 
     model_config = ConfigDict(validate_assignment=True)
 
+    @field_validator("url")
+    @classmethod
+    def validate_url(cls, url: str) -> str:  # noqa: ANN102
+        """Normalize and restrict external source URLs to HTTP or HTTPS."""
+        return str(TypeAdapter(HttpUrl).validate_python(url))
+
+    @staticmethod
+    def _url_origin(url: str) -> tuple[str, str, int] | None:
+        """Return a normalized HTTP origin, rejecting ambiguous or credentialed URLs."""
+        try:
+            parsed = urlsplit(url)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username is not None
+                or parsed.password is not None
+            ):
+                return None
+
+            return parsed.scheme, parsed.hostname.lower(), parsed.port or (443 if parsed.scheme == "https" else 80)
+        except ValueError:
+            return None
+
+    @model_validator(mode="after")
+    def validate_runtime_registration(self: Self, info: ValidationInfo) -> Self:
+        """Apply administrator-controlled origin and name checks to runtime sources only."""
+        if self.built_in:
+            return self
+
+        context = info.context or {}
+        origin = self._url_origin(self.url)
+        allowed_origins = context.get("registration_allowed_origins", ())
+        if origin is None or not any(origin == self._url_origin(url) for url in allowed_origins):
+            raise PydanticCustomError(
+                "external_source_origin", "External source URL origin is not permitted for runtime registration"
+            )
+
+        if self.name in context.get("existing_source_names", ()):
+            logger.warning("Duplicate name %s", self.name)
+            raise PydanticCustomError("external_source_name", "An external source with that name already exists")
+
+        return self
+
     @field_validator("maintainer")
     @classmethod
     def validate_maintainer(cls, maintainer: str | None) -> str | None:  # noqa: ANN102
@@ -394,7 +478,7 @@ class ExternalSource(BaseModel):
 EXAMPLE_EXTERNAL_SOURCE_VT = {
     # This is an example on how this would work with VirusTotal
     "name": "VirusTotal",
-    "url": "vt-lookup.namespace.svc.cluster.local",
+    "url": "http://vt-lookup.namespace.svc.cluster.local",
     "classification": "TLP:CLEAR",
     "max_classification": "TLP:CLEAR",
 }
@@ -402,7 +486,7 @@ EXAMPLE_EXTERNAL_SOURCE_VT = {
 EXAMPLE_EXTERNAL_SOURCE_MB = {
     # This is an example on how this would work with Malware Bazaar
     "name": "Malware Bazaar",
-    "url": "mb-lookup.namespace.scv.cluster.local",
+    "url": "http://mb-lookup.namespace.svc.cluster.local",
     "classification": "TLP:CLEAR",
     "max_classification": "TLP:CLEAR",
 }
@@ -426,6 +510,9 @@ class API(BaseModel):
     debug: bool = Field(description="Enable debugging?", default=False)
     discover_url: str | None = Field(description="Discover URL", default=None)
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
+    registration_allowed_origins: list[str] = Field(
+        description="Exact URL origins permitted for runtime external source registration", default=[]
+    )
     obo_targets: dict[str, OBOService] = Field(description="List of targets clue can OBO to", default={})
     secret_key: str = Field(description="Flask secret key to store cookies, etc.", default_factory=lambda: uuid4().hex)
     session_duration: int = Field(

@@ -1,8 +1,8 @@
 from typing import Any, Optional
 from urllib.parse import urljoin
 
-import elasticapm
 import requests
+from elasticapm.traces import capture_span
 from flask import request
 from pydantic import TypeAdapter, ValidationError
 from requests import JSONDecodeError, exceptions
@@ -11,6 +11,7 @@ from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
+from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
 from clue.services import auth_service
@@ -44,10 +45,10 @@ def get_supported_actions(
 
     headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
-    with elasticapm.capture_span(f"GET {url}", span_type="http"):
+    with capture_span(f"GET {url}", span_type="http"):
         rsp = None
         try:
-            rsp = requests.get(url, headers=headers, timeout=10.0)
+            rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=10.0)
             result = rsp.json()
 
             if not rsp.ok:
@@ -55,7 +56,7 @@ def get_supported_actions(
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
 
             return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
-        except exceptions.ConnectionError:
+        except (exceptions.ConnectionError, exceptions.Timeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception("Unable to connect: %s", url)
             return {}
@@ -170,8 +171,10 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
         req_url = urljoin(plugin.url, f"actions/{action_id}")
         logger.debug("Executing action %s for user %s", req_url, user["uname"])
 
-        response = requests.post(
+        response = request_with_safe_redirects(
+            requests.post,
             req_url,
+            get_method=requests.get,
             json=parameters,
             headers=headers,
             timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
@@ -183,7 +186,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             raise ClueException(result["api_error_message"])
 
         return ActionResult.model_validate(result["api_response"], context={"is_response": True})
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when retrieving the result from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong when retrieving the result from plugin '{plugin_id}': {err.__class__.__name__}."
@@ -229,7 +232,8 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
         req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")
         logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
 
-        response = requests.get(
+        response = request_with_safe_redirects(
+            requests.get,
             req_url,
             headers=headers,
             timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
@@ -241,7 +245,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
             raise ClueException(result["api_error_message"])
 
         return ActionResult.model_validate(result["api_response"], context={"is_response": True})
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when retrieving the status from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong when retrieving the status from plugin '{plugin_id}': {err.__class__.__name__}."

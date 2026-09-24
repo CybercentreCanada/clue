@@ -33,9 +33,9 @@ def get_jwk(access_token: str) -> PyJWK:
         cache.delete(key="get_jwks")
         try:
             jwks, _ = get_jwks()
-            key = jwks[kid]
-        except KeyError:
-            raise ClueKeyError("There is no valid JWK for this token.")
+            key = PyJWK(jwks[kid])
+        except KeyError as e:
+            raise ClueKeyError("There is no valid JWK for this token.") from e
 
     return key
 
@@ -68,8 +68,8 @@ def get_provider(access_token: str) -> str:
         try:
             _, providers = get_jwks()
             oauth_provider = providers[kid]
-        except KeyError:
-            raise ClueValueError("The provider of this access token does not match any supported providers")
+        except KeyError as e:
+            raise ClueValueError("The provider of this access token does not match any supported providers") from e
 
     return oauth_provider
 

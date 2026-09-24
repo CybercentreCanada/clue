@@ -16,15 +16,18 @@ from clue.models.config import ExternalSource
 
 @pytest.fixture()
 def sample_external_source():
-    return ExternalSource(
-        name="test",
-        classification="TLP:CLEAR",
-        max_classification="TLP:CLEAR",
-        url="http://localhost:5008/",
-        maintainer="Example <example@example.com>",
-        datahub_link=Url("http://example.com"),
-        documentation_link=Url("http://example.com"),
-        built_in=False,
+    return ExternalSource.model_validate(
+        {
+            "name": "runtime-test",
+            "classification": "TLP:CLEAR",
+            "max_classification": "TLP:CLEAR",
+            "url": "http://localhost:5008/",
+            "maintainer": "Example <example@example.com>",
+            "datahub_link": Url("http://example.com"),
+            "documentation_link": Url("http://example.com"),
+            "built_in": False,
+        },
+        context={"registration_allowed_origins": config.api.registration_allowed_origins},
     ).model_dump(mode="json", exclude_none=True)
 
 

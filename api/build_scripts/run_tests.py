@@ -2,8 +2,10 @@ import os
 import platform
 import re
 import shlex
+import shutil
 import subprocess
 import sys
+import tempfile
 import textwrap
 import time
 from pathlib import Path
@@ -25,6 +27,14 @@ def generate_flask_command(server_id: str, port: int):
 
 def main():  # noqa: C901
     servers: list[subprocess.Popen] = []
+    test_config_dir: tempfile.TemporaryDirectory[str] | None = None
+    if "CLUE_CONF_FOLDER" not in os.environ:
+        test_config_dir = tempfile.TemporaryDirectory()
+        workdir = Path(__file__).parents[1]
+        shutil.copy(workdir / "test/unit/config.yml", Path(test_config_dir.name) / "config.yml")
+        shutil.copy(workdir / "build_scripts/classification.yml", Path(test_config_dir.name) / "classification.yml")
+        os.environ["CLUE_CONF_FOLDER"] = test_config_dir.name
+
     try:
         if Path(".coverage").exists():
             print("Removing existing coverage files")
@@ -88,18 +98,19 @@ def main():  # noqa: C901
             pytest = subprocess.Popen(
                 prep_command("pytest --cov=clue --cov-branch --cov-config=.coveragerc.pytest -rfE -vv test"),
                 stdout=subprocess.PIPE,
+                text=True,
             )
 
         output = ""
         while pytest.poll() is None:
             if pytest.stdout:
-                out = pytest.stdout.read(1).decode()
+                out = pytest.stdout.read(1)
                 output += out
                 sys.stdout.write(out)
                 sys.stdout.flush()
 
         if pytest.stdout:
-            out = pytest.stdout.read().decode()
+            out = pytest.stdout.read()
             output += out
             sys.stdout.write(out)
             sys.stdout.flush()
@@ -176,6 +187,9 @@ def main():  # noqa: C901
         for server in servers:
             server.terminate()
         sys.exit(e.returncode)
+    finally:
+        if test_config_dir is not None:
+            test_config_dir.cleanup()
 
 
 if __name__ == "__main__":

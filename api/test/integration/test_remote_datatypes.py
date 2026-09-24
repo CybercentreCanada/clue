@@ -44,8 +44,14 @@ def test_sets(redis_connection):
             assert not s.exist("cat")
             assert s.length() == 3
 
+            unique_value = {"name": "plugin-a", "url": "https://plugins.example/"}
+            duplicate_name = {"name": "plugin-a", "url": "https://other.example/"}
+            assert s.add_if_field_absent(unique_value, "name", "plugin-a")
+            assert not s.add_if_field_absent(duplicate_name, "name", "plugin-a")
+            assert s.length() == 4
+
             for pop_val in s.pop_all():
-                assert pop_val in values or pop_val in ["cat", "dog"]
+                assert pop_val in values or pop_val in ["cat", "dog", unique_value]
             assert s.pop() is None
             assert s.length() == 0
 
