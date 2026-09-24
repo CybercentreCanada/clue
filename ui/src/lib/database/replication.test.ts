@@ -125,6 +125,12 @@ describe('replicateSelectorCollection', () => {
       expect(capturedConfig.pull.batchSize).toBe(250);
     });
 
+    it('should use the configured pull batch size', async () => {
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ pullBatchSize: 100 }));
+
+      expect(capturedConfig.pull.batchSize).toBe(100);
+    });
+
     it('should subscribe to the error stream', async () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
@@ -293,6 +299,17 @@ describe('replicateSelectorCollection', () => {
       vi.mocked(api.sync.get).mockResolvedValueOnce(docs);
 
       await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      await capturedConfig.pull.handler(null);
+
+      expect(collection.synced).toBe(false);
+    });
+
+    it('should use the configured pull batch size to determine when the collection is synced', async () => {
+      const collection = buildMockCollection();
+      const docs = Array.from({ length: 100 }, (_, i) => buildSelectorDoc(`doc-${i}`));
+      vi.mocked(api.sync.get).mockResolvedValueOnce(docs);
+
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig({ pullBatchSize: 100 }));
       await capturedConfig.pull.handler(null);
 
       expect(collection.synced).toBe(false);

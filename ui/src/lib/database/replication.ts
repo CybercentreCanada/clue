@@ -9,7 +9,7 @@ import { REPLICATORS } from './globals';
 import type { Checkpoint } from './sync';
 import type { DatabaseConfig, SelectorCollection, SelectorDocType } from './types';
 
-const PULL_BATCH_SIZE = 250;
+const DEFAULT_PULL_BATCH_SIZE = 250;
 
 const buildRequestConfig = (config: DatabaseConfig): AxiosRequestConfig => {
   const headers: AxiosRequestConfig['headers'] = {};
@@ -139,6 +139,8 @@ export const replicateSelectorCollection = async (
   collection: SelectorCollection,
   config: DatabaseConfig
 ) => {
+  const pullBatchSize = config.pullBatchSize ?? DEFAULT_PULL_BATCH_SIZE;
+
   collection.onClose.push(() => {
     delete REPLICATORS[replicationId];
   });
@@ -157,7 +159,7 @@ export const replicateSelectorCollection = async (
       handler: async docs => api.sync.post<SelectorDocType>(collection.name, docs, buildRequestConfig(config))
     },
     pull: {
-      batchSize: PULL_BATCH_SIZE,
+      batchSize: pullBatchSize,
       handler: async (
         lastCheckpoint: Checkpoint
       ): Promise<ReplicationPullHandlerResult<SelectorDocType, Checkpoint>> => {
@@ -172,7 +174,7 @@ export const replicateSelectorCollection = async (
           buildRequestConfig(config)
         );
 
-        if (result.length < PULL_BATCH_SIZE) {
+        if (result.length < pullBatchSize) {
           collection.synced = true;
         }
 
