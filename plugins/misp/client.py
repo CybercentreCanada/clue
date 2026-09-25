@@ -6,6 +6,7 @@ from consts import MISP_API_KEY, MISP_URL, VERIFY
 
 # Reuse TCP connections across requests, MISP returns 500 if too many connections
 _session = requests.Session()
+_session.verify = VERIFY
 _session.headers.update(
     {
         "Accept": "application/json",
@@ -40,7 +41,7 @@ def misp_request(method: Literal["get", "post"], path: str, timeout: float, **kw
         raise UnprocessableException("No API key is provided. An API key is required")
 
     try:
-        rsp = _session.request(method, f"{MISP_URL}{path}", verify=VERIFY, timeout=timeout, **kwargs)
+        rsp = _session.request(method, f"{MISP_URL}{path}", timeout=timeout, **kwargs)
     except requests.exceptions.Timeout as e:
         raise TimeoutException("MISP failed to respond in time", cause=e)
     except requests.exceptions.ConnectionError as e:
