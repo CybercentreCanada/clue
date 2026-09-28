@@ -120,6 +120,38 @@ def test_mcp_server_connection():
     assert "error" not in initialize_response, f"MCP initialization failed: {initialize_response['error']}"
     assert "result" in initialize_response, "MCP initialize response did not include a result"
 
+    session_id = response.headers.get("mcp-session-id")
+    assert session_id, "MCP initialize response did not include a session ID"
+    headers["Mcp-Session-Id"] = session_id
+    headers["MCP-Protocol-Version"] = initialize_response["result"]["protocolVersion"]
+
+    initialized_response = httpx.post(
+        url_mcp,
+        headers=headers,
+        json={"jsonrpc": "2.0", "method": "notifications/initialized"},
+        timeout=CLUE_API.TIMEOUT,
+    )
+    assert initialized_response.status_code == 202
+
+    tool_response = httpx.post(
+        url_mcp,
+        headers=headers,
+        json={
+            "jsonrpc": "2.0",
+            "method": "tools/call",
+            "params": {"name": "get_types", "arguments": {}},
+            "id": 2,
+        },
+        timeout=CLUE_API.TIMEOUT,
+    )
+    assert tool_response.status_code == 200
+    tool_messages = _initialize_response_messages(tool_response)
+    matching_tool_responses = [message for message in tool_messages if str(message.get("id")) == "2"]
+    assert matching_tool_responses, "MCP tool call response did not include request ID 2"
+    tool_result = matching_tool_responses[-1].get("result")
+    assert tool_result is not None, f"MCP tool call failed: {matching_tool_responses[-1].get('error')}"
+    assert not tool_result.get("isError", False), f"get_types returned an error: {tool_result}"
+
 
 if __name__ == "__main__":
     pytest.main(["-v", __file__])

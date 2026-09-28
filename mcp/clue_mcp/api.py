@@ -143,10 +143,7 @@ class ClueApiClient:
             status_code = code
             status_class = _status_class(code)
             outcome = f"http_{status_class}"
-            logger.warning(
-                f"api_request_http_error method={method} route={route} status_code={code} "
-                f"outcome={outcome} response={e.response.content.decode('utf-8', errors='replace')}"
-            )
+            logger.warning(f"api_request_http_error method={method} status_code={code} outcome={outcome}")
             raise
 
         except httpx.TimeoutException:
