@@ -57,6 +57,9 @@ def register_application(**kwargs):
     }
 
     """
+    if not request.is_json:
+        return bad_request(err="Invalid data type.")
+
     if not request.json:
         return bad_request(err="No data provided")
 
