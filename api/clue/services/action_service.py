@@ -9,7 +9,7 @@ from requests import JSONDecodeError, exceptions
 
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
-from clue.config import CLASSIFICATION, DEBUG, cache, config
+from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
@@ -29,7 +29,7 @@ def get_supported_actions(
 
     Args:
         source (ExternalSource): The source whose actions to retrieve.
-        user (dict[str, Any]): The caller, used to scope cached metadata.
+        user (dict[str, Any]): The caller used for OBO authentication.
         access_token (Optional[str], optional): The access token to use, if necessary. Defaults to None.
         headers (dict[str, str] | None): Headers from an already validated OBO lookup, if available.
 
@@ -47,14 +47,11 @@ def get_supported_actions(
 
         headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
-    return _get_supported_actions(source, user, headers)
+    return _get_supported_actions(source, headers)
 
 
-@cache.memoize(timeout=1 if DEBUG else 5 * 60, response_filter=bool)
-def _get_supported_actions(
-    source: ExternalSource, user: dict[str, Any], headers: dict[str, str]
-) -> dict[str, ActionSpec]:
-    """Cache successful metadata by source, caller and authenticated headers."""
+def _get_supported_actions(source: ExternalSource, headers: dict[str, str]) -> dict[str, ActionSpec]:
+    """Fetch current metadata for listing and authorization without caching classifications."""
     logger.info("Fetching actions for source %s", source.name)
     url = urljoin(source.url, "actions/")
 
@@ -71,7 +68,6 @@ def _get_supported_actions(
 
             return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
         except (exceptions.ConnectionError, exceptions.Timeout):
-            # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception("Unable to connect: %s", url)
             return {}
         except (requests.exceptions.JSONDecodeError, KeyError, JSONDecodeError):

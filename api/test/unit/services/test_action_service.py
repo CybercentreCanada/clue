@@ -147,7 +147,7 @@ def metadata_response():
     return response
 
 
-def test_execute_and_status_share_metadata_and_do_one_obo_check_each(cached_app, metadata_response):
+def test_execute_and_status_refresh_metadata_and_do_one_obo_check_each(cached_app, metadata_response):
     plugin = ExternalSource(name="test", url="http://plugin/", classification="TLP:CLEAR")
     user = {"uname": "test-user", "classification": "TLP:CLEAR"}
     response = MagicMock()
@@ -159,7 +159,10 @@ def test_execute_and_status_share_metadata_and_do_one_obo_check_each(cached_app,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
         patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
         patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
-        patch("clue.services.action_service.requests.get", side_effect=[metadata_response, response, response]) as get,
+        patch(
+            "clue.services.action_service.requests.get",
+            side_effect=[metadata_response, metadata_response, response, metadata_response, response],
+        ) as get,
         patch("clue.services.action_service.requests.post", return_value=response) as post,
     ):
         configuration.api.external_sources = [plugin]
@@ -173,14 +176,15 @@ def test_execute_and_status_share_metadata_and_do_one_obo_check_each(cached_app,
     check_obo.assert_called_with(plugin, "access-token", "test-user")
     assert [entry.args[0] for entry in get.call_args_list] == [
         "http://plugin/actions/",
+        "http://plugin/actions/",
         "http://plugin/actions/test_action/status/task-123",
+        "http://plugin/actions/",
         "http://plugin/actions/test_action/status/task-123",
     ]
     assert post.call_count == 1
 
 
-@pytest.mark.parametrize("changed", ["user", "classification", "token", "source"])
-def test_action_metadata_cache_is_scoped(cached_app, metadata_response, changed):
+def test_action_metadata_is_refetched_for_same_caller(cached_app, metadata_response):
     plugin = ExternalSource(name="test", url="http://plugin/")
     user = {"uname": "test-user", "classification": "TLP:CLEAR"}
     headers = {"Authorization": "Bearer access-token"}
@@ -189,16 +193,6 @@ def test_action_metadata_cache_is_scoped(cached_app, metadata_response, changed)
         patch("clue.services.action_service.requests.get", return_value=metadata_response) as get,
     ):
         first = action_service.get_supported_actions(plugin, user, headers=headers)
-        assert action_service.get_supported_actions(plugin, user, headers=headers) == first
-        assert get.call_count == 1
-        if changed == "user":
-            user = {**user, "uname": "other-user"}
-        elif changed == "classification":
-            user = {**user, "classification": "TLP:AMBER"}
-        elif changed == "token":
-            headers = {"Authorization": "Bearer other-token"}
-        else:
-            plugin = plugin.model_copy(update={"url": "http://other/"})
         assert action_service.get_supported_actions(plugin, user, headers=headers) == first
         assert get.call_count == 2
 
@@ -228,7 +222,7 @@ def test_action_metadata_failures_are_not_cached(cached_app, metadata_response, 
 
 
 @pytest.mark.parametrize("operation", ["execute_action", "get_action_status"])
-def test_cached_action_metadata_does_not_bypass_obo_failure(cached_app, metadata_response, operation):
+def test_previous_action_metadata_does_not_bypass_obo_failure(cached_app, metadata_response, operation):
     plugin = ExternalSource(name="test", url="http://plugin/", classification="TLP:CLEAR")
     user = {"uname": "test-user", "classification": "TLP:CLEAR"}
     with (
@@ -253,3 +247,57 @@ def test_cached_action_metadata_does_not_bypass_obo_failure(cached_app, metadata
         assert check_obo.call_count == 2
         assert get.call_count == 1
         post.assert_not_called()
+
+
+@pytest.mark.parametrize("operation", ["execute_action", "get_action_status"])
+@pytest.mark.parametrize("change", ["classification", "removed", "timeout", "http_error"])
+def test_action_authorization_rechecks_metadata_after_success(cached_app, metadata_response, operation, change):
+    plugin = ExternalSource(name="test", url="http://plugin/", classification="TLP:CLEAR")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    operation_response = MagicMock()
+    operation_response.ok = True
+    operation_response.json.return_value = {"api_response": {"outcome": "success", "format": "json", "output": []}}
+    changed_response = MagicMock()
+    changed_response.ok = change != "http_error"
+    changed_response.status_code = 503
+    changed_action = {
+        **metadata_response.json.return_value["api_response"]["test_action"],
+        "classification": "TLP:AMBER",
+    }
+    changed_response.json.return_value = {
+        "api_response": {} if change == "removed" else {"test_action": changed_action},
+        "api_error_message": "Unavailable",
+    }
+    if change == "timeout":
+        changed_response = exceptions.Timeout()
+    responses = [metadata_response, changed_response]
+    arguments = ("test", "test_action", user)
+    if operation == "get_action_status":
+        responses = [metadata_response, operation_response, changed_response]
+        arguments = ("test", "test_action", "task-123", user)
+
+    with (
+        cached_app.test_request_context(json={}, headers={"Authorization": "Bearer access-token"}),
+        patch.object(action_service, "config") as configuration,
+        patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch(
+            "clue.services.action_service.CLASSIFICATION.is_accessible",
+            side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
+        ),
+        patch("clue.services.action_service.requests.get", side_effect=responses) as get,
+        patch("clue.services.action_service.requests.post", return_value=operation_response) as post,
+    ):
+        configuration.api.external_sources = [plugin]
+        assert getattr(action_service, operation)(*arguments).outcome == "success"
+        with pytest.raises(NotFoundException, match="^Action not found\\.$") as error:
+            getattr(action_service, operation)(*arguments)
+
+    assert error.value.status_code == 404
+    assert check_obo.call_count == 2
+    assert [entry.args[0] for entry in get.call_args_list] == (
+        ["http://plugin/actions/", "http://plugin/actions/"]
+        if operation == "execute_action"
+        else ["http://plugin/actions/", "http://plugin/actions/test_action/status/task-123", "http://plugin/actions/"]
+    )
+    assert post.call_count == (1 if operation == "execute_action" else 0)
