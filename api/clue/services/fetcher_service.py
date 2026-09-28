@@ -107,6 +107,8 @@ def all_supported_fetchers(user: dict[str, Any], access_token: Optional[str] = N
     all_fetchers: dict[str, FetcherDefinition] = {}
 
     for source in config.api.external_sources:
+        if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
+            continue
         supported_fetchers = get_supported_fetchers(source, user, access_token=access_token)
         total_fetchers = 0
         for key, action in supported_fetchers.items():

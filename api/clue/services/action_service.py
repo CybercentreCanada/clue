@@ -9,7 +9,7 @@ from requests import JSONDecodeError, exceptions
 
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
-from clue.config import CLASSIFICATION, config
+from clue.config import CLASSIFICATION, DEBUG, cache, config
 from clue.helper.headers import generate_headers
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
@@ -19,30 +19,44 @@ logger = get_logger(__file__)
 
 
 def get_supported_actions(
-    source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
+    source: ExternalSource,
+    user: dict[str, Any],
+    access_token: Optional[str] = None,
+    *,
+    headers: dict[str, str] | None = None,
 ) -> dict[str, ActionSpec]:
     """Gets all supported actions for a source
 
     Args:
-        source_url (str): The URL of the source
+        source (ExternalSource): The source whose actions to retrieve.
+        user (dict[str, Any]): The caller, used to scope cached metadata.
         access_token (Optional[str], optional): The access token to use, if necessary. Defaults to None.
+        headers (dict[str, str] | None): Headers from an already validated OBO lookup, if available.
 
     Returns:
         dict[str, ActionSpec]: A dict of each action and their schema
     """
+    if headers is None:
+        obo_access_token = None
+        if access_token:
+            obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
+
+            if error:
+                logger.error("%s: %s", source.name, error)
+                return {}
+
+        headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+
+    return _get_supported_actions(source, user, headers)
+
+
+@cache.memoize(timeout=1 if DEBUG else 5 * 60, response_filter=bool)
+def _get_supported_actions(
+    source: ExternalSource, user: dict[str, Any], headers: dict[str, str]
+) -> dict[str, ActionSpec]:
+    """Cache successful metadata by source, caller and authenticated headers."""
     logger.info("Fetching actions for source %s", source.name)
-
     url = urljoin(source.url, "actions/")
-
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", source.name, error)
-            return {}
-
-    headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
     with elasticapm.capture_span(f"GET {url}", span_type="http"):
         rsp = None
@@ -53,9 +67,10 @@ def get_supported_actions(
             if not rsp.ok:
                 err = result["api_error_message"]
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
+                return {}
 
             return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
-        except exceptions.ConnectionError:
+        except (exceptions.ConnectionError, exceptions.Timeout):
             # any errors are logged and no result is saved to local cache to enable retry on next query
             logger.exception("Unable to connect: %s", url)
             return {}
@@ -66,7 +81,7 @@ def get_supported_actions(
             )
             return {}
         except ValidationError:
-            logger.exception("ValidationError in response from %s:\n%s", source.url)
+            logger.exception("ValidationError in response from %s:", source.url)
             return {}
         except Exception:
             logger.exception("Unknown exception occurred on action fetching:")
@@ -85,6 +100,8 @@ def all_supported_actions(user: dict[str, Any], access_token: Optional[str] = No
     all_actions: dict[str, ActionSpec] = {}
 
     for source in config.api.external_sources:
+        if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
+            continue
         supported_actions = get_supported_actions(source, user, access_token=access_token)
         total_actions = 0
         for key, action in supported_actions.items():
@@ -150,10 +167,6 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
     if access_token:
         access_token = access_token.split(" ")[1]
 
-    action = get_supported_actions(plugin, user, access_token=access_token).get(action_id)
-    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
-        raise NotFoundException("Action not found.", status_code=404)
-
     obo_access_token = None
     if access_token:
         obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
@@ -163,6 +176,10 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
 
     headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+
+    action = get_supported_actions(plugin, user, access_token=access_token, headers=headers).get(action_id)
+    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     if request.content_type == "application/json":
         parameters = request.json
@@ -219,10 +236,6 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     if access_token:
         access_token = access_token.split(" ")[1]
 
-    action = get_supported_actions(plugin, user, access_token=access_token).get(action_id)
-    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
-        raise NotFoundException("Action not found.", status_code=404)
-
     obo_access_token = None
     if access_token:
         obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
@@ -232,6 +245,10 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
             return ActionResult(outcome="failure", summary="Invalid token provided.")
 
     headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+
+    action = get_supported_actions(plugin, user, access_token=access_token, headers=headers).get(action_id)
+    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     try:
         req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")

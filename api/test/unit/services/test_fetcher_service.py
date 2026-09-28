@@ -159,6 +159,42 @@ def test_get_plugins_supported_fetchers_filters_inaccessible_fetchers(app, user,
     all_supported.assert_called_once_with(user, access_token="access-token")
 
 
+@pytest.mark.parametrize("clearance", ["TLP:CLEAR", "TLP:AMBER"])
+def test_fetcher_listing_filters_plugins_and_fetchers(app, user, plugin, fetcher, clearance):
+    user["classification"] = clearance
+    plugin.classification = "TLP:CLEAR"
+    restricted_plugin = ExternalSource(name="restricted", url="http://restricted/", classification="TLP:AMBER")
+    restricted_fetcher = fetcher.model_copy(update={"id": "restricted_fetcher", "classification": "TLP:AMBER"})
+    with (
+        app.test_request_context(headers={"Authorization": "Bearer access-token"}),
+        patch.object(fetcher_service, "config") as configuration,
+        patch.object(
+            fetcher_service,
+            "get_supported_fetchers",
+            return_value={"test_fetcher": fetcher, "restricted_fetcher": restricted_fetcher},
+        ) as get_supported,
+        patch.object(
+            fetcher_service.CLASSIFICATION,
+            "is_accessible",
+            side_effect=lambda user_clearance, target: user_clearance == "TLP:AMBER" or target == "TLP:CLEAR",
+        ),
+    ):
+        configuration.api.external_sources = [plugin, restricted_plugin]
+        result = fetcher_service.get_plugins_supported_fetchers(user)
+
+    if clearance == "TLP:CLEAR":
+        assert result == {"test.test_fetcher": fetcher}
+        get_supported.assert_called_once_with(plugin, user, access_token="access-token")
+    else:
+        assert result == {
+            "test.test_fetcher": fetcher,
+            "test.restricted_fetcher": restricted_fetcher,
+            "restricted.test_fetcher": fetcher,
+            "restricted.restricted_fetcher": restricted_fetcher,
+        }
+        assert get_supported.call_count == 2
+
+
 def test_run_fetcher_returns_upstream_result(app, configured_plugin, user, fetcher):
     response = make_response({"outcome": "success", "data": {"result": "ok"}, "format": "json"})
     parameters = {"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"}
