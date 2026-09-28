@@ -60,7 +60,8 @@ def register_application(**kwargs):
     if not request.is_json:
         return bad_request(err="Invalid data type.")
 
-    if not request.json:
+    body = request.json
+    if not (body and isinstance(body, dict)):
         return bad_request(err="No data provided")
 
     existing_source_names = {source.name for source in config.api.external_sources}
