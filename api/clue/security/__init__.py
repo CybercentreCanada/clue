@@ -59,12 +59,12 @@ class api_login(object):  # noqa: N801
 
         required_method_set: set[str]
         if required_method is None:
-            required_method_set = {"apikey", "internal", "oauth"}
+            required_method_set = {"apikey", "oauth"}
         else:
             required_method_set = set(required_method)
 
-        if len(required_method_set - {"apikey", "internal", "oauth"}) > 0:
-            raise ClueAttributeError("required_method must be a subset of {apikey, internal, oauth}")
+        if len(required_method_set - {"apikey", "oauth"}) > 0:
+            raise ClueAttributeError("required_method must be a subset of {apikey, oauth}")
 
         self.audit = audit and AUDIT
         self.required_priv = required_priv
@@ -74,7 +74,7 @@ class api_login(object):  # noqa: N801
         self.check_xsrf_token = check_xsrf_token
 
     def __call__(self, func: Callable) -> Callable:  # noqa: ANN101, C901
-        """Wraps any function calls with authentication logic that uses either apikey, internal or oauth.
+        """Wraps any function calls with authentication logic that uses either apikey or oauth.
 
         Args:
             func (Callable): The function to wrap with auth.
@@ -113,14 +113,9 @@ class api_login(object):  # noqa: N801
                 if auth_type == "Basic" and "apikey" in self.required_method:
                     # Authenticate case (1) above
                     result = auth_service.basic_auth(data)
-                elif auth_type == "Bearer" and len(self.required_method & {"internal", "oauth"}) > 0:
-                    # Authenticate case (3) and (4) above
+                elif auth_type == "Bearer" and "oauth" in self.required_method:
                     try:
-                        result = auth_service.bearer_auth(
-                            data,
-                            skip_jwt="oauth" not in self.required_method,
-                            skip_internal="internal" not in self.required_method,
-                        )
+                        result = auth_service.bearer_auth(data)
                     except ExpiredSignatureError as e:
                         raise AuthenticationException("Token Expired") from e
                     except (requests.exceptions.ConnectionError, ConnectionError) as e:

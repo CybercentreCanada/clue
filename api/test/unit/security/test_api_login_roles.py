@@ -58,3 +58,24 @@ def test_api_login_allows_admin_to_reach_endpoint():
 def test_api_login_rejects_unimplemented_userpass_authentication():
     with pytest.raises(ClueAttributeError, match="required_method must be a subset"):
         api_login(required_method=["userpass"])
+
+
+def test_api_login_does_not_advertise_internal_authentication():
+    assert api_login(audit=False).required_method == {"apikey", "oauth"}
+
+    with pytest.raises(ClueAttributeError, match="required_method must be a subset"):
+        api_login(required_method=["internal"])
+
+
+def test_api_login_rejects_opaque_bearer_token_as_invalid_auth_type():
+    app = Flask(__name__)
+
+    @api_login(audit=False)
+    def endpoint(**kwargs):
+        return kwargs["user"]
+
+    with app.test_request_context("/", headers={"Authorization": "Bearer opaque-token"}):
+        response = endpoint()
+
+    assert response.status_code == 400
+    assert b"Not a valid authentication type" in response.get_data()

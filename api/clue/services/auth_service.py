@@ -127,55 +127,46 @@ def validate_token(username: str, token: str) -> Optional[list[str]]:
 
 
 @capture_span(span_type="authentication")
-def bearer_auth(data: str, skip_jwt: bool = False, skip_internal: bool = False) -> AuthResult:
+def bearer_auth(data: str) -> AuthResult:
     """Authenticate a bearer token as an OAuth access token.
 
     Args:
         data: The bearer token from the Authorization header.
-        skip_jwt: Whether OAuth access-token authentication is disabled.
-        skip_internal: Whether internal bearer authentication is disabled.
 
     Returns:
         The authenticated user and effective privileges.
 
     Raises:
         AuthenticationException: If the token cannot be decoded or contains invalid user information.
-        InvalidDataException: If OAuth authentication is disabled for the endpoint.
-        ClueNotImplementedError: If internal bearer authentication is requested.
+        InvalidDataException: If the token is not a JWT.
     """
     if "." in data:
-        if not skip_jwt:
-            try:
-                jwt_data = jwt_service.decode(data, validate_audience=True)
-            except ClueException as e:
-                logger.exception("Exception when decoding JWT:")
-                raise AuthenticationException(
-                    "Something went wrong when decoding your key. Please reauthenticate.",
-                    cause=e,
-                )
-
-            if not jwt_data:
-                logger.error("Invalid JWT provided.")
-                raise AuthenticationException("Invalid JWT, please reauthenticate.")
-
-            logger.debug("User successfully authenticated using JWT.")
-
-            try:
-                cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
-            except ValidationError as e:
-                raise AuthenticationException("The token contains invalid user information.", cause=e) from e
-
-            return AuthResult(
-                user=cur_user,
-                privileges={Privilege.READ, Privilege.WRITE},
+        try:
+            jwt_data = jwt_service.decode(data, validate_audience=True)
+        except ClueException as e:
+            logger.exception("Exception when decoding JWT:")
+            raise AuthenticationException(
+                "Something went wrong when decoding your key. Please reauthenticate.",
+                cause=e,
             )
-        else:
-            raise InvalidDataException("Not a valid authentication type for this endpoint.")
+
+        if not jwt_data:
+            logger.error("Invalid JWT provided.")
+            raise AuthenticationException("Invalid JWT, please reauthenticate.")
+
+        logger.debug("User successfully authenticated using JWT.")
+
+        try:
+            cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
+        except ValidationError as e:
+            raise AuthenticationException("The token contains invalid user information.", cause=e) from e
+
+        return AuthResult(
+            user=cur_user,
+            privileges={Privilege.READ, Privilege.WRITE},
+        )
     else:
-        if not skip_internal:
-            raise ClueNotImplementedError("Internal bearer auth is not yet supported.")
-        else:
-            raise InvalidDataException("Not a valid authentication type for this endpoint.")
+        raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
 @capture_span(span_type="authentication")
