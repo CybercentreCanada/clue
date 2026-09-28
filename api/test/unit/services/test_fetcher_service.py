@@ -5,6 +5,7 @@ from flask import Flask
 from requests import exceptions
 
 from clue.common.exceptions import AuthenticationException, ClueException, InvalidDataException, NotFoundException
+from clue.config import cache
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.services import fetcher_service
@@ -54,11 +55,6 @@ def make_response(api_response, *, ok=True, status_code=200, error_message=None)
     return response
 
 
-def get_supported_fetchers_uncached(plugin, user, access_token=None):
-    uncached = getattr(fetcher_service.get_supported_fetchers, "uncached")
-    return uncached(plugin, user, access_token=access_token)
-
-
 def test_get_obo_access_token_returns_none_without_authorization(app, plugin, user):
     with app.test_request_context():
         assert fetcher_service.get_obo_access_token(plugin, user) == (None, None)
@@ -88,7 +84,7 @@ def test_get_supported_fetchers_parses_upstream_response(plugin, user, fetcher):
     response = make_response({"test_fetcher": fetcher.model_dump()})
 
     with patch("clue.services.fetcher_service.requests.get", return_value=response) as get:
-        result = get_supported_fetchers_uncached(plugin, user)
+        result = fetcher_service.get_supported_fetchers(plugin, user)
 
     assert result == {"test_fetcher": fetcher}
     get.assert_called_once_with("http://plugin/fetchers/", headers={"Accept": "application/json"}, timeout=5.0)
@@ -99,7 +95,7 @@ def test_get_supported_fetchers_returns_empty_when_obo_fails(plugin, user):
         patch("clue.services.fetcher_service.auth_service.check_obo", return_value=(None, "invalid token")),
         patch("clue.services.fetcher_service.requests.get") as get,
     ):
-        result = get_supported_fetchers_uncached(plugin, user, access_token="access-token")
+        result = fetcher_service.get_supported_fetchers(plugin, user, access_token="access-token")
 
     assert result == {}
     get.assert_not_called()
@@ -110,7 +106,7 @@ def test_get_supported_fetchers_returns_empty_for_invalid_upstream_response(plug
     response.json.return_value = {"unexpected": "response"}
 
     with patch("clue.services.fetcher_service.requests.get", return_value=response):
-        result = get_supported_fetchers_uncached(plugin, user)
+        result = fetcher_service.get_supported_fetchers(plugin, user)
 
     assert result == {}
 
@@ -173,9 +169,8 @@ def test_fetcher_listing_filters_plugins_and_fetchers(app, user, plugin, fetcher
             "get_supported_fetchers",
             return_value={"test_fetcher": fetcher, "restricted_fetcher": restricted_fetcher},
         ) as get_supported,
-        patch.object(
-            fetcher_service.CLASSIFICATION,
-            "is_accessible",
+        patch(
+            "clue.services.fetcher_service.CLASSIFICATION.is_accessible",
             side_effect=lambda user_clearance, target: user_clearance == "TLP:AMBER" or target == "TLP:CLEAR",
         ),
     ):
@@ -357,14 +352,13 @@ def test_fetcher_classification_authorization(app, plugin, user, fetcher, operat
         ),
         patch.object(fetcher_service, "config") as configuration,
         patch.object(fetcher_service, "get_supported_fetchers", return_value=fetchers) as get_supported,
-        patch.object(fetcher_service.auth_service, "check_obo", return_value=("obo-token", None)) as check_obo,
-        patch.object(
-            fetcher_service.CLASSIFICATION,
-            "is_accessible",
+        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+        patch(
+            "clue.services.fetcher_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
         ) as is_accessible,
-        patch.object(fetcher_service.requests, "post", return_value=response) as post,
-        patch.object(fetcher_service.requests, "get", return_value=response) as get,
+        patch("clue.services.fetcher_service.requests.post", return_value=response) as post,
+        patch("clue.services.fetcher_service.requests.get", return_value=response) as get,
     ):
         configuration.api.external_sources = [] if scenario == "missing_plugin" else [plugin]
         if scenario.startswith("authorized"):
@@ -393,3 +387,98 @@ def test_fetcher_classification_authorization(app, plugin, user, fetcher, operat
                 check_obo.assert_not_called()
             elif scenario == "restricted_fetcher":
                 is_accessible.assert_any_call("TLP:CLEAR", "TLP:AMBER")
+
+
+@pytest.mark.parametrize("operation", ["get_plugins_supported_fetchers", "run_fetcher", "get_fetcher_status"])
+@pytest.mark.parametrize("change", ["classification", "removed", "timeout", "http_error"])
+def test_fetcher_metadata_is_refreshed_after_success(app, configured_plugin, user, fetcher, operation, change):
+    cache.init_app(app, config={"CACHE_TYPE": "SimpleCache"})
+    metadata = make_response({"test_fetcher": fetcher.model_dump()})
+    result_response = make_response({"outcome": "success", "data": {"result": "ok"}, "format": "json"})
+    changed_fetcher = fetcher.model_copy(update={"classification": "TLP:AMBER"})
+    changed_response = make_response({"test_fetcher": changed_fetcher.model_dump()})
+    if change == "removed":
+        changed_response = make_response({})
+    elif change == "timeout":
+        changed_response = exceptions.Timeout()
+    elif change == "http_error":
+        changed_response = make_response(
+            {"test_fetcher": fetcher.model_dump()}, ok=False, status_code=503, error_message="Unavailable"
+        )
+    responses = [metadata, changed_response]
+    arguments = ("test", "test_fetcher", user)
+    if operation == "get_plugins_supported_fetchers":
+        arguments = (user,)
+    elif operation == "get_fetcher_status":
+        responses = [metadata, result_response, changed_response]
+        arguments = ("test", "test_fetcher", "task-123", user)
+
+    with (
+        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+        patch(
+            "clue.services.fetcher_service.CLASSIFICATION.is_accessible",
+            side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
+        ),
+        patch("clue.services.fetcher_service.requests.get", side_effect=responses) as get,
+        patch("clue.services.fetcher_service.requests.post", return_value=result_response) as post,
+    ):
+        for attempt in range(2):
+            with app.test_request_context(
+                json={"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"},
+                headers={"Authorization": "Bearer access-token"},
+            ):
+                if operation == "get_plugins_supported_fetchers":
+                    result = getattr(fetcher_service, operation)(*arguments)
+                    assert result == ({"test.test_fetcher": fetcher} if attempt == 0 else {})
+                elif attempt == 0:
+                    assert getattr(fetcher_service, operation)(*arguments).outcome == "success"
+                else:
+                    with pytest.raises(NotFoundException, match="^Fetcher not found\\.$") as error:
+                        getattr(fetcher_service, operation)(*arguments)
+                    assert error.value.status_code == 404
+
+    assert check_obo.call_count == 2
+    assert [entry.args[0] for entry in get.call_args_list] == (
+        ["http://plugin/fetchers/", "http://plugin/fetchers/test_fetcher/status/task-123", "http://plugin/fetchers/"]
+        if operation == "get_fetcher_status"
+        else ["http://plugin/fetchers/", "http://plugin/fetchers/"]
+    )
+    for entry in get.call_args_list:
+        assert entry.kwargs["headers"]["Authorization"] == "Bearer obo-token"
+    assert post.call_count == (1 if operation == "run_fetcher" else 0)
+
+
+@pytest.mark.parametrize("operation", ["get_plugins_supported_fetchers", "run_fetcher", "get_fetcher_status"])
+def test_previous_fetcher_metadata_does_not_bypass_token_failure(app, configured_plugin, user, fetcher, operation):
+    cache.init_app(app, config={"CACHE_TYPE": "SimpleCache"})
+    metadata = make_response({"test_fetcher": fetcher.model_dump()})
+    with (
+        app.test_request_context(
+            json={"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"},
+            headers={"Authorization": "Bearer access-token"},
+        ),
+        patch("clue.services.fetcher_service.CLASSIFICATION.is_accessible", return_value=True),
+        patch(
+            "clue.services.fetcher_service.auth_service.check_obo",
+            side_effect=[("obo-token", None), (None, "Invalid token")],
+        ) as check_obo,
+        patch("clue.services.fetcher_service.requests.get", return_value=metadata) as get,
+        patch("clue.services.fetcher_service.requests.post") as post,
+    ):
+        assert fetcher_service.get_plugins_supported_fetchers(user) == {"test.test_fetcher": fetcher}
+        if operation == "get_plugins_supported_fetchers":
+            assert fetcher_service.get_plugins_supported_fetchers(user) == {}
+        else:
+            arguments = ("test", "test_fetcher", user)
+            if operation == "get_fetcher_status":
+                arguments = ("test", "test_fetcher", "task-123", user)
+            with pytest.raises(AuthenticationException, match="Invalid token provided"):
+                getattr(fetcher_service, operation)(*arguments)
+
+    assert check_obo.call_count == 2
+    get.assert_called_once_with(
+        "http://plugin/fetchers/",
+        headers={"Accept": "application/json", "Authorization": "Bearer obo-token"},
+        timeout=5.0,
+    )
+    post.assert_not_called()

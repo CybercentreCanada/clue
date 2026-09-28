@@ -15,16 +15,13 @@ from clue.common.exceptions import (
     NotFoundException,
 )
 from clue.common.logging import get_logger
-from clue.config import CLASSIFICATION, DEBUG, cache, config
+from clue.config import CLASSIFICATION, config
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
 from clue.services import auth_service
 
 logger = get_logger(__file__)
-
-# Either cache for one second in debug mode, or five minutes in production
-CACHE_TIMEOUT: int = 1 if DEBUG else 5 * 60
 
 
 def get_obo_access_token(
@@ -47,15 +44,20 @@ def get_obo_access_token(
     return access_token, obo_access_token
 
 
-@cache.memoize(timeout=1 if DEBUG else 5 * 60, args_to_ignore=["access_token"])  # Cached for 5 minutes
 def get_supported_fetchers(
-    source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
+    source: ExternalSource,
+    user: dict[str, Any],
+    access_token: Optional[str] = None,
+    *,
+    headers: dict[str, str] | None = None,
 ) -> dict[str, FetcherDefinition]:
-    """Gets all supported fetchers for a source
+    """Fetch current metadata without caching authorization classifications.
 
     Args:
-        source_url (str): The URL of the source
+        source (ExternalSource): The source whose fetchers to retrieve.
+        user (dict[str, Any]): The caller used for OBO authentication.
         access_token (Optional[str], optional): The access token to use, if necessary. Defaults to None.
+        headers (dict[str, str] | None): Headers from an already validated OBO lookup, if available.
 
     Returns:
         dict[str, FetcherDefinition]: A dict of each ids mapped to fetcher metadata
@@ -64,14 +66,15 @@ def get_supported_fetchers(
 
     url = urljoin(source.url, "fetchers/")
 
-    try:
-        access_token, obo_access_token = get_obo_access_token(source, user, access_token)
-    except AuthenticationException:
-        return {}
+    if headers is None:
+        try:
+            access_token, obo_access_token = get_obo_access_token(source, user, access_token)
+        except AuthenticationException:
+            return {}
 
-    headers = {"Accept": "application/json"}
-    if obo_access_token or access_token:
-        headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
+        headers = {"Accept": "application/json"}
+        if obo_access_token or access_token:
+            headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
 
     with elasticapm.capture_span(f"GET {url}", span_type="http"):
         try:
@@ -81,10 +84,10 @@ def get_supported_fetchers(
             if not rsp.ok:
                 err = result["api_error_message"]
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
+                return {}
 
             return TypeAdapter(dict[str, FetcherDefinition]).validate_python(result["api_response"])
-        except exceptions.ConnectionError:
-            # any errors are logged and no result is saved to local cache to enable retry on next query
+        except (exceptions.ConnectionError, exceptions.Timeout):
             logger.exception("Unable to connect: %s", url)
             return {}
         except (requests.exceptions.JSONDecodeError, KeyError):
@@ -198,7 +201,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
     try:
         selector = Selector.model_validate(parameters)
-        supported_fetchers = get_supported_fetchers(plugin, user, access_token=access_token)
+        supported_fetchers = get_supported_fetchers(plugin, user, access_token=access_token, headers=headers)
 
         fetcher = supported_fetchers.get(fetcher_id)
         if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
@@ -256,13 +259,13 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
 
-    fetcher = get_supported_fetchers(plugin, user, access_token=access_token).get(fetcher_id)
-    if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
-        raise NotFoundException("Fetcher not found.", status_code=404)
-
     headers = {"Accept": "application/json"}
     if obo_access_token or access_token:
         headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
+
+    fetcher = get_supported_fetchers(plugin, user, access_token=access_token, headers=headers).get(fetcher_id)
+    if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
+        raise NotFoundException("Fetcher not found.", status_code=404)
 
     try:
         req_url = urljoin(plugin.url, f"fetchers/{fetcher_id}/status/{task_id}")
