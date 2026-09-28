@@ -143,12 +143,16 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
     """
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
-    if not plugin:
-        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+    if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     access_token = request.headers.get("Authorization", type=str)
     if access_token:
         access_token = access_token.split(" ")[1]
+
+    action = get_supported_actions(plugin, user, access_token=access_token).get(action_id)
+    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     obo_access_token = None
     if access_token:
@@ -208,12 +212,16 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     """
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
-    if not plugin:
-        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+    if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     access_token = request.headers.get("Authorization", type=str)
     if access_token:
         access_token = access_token.split(" ")[1]
+
+    action = get_supported_actions(plugin, user, access_token=access_token).get(action_id)
+    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     obo_access_token = None
     if access_token:

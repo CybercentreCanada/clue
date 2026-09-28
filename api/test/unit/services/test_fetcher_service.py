@@ -187,14 +187,17 @@ def test_run_fetcher_rejects_selector_above_fetcher_classification(app, configur
     with (
         app.test_request_context(json={"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:AMBER"}),
         patch("clue.services.fetcher_service.get_supported_fetchers", return_value={"test_fetcher": fetcher}),
-        patch("clue.services.fetcher_service.CLASSIFICATION.is_accessible", return_value=False) as is_accessible,
+        patch(
+            "clue.services.fetcher_service.CLASSIFICATION.is_accessible", side_effect=[True, True, False]
+        ) as is_accessible,
         patch("clue.services.fetcher_service.requests.post") as post,
     ):
         with pytest.raises(InvalidDataException, match="Cannot send data classified as TLP:AMBER") as error:
             fetcher_service.run_fetcher("test", "test_fetcher", user)
 
     assert error.value.status_code == 400
-    is_accessible.assert_called_once_with("TLP:CLEAR", "TLP:AMBER")
+    is_accessible.assert_called_with("TLP:CLEAR", "TLP:AMBER")
+    assert is_accessible.call_count == 3
     post.assert_not_called()
 
 
@@ -202,7 +205,7 @@ def test_run_fetcher_rejects_unknown_plugin(app, user):
     with app.test_request_context(), patch("clue.services.fetcher_service.config") as mock_config:
         mock_config.api.external_sources = []
 
-        with pytest.raises(NotFoundException, match="Plugin unknown does not exist"):
+        with pytest.raises(NotFoundException, match="Fetcher not found"):
             fetcher_service.run_fetcher("unknown", "test_fetcher", user)
 
 
@@ -253,11 +256,12 @@ def test_run_fetcher_wraps_connection_errors(app, configured_plugin, user, fetch
             fetcher_service.run_fetcher("test", "test_fetcher", user)
 
 
-def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user):
+def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user, fetcher):
     response = make_response({"outcome": "success", "data": {"result": "ok"}, "format": "json"})
 
     with (
         app.test_request_context(query_string={"max_timeout": "12.5"}),
+        patch("clue.services.fetcher_service.get_supported_fetchers", return_value={"test_fetcher": fetcher}),
         patch("clue.services.fetcher_service.requests.get", return_value=response) as get,
     ):
         result = fetcher_service.get_fetcher_status("test", "test_fetcher", "task-123", user)
@@ -270,10 +274,86 @@ def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user
     )
 
 
-def test_get_fetcher_status_wraps_connection_errors(app, configured_plugin, user):
+def test_get_fetcher_status_wraps_connection_errors(app, configured_plugin, user, fetcher):
     with (
         app.test_request_context(),
+        patch("clue.services.fetcher_service.get_supported_fetchers", return_value={"test_fetcher": fetcher}),
         patch("clue.services.fetcher_service.requests.get", side_effect=exceptions.ConnectionError),
     ):
         with pytest.raises(ClueException, match="ConnectionError"):
             fetcher_service.get_fetcher_status("test", "test_fetcher", "task-123", user)
+
+
+@pytest.mark.parametrize("operation", ["run_fetcher", "get_fetcher_status"])
+@pytest.mark.parametrize(
+    "scenario",
+    [
+        "missing_plugin",
+        "restricted_plugin",
+        "missing_fetcher",
+        "empty_fetchers",
+        "restricted_fetcher",
+        "authorized",
+        "authorized_plugin",
+    ],
+)
+def test_fetcher_classification_authorization(app, plugin, user, fetcher, operation, scenario):
+    plugin.classification = "TLP:CLEAR"
+    fetcher.classification = "TLP:AMBER"
+    if scenario in {"restricted_plugin", "authorized_plugin"}:
+        plugin.classification = "TLP:AMBER"
+    if scenario.startswith("authorized"):
+        user["classification"] = "TLP:AMBER"
+    fetchers = {"test_fetcher": fetcher}
+    if scenario == "missing_fetcher":
+        fetchers = {"other_fetcher": fetcher}
+    elif scenario == "empty_fetchers":
+        fetchers = {}
+    response = make_response({"outcome": "success", "data": {"result": "ok"}, "format": "json"})
+    arguments = ("test", "test_fetcher", user)
+    if operation == "get_fetcher_status":
+        arguments = ("test", "test_fetcher", "task-123", user)
+
+    with (
+        app.test_request_context(
+            json={"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"},
+            headers={"Authorization": "Bearer access-token"},
+        ),
+        patch.object(fetcher_service, "config") as configuration,
+        patch.object(fetcher_service, "get_supported_fetchers", return_value=fetchers) as get_supported,
+        patch.object(fetcher_service.auth_service, "check_obo", return_value=("obo-token", None)) as check_obo,
+        patch.object(
+            fetcher_service.CLASSIFICATION,
+            "is_accessible",
+            side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
+        ) as is_accessible,
+        patch.object(fetcher_service.requests, "post", return_value=response) as post,
+        patch.object(fetcher_service.requests, "get", return_value=response) as get,
+    ):
+        configuration.api.external_sources = [] if scenario == "missing_plugin" else [plugin]
+        if scenario.startswith("authorized"):
+            result = getattr(fetcher_service, operation)(*arguments)
+            assert result.outcome == "success"
+            assert result.data == {"result": "ok"}
+            is_accessible.assert_any_call("TLP:AMBER", "TLP:AMBER")
+            upstream = post if operation == "run_fetcher" else get
+            assert upstream.call_count == 1
+            assert upstream.call_args.kwargs["headers"]["Authorization"] == "Bearer obo-token"
+            assert upstream.call_args.args[0] == (
+                "http://plugin/fetchers/test_fetcher"
+                if operation == "run_fetcher"
+                else "http://plugin/fetchers/test_fetcher/status/task-123"
+            )
+        else:
+            with pytest.raises(NotFoundException) as error:
+                getattr(fetcher_service, operation)(*arguments)
+            assert type(error.value) is NotFoundException
+            assert error.value.status_code == 404
+            assert str(error.value) == "Fetcher not found."
+            post.assert_not_called()
+            get.assert_not_called()
+            if scenario in {"missing_plugin", "restricted_plugin"}:
+                get_supported.assert_not_called()
+                check_obo.assert_not_called()
+            elif scenario == "restricted_fetcher":
+                is_accessible.assert_any_call("TLP:CLEAR", "TLP:AMBER")

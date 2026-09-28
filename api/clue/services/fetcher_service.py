@@ -174,8 +174,8 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
     """
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
-    if not plugin:
-        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+    if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
+        raise NotFoundException("Fetcher not found.", status_code=404)
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
 
@@ -198,12 +198,9 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
         selector = Selector.model_validate(parameters)
         supported_fetchers = get_supported_fetchers(plugin, user, access_token=access_token)
 
-        if len(supported_fetchers) < 1:
-            raise NotFoundException(f"{plugin_id} does not support any fetchers.")
-
         fetcher = supported_fetchers.get(fetcher_id)
-        if fetcher is None:
-            raise NotFoundException(f"Fetcher {fetcher_id} does not exist", status_code=404)
+        if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
+            raise NotFoundException("Fetcher not found.", status_code=404)
         _validate_fetcher_classification(fetcher, selector, fetcher_id)
 
         response = requests.post(
@@ -252,10 +249,14 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
     """
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
-    if not plugin:
-        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+    if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
+        raise NotFoundException("Fetcher not found.", status_code=404)
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
+
+    fetcher = get_supported_fetchers(plugin, user, access_token=access_token).get(fetcher_id)
+    if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
+        raise NotFoundException("Fetcher not found.", status_code=404)
 
     headers = {"Accept": "application/json"}
     if obo_access_token or access_token:
