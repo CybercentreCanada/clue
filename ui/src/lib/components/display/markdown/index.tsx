@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
 
 const customComponents = (type: string, children: any) => {
@@ -33,7 +34,7 @@ const Markdown: FC<{
 
   return (
     <ReactMarkdown
-      rehypePlugins={[rehypeRaw]}
+      rehypePlugins={[rehypeRaw, rehypeSanitize]}
       remarkPlugins={[remarkGfm]}
       components={{
         code: ({ node, className, children, ...props }) => {

@@ -163,6 +163,22 @@ class TestGetActionsErrors:
 
 
 class TestExecuteActionErrors:
+    def test_markdown_action_response_preserves_untrusted_html_for_client_sanitization(self, plugin_with_action):
+        """Plugin HTTP responses retain Markdown verbatim; the UI must sanitize it before rendering."""
+        payload = '<iframe srcdoc="<script>window.xss = true</script>"></iframe>'
+        plugin_with_action.run_action.return_value = ActionResult(
+            outcome="success", summary="ok", format="markdown", output=payload
+        )
+
+        response = plugin_with_action.app.test_client().post(
+            "/actions/test_action/", json={"selector": {"type": "ipv4", "value": "1.2.3.4"}}
+        )
+
+        assert response.status_code == 200
+        result = response.get_json()["api_response"]
+        assert result["format"] == "markdown"
+        assert result["output"] == payload
+
     def test_checked_actions_error_returns_500(self, plugin_with_action):
         plugin_with_action.setup_actions = MagicMock(side_effect=RuntimeError("crash"))
         response = plugin_with_action.app.test_client().post("/actions/test_action/", json={})
