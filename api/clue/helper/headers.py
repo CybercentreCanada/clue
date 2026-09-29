@@ -28,3 +28,8 @@ def generate_headers(access_token: str | None, clue_access_token: str | None) ->
         _headers["X-Clue-Authorization"] = clue_access_token
 
     return _headers
+
+
+def generate_source_headers(access_token: str | None, obo_access_token: str | None) -> dict[str, str]:
+    """Generate headers for a source request using its OBO token when available."""
+    return generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)

@@ -54,7 +54,7 @@ def test_action_classification_authorization(operation, scenario):
         patch.object(action_service, "config") as configuration,
         patch.object(action_service, "get_supported_actions", return_value=actions) as get_supported,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
-        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch(
             "clue.services.action_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
@@ -108,6 +108,7 @@ def test_action_listing_filters_plugins_and_actions(clearance):
             "get_supported_actions",
             return_value={"public_action": action, "restricted_action": restricted_action},
         ) as get_supported,
+        patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)),
         patch(
             "clue.services.action_service.CLASSIFICATION.is_accessible",
             side_effect=lambda user_clearance, target: user_clearance == "TLP:AMBER" or target == "TLP:CLEAR",
@@ -118,7 +119,7 @@ def test_action_listing_filters_plugins_and_actions(clearance):
 
     if clearance == "TLP:CLEAR":
         assert result == {"public.public_action": action}
-        get_supported.assert_called_once_with(public_plugin, user, access_token="access-token")
+        get_supported.assert_called_once_with(public_plugin, access_token="access-token", obo_access_token="obo-token")
     else:
         assert result == {
             "public.public_action": action,
@@ -158,7 +159,7 @@ def test_execute_and_status_refresh_metadata_and_do_one_obo_check_each(cached_ap
         patch.object(action_service, "config") as configuration,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
         patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
-        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch(
             "clue.services.action_service.requests.get",
             side_effect=[metadata_response, metadata_response, response, metadata_response, response],
@@ -186,21 +187,18 @@ def test_execute_and_status_refresh_metadata_and_do_one_obo_check_each(cached_ap
 
 def test_action_metadata_is_refetched_for_same_caller(cached_app, metadata_response):
     plugin = ExternalSource(name="test", url="http://plugin/")
-    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
-    headers = {"Authorization": "Bearer access-token"}
     with (
         cached_app.app_context(),
         patch("clue.services.action_service.requests.get", return_value=metadata_response) as get,
     ):
-        first = action_service.get_supported_actions(plugin, user, headers=headers)
-        assert action_service.get_supported_actions(plugin, user, headers=headers) == first
+        first = action_service.get_supported_actions(plugin, access_token="access-token", obo_access_token=None)
+        assert action_service.get_supported_actions(plugin, access_token="access-token", obo_access_token=None) == first
         assert get.call_count == 2
 
 
 @pytest.mark.parametrize("failure", ["timeout", "http_error", "invalid_metadata", "empty"])
 def test_action_metadata_failures_are_not_cached(cached_app, metadata_response, failure):
     plugin = ExternalSource(name="test", url="http://plugin/")
-    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
     failed_response = MagicMock()
     failed_response.ok = failure != "http_error"
     failed_response.status_code = 503
@@ -216,8 +214,8 @@ def test_action_metadata_failures_are_not_cached(cached_app, metadata_response, 
         cached_app.app_context(),
         patch("clue.services.action_service.requests.get", side_effect=[failed_response, metadata_response]) as get,
     ):
-        assert action_service.get_supported_actions(plugin, user, headers={}) == {}
-        assert "test_action" in action_service.get_supported_actions(plugin, user, headers={})
+        assert action_service.get_supported_actions(plugin, None, None) == {}
+        assert "test_action" in action_service.get_supported_actions(plugin, None, None)
         assert get.call_count == 2
 
 
@@ -229,22 +227,21 @@ def test_previous_action_metadata_does_not_bypass_obo_failure(cached_app, metada
         cached_app.test_request_context(json={}, headers={"Authorization": "Bearer access-token"}),
         patch.object(action_service, "config") as configuration,
         patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
-        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
-        patch(
-            "clue.services.action_service.auth_service.check_obo",
-            side_effect=[("obo-token", None), (None, "Invalid token")],
-        ) as check_obo,
+        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch("clue.services.action_service.auth_service.check_obo", return_value=(None, "Invalid token")) as check_obo,
         patch("clue.services.action_service.requests.get", return_value=metadata_response) as get,
         patch("clue.services.action_service.requests.post") as post,
     ):
         configuration.api.external_sources = [plugin]
-        assert "test_action" in action_service.get_supported_actions(plugin, user, access_token="access-token")
+        assert "test_action" in action_service.get_supported_actions(
+            plugin, access_token="access-token", obo_access_token="obo-token"
+        )
         if operation == "execute_action":
             result = action_service.execute_action("test", "test_action", user)
         else:
             result = action_service.get_action_status("test", "test_action", "task-123", user)
         assert result.outcome == "failure"
-        assert check_obo.call_count == 2
+        check_obo.assert_called_once_with(plugin, "access-token", "test-user")
         assert get.call_count == 1
         post.assert_not_called()
 
@@ -280,7 +277,7 @@ def test_action_authorization_rechecks_metadata_after_success(cached_app, metada
         cached_app.test_request_context(json={}, headers={"Authorization": "Bearer access-token"}),
         patch.object(action_service, "config") as configuration,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
-        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch(
             "clue.services.action_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",

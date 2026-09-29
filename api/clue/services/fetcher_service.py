@@ -1,8 +1,8 @@
 from typing import Any, Optional
 from urllib.parse import urljoin
 
-import elasticapm
 import requests
+from elasticapm.traces import capture_span
 from flask import has_request_context, request
 from pydantic import TypeAdapter, ValidationError
 from requests import JSONDecodeError, exceptions
@@ -16,6 +16,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
+from clue.helper.headers import generate_source_headers
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
@@ -46,18 +47,15 @@ def get_obo_access_token(
 
 def get_supported_fetchers(
     source: ExternalSource,
-    user: dict[str, Any],
-    access_token: Optional[str] = None,
-    *,
-    headers: dict[str, str] | None = None,
+    access_token: Optional[str],
+    obo_access_token: Optional[str],
 ) -> dict[str, FetcherDefinition]:
     """Fetch current metadata without caching authorization classifications.
 
     Args:
         source (ExternalSource): The source whose fetchers to retrieve.
-        user (dict[str, Any]): The caller used for OBO authentication.
-        access_token (Optional[str], optional): The access token to use, if necessary. Defaults to None.
-        headers (dict[str, str] | None): Headers from an already validated OBO lookup, if available.
+        access_token (Optional[str]): The caller's access token, if available.
+        obo_access_token (Optional[str]): The source-specific OBO token, if available.
 
     Returns:
         dict[str, FetcherDefinition]: A dict of each ids mapped to fetcher metadata
@@ -66,17 +64,9 @@ def get_supported_fetchers(
 
     url = urljoin(source.url, "fetchers/")
 
-    if headers is None:
-        try:
-            access_token, obo_access_token = get_obo_access_token(source, user, access_token)
-        except AuthenticationException:
-            return {}
+    headers = generate_source_headers(access_token, obo_access_token)
 
-        headers = {"Accept": "application/json"}
-        if obo_access_token or access_token:
-            headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
-
-    with elasticapm.capture_span(f"GET {url}", span_type="http"):
+    with capture_span(f"GET {url}", span_type="http"):
         try:
             rsp = requests.get(url, headers=headers, timeout=5.0)
             result = rsp.json()
@@ -112,7 +102,15 @@ def all_supported_fetchers(user: dict[str, Any], access_token: Optional[str] = N
     for source in config.api.external_sources:
         if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
             continue
-        supported_fetchers = get_supported_fetchers(source, user, access_token=access_token)
+
+        try:
+            source_access_token, obo_access_token = get_obo_access_token(source, user, access_token)
+        except AuthenticationException:
+            continue
+
+        supported_fetchers = get_supported_fetchers(
+            source, access_token=source_access_token, obo_access_token=obo_access_token
+        )
         total_fetchers = 0
         for key, action in supported_fetchers.items():
             total_fetchers += 1
@@ -184,9 +182,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
 
-    headers = {"Accept": "application/json"}
-    if obo_access_token or access_token:
-        headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
+    headers = generate_source_headers(access_token, obo_access_token)
 
     if request.is_json:
         parameters = request.json
@@ -201,7 +197,9 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
     try:
         selector = Selector.model_validate(parameters)
-        supported_fetchers = get_supported_fetchers(plugin, user, access_token=access_token, headers=headers)
+        supported_fetchers = get_supported_fetchers(
+            plugin, access_token=access_token, obo_access_token=obo_access_token
+        )
 
         fetcher = supported_fetchers.get(fetcher_id)
         if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
@@ -259,11 +257,11 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
 
-    headers = {"Accept": "application/json"}
-    if obo_access_token or access_token:
-        headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
+    headers = generate_source_headers(access_token, obo_access_token)
 
-    fetcher = get_supported_fetchers(plugin, user, access_token=access_token, headers=headers).get(fetcher_id)
+    fetcher = get_supported_fetchers(plugin, access_token=access_token, obo_access_token=obo_access_token).get(
+        fetcher_id
+    )
     if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
         raise NotFoundException("Fetcher not found.", status_code=404)
 

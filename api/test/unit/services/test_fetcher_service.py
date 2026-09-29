@@ -80,33 +80,42 @@ def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):
             fetcher_service.get_obo_access_token(plugin, user)
 
 
-def test_get_supported_fetchers_parses_upstream_response(plugin, user, fetcher):
+def test_get_supported_fetchers_parses_upstream_response(plugin, fetcher):
     response = make_response({"test_fetcher": fetcher.model_dump()})
 
     with patch("clue.services.fetcher_service.requests.get", return_value=response) as get:
-        result = fetcher_service.get_supported_fetchers(plugin, user)
+        result = fetcher_service.get_supported_fetchers(plugin, None, None)
 
     assert result == {"test_fetcher": fetcher}
-    get.assert_called_once_with("http://plugin/fetchers/", headers={"Accept": "application/json"}, timeout=5.0)
+    get.assert_called_once_with(
+        "http://plugin/fetchers/",
+        headers={"accept": "application/json", "content-type": "application/json"},
+        timeout=5.0,
+    )
 
 
-def test_get_supported_fetchers_returns_empty_when_obo_fails(plugin, user):
+def test_all_supported_fetchers_skips_source_when_obo_fails(plugin, user):
     with (
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=(None, "invalid token")),
+        patch("clue.services.fetcher_service.config") as configuration,
+        patch(
+            "clue.services.fetcher_service.get_obo_access_token",
+            side_effect=AuthenticationException("Invalid token provided for this enrichment."),
+        ),
         patch("clue.services.fetcher_service.requests.get") as get,
     ):
-        result = fetcher_service.get_supported_fetchers(plugin, user, access_token="access-token")
+        configuration.api.external_sources = [plugin]
+        result = fetcher_service.all_supported_fetchers(user, access_token="access-token")
 
     assert result == {}
     get.assert_not_called()
 
 
-def test_get_supported_fetchers_returns_empty_for_invalid_upstream_response(plugin, user):
+def test_get_supported_fetchers_returns_empty_for_invalid_upstream_response(plugin):
     response = make_response({})
     response.json.return_value = {"unexpected": "response"}
 
     with patch("clue.services.fetcher_service.requests.get", return_value=response):
-        result = fetcher_service.get_supported_fetchers(plugin, user)
+        result = fetcher_service.get_supported_fetchers(plugin, None, None)
 
     assert result == {}
 
@@ -121,6 +130,10 @@ def test_all_supported_fetchers_prefixes_fetcher_ids(user, plugin, fetcher):
             "clue.services.fetcher_service.get_supported_fetchers",
             side_effect=[{"test_fetcher": fetcher}, {"other_fetcher": other_fetcher}],
         ) as get_supported,
+        patch(
+            "clue.services.fetcher_service.get_obo_access_token",
+            side_effect=[("access-token", "obo-token"), ("access-token", "obo-token")],
+        ),
     ):
         mock_config.api.external_sources = [plugin, other_plugin]
         result = fetcher_service.all_supported_fetchers(user, access_token="access-token")
@@ -164,6 +177,10 @@ def test_fetcher_listing_filters_plugins_and_fetchers(app, user, plugin, fetcher
     with (
         app.test_request_context(headers={"Authorization": "Bearer access-token"}),
         patch.object(fetcher_service, "config") as configuration,
+        patch(
+            "clue.services.fetcher_service.get_obo_access_token",
+            return_value=("access-token", "obo-token"),
+        ),
         patch.object(
             fetcher_service,
             "get_supported_fetchers",
@@ -179,7 +196,7 @@ def test_fetcher_listing_filters_plugins_and_fetchers(app, user, plugin, fetcher
 
     if clearance == "TLP:CLEAR":
         assert result == {"test.test_fetcher": fetcher}
-        get_supported.assert_called_once_with(plugin, user, access_token="access-token")
+        get_supported.assert_called_once_with(plugin, access_token="access-token", obo_access_token="obo-token")
     else:
         assert result == {
             "test.test_fetcher": fetcher,
@@ -209,7 +226,11 @@ def test_run_fetcher_returns_upstream_result(app, configured_plugin, user, fetch
     post.assert_called_once_with(
         "http://plugin/fetchers/test_fetcher",
         json=parameters,
-        headers={"Accept": "application/json", "Authorization": "Bearer obo-token"},
+        headers={
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Authorization": "Bearer obo-token",
+        },
         timeout=60.0,
     )
 
@@ -300,7 +321,7 @@ def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user
     assert result.outcome == "success"
     get.assert_called_once_with(
         "http://plugin/fetchers/test_fetcher/status/task-123",
-        headers={"Accept": "application/json"},
+        headers={"accept": "application/json", "content-type": "application/json"},
         timeout=12.5,
     )
 
@@ -478,7 +499,11 @@ def test_previous_fetcher_metadata_does_not_bypass_token_failure(app, configured
     assert check_obo.call_count == 2
     get.assert_called_once_with(
         "http://plugin/fetchers/",
-        headers={"Accept": "application/json", "Authorization": "Bearer obo-token"},
+        headers={
+            "accept": "application/json",
+            "content-type": "application/json",
+            "Authorization": "Bearer obo-token",
+        },
         timeout=5.0,
     )
     post.assert_not_called()
