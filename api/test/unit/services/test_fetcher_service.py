@@ -230,6 +230,7 @@ def test_run_fetcher_returns_upstream_result(app, configured_plugin, user, fetch
             "accept": "application/json",
             "content-type": "application/json",
             "Authorization": "Bearer obo-token",
+            "X-Clue-Authorization": "access-token",
         },
         timeout=60.0,
     )
@@ -503,6 +504,7 @@ def test_previous_fetcher_metadata_does_not_bypass_token_failure(app, configured
             "accept": "application/json",
             "content-type": "application/json",
             "Authorization": "Bearer obo-token",
+            "X-Clue-Authorization": "access-token",
         },
         timeout=5.0,
     )
