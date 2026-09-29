@@ -238,6 +238,11 @@ jobs:
         run: |
           echo "version=$(poetry version -s)" >> "$GITHUB_OUTPUT"
 
+      - name: Set up chainctl with howler identity
+        uses: chainguard-dev/setup-chainctl@main
+        with:
+          identity: 42b9b0076fcee50f3ee6d013eadb93841a051303/e427bc7a20eb5423
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
