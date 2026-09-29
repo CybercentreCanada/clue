@@ -91,7 +91,10 @@ def test_parse_user_data_allows_identity_without_email():
 
 def test_validate_apikey_uses_constant_time_secret_comparison():
     app = Flask(__name__)
-    auth_config = SimpleNamespace(allow_apikeys=True, apikeys={"test-key": "expected-secret"})
+    auth_config = SimpleNamespace(
+        allow_apikeys=True,
+        apikeys={"test-key": APIKeyConf(secret="expected-secret")},
+    )
 
     with (
         app.test_request_context(

@@ -209,12 +209,39 @@ class ServiceAccount(BaseModel):
 
 class Auth(BaseModel):
     allow_apikeys: bool = Field(description="Allow API keys?", default=False)
-    apikeys: dict[str, str | APIKeyConf] = Field(default={}, description="API keys available in the system")
+    apikeys: dict[str, APIKeyConf] = Field(default={}, description="API keys available in the system")
     propagate_clue_key: bool = Field(
         default=True, description="Should clue include the root clue token in requests when OBO is used?"
     )
     oauth: OAuth = OAuth()
     service_account: ServiceAccount = ServiceAccount()
+
+    @field_validator("apikeys", mode="before")
+    @classmethod
+    def normalize_legacy_apikeys(cls, apikeys: Any) -> Any:  # noqa: ANN102
+        """Convert legacy key-name-to-secret values into structured policies."""
+        if not isinstance(apikeys, dict):
+            return apikeys
+
+        legacy_names = [name for name, value in apikeys.items() if isinstance(value, str)]
+        if legacy_names:
+            logger.warning(
+                "Legacy string API key configuration is deprecated; convert these keys to structured policies: %s",
+                ", ".join(legacy_names),
+            )
+            return {
+                name: APIKeyConf(secret=value) if isinstance(value, str) else value for name, value in apikeys.items()
+            }
+
+        return apikeys
+
+    @field_validator("apikeys")
+    @classmethod
+    def validate_apikey_names(cls, apikeys: dict[str, APIKeyConf]) -> dict[str, APIKeyConf]:
+        """Reject API key entries without a usable key name."""
+        if any(not name.strip() for name in apikeys):
+            raise ValueError("API key names must not be empty")
+        return apikeys
 
     @model_validator(mode="after")
     def validate_model(self: Self) -> Self:

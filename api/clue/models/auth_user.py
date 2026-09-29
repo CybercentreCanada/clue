@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UserRole(StrEnum):
@@ -29,7 +29,15 @@ class APIKeyConf(BaseModel):
             Privilege.WRITE,
         }
     )
-    secret: str
+    secret: str = Field(min_length=1)
+
+    @field_validator("secret")
+    @classmethod
+    def validate_secret(cls, secret: str) -> str:
+        """Reject API key secrets containing only whitespace."""
+        if not secret.strip():
+            raise ValueError("API key secret must not be empty")
+        return secret
 
 
 class AuthUser(BaseModel):

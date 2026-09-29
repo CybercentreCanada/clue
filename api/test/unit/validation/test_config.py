@@ -3,7 +3,7 @@ import os
 import pytest
 from pydantic import ValidationError
 
-from clue.models.auth_user import UserRole
+from clue.models.auth_user import APIKeyConf, UserRole
 from clue.models.config import (
     Auth,
     OAuth,
@@ -116,3 +116,21 @@ def test_auth_validation():
             enabled=True, accounts=[ServiceAccountCreds(username="potato", provider="potato", password="potato")]
         ),
     )
+
+
+def test_api_key_config_rejects_empty_secret():
+    for secret in ("", "   "):
+        with pytest.raises(ValidationError):
+            APIKeyConf(secret=secret)
+
+
+def test_auth_converts_legacy_api_keys_with_warning(caplog):
+    auth = Auth(apikeys={"legacy-key": "legacy-secret"})
+
+    assert auth.apikeys == {"legacy-key": APIKeyConf(secret="legacy-secret")}
+    assert "Legacy string API key configuration is deprecated" in caplog.text
+
+
+def test_auth_rejects_empty_api_key_name():
+    with pytest.raises(ValidationError, match="API key names must not be empty"):
+        Auth(apikeys={"": "secret"})

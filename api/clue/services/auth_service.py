@@ -192,8 +192,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
         if not config_apikey:
             raise AccessDeniedException("API Key does not exist")
 
-        secret = config_apikey if isinstance(config_apikey, str) else config_apikey.secret
-        if not hmac.compare_digest(secret.encode("utf-8"), apikey.encode("utf-8")):
+        if not hmac.compare_digest(config_apikey.secret.encode("utf-8"), apikey.encode("utf-8")):
             raise AccessDeniedException("Invalid API key")
 
         uname = request.headers.get("X-USERID", None)
@@ -205,17 +204,15 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
                 "You must also provide X-USERID and X-CLASSIFICATION headers along with your API key."
             )
 
-        roles = {UserRole.USER} if isinstance(config_apikey, str) else {UserRole.USER, *config_apikey.roles}
-        privileges = {Privilege.READ, Privilege.WRITE} if isinstance(config_apikey, str) else config_apikey.privileges
         return AuthResult(
             user=AuthUser(
                 uname=uname,
                 name=user_name,
                 classification=classification,
                 email=email,
-                roles=roles,
+                roles={UserRole.USER, *config_apikey.roles},
             ),
-            privileges=privileges,
+            privileges=config_apikey.privileges,
         )
     else:
         raise AccessDeniedException("You must provide your API key in the proper format in the Authorization header.")
