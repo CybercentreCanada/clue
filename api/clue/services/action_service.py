@@ -1,5 +1,5 @@
 from time import monotonic
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -8,14 +8,14 @@ from flask import request
 from pydantic import TypeAdapter
 from requests import JSONDecodeError, exceptions
 
-from clue.common.exceptions import ClueException, NotFoundException
+from clue.common.exceptions import AuthenticationException, ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
+from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
-from clue.services import auth_service
 
 logger = get_logger(__file__)
 
@@ -28,8 +28,7 @@ def _raise_action_metadata_unavailable(error: Exception | None = None) -> None:
 
 def get_supported_actions(
     source: ExternalSource,
-    access_token: Optional[str],
-    obo_access_token: Optional[str],
+    headers: dict[str, str],
     *,
     timeout: float = 10.0,
     raise_on_error: bool = False,
@@ -46,8 +45,6 @@ def get_supported_actions(
     Returns:
         dict[str, ActionSpec]: A dict of each action and their schema
     """
-    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
-
     return _get_supported_actions(source, headers, timeout=timeout, raise_on_error=raise_on_error)
 
 
@@ -85,7 +82,7 @@ def _get_supported_actions(
             return {}
 
 
-def all_supported_actions(user: dict[str, Any], access_token: Optional[str] = None) -> dict[str, ActionSpec]:
+def all_supported_actions(user: dict[str, Any]) -> dict[str, ActionSpec]:
     """Gets all supported actions for all sources
 
     Args:
@@ -100,14 +97,14 @@ def all_supported_actions(user: dict[str, Any], access_token: Optional[str] = No
         if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
             continue
 
-        obo_access_token = None
-        if access_token:
-            obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-            if error:
-                logger.error("%s: %s", source.name, error)
-                continue
+        try:
+            access_token, obo_access_token = get_obo_access_token(source, user)
+        except AuthenticationException:
+            continue
 
-        supported_actions = get_supported_actions(source, access_token=access_token, obo_access_token=obo_access_token)
+        supported_actions = get_supported_actions(
+            source, generate_headers(obo_access_token=obo_access_token, access_token=access_token)
+        )
         total_actions = 0
         for key, action in supported_actions.items():
             total_actions += 1
@@ -121,14 +118,7 @@ def get_plugins_supported_actions(user: dict[str, Any]) -> dict[str, ActionSpec]
     """Return the supported actions of each external service, filtered to what the user has access to."""
     available_actions: dict[str, ActionSpec] = {}
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    all_actions = all_supported_actions(
-        user,
-        access_token=access_token,
-    )
+    all_actions = all_supported_actions(user)
 
     logger.info("Fetching actions for classification %s", user["classification"])
 
@@ -168,21 +158,14 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
         raise NotFoundException("Action not found.", status_code=404)
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", plugin.name, error)
-            return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
+    try:
+        access_token, obo_access_token = get_obo_access_token(plugin, user)
+    except AuthenticationException:
+        return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
 
     headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
-    action = get_supported_actions(plugin, access_token=access_token, obo_access_token=obo_access_token).get(action_id)
+    action = get_supported_actions(plugin, headers).get(action_id)
     if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
         raise NotFoundException("Action not found.", status_code=404)
 
@@ -239,17 +222,10 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
         raise NotFoundException("Action not found.", status_code=404)
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", plugin.name, error)
-            return ActionResult(outcome="failure", summary="Invalid token provided.")
+    try:
+        access_token, obo_access_token = get_obo_access_token(plugin, user)
+    except AuthenticationException:
+        return ActionResult(outcome="failure", summary="Invalid token provided.")
 
     headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
@@ -258,8 +234,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
     action = get_supported_actions(
         plugin,
-        access_token=access_token,
-        obo_access_token=obo_access_token,
+        headers,
         timeout=max(min(timeout, 10.0), 0.001),
         raise_on_error=True,
     ).get(action_id)

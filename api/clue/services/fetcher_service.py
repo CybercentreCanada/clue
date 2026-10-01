@@ -1,10 +1,10 @@
 from time import monotonic
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from elasticapm.traces import capture_span
-from flask import has_request_context, request
+from flask import request
 from pydantic import TypeAdapter, ValidationError
 from requests import JSONDecodeError, exceptions
 
@@ -18,11 +18,11 @@ from clue.common.exceptions import (
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
+from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
-from clue.services import auth_service
 
 logger = get_logger(__file__)
 
@@ -33,30 +33,9 @@ def _raise_fetcher_metadata_unavailable(error: Exception | None = None) -> None:
     ) from error
 
 
-def get_obo_access_token(
-    source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
-) -> tuple[Optional[str], Optional[str]]:
-    """Get the caller access token and an OBO token for an external source when needed."""
-    if access_token is None and has_request_context():
-        auth_header = request.headers.get("Authorization", type=str)
-        if auth_header:
-            parts = auth_header.split(" ", 1)
-            access_token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else auth_header
-    if not access_token:
-        return None, None
-
-    obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-    if error:
-        logger.error("%s: %s", source.name, error)
-        raise AuthenticationException("Invalid token provided for this enrichment.")
-
-    return access_token, obo_access_token
-
-
 def get_supported_fetchers(
     source: ExternalSource,
-    access_token: Optional[str],
-    obo_access_token: Optional[str],
+    headers: dict[str, str],
     *,
     timeout: float = 5.0,
     raise_on_error: bool = False,
@@ -76,8 +55,6 @@ def get_supported_fetchers(
     logger.info("Requesting fetchers for source %s", source.name)
 
     url = urljoin(source.url, "fetchers/")
-
-    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     with capture_span(f"GET {url}", span_type="http"):
         try:
@@ -101,7 +78,7 @@ def get_supported_fetchers(
             return {}
 
 
-def all_supported_fetchers(user: dict[str, Any], access_token: Optional[str] = None) -> dict[str, FetcherDefinition]:
+def all_supported_fetchers(user: dict[str, Any]) -> dict[str, FetcherDefinition]:
     """Gets all supported fetchers for all sources
 
     Args:
@@ -117,12 +94,12 @@ def all_supported_fetchers(user: dict[str, Any], access_token: Optional[str] = N
             continue
 
         try:
-            source_access_token, obo_access_token = get_obo_access_token(source, user, access_token)
+            access_token, obo_access_token = get_obo_access_token(source, user)
         except AuthenticationException:
             continue
 
         supported_fetchers = get_supported_fetchers(
-            source, access_token=source_access_token, obo_access_token=obo_access_token
+            source, generate_headers(obo_access_token=obo_access_token, access_token=access_token)
         )
         total_fetchers = 0
         for key, action in supported_fetchers.items():
@@ -137,14 +114,7 @@ def get_plugins_supported_fetchers(user: dict[str, Any]) -> dict[str, FetcherDef
     """Return the supported fetchers of each external service, filtered to what the user has access to."""
     available_fetchers: dict[str, FetcherDefinition] = {}
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    all_fetchers = all_supported_fetchers(
-        user,
-        access_token=access_token,
-    )
+    all_fetchers = all_supported_fetchers(user)
 
     logger.info("Retrieving fetchers for classification %s", user["classification"])
 
@@ -210,9 +180,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
     try:
         selector = Selector.model_validate(parameters)
-        supported_fetchers = get_supported_fetchers(
-            plugin, access_token=access_token, obo_access_token=obo_access_token
-        )
+        supported_fetchers = get_supported_fetchers(plugin, headers)
 
         fetcher = supported_fetchers.get(fetcher_id)
         if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
@@ -279,8 +247,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
     # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
     fetcher = get_supported_fetchers(
         plugin,
-        access_token=access_token,
-        obo_access_token=obo_access_token,
+        headers,
         timeout=max(min(timeout, 5.0), 0.001),
         raise_on_error=True,
     ).get(fetcher_id)

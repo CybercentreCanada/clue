@@ -22,7 +22,7 @@ logger = get_logger(__file__)
 
 SUB_API = "actions"
 actions_api = make_subapi_blueprint(SUB_API, api_version=1)
-actions_api._doc = "Run actions on data through configured external data sources/systems."
+actions_api._doc = "Run actions on data through configured external data sources/systems."  # type: ignore
 
 CORS(actions_api, origins=config.ui.cors_origins, supports_credentials=True)
 

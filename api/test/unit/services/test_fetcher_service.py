@@ -65,7 +65,7 @@ def test_get_obo_access_token_returns_none_without_authorization(app, plugin, us
 def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
     with (
         app.test_request_context(headers={"Authorization": "Bearer access-token"}),
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+        patch("clue.helper.obo.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
     ):
         result = fetcher_service.get_obo_access_token(plugin, user)
 
@@ -76,7 +76,7 @@ def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
 def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):
     with (
         app.test_request_context(headers={"Authorization": "Bearer access-token"}),
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=(None, "invalid token")),
+        patch("clue.helper.obo.auth_service.check_obo", return_value=(None, "invalid token")),
     ):
         with pytest.raises(AuthenticationException, match="Invalid token provided"):
             fetcher_service.get_obo_access_token(plugin, user)
@@ -86,7 +86,9 @@ def test_get_supported_fetchers_parses_upstream_response(app, plugin, fetcher):
     response = make_response({"test_fetcher": fetcher.model_dump()})
 
     with app.app_context(), patch("clue.services.fetcher_service.requests.get", return_value=response) as get:
-        result = fetcher_service.get_supported_fetchers(plugin, None, None)
+        result = fetcher_service.get_supported_fetchers(
+            plugin, {"accept": "application/json", "content-type": "application/json"}
+        )
 
     assert result == {"test_fetcher": fetcher}
     get.assert_called_once_with(
@@ -118,7 +120,9 @@ def test_get_supported_fetchers_returns_empty_for_invalid_upstream_response(app,
     response.json.return_value = {"unexpected": "response"}
 
     with app.app_context(), patch("clue.services.fetcher_service.requests.get", return_value=response):
-        result = fetcher_service.get_supported_fetchers(plugin, None, None)
+        result = fetcher_service.get_supported_fetchers(
+            plugin, {"accept": "application/json", "content-type": "application/json"}
+        )
 
     assert result == {}
 
@@ -135,7 +139,12 @@ def test_get_supported_fetchers_can_fail_closed_when_metadata_is_unavailable(app
 
     with app.app_context(), request as get:
         with pytest.raises(ClueException, match="Unable to verify fetcher availability") as error:
-            fetcher_service.get_supported_fetchers(plugin, None, None, timeout=2.0, raise_on_error=True)
+            fetcher_service.get_supported_fetchers(
+                plugin,
+                {"accept": "application/json", "content-type": "application/json"},
+                timeout=2.0,
+                raise_on_error=True,
+            )
 
     assert error.value.status_code == 503
     get.assert_called_once_with(
@@ -191,7 +200,7 @@ def test_get_plugins_supported_fetchers_filters_inaccessible_fetchers(app, user,
         result = fetcher_service.get_plugins_supported_fetchers(user)
 
     assert result == {"test.test_fetcher": fetcher}
-    all_supported.assert_called_once_with(user, access_token="access-token")
+    all_supported.assert_called_once_with(user)
 
 
 @pytest.mark.parametrize("clearance", ["TLP:CLEAR", "TLP:AMBER"])
@@ -222,7 +231,15 @@ def test_fetcher_listing_filters_plugins_and_fetchers(app, user, plugin, fetcher
 
     if clearance == "TLP:CLEAR":
         assert result == {"test.test_fetcher": fetcher}
-        get_supported.assert_called_once_with(plugin, access_token="access-token", obo_access_token="obo-token")
+        get_supported.assert_called_once_with(
+            plugin,
+            {
+                "accept": "application/json",
+                "content-type": "application/json",
+                "Authorization": "Bearer obo-token",
+                "X-Clue-Authorization": "access-token",
+            },
+        )
     else:
         assert result == {
             "test.test_fetcher": fetcher,
@@ -239,7 +256,7 @@ def test_run_fetcher_returns_upstream_result(app, configured_plugin, user, fetch
 
     with (
         app.test_request_context(json=parameters, headers={"Authorization": "Bearer access-token"}),
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)),
+        patch("clue.helper.obo.auth_service.check_obo", return_value=("obo-token", None)),
         patch("clue.services.fetcher_service.get_supported_fetchers", return_value={"test_fetcher": fetcher}),
         patch("clue.services.fetcher_service.CLASSIFICATION.is_accessible", return_value=True),
         patch("clue.services.fetcher_service.requests.post", return_value=response) as post,
@@ -292,7 +309,7 @@ def test_run_fetcher_rejects_unknown_plugin(app, user):
 def test_run_fetcher_rejects_invalid_obo_token(app, configured_plugin, user):
     with (
         app.test_request_context(headers={"Authorization": "Bearer access-token"}),
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=(None, "invalid token")),
+        patch("clue.helper.obo.auth_service.check_obo", return_value=(None, "invalid token")),
     ):
         with pytest.raises(AuthenticationException, match="Invalid token provided"):
             fetcher_service.run_fetcher("test", "test_fetcher", user)
@@ -414,7 +431,7 @@ def test_fetcher_classification_authorization(app, plugin, user, fetcher, operat
         ),
         patch.object(fetcher_service, "config") as configuration,
         patch.object(fetcher_service, "get_supported_fetchers", return_value=fetchers) as get_supported,
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+        patch("clue.helper.obo.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
         patch(
             "clue.services.fetcher_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
@@ -475,7 +492,7 @@ def test_fetcher_metadata_is_refreshed_after_success(app, configured_plugin, use
         arguments = ("test", "test_fetcher", "task-123", user)
 
     with (
-        patch("clue.services.fetcher_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
+        patch("clue.helper.obo.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
         patch(
             "clue.services.fetcher_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
@@ -523,7 +540,7 @@ def test_previous_fetcher_metadata_does_not_bypass_token_failure(app, configured
         ),
         patch("clue.services.fetcher_service.CLASSIFICATION.is_accessible", return_value=True),
         patch(
-            "clue.services.fetcher_service.auth_service.check_obo",
+            "clue.helper.obo.auth_service.check_obo",
             side_effect=[("obo-token", None), (None, "Invalid token")],
         ) as check_obo,
         patch("clue.services.fetcher_service.requests.get", return_value=metadata) as get,
