@@ -500,7 +500,7 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
         try:
             access_token, obo_access_token = get_obo_access_token(source, user)
         except AuthenticationException as err:
-            finish_result(error=err.message)
+            results[source.name] = finish_result(error=err.message)
             continue
 
         # check query against the max supported classification of the external system
