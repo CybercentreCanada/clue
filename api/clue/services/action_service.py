@@ -45,17 +45,6 @@ def get_supported_actions(
     Returns:
         dict[str, ActionSpec]: A dict of each action and their schema
     """
-    return _get_supported_actions(source, headers, timeout=timeout, raise_on_error=raise_on_error)
-
-
-def _get_supported_actions(
-    source: ExternalSource,
-    headers: dict[str, str],
-    *,
-    timeout: float,
-    raise_on_error: bool,
-) -> dict[str, ActionSpec]:
-    """Fetch current metadata for listing and authorization without caching classifications."""
     logger.info("Fetching actions for source %s", source.name)
     url = urljoin(source.url, "actions/")
 
