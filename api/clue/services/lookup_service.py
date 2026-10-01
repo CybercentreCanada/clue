@@ -361,8 +361,8 @@ def query_external(
     value: str,
     limit: int,
     timeout: float,
-    access_token: str,
-    clue_access_token: str | None,
+    access_token: str | None,
+    obo_access_token: str | None,
     no_annotation: bool = False,
     no_cache: bool = False,
     include_raw: bool = True,
@@ -375,7 +375,7 @@ def query_external(
     finish_result = functools.partial(build_result, type_name, value, source)
 
     with capture_span(query_external.__name__, span_type="greenlet"):
-        if type_name not in type_service.all_supported_types(user, access_token=access_token).get(source.name, {}):
+        if type_name not in type_service.all_supported_types(user, access_token=obo_access_token).get(source.name, {}):
             return finish_result(error="invalid_type")
 
         if config.api.audit:
@@ -407,7 +407,7 @@ def query_external(
                     get_client(source.url, timeout).get,
                     url,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
-                    headers=generate_headers(access_token, clue_access_token),
+                    headers=generate_headers(obo_access_token=obo_access_token, access_token=access_token),
                     timeout=(timeout, timeout * 3),
                 )
                 rsp.raise_for_status()
@@ -527,8 +527,8 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
                     value=value,
                     limit=query_params.limit,
                     timeout=query_params.max_timeout,
-                    access_token=obo_access_token or access_token,
-                    clue_access_token=access_token if obo_access_token else None,
+                    access_token=access_token,
+                    obo_access_token=obo_access_token,
                     no_annotation=query_params.no_annotation,
                     include_raw=query_params.include_raw,
                     no_cache=query_params.no_cache,
@@ -562,8 +562,8 @@ def bulk_query_external(  # noqa: C901
     source: ExternalSource,
     limit: int,
     timeout: float,
-    access_token: str,
-    clue_access_token: str | None,
+    access_token: str | None,
+    obo_access_token: str | None,
     no_annotation: bool = False,
     no_cache: bool = False,
     include_raw: bool = True,
@@ -629,7 +629,7 @@ def bulk_query_external(  # noqa: C901
                     get_method=client.get,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     json=[entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data],
-                    headers=generate_headers(access_token, clue_access_token),
+                    headers=generate_headers(obo_access_token=obo_access_token, access_token=access_token),
                     timeout=(timeout * 3, timeout * 3),
                 )
                 rsp.raise_for_status()
@@ -811,8 +811,8 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                     source=source,
                     limit=query_params.limit,
                     timeout=query_params.max_timeout,
-                    access_token=obo_access_token or access_token,
-                    clue_access_token=access_token if obo_access_token else None,
+                    access_token=access_token,
+                    obo_access_token=obo_access_token,
                     no_annotation=query_params.no_annotation,
                     no_cache=query_params.no_cache,
                     include_raw=query_params.include_raw,

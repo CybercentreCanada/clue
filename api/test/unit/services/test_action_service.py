@@ -54,7 +54,7 @@ def test_action_classification_authorization(operation, scenario):
         patch.object(action_service, "config") as configuration,
         patch.object(action_service, "get_supported_actions", return_value=actions) as get_supported,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
-        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch(
             "clue.services.action_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",
@@ -159,7 +159,7 @@ def test_execute_and_status_refresh_metadata_and_do_one_obo_check_each(cached_ap
         patch.object(action_service, "config") as configuration,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
         patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
-        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch(
             "clue.services.action_service.requests.get",
             side_effect=[metadata_response, metadata_response, response, metadata_response, response],
@@ -296,7 +296,7 @@ def test_previous_action_metadata_does_not_bypass_obo_failure(cached_app, metada
         cached_app.test_request_context(json={}, headers={"Authorization": "Bearer access-token"}),
         patch.object(action_service, "config") as configuration,
         patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
-        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch("clue.services.action_service.auth_service.check_obo", return_value=(None, "Invalid token")) as check_obo,
         patch("clue.services.action_service.requests.get", return_value=metadata_response) as get,
         patch("clue.services.action_service.requests.post") as post,
@@ -346,7 +346,7 @@ def test_action_authorization_rechecks_metadata_after_success(cached_app, metada
         cached_app.test_request_context(json={}, headers={"Authorization": "Bearer access-token"}),
         patch.object(action_service, "config") as configuration,
         patch("clue.services.action_service.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
-        patch.object(action_service, "generate_source_headers", return_value={"Authorization": "Bearer obo-token"}),
+        patch.object(action_service, "generate_headers", return_value={"Authorization": "Bearer obo-token"}),
         patch(
             "clue.services.action_service.CLASSIFICATION.is_accessible",
             side_effect=lambda clearance, target: clearance == "TLP:AMBER" or target == "TLP:CLEAR",

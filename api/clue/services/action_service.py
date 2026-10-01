@@ -11,7 +11,7 @@ from requests import JSONDecodeError, exceptions
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
-from clue.helper.headers import generate_source_headers
+from clue.helper.headers import generate_headers
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
@@ -46,7 +46,7 @@ def get_supported_actions(
     Returns:
         dict[str, ActionSpec]: A dict of each action and their schema
     """
-    headers = generate_source_headers(access_token, obo_access_token)
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     return _get_supported_actions(source, headers, timeout=timeout, raise_on_error=raise_on_error)
 
@@ -180,7 +180,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             logger.error("%s: %s", plugin.name, error)
             return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
 
-    headers = generate_source_headers(access_token, obo_access_token)
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     action = get_supported_actions(plugin, access_token=access_token, obo_access_token=obo_access_token).get(action_id)
     if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
@@ -251,7 +251,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
             logger.error("%s: %s", plugin.name, error)
             return ActionResult(outcome="failure", summary="Invalid token provided.")
 
-    headers = generate_source_headers(access_token, obo_access_token)
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     timeout = request.args.get("max_timeout", plugin.default_timeout, type=float)
     metadata_started = monotonic()

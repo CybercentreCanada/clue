@@ -17,7 +17,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
-from clue.helper.headers import generate_source_headers
+from clue.helper.headers import generate_headers
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
@@ -77,7 +77,7 @@ def get_supported_fetchers(
 
     url = urljoin(source.url, "fetchers/")
 
-    headers = generate_source_headers(access_token, obo_access_token)
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     with capture_span(f"GET {url}", span_type="http"):
         try:
@@ -195,7 +195,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
 
-    headers = generate_source_headers(access_token, obo_access_token)
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     if request.is_json:
         parameters = request.json
@@ -272,7 +272,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
 
     access_token, obo_access_token = get_obo_access_token(plugin, user)
 
-    headers = generate_source_headers(access_token, obo_access_token)
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
     timeout = request.args.get("max_timeout", 60.0, type=float)
     metadata_started = monotonic()
