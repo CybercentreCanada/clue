@@ -111,27 +111,18 @@ def remove_application(plugin_id: str, **kwargs):
         "response_status": "204 NO CONTENT"  # HTTP status code
     }
     """
-    source_to_remove = None
+    persisted_sources = [
+        source
+        for source in EXTERNAL_PLUGIN_SET.members()
+        if isinstance(source, dict) and source.get("name") == plugin_id
+    ]
 
-    for source in config.api.external_sources:
-        if source.name == plugin_id and source.built_in is False:
-            source_to_remove = source
-            break
-
-    persisted_sources = []
-    if source_to_remove is not None:
-        persisted_sources = [
-            source
-            for source in EXTERNAL_PLUGIN_SET.members()
-            if isinstance(source, dict) and source.get("name") == plugin_id
-        ]
-
-    if source_to_remove is not None and persisted_sources:
+    if persisted_sources:
         config.api.external_sources = [
             source for source in config.api.external_sources if source.name != plugin_id or source.built_in is True
         ]
         EXTERNAL_PLUGIN_SET.remove(*persisted_sources)
-        logger.info(no_content(data=source_to_remove.name))
-        return no_content(data=source_to_remove.name)
+        logger.info("Removed plugin with id %s", plugin_id)
+        return no_content(data=plugin_id)
 
     return no_content(data=f"No plugin found with id: {plugin_id}")

@@ -278,6 +278,25 @@ def test_remove_application_removes_pre_normalized_persisted_source():
     remove_source.assert_called_once_with(persisted)
 
 
+def test_remove_application_removes_invalid_persisted_source_not_loaded_in_memory():
+    app = Flask(__name__)
+    persisted = {"name": "stranded", "url": "https://no-longer-allowed.example/", "built_in": False}
+
+    with (
+        app.test_request_context("/stranded", method="DELETE"),
+        patch("clue.api.v1.registration.config") as mock_config,
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.members", return_value=[persisted]),
+        patch("clue.api.v1.registration.EXTERNAL_PLUGIN_SET.remove") as remove_source,
+    ):
+        mock_config.api.external_sources = []
+        handler = getattr(getattr(remove_application, "__wrapped__"), "__wrapped__")
+        response = handler(plugin_id="stranded")
+
+    assert response.status_code == 204
+    assert mock_config.api.external_sources == []
+    remove_source.assert_called_once_with(persisted)
+
+
 def test_plugin_refresh_skips_non_mapping_members_and_continues():
     built_in = ExternalSource(name="built-in", url="https://plugins.example/")
     valid = {"name": "valid", "url": "https://plugins.example/", "built_in": False}
