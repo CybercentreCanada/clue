@@ -6,6 +6,7 @@ from requests import exceptions
 
 from clue.common.exceptions import AuthenticationException, ClueException, InvalidDataException, NotFoundException
 from clue.config import cache
+from clue.helper.obo import get_obo_access_token
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.services import fetcher_service
@@ -59,7 +60,7 @@ def make_response(api_response, *, ok=True, status_code=200, error_message=None)
 
 def test_get_obo_access_token_returns_none_without_authorization(app, plugin, user):
     with app.test_request_context():
-        assert fetcher_service.get_obo_access_token(plugin, user) == (None, None)
+        assert get_obo_access_token(plugin, user) == (None, None)
 
 
 def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
@@ -67,7 +68,7 @@ def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
         app.test_request_context(headers={"Authorization": "Bearer access-token"}),
         patch("clue.helper.obo.auth_service.check_obo", return_value=("obo-token", None)) as check_obo,
     ):
-        result = fetcher_service.get_obo_access_token(plugin, user)
+        result = get_obo_access_token(plugin, user)
 
     assert result == ("access-token", "obo-token")
     check_obo.assert_called_once_with(plugin, "access-token", "test-user")
@@ -78,7 +79,7 @@ def test_get_obo_access_token_strips_basic_scheme(app, plugin, user):
         app.test_request_context(headers={"Authorization": "Basic api-key-credentials"}),
         patch("clue.helper.obo.auth_service.check_obo", return_value=(None, None)) as check_obo,
     ):
-        result = fetcher_service.get_obo_access_token(plugin, user)
+        result = get_obo_access_token(plugin, user)
 
     assert result == ("api-key-credentials", None)
     check_obo.assert_called_once_with(plugin, "api-key-credentials", "test-user")
@@ -90,7 +91,7 @@ def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):
         patch("clue.helper.obo.auth_service.check_obo", return_value=(None, "invalid token")),
     ):
         with pytest.raises(AuthenticationException, match="Invalid token provided"):
-            fetcher_service.get_obo_access_token(plugin, user)
+            get_obo_access_token(plugin, user)
 
 
 def test_get_supported_fetchers_parses_upstream_response(app, plugin, fetcher):
