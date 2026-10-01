@@ -47,7 +47,7 @@ def get_types_regular_expressions(user: dict[str, Any]):
 @cache.memoize(timeout=CACHE_TIMEOUT)
 def get_supported_types(
     source_url: str, access_token: str | None = None, obo_access_token: str | None = None
-) -> dict[str, str]:
+) -> dict[str, str] | None:
     """Gets all supported types for the specified source.
 
     Args:

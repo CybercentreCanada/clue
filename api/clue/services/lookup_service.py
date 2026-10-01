@@ -376,9 +376,10 @@ def query_external(
     finish_result = functools.partial(build_result, type_name, value, source)
 
     with capture_span(query_external.__name__, span_type="greenlet"):
-        if type_name not in type_service.get_supported_types(
+        supported_types = type_service.get_supported_types(
             source.url, access_token=access_token, obo_access_token=obo_access_token
-        ):
+        )
+        if not supported_types or type_name not in supported_types:
             return finish_result(error="invalid_type")
 
         if config.api.audit:
@@ -581,7 +582,7 @@ def bulk_query_external(  # noqa: C901
         for entry in data:
             bulk_result.setdefault(entry.type, {})
 
-            if entry.type not in supported_types:
+            if not supported_types or entry.type not in supported_types:
                 bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, "invalid_type")
                 continue
 
