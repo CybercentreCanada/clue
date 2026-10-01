@@ -108,13 +108,8 @@ const config = ({ mode }) => {
       },
       sequence: { hooks: 'list' },
       pool: 'threads',
-      poolOptions: {
-        threads: {
-          maxThreads: 8,
-          minThreads: 6
-        }
-      },
-      onConsoleLog(log, type) {
+      maxWorkers: 8,
+      onConsoleLog(log, _type) {
         const equalityLogs = ['Outstanding requests: 0'];
 
         const startsWithLogs = [
