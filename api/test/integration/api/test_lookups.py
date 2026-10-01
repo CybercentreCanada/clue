@@ -28,6 +28,23 @@ def test_get_types(host):
     assert sorted(res.json()["api_response"]["test"]) == sorted(["ipv4", "ipv6", "port", "sha256"])
 
 
+def test_get_types_omits_sources_above_user_classification(host):
+    access_token = get_token("huey")
+
+    if not access_token:
+        pytest.skip("Could not connect to keycloak.")
+
+    res = requests.get(
+        f"{host}/api/v1/lookup/types",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+
+    assert res.ok
+    types_by_source = res.json()["api_response"]
+    assert "test" in types_by_source
+    assert "test-amber" not in types_by_source
+
+
 def test_get_enrichment(host):
     access_token = get_token()
 

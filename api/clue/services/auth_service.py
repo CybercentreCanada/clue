@@ -299,7 +299,7 @@ def check_obo(source: ExternalSource, access_token: str | None, username: str) -
     if source.obo_target:
         logger.debug("Source %s requires OBO to %s", source.name, source.obo_target)
 
-        if not access_token or "." not in access_token:
+        if access_token and "." not in access_token:
             logger.warning("JWT not provided, using service account.")
             access_token = jwt_service.fetch_sa_token()
 
