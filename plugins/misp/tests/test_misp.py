@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from clue.common.exceptions import UnprocessableException
 from clue.models.selector import Selector
+from clue.plugin.utils import Params
 
 TEST_PATH = "/attributes/restSearch"
 
@@ -49,25 +50,35 @@ MISP_RESPONSE = {
 
 @pytest.fixture()
 def app():
-    from misp import app
+    import app
 
     return app
+
+
+@pytest.fixture()
+def enrichments():
+    import enrichments
+
+    return enrichments
 
 
 @pytest.fixture()
 def mock_lookup(app, monkeypatch):
-    monkeypatch.setattr(app, "_lookup_type", lambda *a, **kw: MISP_RESPONSE["Attribute"])
-    return app
+    """Patch lookup_attributes to return a sample attribute, merged with optional overrides"""
 
+    def _mock(overrides=None):
+        def _patched(*args, **kwargs):
+            return [{**MISP_RESPONSE["Attribute"][0], **(overrides or {})}]
 
-def override_attr(app, overrides):
-    """Mock lookup_type with attribute field overrides"""
-    app._lookup_type = lambda *a, **kw: [{**MISP_RESPONSE["Attribute"][0], **overrides}]
+        monkeypatch.setattr(app, "lookup_attributes", _patched)
+        return app
+
+    return _mock
 
 
 @pytest.fixture()
-def base_params(mock_lookup):
-    return mock_lookup.Params(
+def base_params():
+    return Params(
         deadline=0,
         max_timeout=1,
         annotate=True,
@@ -79,87 +90,67 @@ def base_params(mock_lookup):
 
 @pytest.fixture()
 def enrich_result(mock_lookup, base_params):
-    return mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    return mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)[0]
+
+
+def test_enrich(enrich_result):
+    assert enrich_result.count == 1
+    assert enrich_result.classification == "TLP:GREEN"
+
+    annotation = enrich_result.annotations[0]
+    assert annotation.summary == "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
+    assert annotation.value == "C2 beacon observed during Cobalt Strike campaign"
+    assert annotation.confidence == 0.9
+    assert annotation.quantity == 2
+    assert annotation.severity == 0.75
 
 
 def test_enrich_no_annotate(mock_lookup, base_params):
     base_params.annotate = False
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)
+    result = mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)
     assert len(result) == 1
     assert result[0].annotations == []
 
 
-def test_enrich_count(enrich_result):
-    assert enrich_result.count == 1
-
-
-def test_enrich_classification(enrich_result):
-    assert enrich_result.classification == "TLP:GREEN"
+def test_enrich_missing_timestamp(mock_lookup, base_params):
+    app = mock_lookup({"last_seen": None, "timestamp": None})
+    with pytest.raises(UnprocessableException):
+        app.enrich(TEST_TYPE, TEST_IP, base_params)
 
 
 def test_enrich_raw_data(mock_lookup, base_params):
     base_params.raw = True
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    result = mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.raw_data is not None
 
 
-def test_enrich_returns_summary(enrich_result):
-    assert enrich_result.annotations[0].summary == (
-        "Threat Intel Team reported Payload delivery: Stop Ransomware: Medusa Ransomware"
-    )
-
-
-def test_enrich_value(enrich_result):
-    assert enrich_result.annotations[0].value == "C2 beacon observed during Cobalt Strike campaign"
-
-
 def test_enrich_freetext_comment_ignored(mock_lookup, base_params):
-    override_attr(mock_lookup, {"comment": "Imported via the Freetext Import Tool"})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"comment": "Imported via the Freetext Import Tool"})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].value != "Imported via the Freetext Import Tool"
 
 
-def test_enrich_confidence_sighting(enrich_result):
-    assert enrich_result.annotations[0].confidence == 0.9
-
-
 def test_enrich_confidence_no_sighting(mock_lookup, base_params):
-    override_attr(mock_lookup, {"Sighting": []})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"Sighting": []})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].confidence == 0.5
 
 
-def test_enrich_sighting_quantity(enrich_result):
-    assert enrich_result.annotations[0].quantity == 2
-
-
-def test_enrich_severity(enrich_result):
-    assert enrich_result.annotations[0].severity == 0.75
-
-
 def test_enrich_severity_none(mock_lookup, base_params):
-    override_attr(
-        mock_lookup,
-        {
-            "Event": {
-                "date": "2026-06-01",
-                "threat_level_id": "0",
-            }
-        },
-    )
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"Event": {"threat_level_id": "0"}})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].severity is None
 
 
 def test_enrich_timestamp_no_sightings(mock_lookup, base_params):
-    override_attr(mock_lookup, {"last_seen": None, "timestamp": "1576589519"})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"last_seen": None, "timestamp": "1576589519"})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert result.annotations[0].timestamp == datetime.fromtimestamp(1576589519, tz=timezone.utc)
 
 
 def test_enrich_active_range_in_details(mock_lookup, base_params):
-    override_attr(mock_lookup, {"first_seen": "2026-01-01T00:00:00Z", "last_seen": "2026-06-01T00:00:00Z"})
-    result = mock_lookup.enrich(TEST_TYPE, TEST_IP, base_params)[0]
+    app = mock_lookup({"first_seen": "2026-01-01T00:00:00Z", "last_seen": "2026-06-01T00:00:00Z"})
+    result = app.enrich(TEST_TYPE, TEST_IP, base_params)[0]
     assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
 
 
@@ -174,54 +165,45 @@ def test_enrich_active_range_in_details(mock_lookup, base_params):
         ("adversary:infrastructure-type='C2'", "adversary", "infrastructure-type", "C2"),
     ],
 )
-def test__parse_misp_tag(app, tag_name, exp_ns, exp_pred, exp_val):
-    ns, pred, val = app._parse_misp_tag(tag_name)
+def test__parse_misp_tag(enrichments, tag_name, exp_ns, exp_pred, exp_val):
+    ns, pred, val = enrichments._parse_misp_tag(tag_name)
     assert ns == exp_ns
     assert pred == exp_pred
     assert val == exp_val
 
 
-def test__process_tags(app, monkeypatch):
-    monkeypatch.setattr(app, "ALLOW_TAGS", {"misp-galaxy:threat-actor"})
-    sample_tags = [
-        {"name": "type:OSINT"},
-        {"name": "tlp:red"},
-        {"name": 'osint:lifetime="perpetual"'},
-        {"name": 'misp-galaxy:threat-actor="APT 29"'},
-    ]
-
-    tags, labels = app._process_tags(sample_tags)
-    assert tags == {"threat-actor:APT 29"}
-    assert labels == {"APT 29", "OSINT"}
-
-
-def test__process_tags_namespace_only(app):
-    tags, _ = app._process_tags([{"name": 'ecsirt="malware"'}])
-    assert tags == {"ecsirt:malware"}
-
-
-def test__process_tags_no_match(app):
-    sample_tags = [
-        {"name": "tlp:red"},
-        {"name": 'osint:lifetime="perpetual"'},
-    ]
-    tags, labels = app._process_tags(sample_tags)
-    assert tags == set()
-    assert labels == set()
+@pytest.mark.parametrize(
+    ("sample_tags", "exp_tags", "exp_labels"),
+    [
+        (
+            [
+                {"name": "type:OSINT"},
+                {"name": "tlp:red"},
+                {"name": 'osint:lifetime="perpetual"'},
+                {"name": 'misp-galaxy:threat-actor="APT 29"'},
+            ],
+            {"threat-actor:APT 29"},
+            {"APT 29", "OSINT"},
+        ),
+        ([{"name": 'ecsirt="malware"'}], {"ecsirt:malware"}, set()),
+        ([{"name": "tlp:red"}, {"name": 'osint:lifetime="perpetual"'}], set(), set()),
+        ([], set(), set()),
+    ],
+    ids=["allowlisted", "namespace_only", "no_match", "empty"],
+)
+def test__process_tags(enrichments, monkeypatch, sample_tags, exp_tags, exp_labels):
+    monkeypatch.setattr(enrichments, "ALLOW_TAGS", {"misp-galaxy:threat-actor", "ecsirt"})
+    tags, labels = enrichments._process_tags(sample_tags)
+    assert tags == exp_tags
+    assert labels == exp_labels
 
 
-def test__process_tags_empty(app):
-    tags, labels = app._process_tags([])
-    assert tags == set()
-    assert labels == set()
-
-
-def test__highest_tlp(app):
-    assert app._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
-    assert app._highest_tlp(["TLP:AMBER+STRICT", "TLP:AMBER"]) == "TLP:AMBER+STRICT"
-    assert app._highest_tlp(["TLP:GREEN"]) == "TLP:GREEN"
-    assert app._highest_tlp(["tlp:green"]) == "TLP:GREEN"
-    assert app._highest_tlp([]) is None
+def test__highest_tlp(enrichments):
+    assert enrichments._highest_tlp(["TLP:GREEN", "TLP:RED", "TLP:WHITE", "TLP:AMBER"]) == "TLP:RED"
+    assert enrichments._highest_tlp(["TLP:AMBER+STRICT", "TLP:AMBER"]) == "TLP:AMBER+STRICT"
+    assert enrichments._highest_tlp(["TLP:GREEN"]) == "TLP:GREEN"
+    assert enrichments._highest_tlp(["tlp:green"]) == "TLP:GREEN"
+    assert enrichments._highest_tlp([]) is None
 
 
 # Client
