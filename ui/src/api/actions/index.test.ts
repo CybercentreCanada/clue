@@ -178,7 +178,9 @@ describe('Actions API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'max_timeout=30000')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post('timeout.action', mockSelector, mockParams, {}, { timeout: 30000 });
 
@@ -457,7 +459,9 @@ describe('Actions API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'max_timeout=5000')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       const context = {
         requestId: 'req-123',

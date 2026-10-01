@@ -17,7 +17,8 @@
     "import/resolver": {
       "node": {
         "paths": ["src"]
-      }
+      },
+      "typescript": true
     },
     "react": { "version": "detect" }
   },

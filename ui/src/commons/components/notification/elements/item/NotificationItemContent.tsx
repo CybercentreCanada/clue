@@ -1,6 +1,6 @@
 import { Box, Link, Typography } from '@mui/material';
 import { FeedItem } from 'commons/components/notification';
-import * as DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify';
 import React, { FC } from 'react';
 import Markdown from 'react-markdown';
 

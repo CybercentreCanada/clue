@@ -183,7 +183,7 @@ describe('action functionality', () => {
       it('should raise an exception if forced to skip the menu when payload is invalid', async () => {
         const execution = act(() => hook.result.current('example.action', [value as any], {}, { skipMenu: true }));
 
-        expect(execution).rejects.toThrow(new Error('Form is not completed'));
+        await expect(execution).rejects.toThrow(new Error('Form is not completed'));
       });
 
       /**

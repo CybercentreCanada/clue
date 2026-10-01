@@ -349,7 +349,7 @@ describe('replicateSelectorCollection', () => {
       xhrInstances = [];
       OriginalXHR = globalThis.XMLHttpRequest;
 
-      const MockXHR: any = vi.fn().mockImplementation(() => {
+      const MockXHR: any = vi.fn(function MockXHRConstructor() {
         const instance = {
           open: vi.fn(),
           send: vi.fn(),
