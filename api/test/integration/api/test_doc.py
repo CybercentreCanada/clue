@@ -74,6 +74,19 @@ def test_formatting(login_session):
             path: str = api["path"]
             matches = re.findall(r"<(\w+)>", path)
 
+            if re.search(r"\n *Args:", description):
+                google_headers = [
+                    line.strip()
+                    for line in description.splitlines()
+                    if line.strip() in {"Args:", "Returns:", "Example:", "Raises:"}
+                ]
+                assert google_headers[:3] == [
+                    "Args:",
+                    "Returns:",
+                    "Example:",
+                ], f"Endpoint {api['function']} has incomplete or incorrectly ordered Google-style sections!"
+                continue
+
             assert re.search(
                 r"\n *Variables:", description
             ), f"Endpoint {api['function']} is missing a Variables: portion of the docstring!"
