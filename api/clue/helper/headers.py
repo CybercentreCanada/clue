@@ -22,7 +22,7 @@ def generate_headers(obo_access_token: str | None, access_token: str | None) -> 
         logger.debug("Appending authorization header")
         _headers["Authorization"] = f"Bearer {obo_access_token or access_token}"
 
-    if config.auth.propagate_clue_key and access_token:
+    if config.auth.propagate_clue_key and obo_access_token and access_token:
         logger.debug("Appending custom authorization header")
         _headers["X-Clue-Authorization"] = access_token
 
