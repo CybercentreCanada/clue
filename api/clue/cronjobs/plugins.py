@@ -1,5 +1,6 @@
 from apscheduler.schedulers.base import BaseScheduler
 from gevent.queue import Queue
+from pydantic import ValidationError
 
 from clue.api.v1.registration import EXTERNAL_PLUGIN_SET
 from clue.common.logging import get_logger
@@ -15,9 +16,34 @@ __scheduler_instance: BaseScheduler | None = None
 
 def update_external_source_list():
     """Updates the external_sources list with the plugins that have been registered through the API."""
-    plugin_list: list[ExternalSource] = [ExternalSource.model_validate(item) for item in EXTERNAL_PLUGIN_SET.members()]
-    config.api.external_sources = [item for item in config.api.external_sources if item.built_in is True]
-    config.api.external_sources.extend(plugin_list)
+    built_in_sources = [item for item in config.api.external_sources if item.built_in is True]
+    source_names = {source.name for source in built_in_sources}
+    plugin_list: list[ExternalSource] = []
+
+    for item in EXTERNAL_PLUGIN_SET.members():
+        if not isinstance(item, dict):
+            logger.warning("Ignoring invalid runtime external source configuration: expected an object")
+            continue
+
+        try:
+            source = ExternalSource.model_validate(
+                {**item, "built_in": False},
+                context={
+                    "registration_allowed_origins": config.api.registration_allowed_origins,
+                    "existing_source_names": source_names,
+                },
+            )
+        except ValidationError as error:
+            logger.warning(
+                "Ignoring invalid runtime external source configuration: %s",
+                "; ".join(item["msg"] for item in error.errors()),
+            )
+            continue
+
+        source_names.add(source.name)
+        plugin_list.append(source)
+
+    config.api.external_sources = built_in_sources + plugin_list
 
 
 def setup_job(sched: BaseScheduler):

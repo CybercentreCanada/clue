@@ -18,6 +18,7 @@ from clue.common.exceptions import (
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_source_headers
+from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
@@ -80,7 +81,7 @@ def get_supported_fetchers(
 
     with capture_span(f"GET {url}", span_type="http"):
         try:
-            rsp = requests.get(url, headers=headers, timeout=timeout)
+            rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=timeout)
             result = rsp.json()
 
             if not rsp.ok:
@@ -218,8 +219,10 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
             raise NotFoundException("Fetcher not found.", status_code=404)
         _validate_fetcher_classification(fetcher, selector, fetcher_id)
 
-        response = requests.post(
+        response = request_with_safe_redirects(
+            requests.post,
             urljoin(plugin.url, f"fetchers/{fetcher_id}"),
+            get_method=requests.get,
             json=parameters,
             headers=headers,
             timeout=request.args.get("max_timeout", 60.0, type=float),
@@ -239,7 +242,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
             "Validation error encountered on request body. Ensure your request body is properly formatted.",
             status_code=400,
         ) from err
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when running fetcher from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong when running fetcher from plugin '{plugin_id}': {err.__class__.__name__}."
@@ -290,7 +293,8 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
         req_url = urljoin(plugin.url, f"fetchers/{fetcher_id}/status/{task_id}")
         logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
 
-        response = requests.get(
+        response = request_with_safe_redirects(
+            requests.get,
             req_url,
             headers=headers,
             timeout=remaining_timeout,
@@ -310,7 +314,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
             "Validation error encountered on response body.",
             status_code=400,
         ) from err
-    except (JSONDecodeError, exceptions.ConnectionError) as err:
+    except (JSONDecodeError, exceptions.ConnectionError, exceptions.Timeout) as err:
         logger.exception(f"Something went wrong when getting the status of the fetcher from plugin '{plugin_id}'")
         raise ClueException(
             f"Something went wrong getting the status of fetcher from plugin '{plugin_id}': {err.__class__.__name__}."

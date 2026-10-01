@@ -6,7 +6,8 @@ import elasticapm
 
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION as CL_ENGINE
-from clue.config import USER_TYPES, config
+from clue.config import config
+from clue.models.auth_user import UserRole
 from clue.models.config import (
     DEFAULT_EMAIL_FIELDS,
     DEFAULT_USER_FIELDS,
@@ -34,7 +35,7 @@ def reorder_name(name: Optional[str]) -> Optional[str]:
     return " ".join(name.split(", ", 1)[::-1])
 
 
-@elasticapm.capture_span(span_type="authentication")
+@elasticapm.capture_span(span_type="authentication")  # type: ignore
 def parse_profile(profile: dict[str, Any], provider_config: OAuthProvider) -> dict[str, Any]:  # noqa: C901
     """Find email address and normalize it for further processing"""
     email_adr: str | None = None
@@ -61,10 +62,10 @@ def parse_profile(profile: dict[str, Any], provider_config: OAuthProvider) -> di
             break
 
     # Try to find a username or use email address
-    uname = None
+    uname: str | None = None
     for field in DEFAULT_USER_FIELDS:
         if field in profile:
-            uname: str = profile[field]
+            uname = profile[field]
             break
     uname = uname or email_adr
 
@@ -101,28 +102,27 @@ def parse_profile(profile: dict[str, Any], provider_config: OAuthProvider) -> di
 
     # Compute access, roles and classification using auto_properties
     access = True
-    roles = ["user"]
+    roles = [UserRole.USER]
     # TODO: correctly figure out the classification
     classification = CL_ENGINE.UNRESTRICTED
 
     # Infer roles from groups
     if profile.get("groups") and provider_config.role_map:
-        for user_type in USER_TYPES:
+        for role in UserRole:
             if (
-                user_type in provider_config.role_map
-                and provider_config.role_map[user_type] in profile.get("groups", [])
-                and user_type not in roles
+                role in provider_config.role_map
+                and provider_config.role_map[role] in profile.get("groups", [])
+                and role not in roles
             ):
-                roles.append(user_type)
+                roles.append(role)
 
     return dict(
         access=access,
-        type=roles,
+        roles=roles,
         classification=classification,
         uname=uname,
         name=name,
         email=email_adr,
-        password="__NO_PASSWORD__",  # noqa: S106
         avatar=profile.get("picture", alternate),
         groups=profile.get("groups", []),
     )
