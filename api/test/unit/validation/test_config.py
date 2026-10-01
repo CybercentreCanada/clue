@@ -3,6 +3,7 @@ import os
 import pytest
 from pydantic import ValidationError
 
+from clue.models.auth_user import APIKeyConf, UserRole
 from clue.models.config import (
     Auth,
     OAuth,
@@ -10,6 +11,50 @@ from clue.models.config import (
     ServiceAccount,
     ServiceAccountCreds,
 )
+
+
+def test_oauth_provider_accepts_legacy_role_map():
+    provider = OAuthProvider(
+        client_id="client",
+        access_token_url="https://oauth.example/token",
+        authorize_url="https://oauth.example/authorize",
+        api_base_url="https://oauth.example/",
+        audience="clue",
+        scope="openid",
+        jwks_uri="https://oauth.example/jwks",
+        role_map={"clue_admin": "admin"},
+    )
+
+    assert provider.role_map == {UserRole.ADMIN: "clue_admin"}
+
+
+def test_oauth_provider_rejects_ambiguous_role_map():
+    with pytest.raises(ValidationError, match="role_map is ambiguous"):
+        OAuthProvider(
+            client_id="client",
+            access_token_url="https://oauth.example/token",
+            authorize_url="https://oauth.example/authorize",
+            api_base_url="https://oauth.example/",
+            audience="clue",
+            scope="openid",
+            jwks_uri="https://oauth.example/jwks",
+            role_map={"admin": "user"},
+        )
+
+
+def test_oauth_provider_ignores_unsupported_legacy_roles():
+    provider = OAuthProvider(
+        client_id="client",
+        access_token_url="https://oauth.example/token",
+        authorize_url="https://oauth.example/authorize",
+        api_base_url="https://oauth.example/",
+        audience="clue",
+        scope="openid",
+        jwks_uri="https://oauth.example/jwks",
+        role_map={"clue-admins": "admin", "clue-analysts": "analyst"},
+    )
+
+    assert provider.role_map == {UserRole.ADMIN: "clue-admins"}
 
 
 def test_service_account():
@@ -71,3 +116,21 @@ def test_auth_validation():
             enabled=True, accounts=[ServiceAccountCreds(username="potato", provider="potato", password="potato")]
         ),
     )
+
+
+def test_api_key_config_rejects_empty_secret():
+    for secret in ("", "   "):
+        with pytest.raises(ValidationError):
+            APIKeyConf(secret=secret)
+
+
+def test_auth_converts_legacy_api_keys_with_warning(caplog):
+    auth = Auth(apikeys={"legacy-key": "legacy-secret"})
+
+    assert auth.apikeys == {"legacy-key": APIKeyConf(secret="legacy-secret")}
+    assert "Legacy string API key configuration is deprecated" in caplog.text
+
+
+def test_auth_rejects_empty_api_key_name():
+    with pytest.raises(ValidationError, match="API key names must not be empty"):
+        Auth(apikeys={"": "secret"})

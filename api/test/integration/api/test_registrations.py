@@ -8,6 +8,13 @@ from clue.models.config import ExternalSource
 from test.utils.oauth_credentials import get_token
 
 
+@pytest.fixture(autouse=True)
+def clear_runtime_plugins():
+    EXTERNAL_PLUGIN_SET.pop_all()
+    yield
+    EXTERNAL_PLUGIN_SET.pop_all()
+
+
 def test_registration(host):
     access_token = get_token()
 
@@ -15,7 +22,7 @@ def test_registration(host):
         pytest.skip("Could not connect to keycloak.")
 
     sample_plugin = {
-        "name": "test",
+        "name": "runtime-registration",
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
         "url": "http://localhost:5008/",
@@ -32,9 +39,12 @@ def test_registration(host):
         json=sample_plugin,
     )
     assert res.ok
-    assert (ExternalSource(**sample_plugin, built_in=False)).model_dump(
-        mode="json", exclude_none=True
-    ) in EXTERNAL_PLUGIN_SET.members()
+    assert (
+        ExternalSource.model_validate(
+            {**sample_plugin, "built_in": False}, context={"registration_allowed_origins": ["http://localhost:5008"]}
+        ).model_dump(mode="json", exclude_none=True)
+        in EXTERNAL_PLUGIN_SET.members()
+    )
 
 
 def test_registration_incorrect_json(host):
@@ -99,7 +109,7 @@ def test_get_enrichment_from_new_plugin(host):
         pytest.skip("Could not connect to keycloak.")
 
     sample_plugin = {
-        "name": "test_enrich",
+        "name": "runtime-enrich",
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
         "url": "http://localhost:5008/",
@@ -117,19 +127,19 @@ def test_get_enrichment_from_new_plugin(host):
     )
 
     enrich_res = requests.get(
-        f"{host}/api/v1/lookup/enrich/ipv4/127.0.0.1/?sources=test_enrich",
+        f"{host}/api/v1/lookup/enrich/ipv4/127.0.0.1/?sources=runtime-enrich",
         params={"max_timeout": 2.0},
         headers={"Authorization": f"Bearer {access_token}"},
     )
 
     json: dict[str, dict[str, Any]] = enrich_res.json()["api_response"]
-    assert "error" not in json["test_enrich"]
-    assert json["test_enrich"]["maintainer"] == "Example <example@example.com>"
-    assert json["test_enrich"]["datahub_link"] == "http://example.com/"
-    assert json["test_enrich"]["documentation_link"] == "http://example.com/"
+    assert "error" not in json["runtime-enrich"]
+    assert json["runtime-enrich"]["maintainer"] == "Example <example@example.com>"
+    assert json["runtime-enrich"]["datahub_link"] == "http://example.com/"
+    assert json["runtime-enrich"]["documentation_link"] == "http://example.com/"
 
-    assert json["test_enrich"]["items"][0]["count"] == 10
-    assert json["test_enrich"]["items"][0]["link"] == "https://example.com/"
+    assert json["runtime-enrich"]["items"][0]["count"] == 10
+    assert json["runtime-enrich"]["items"][0]["link"] == "https://example.com/"
 
     assert res.ok
     assert enrich_res.ok
@@ -141,7 +151,7 @@ def test_remove_application(host):
         pytest.skip("Could not connect to keycloak - is keycloak running?")
 
     sample_plugin = {
-        "name": "test",
+        "name": "runtime-remove",
         "classification": "TLP:CLEAR",
         "max_classification": "TLP:CLEAR",
         "url": "http://localhost:5008/",
@@ -158,12 +168,17 @@ def test_remove_application(host):
         json=sample_plugin,
     )
 
-    res = requests.delete(f"{host}/api/v1/registration/test", headers={"Authorization": f"Bearer {access_token}"})
+    res = requests.delete(
+        f"{host}/api/v1/registration/runtime-remove", headers={"Authorization": f"Bearer {access_token}"}
+    )
 
     assert res.ok
-    assert (ExternalSource(**sample_plugin, built_in=False)).model_dump(
-        mode="json", exclude_none=True
-    ) not in EXTERNAL_PLUGIN_SET.members()
+    assert (
+        ExternalSource.model_validate(
+            {**sample_plugin, "built_in": False}, context={"registration_allowed_origins": ["http://localhost:5008"]}
+        ).model_dump(mode="json", exclude_none=True)
+        not in EXTERNAL_PLUGIN_SET.members()
+    )
 
 
 def test_remove_application_when_no_plugin_found(host):

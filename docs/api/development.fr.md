@@ -255,9 +255,12 @@ api:
 auth:
   # Authentification par clé API
   allow_apikeys: false               # Activer l'authentification par clé API
-  apikeys:                          # Correspondance des clés API aux identifiants utilisateur
-    "api-key-1": "user1"
-    "api-key-2": "user2"
+  apikeys:                           # Noms de clés API associés à des secrets ou politiques d'accès
+    legacy-key: "secret"
+    registration-key:
+      secret: "secret"
+      roles: ["admin"]
+      privileges: ["W"]
 
   # Paramètres OAuth
   oauth:
@@ -336,6 +339,10 @@ Lors de la configuration des sources d'enrichissement externes, chaque source pr
 
 ```yaml
 api:
+  # L'inscription dynamique est désactivée lorsque cette liste est vide. Les
+  # entrées sont des origines exactes, incluant le schéma et le port non standard.
+  registration_allowed_origins:
+    - "https://plugins.exemple.com"
   external_sources:
     - name: "exemple-source"              # Nom de source unique
       url: "https://api.exemple.com"      # URL de l'API source
@@ -376,9 +383,9 @@ auth:
         required_groups: ["clue-users"]          # Groupes OAuth requis
 
         # Correspondance de rôle et de classification
-        role_map:                                # Correspondre les groupes OAuth aux rôles Clue
-          "clue-admins": "admin"
-          "clue-analysts": "analyst"
+        role_map:                                # Correspondre les rôles Clue aux groupes OAuth
+          admin: "clue-admins"
+          user: "clue-users"
         classification_map:                      # Correspondre les groupes OAuth aux niveaux d'habilitation
           "clue-admins": "TLP:RED"
           "clue-analysts": "TLP:AMBER"

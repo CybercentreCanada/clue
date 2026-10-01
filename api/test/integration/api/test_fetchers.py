@@ -227,7 +227,9 @@ def test_run_fetcher_rejects_selector_above_fetcher_classification(host, access_
 def test_invalid_input_direct(access_token):
     from clue.config import config
 
-    test_source = next(source for source in config.api.external_sources if source.name == "test")
+    test_source = next((source for source in config.api.external_sources if source.name == "test"), None)
+    if test_source is None:
+        pytest.skip("The integration test external source is not configured.")
 
     res = requests.post(
         f"{test_source.url}/fetchers/json",

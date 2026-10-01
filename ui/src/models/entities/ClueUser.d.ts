@@ -8,8 +8,7 @@ export interface ClueUser extends AppUser {
   classification?: string;
   apikeys?: [string, string[], string][];
   groups?: string[];
-  roles?: string[];
-  type: string[];
+  roles: string[];
   has_password?: boolean;
   is_active?: boolean;
   favourite_views?: string[];
