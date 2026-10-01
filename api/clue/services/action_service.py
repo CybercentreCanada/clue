@@ -1,10 +1,11 @@
+from time import monotonic
 from typing import Any, Optional
 from urllib.parse import urljoin
 
 import requests
 from elasticapm.traces import capture_span
 from flask import request
-from pydantic import TypeAdapter, ValidationError
+from pydantic import TypeAdapter
 from requests import JSONDecodeError, exceptions
 
 from clue.common.exceptions import ClueException, NotFoundException
@@ -18,10 +19,19 @@ from clue.services import auth_service
 logger = get_logger(__file__)
 
 
+def _raise_action_metadata_unavailable(error: Exception | None = None) -> None:
+    raise ClueException(
+        "Unable to verify action availability with the upstream source.", error, status_code=503
+    ) from error
+
+
 def get_supported_actions(
     source: ExternalSource,
     access_token: Optional[str],
     obo_access_token: Optional[str],
+    *,
+    timeout: float = 10.0,
+    raise_on_error: bool = False,
 ) -> dict[str, ActionSpec]:
     """Gets all supported actions for a source
 
@@ -29,16 +39,24 @@ def get_supported_actions(
         source (ExternalSource): The source whose actions to retrieve.
         access_token (Optional[str]): The caller's access token, if available.
         obo_access_token (Optional[str]): The source-specific OBO token, if available.
+        timeout (float): The upstream request timeout in seconds.
+        raise_on_error (bool): Raise a 503 when metadata cannot be verified.
 
     Returns:
         dict[str, ActionSpec]: A dict of each action and their schema
     """
     headers = generate_source_headers(access_token, obo_access_token)
 
-    return _get_supported_actions(source, headers)
+    return _get_supported_actions(source, headers, timeout=timeout, raise_on_error=raise_on_error)
 
 
-def _get_supported_actions(source: ExternalSource, headers: dict[str, str]) -> dict[str, ActionSpec]:
+def _get_supported_actions(
+    source: ExternalSource,
+    headers: dict[str, str],
+    *,
+    timeout: float,
+    raise_on_error: bool,
+) -> dict[str, ActionSpec]:
     """Fetch current metadata for listing and authorization without caching classifications."""
     logger.info("Fetching actions for source %s", source.name)
     url = urljoin(source.url, "actions/")
@@ -46,29 +64,23 @@ def _get_supported_actions(source: ExternalSource, headers: dict[str, str]) -> d
     with capture_span(f"GET {url}", span_type="http"):
         rsp = None
         try:
-            rsp = requests.get(url, headers=headers, timeout=10.0)
+            rsp = requests.get(url, headers=headers, timeout=timeout)
             result = rsp.json()
 
             if not rsp.ok:
                 err = result["api_error_message"]
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
+                if raise_on_error:
+                    _raise_action_metadata_unavailable()
                 return {}
 
             return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
-        except (exceptions.ConnectionError, exceptions.Timeout):
-            logger.exception("Unable to connect: %s", url)
-            return {}
-        except (requests.exceptions.JSONDecodeError, KeyError, JSONDecodeError):
-            logger.exception(
-                "External API did not return expected format. Full data:\n\n%s\n\nStack Trace:",
-                rsp.text if rsp else "None",
-            )
-            return {}
-        except ValidationError:
-            logger.exception("ValidationError in response from %s:", source.url)
-            return {}
-        except Exception:
-            logger.exception("Unknown exception occurred on action fetching:")
+        except ClueException:
+            raise
+        except Exception as err:
+            logger.exception("Unable to retrieve action metadata from %s", source.url)
+            if raise_on_error:
+                _raise_action_metadata_unavailable(err)
             return {}
 
 
@@ -238,9 +250,20 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
 
     headers = generate_source_headers(access_token, obo_access_token)
 
-    action = get_supported_actions(plugin, access_token=access_token, obo_access_token=obo_access_token).get(action_id)
+    timeout = request.args.get("max_timeout", plugin.default_timeout, type=float)
+    metadata_started = monotonic()
+    # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
+    action = get_supported_actions(
+        plugin,
+        access_token=access_token,
+        obo_access_token=obo_access_token,
+        timeout=max(min(timeout, 10.0), 0.001),
+        raise_on_error=True,
+    ).get(action_id)
     if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
         raise NotFoundException("Action not found.", status_code=404)
+
+    remaining_timeout = max(timeout - (monotonic() - metadata_started), 0.001)
 
     try:
         req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")
@@ -249,7 +272,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
         response = requests.get(
             req_url,
             headers=headers,
-            timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
+            timeout=remaining_timeout,
         )
 
         result = response.json()

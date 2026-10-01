@@ -1,3 +1,4 @@
+from time import monotonic
 from typing import Any, Optional
 from urllib.parse import urljoin
 
@@ -25,6 +26,12 @@ from clue.services import auth_service
 logger = get_logger(__file__)
 
 
+def _raise_fetcher_metadata_unavailable(error: Exception | None = None) -> None:
+    raise ClueException(
+        "Unable to verify fetcher availability with the upstream source.", error, status_code=503
+    ) from error
+
+
 def get_obo_access_token(
     source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
 ) -> tuple[Optional[str], Optional[str]]:
@@ -49,6 +56,9 @@ def get_supported_fetchers(
     source: ExternalSource,
     access_token: Optional[str],
     obo_access_token: Optional[str],
+    *,
+    timeout: float = 5.0,
+    raise_on_error: bool = False,
 ) -> dict[str, FetcherDefinition]:
     """Fetch current metadata without caching authorization classifications.
 
@@ -56,6 +66,8 @@ def get_supported_fetchers(
         source (ExternalSource): The source whose fetchers to retrieve.
         access_token (Optional[str]): The caller's access token, if available.
         obo_access_token (Optional[str]): The source-specific OBO token, if available.
+        timeout (float): The upstream request timeout in seconds.
+        raise_on_error (bool): Raise a 503 when metadata cannot be verified.
 
     Returns:
         dict[str, FetcherDefinition]: A dict of each ids mapped to fetcher metadata
@@ -68,23 +80,23 @@ def get_supported_fetchers(
 
     with capture_span(f"GET {url}", span_type="http"):
         try:
-            rsp = requests.get(url, headers=headers, timeout=5.0)
+            rsp = requests.get(url, headers=headers, timeout=timeout)
             result = rsp.json()
 
             if not rsp.ok:
                 err = result["api_error_message"]
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
+                if raise_on_error:
+                    _raise_fetcher_metadata_unavailable()
                 return {}
 
             return TypeAdapter(dict[str, FetcherDefinition]).validate_python(result["api_response"])
-        except (exceptions.ConnectionError, exceptions.Timeout):
-            logger.exception("Unable to connect: %s", url)
-            return {}
-        except (requests.exceptions.JSONDecodeError, KeyError):
-            logger.exception("External API did not return expected format:")
-            return {}
-        except ValidationError:
-            logger.exception("ValidationError in response from %s:", source.url)
+        except ClueException:
+            raise
+        except Exception as err:
+            logger.exception("Unable to retrieve fetcher metadata from %s", source.url)
+            if raise_on_error:
+                _raise_fetcher_metadata_unavailable(err)
             return {}
 
 
@@ -259,11 +271,20 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
 
     headers = generate_source_headers(access_token, obo_access_token)
 
-    fetcher = get_supported_fetchers(plugin, access_token=access_token, obo_access_token=obo_access_token).get(
-        fetcher_id
-    )
+    timeout = request.args.get("max_timeout", 60.0, type=float)
+    metadata_started = monotonic()
+    # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
+    fetcher = get_supported_fetchers(
+        plugin,
+        access_token=access_token,
+        obo_access_token=obo_access_token,
+        timeout=max(min(timeout, 5.0), 0.001),
+        raise_on_error=True,
+    ).get(fetcher_id)
     if fetcher is None or not CLASSIFICATION.is_accessible(user["classification"], fetcher.classification):
         raise NotFoundException("Fetcher not found.", status_code=404)
+
+    remaining_timeout = max(timeout - (monotonic() - metadata_started), 0.001)
 
     try:
         req_url = urljoin(plugin.url, f"fetchers/{fetcher_id}/status/{task_id}")
@@ -272,7 +293,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
         response = requests.get(
             req_url,
             headers=headers,
-            timeout=request.args.get("max_timeout", 60.0, type=float),
+            timeout=remaining_timeout,
         )
 
         result = response.json()

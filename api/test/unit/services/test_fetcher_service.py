@@ -13,7 +13,9 @@ from clue.services import fetcher_service
 
 @pytest.fixture
 def app():
-    return Flask(__name__)
+    app = Flask(__name__)
+    cache.init_app(app, config={"CACHE_TYPE": "SimpleCache"})
+    return app
 
 
 @pytest.fixture
@@ -80,10 +82,10 @@ def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):
             fetcher_service.get_obo_access_token(plugin, user)
 
 
-def test_get_supported_fetchers_parses_upstream_response(plugin, fetcher):
+def test_get_supported_fetchers_parses_upstream_response(app, plugin, fetcher):
     response = make_response({"test_fetcher": fetcher.model_dump()})
 
-    with patch("clue.services.fetcher_service.requests.get", return_value=response) as get:
+    with app.app_context(), patch("clue.services.fetcher_service.requests.get", return_value=response) as get:
         result = fetcher_service.get_supported_fetchers(plugin, None, None)
 
     assert result == {"test_fetcher": fetcher}
@@ -110,14 +112,36 @@ def test_all_supported_fetchers_skips_source_when_obo_fails(plugin, user):
     get.assert_not_called()
 
 
-def test_get_supported_fetchers_returns_empty_for_invalid_upstream_response(plugin):
+def test_get_supported_fetchers_returns_empty_for_invalid_upstream_response(app, plugin):
     response = make_response({})
     response.json.return_value = {"unexpected": "response"}
 
-    with patch("clue.services.fetcher_service.requests.get", return_value=response):
+    with app.app_context(), patch("clue.services.fetcher_service.requests.get", return_value=response):
         result = fetcher_service.get_supported_fetchers(plugin, None, None)
 
     assert result == {}
+
+
+@pytest.mark.parametrize("failure", ["timeout", "http_error"])
+def test_get_supported_fetchers_can_fail_closed_when_metadata_is_unavailable(app, plugin, failure):
+    if failure == "timeout":
+        request = patch("clue.services.fetcher_service.requests.get", side_effect=exceptions.Timeout())
+    else:
+        request = patch(
+            "clue.services.fetcher_service.requests.get",
+            return_value=make_response({}, ok=False, status_code=503),
+        )
+
+    with app.app_context(), request as get:
+        with pytest.raises(ClueException, match="Unable to verify fetcher availability") as error:
+            fetcher_service.get_supported_fetchers(plugin, None, None, timeout=2.0, raise_on_error=True)
+
+    assert error.value.status_code == 503
+    get.assert_called_once_with(
+        "http://plugin/fetchers/",
+        headers={"accept": "application/json", "content-type": "application/json"},
+        timeout=2.0,
+    )
 
 
 def test_all_supported_fetchers_prefixes_fetcher_ids(user, plugin, fetcher):
@@ -315,6 +339,7 @@ def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user
     with (
         app.test_request_context(query_string={"max_timeout": "12.5"}),
         patch("clue.services.fetcher_service.get_supported_fetchers", return_value={"test_fetcher": fetcher}),
+        patch("clue.services.fetcher_service.monotonic", side_effect=[0.0, 2.5]),
         patch("clue.services.fetcher_service.requests.get", return_value=response) as get,
     ):
         result = fetcher_service.get_fetcher_status("test", "test_fetcher", "task-123", user)
@@ -323,7 +348,7 @@ def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user
     get.assert_called_once_with(
         "http://plugin/fetchers/test_fetcher/status/task-123",
         headers={"accept": "application/json", "content-type": "application/json"},
-        timeout=12.5,
+        timeout=10.0,
     )
 
 
@@ -414,7 +439,6 @@ def test_fetcher_classification_authorization(app, plugin, user, fetcher, operat
 @pytest.mark.parametrize("operation", ["get_plugins_supported_fetchers", "run_fetcher", "get_fetcher_status"])
 @pytest.mark.parametrize("change", ["classification", "removed", "timeout", "http_error"])
 def test_fetcher_metadata_is_refreshed_after_success(app, configured_plugin, user, fetcher, operation, change):
-    cache.init_app(app, config={"CACHE_TYPE": "SimpleCache"})
     metadata = make_response({"test_fetcher": fetcher.model_dump()})
     result_response = make_response({"outcome": "success", "data": {"result": "ok"}, "format": "json"})
     changed_fetcher = fetcher.model_copy(update={"classification": "TLP:AMBER"})
@@ -454,6 +478,10 @@ def test_fetcher_metadata_is_refreshed_after_success(app, configured_plugin, use
                     assert result == ({"test.test_fetcher": fetcher} if attempt == 0 else {})
                 elif attempt == 0:
                     assert getattr(fetcher_service, operation)(*arguments).outcome == "success"
+                elif operation == "get_fetcher_status" and change in {"timeout", "http_error"}:
+                    with pytest.raises(ClueException, match="Unable to verify fetcher availability") as error:
+                        getattr(fetcher_service, operation)(*arguments)
+                    assert error.value.status_code == 503
                 else:
                     with pytest.raises(NotFoundException, match="^Fetcher not found\\.$") as error:
                         getattr(fetcher_service, operation)(*arguments)
@@ -472,7 +500,6 @@ def test_fetcher_metadata_is_refreshed_after_success(app, configured_plugin, use
 
 @pytest.mark.parametrize("operation", ["get_plugins_supported_fetchers", "run_fetcher", "get_fetcher_status"])
 def test_previous_fetcher_metadata_does_not_bypass_token_failure(app, configured_plugin, user, fetcher, operation):
-    cache.init_app(app, config={"CACHE_TYPE": "SimpleCache"})
     metadata = make_response({"test_fetcher": fetcher.model_dump()})
     with (
         app.test_request_context(

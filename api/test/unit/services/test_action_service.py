@@ -4,7 +4,7 @@ import pytest
 from flask import Flask
 from requests import exceptions
 
-from clue.common.exceptions import NotFoundException
+from clue.common.exceptions import ClueException, NotFoundException
 from clue.config import cache
 from clue.models.actions import ActionSpec
 from clue.models.config import ExternalSource
@@ -219,6 +219,73 @@ def test_action_metadata_failures_are_not_cached(cached_app, metadata_response, 
         assert get.call_count == 2
 
 
+@pytest.mark.parametrize("failure", ["timeout", "http_error"])
+def test_action_status_fails_closed_when_metadata_is_unavailable(cached_app, failure):
+    plugin = ExternalSource(name="test", url="http://plugin/")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    failed_response = MagicMock()
+    failed_response.ok = False
+    failed_response.status_code = 503
+    failed_response.json.return_value = {"api_error_message": "Unavailable"}
+    get_metadata = (
+        patch("clue.services.action_service.requests.get", side_effect=exceptions.Timeout())
+        if failure == "timeout"
+        else patch("clue.services.action_service.requests.get", return_value=failed_response)
+    )
+
+    with (
+        cached_app.test_request_context(query_string={"max_timeout": "3.0"}),
+        patch.object(action_service, "config") as configuration,
+        patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
+        get_metadata as get,
+    ):
+        configuration.api.external_sources = [plugin]
+        with pytest.raises(ClueException, match="Unable to verify action availability") as error:
+            action_service.get_action_status("test", "test_action", "task-123", user)
+
+    assert error.value.status_code == 503
+    get.assert_called_once_with(
+        "http://plugin/actions/",
+        headers={"accept": "application/json", "content-type": "application/json"},
+        timeout=3.0,
+    )
+
+
+def test_action_status_shares_timeout_budget_with_metadata(cached_app):
+    plugin = ExternalSource(name="test", url="http://plugin/")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    action = ActionSpec(
+        id="test_action", name="Test action", classification="TLP:CLEAR", supported_types={"ipv4"}, params={}
+    )
+    operation_response = MagicMock()
+    operation_response.ok = True
+    operation_response.json.return_value = {"api_response": {"outcome": "success", "format": "json", "output": []}}
+
+    with (
+        cached_app.test_request_context(query_string={"max_timeout": "12.5"}),
+        patch.object(action_service, "config") as configuration,
+        patch("clue.services.action_service.CLASSIFICATION.is_accessible", return_value=True),
+        patch.object(action_service, "get_supported_actions", return_value={"test_action": action}) as get_supported,
+        patch("clue.services.action_service.monotonic", side_effect=[0.0, 2.5]),
+        patch("clue.services.action_service.requests.get", return_value=operation_response) as get,
+    ):
+        configuration.api.external_sources = [plugin]
+        assert action_service.get_action_status("test", "test_action", "task-123", user).outcome == "success"
+
+    get_supported.assert_called_once_with(
+        plugin,
+        access_token=None,
+        obo_access_token=None,
+        timeout=10.0,
+        raise_on_error=True,
+    )
+    get.assert_called_once_with(
+        "http://plugin/actions/test_action/status/task-123",
+        headers={"accept": "application/json", "content-type": "application/json"},
+        timeout=10.0,
+    )
+
+
 @pytest.mark.parametrize("operation", ["execute_action", "get_action_status"])
 def test_previous_action_metadata_does_not_bypass_obo_failure(cached_app, metadata_response, operation):
     plugin = ExternalSource(name="test", url="http://plugin/", classification="TLP:CLEAR")
@@ -287,10 +354,15 @@ def test_action_authorization_rechecks_metadata_after_success(cached_app, metada
     ):
         configuration.api.external_sources = [plugin]
         assert getattr(action_service, operation)(*arguments).outcome == "success"
-        with pytest.raises(NotFoundException, match="^Action not found\\.$") as error:
-            getattr(action_service, operation)(*arguments)
+        if operation == "get_action_status" and change in {"timeout", "http_error"}:
+            with pytest.raises(ClueException, match="Unable to verify action availability") as error:
+                getattr(action_service, operation)(*arguments)
+            assert error.value.status_code == 503
+        else:
+            with pytest.raises(NotFoundException, match="^Action not found\\.$") as error:
+                getattr(action_service, operation)(*arguments)
+            assert error.value.status_code == 404
 
-    assert error.value.status_code == 404
     assert check_obo.call_count == 2
     assert [entry.args[0] for entry in get.call_args_list] == (
         ["http://plugin/actions/", "http://plugin/actions/"]
