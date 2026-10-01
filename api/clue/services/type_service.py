@@ -123,6 +123,9 @@ def all_supported_types(user: dict[str, Any]) -> dict[str, dict[str, str]]:
     all_types = {}
 
     for source in config.api.external_sources:
+        if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
+            continue
+
         try:
             access_token, obo_access_token = get_obo_access_token(source, user)
         except AuthenticationException:
