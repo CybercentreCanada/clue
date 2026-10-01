@@ -520,7 +520,7 @@ class QueryResult(ResultMetadata):
     @field_validator("items")
     @classmethod
     def validate_items(cls, items: list[QueryEntry], info: ValidationInfo) -> list[QueryEntry]:  # noqa: ANN102
-        """Validate that if classification data was provided, all annotations match the user's classification.
+        """Retain only items accessible to the user, failing closed without user classification.
 
         Args:
             items (list[QueryEntry]): The items to validate.
@@ -529,39 +529,42 @@ class QueryResult(ResultMetadata):
         Returns:
             list[QueryEntry]: The validated items field.
         """
-        if info.context:
-            user_classification = info.context.get("user", {}).get("classification", None)
-            if user_classification:
-                filtered_results: list[QueryEntry] = []
+        if not isinstance(info.context, dict) or "user" not in info.context:
+            logger.warning("No user context given, dropping all query items")
+            return []
 
-                for item in items:
-                    if CLASSIFICATION.is_accessible(user_classification, item.classification):
-                        filtered_results.append(item)
-                    else:
-                        logger.debug(
-                            "Removing item at classification %s, inaccessible to user classification %s",
-                            item.classification,
-                            user_classification,
-                        )
+        user = info.context["user"]
+        user_classification = user.get("classification") if isinstance(user, dict) else None
+        if (
+            not isinstance(user_classification, str)
+            or not user_classification
+            or user_classification.upper().partition("//")[0] in {"INV", CLASSIFICATION.INVALID_CLASSIFICATION}
+            or not CLASSIFICATION.is_valid(user_classification)
+        ):
+            logger.warning("Missing or invalid user classification, dropping all query items")
+            return []
 
-                if len(items) > len(filtered_results):
-                    logger.info(
-                        "Dropped %s items due to inaccessible classification (user classification: %s)",
-                        len(items) - len(filtered_results),
-                        user_classification,
-                    )
-                elif DEBUG:
-                    logger.debug(
-                        "All %s values are accessible by user classification %s", len(items), user_classification
-                    )
-
-                return filtered_results
+        filtered_results: list[QueryEntry] = []
+        for item in items:
+            if CLASSIFICATION.is_accessible(user_classification, item.classification):
+                filtered_results.append(item)
             else:
-                logger.warning("No user classification given, classification parsing will not occur")
-        else:
-            logger.warning("No user context given, classification parsing will not occur")
+                logger.debug(
+                    "Removing item at classification %s, inaccessible to user classification %s",
+                    item.classification,
+                    user_classification,
+                )
 
-        return items
+        if len(items) > len(filtered_results):
+            logger.info(
+                "Dropped %s items due to inaccessible classification (user classification: %s)",
+                len(items) - len(filtered_results),
+                user_classification,
+            )
+        elif DEBUG:
+            logger.debug("All %s values are accessible by user classification %s", len(items), user_classification)
+
+        return filtered_results
 
 
 class PluginResponse(BaseModel):

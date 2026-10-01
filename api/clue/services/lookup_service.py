@@ -71,7 +71,14 @@ def get_client(base_url: str, timeout: float) -> Session:
 
 
 def build_result(
-    type_name: str, value: str, source: ExternalSource, error: Optional[str] = None, latency: Optional[float] = None
+    type_name: str,
+    value: str,
+    source: ExternalSource,
+    error: Optional[str] = None,
+    latency: Optional[float] = None,
+    *,
+    user: dict[str, Any] | None = None,
+    items: list[QueryEntry] | None = None,
 ):
     """Builds the QueryResult object using the provided values.
 
@@ -82,6 +89,8 @@ def build_result(
         error (Optional[str], optional): The error that occured during the request. Defaults to None.
         latency (Optional[float], optional): The amount of time between the request and the response (in milliseconds).
             Defaults to None.
+        user (dict[str, Any] | None): The user whose classification controls access to items.
+        items (list[QueryEntry] | None): The items returned by the source.
 
     Returns:
         QueryResult: The QueryResult object built.
@@ -92,15 +101,19 @@ def build_result(
     if DEBUG:
         logger.debug("Building query result for source %s", source.name)
 
-    return QueryResult(
-        type=type_name,
-        value=value,
-        source=source.name,
-        maintainer=source.maintainer,
-        datahub_link=source.datahub_link,
-        documentation_link=source.documentation_link,
-        error=error,
-        latency=latency or 0,
+    return QueryResult.model_validate(
+        {
+            "type": type_name,
+            "value": value,
+            "source": source.name,
+            "maintainer": source.maintainer,
+            "datahub_link": source.datahub_link,
+            "documentation_link": source.documentation_link,
+            "error": error,
+            "latency": latency or 0,
+            "items": items or [],
+        },
+        context={"user": user},
     )
 
 
@@ -273,13 +286,7 @@ def parse_response(source: ExternalSource, user: dict[str, Any], api_response: A
             len(api_response),
         )
 
-        if source.production:
-            logger.debug(f"Skipping validation for production source {source.name}")
-            items: list[QueryEntry] = [QueryEntry.model_construct(data) for data in api_response]
-        else:
-            items = [QueryEntry.model_validate(data, context={"user": user}) for data in api_response]
-
-        return items
+        return [QueryEntry.model_validate(data, context={"user": user}) for data in api_response]
 
 
 def parse_bulk_response(
@@ -301,9 +308,6 @@ def parse_bulk_response(
     """
     bulk_result: dict[str, dict[str, QueryResult]] = {}
 
-    if source.production:
-        logger.debug(f"Skipping validation for production source {source.name}")
-
     with capture_span(f"{source.name}-bulk", "parsing"):
         for type in api_response:
             bulk_result.setdefault(type, {})
@@ -320,13 +324,10 @@ def parse_bulk_response(
                 # This allows plugins to overwrite the default values if they want
                 data = {**data, **api_response[type][value], "latency": latency or 0.0}
 
-                if source.production:
-                    bulk_result[type][value] = QueryResult.model_construct(**data)
-                else:
-                    bulk_result[type][value] = QueryResult.model_validate(
-                        data,
-                        context={"user": user},
-                    )
+                bulk_result[type][value] = QueryResult.model_validate(
+                    data,
+                    context={"user": user},
+                )
 
         return bulk_result
 
@@ -341,15 +342,7 @@ def handle_validation_error(source: ExternalSource, err: ValidationError) -> str
     Returns:
         str: A formatted error message.
     """
-    pydantic_errs: list[str] = []
-
-    for validation_err in err.errors():
-        loc = ".".join(
-            section if isinstance(section, str) else f"[{str(section)}]" for section in validation_err["loc"]
-        )
-        pydantic_errs.append(f'"{loc}": {validation_err["msg"]}')
-
-    err_msg = f"{source.name} returned an improperly formatted response: {', '.join(pydantic_errs)}"
+    err_msg = f"{source.name} returned an improperly formatted response"
     err_id = log_error(logger, err_msg, err)
     return f"{err_msg}. Error ID: {err_id}"
 
@@ -372,7 +365,7 @@ def query_external(
     if apm_transaction:
         execution_context.set_transaction(apm_transaction)
 
-    finish_result = functools.partial(build_result, type_name, value, source)
+    finish_result = functools.partial(build_result, type_name, value, source, user=user)
 
     with capture_span(query_external.__name__, span_type="greenlet"):
         if type_name not in type_service.all_supported_types(user, access_token=access_token).get(source.name, {}):
@@ -429,11 +422,11 @@ def query_external(
             )
 
         try:
-            result = finish_result(latency=(time.perf_counter() - start) * 1000)
-
             api_response = response["api_response"]
-            if api_response:
-                result.items = parse_response(source, user, api_response)
+            result = finish_result(
+                latency=(time.perf_counter() - start) * 1000,
+                items=parse_response(source, user, api_response) if api_response else [],
+            )
 
             logger.debug("Returning valid result from source %s", source)
 
