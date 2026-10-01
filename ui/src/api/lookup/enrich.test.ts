@@ -80,7 +80,9 @@ describe('Enrichment API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'sources=provider1,provider2')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, sources);
 
@@ -94,7 +96,9 @@ describe('Enrichment API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'classification=TLP%3ARED')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, [], options);
 
@@ -108,7 +112,9 @@ describe('Enrichment API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'max_timeout=30000')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, [], options);
 
@@ -132,7 +138,9 @@ describe('Enrichment API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'include_raw=true')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, [], options);
 
@@ -154,7 +162,9 @@ describe('Enrichment API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'no_cache=true')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, [], options);
 
@@ -185,7 +195,9 @@ describe('Enrichment API', () => {
             'sources=provider1,provider2&classification=TLP%3AGREEN&max_timeout=15000&include_raw=true&no_cache=true'
         )
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, sources, options);
 
@@ -201,7 +213,9 @@ describe('Enrichment API', () => {
       const mockSearchParams = {
         toString: vi.fn(() => 'classification=TLP%3ARED%2FSPECIAL%20CHARS%20%26%20SYMBOLS')
       };
-      global.URLSearchParams = vi.fn(() => mockSearchParams) as any;
+      global.URLSearchParams = vi.fn(function MockURLSearchParams() {
+        return mockSearchParams;
+      }) as any;
 
       await post(mockBulkData, [], options);
 
