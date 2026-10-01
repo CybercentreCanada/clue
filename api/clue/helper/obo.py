@@ -18,7 +18,7 @@ def get_obo_access_token(
         auth_header = request.headers.get("Authorization", type=str)
         if auth_header:
             parts = auth_header.split(" ", 1)
-            access_token = parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" else auth_header
+            access_token = parts[1] if len(parts) == 2 else auth_header
 
     if not access_token:
         return None, None

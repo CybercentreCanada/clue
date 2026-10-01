@@ -73,6 +73,17 @@ def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
     check_obo.assert_called_once_with(plugin, "access-token", "test-user")
 
 
+def test_get_obo_access_token_strips_basic_scheme(app, plugin, user):
+    with (
+        app.test_request_context(headers={"Authorization": "Basic api-key-credentials"}),
+        patch("clue.helper.obo.auth_service.check_obo", return_value=(None, None)) as check_obo,
+    ):
+        result = fetcher_service.get_obo_access_token(plugin, user)
+
+    assert result == ("api-key-credentials", None)
+    check_obo.assert_called_once_with(plugin, "api-key-credentials", "test-user")
+
+
 def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):
     with (
         app.test_request_context(headers={"Authorization": "Bearer access-token"}),
@@ -109,7 +120,7 @@ def test_all_supported_fetchers_skips_source_when_obo_fails(plugin, user):
         patch("clue.services.fetcher_service.requests.get") as get,
     ):
         configuration.api.external_sources = [plugin]
-        result = fetcher_service.all_supported_fetchers(user, access_token="access-token")
+        result = fetcher_service.all_supported_fetchers(user)
 
     assert result == {}
     get.assert_not_called()
@@ -171,7 +182,7 @@ def test_all_supported_fetchers_prefixes_fetcher_ids(user, plugin, fetcher):
         ),
     ):
         mock_config.api.external_sources = [plugin, other_plugin]
-        result = fetcher_service.all_supported_fetchers(user, access_token="access-token")
+        result = fetcher_service.all_supported_fetchers(user)
 
     assert result == {
         "test.test_fetcher": fetcher,

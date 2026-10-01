@@ -82,7 +82,7 @@ def all_supported_fetchers(user: dict[str, Any]) -> dict[str, FetcherDefinition]
     """Gets all supported fetchers for all sources
 
     Args:
-        access_token (Optional[str], optional): The access token to use, if necessary. Defaults to None.
+        user (dict[str, Any]): The user requesting the fetchers.
 
     Returns:
         dict[str, FetcherDefinition]: A dict of all fetchers and their matching schema
