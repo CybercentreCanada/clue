@@ -344,7 +344,11 @@ def handle_validation_error(source: ExternalSource, err: ValidationError) -> str
         str: A formatted error message.
     """
     err_msg = f"{source.name} returned an improperly formatted response"
-    err_id = log_error(logger, err_msg, err)
+    details = [
+        {"type": detail["type"], "loc": detail["loc"]}
+        for detail in err.errors(include_input=False, include_context=False)
+    ]
+    err_id = log_error(logger, err_msg, details)
     return f"{err_msg}. Error ID: {err_id}"
 
 
@@ -436,7 +440,6 @@ def query_external(
 
             return result
         except ValidationError as err:
-            logger.exception("Validation error on response from %s", source)
             return finish_result(
                 error=handle_validation_error(source, err),
                 latency=(time.perf_counter() - start) * 1000,

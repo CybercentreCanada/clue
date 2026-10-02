@@ -154,7 +154,7 @@ def test_query_external_filters_items_by_user_classification(app, source, classi
 
 @pytest.mark.parametrize("production", [False, True])
 @pytest.mark.parametrize("bulk", [False, True])
-def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, source, user, production, bulk):
+def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, source, user, production, bulk, caplog):
     """Prevent disclosure when nested validation runs before classification filtering."""
     source.production = production
     restricted_marker = "RESTRICTED_TEST_MARKER"
@@ -201,6 +201,10 @@ def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, 
     assert result.items == []
     assert result.error.startswith("test returned an improperly formatted response. Error ID: ")
     assert restricted_marker not in result.model_dump_json()
+    assert restricted_marker not in caplog.text
+    assert "assertion_error" in caplog.text
+    assert "annotations" in caplog.text
+    assert all(record.exc_info is None for record in caplog.records)
 
 
 @pytest.mark.parametrize("production", [False, True])
