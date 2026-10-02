@@ -405,8 +405,8 @@ class ExternalSource(BaseModel):
     production: bool = Field(
         description=(
             "Is this source ready for production? Skips entry validation for increased speed. "
-            "Bulk responses also bypass result validation and classification filtering. "
-            "Enable only for trusted sources."
+            "Bulk responses also bypass result schema validation. "
+            "Classification validation and user-clearance filtering always apply."
         ),
         default=False,
     )

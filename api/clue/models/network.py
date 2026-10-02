@@ -533,7 +533,11 @@ class QueryResult(ResultMetadata):
             logger.warning("No user context given, dropping all query items")
             return []
 
-        user = info.context["user"]
+        return cls.filter_items(items, info.context["user"])
+
+    @classmethod
+    def filter_items(cls, items: list[QueryEntry], user: Any) -> list[QueryEntry]:  # noqa: ANN102
+        """Apply classification authorization independently of response schema validation."""
         user_classification = user.get("classification") if isinstance(user, dict) else None
         if (
             not isinstance(user_classification, str)
@@ -546,14 +550,16 @@ class QueryResult(ResultMetadata):
 
         filtered_results: list[QueryEntry] = []
         for item in items:
-            if CLASSIFICATION.is_accessible(user_classification, item.classification):
+            if (
+                isinstance(item.classification, str)
+                and item.classification
+                and item.classification.upper().partition("//")[0] not in {"INV", CLASSIFICATION.INVALID_CLASSIFICATION}
+                and CLASSIFICATION.is_valid(item.classification)
+                and CLASSIFICATION.is_accessible(user_classification, item.classification, ignore_invalid=True)
+            ):
                 filtered_results.append(item)
             else:
-                logger.debug(
-                    "Removing item at classification %s, inaccessible to user classification %s",
-                    item.classification,
-                    user_classification,
-                )
+                logger.debug("Removing item with invalid or inaccessible classification")
 
         if len(items) > len(filtered_results):
             logger.info(

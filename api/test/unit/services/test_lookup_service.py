@@ -6,7 +6,7 @@ from flask import Flask
 from clue.config import config
 from clue.models.auth_user import AuthResult, AuthUser, Privilege
 from clue.models.config import ExternalSource
-from clue.models.network import QueryResult
+from clue.models.network import QueryEntry, QueryResult
 from clue.models.selector import Selector
 from clue.services import lookup_service
 
@@ -111,8 +111,9 @@ def test_query_result_item_assignment_without_context_fails_closed(classified_re
     assert result.items == []
 
 
-def test_parse_bulk_response_filters_items_by_user_classification(source, classified_result):
-    source.production = False
+@pytest.mark.parametrize("production", [False, True])
+def test_parse_bulk_response_filters_items_by_user_classification(source, classified_result, production):
+    source.production = production
     result = lookup_service.parse_bulk_response(
         source,
         {"classification": "TLP:GREEN"},
@@ -125,17 +126,72 @@ def test_parse_bulk_response_filters_items_by_user_classification(source, classi
 @pytest.mark.parametrize("bulk", [False, True])
 def test_production_response_bypasses_validation(source, user, bulk):
     source.production = True
-    items = [{"classification": "TLP:AMBER+STRICT", "count": "not-an-integer"}]
+    items = [{"classification": "TLP:CLEAR", "count": "not-an-integer"}]
 
     if bulk:
         result = lookup_service.parse_bulk_response(source, user, {"ipv4": {"127.0.0.1": {"items": items}}})["ipv4"][
             "127.0.0.1"
         ]
-        assert result.items == items
+        assert result.items[0].classification == "TLP:CLEAR"
+        assert result.items[0].count == "not-an-integer"
     else:
         result_items = lookup_service.parse_response(source, user, items)
-        assert result_items[0].classification == "TLP:AMBER+STRICT"
+        assert result_items[0].classification == "TLP:CLEAR"
         assert result_items[0].count == "not-an-integer"
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+@pytest.mark.parametrize(
+    "classification", [None, "", 123, True, [], {}, "NOT_A_CLASSIFICATION", "INV", "INVALID", "TLP:AMBER+STRICT"]
+)
+def test_production_response_rejects_invalid_or_inaccessible_classification(source, user, bulk, classification, caplog):
+    source.production = True
+    items = [
+        {"classification": "TLP:CLEAR"},
+        {"classification": classification, "raw_data": "RESTRICTED_TEST_MARKER"},
+        {"raw_data": "RESTRICTED_TEST_MARKER"},
+    ]
+
+    if bulk:
+        result = lookup_service.parse_bulk_response(source, user, {"ipv4": {"127.0.0.1": {"items": items}}})["ipv4"][
+            "127.0.0.1"
+        ]
+    else:
+        result = lookup_service.build_result(
+            "ipv4", "127.0.0.1", source, user=user, items=lookup_service.parse_response(source, user, items)
+        )
+
+    assert [item.classification for item in result.items] == ["TLP:CLEAR"]
+    assert "RESTRICTED_TEST_MARKER" not in result.model_dump_json()
+    assert "RESTRICTED_TEST_MARKER" not in caplog.text
+
+
+@pytest.mark.parametrize("classification", [None, "", 123, "INVALID", "NOT_A_CLASSIFICATION"])
+def test_query_result_rejects_unvalidated_item_classification(classified_result, user, classification):
+    classified_result["items"] = [
+        QueryEntry.model_construct(classification=classification, raw_data="RESTRICTED_TEST_MARKER")
+    ]
+
+    result = QueryResult.model_validate(classified_result, context={"user": user})
+
+    assert result.items == []
+    assert "RESTRICTED_TEST_MARKER" not in result.model_dump_json()
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+@pytest.mark.parametrize("user", [None, {}, {"classification": "INVALID"}, {"classification": "NOT_A_CLASSIFICATION"}])
+def test_production_response_requires_valid_user_classification(source, user, bulk):
+    source.production = True
+    items = [{"classification": "TLP:CLEAR", "raw_data": "RESTRICTED_TEST_MARKER"}]
+
+    if bulk:
+        result = lookup_service.parse_bulk_response(source, user, {"ipv4": {"127.0.0.1": {"items": items}}})["ipv4"][
+            "127.0.0.1"
+        ]
+        assert result.items == []
+        assert "RESTRICTED_TEST_MARKER" not in result.model_dump_json()
+    else:
+        assert lookup_service.parse_response(source, user, items) == []
 
 
 @pytest.mark.parametrize("production", [False, True])
@@ -270,10 +326,7 @@ def test_lookup_route_passes_authenticated_user_context(app, source, classified_
     results = api_response.get_json()["api_response"]
     result = results["ipv4"]["127.0.0.1"]["test"] if bulk else results["test"]
     assert not result.get("error")
-    expected = ["TLP:CLEAR", "TLP:GREEN"]
-    if production and bulk:
-        expected.append("TLP:AMBER+STRICT")
-    assert [item["classification"] for item in result["items"]] == expected
+    assert [item["classification"] for item in result["items"]] == ["TLP:CLEAR", "TLP:GREEN"]
 
 
 @pytest.mark.parametrize("base_url", ["http://plugin", "http://plugin/", "http://plugin/api/"])

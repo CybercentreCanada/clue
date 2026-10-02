@@ -289,7 +289,11 @@ def parse_response(source: ExternalSource, user: dict[str, Any], api_response: A
 
         if source.production:
             logger.debug("Skipping validation for production source %s", source.name)
-            return [QueryEntry.model_construct(**data) for data in api_response]
+            items = [
+                QueryEntry.model_construct(**{**data, "classification": data.get("classification")})
+                for data in api_response
+            ]
+            return QueryResult.filter_items(items, user)
 
         return [QueryEntry.model_validate(data, context={"user": user}) for data in api_response]
 
@@ -331,6 +335,7 @@ def parse_bulk_response(
 
                 if source.production:
                     logger.debug("Skipping validation for production source %s", source.name)
+                    data["items"] = parse_response(source, user, data.get("items", []))
                     bulk_result[type][value] = QueryResult.model_construct(**data)
                 else:
                     bulk_result[type][value] = QueryResult.model_validate(
