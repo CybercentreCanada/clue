@@ -403,7 +403,11 @@ class ExternalSource(BaseModel):
     datahub_link: Url | None = Field(description="Link to datahub entry on this enrichment", default=None)
     documentation_link: Url | None = Field(description="Link to documentation on this enrichment", default=None)
     production: bool = Field(
-        description="Is this source ready for production? This will disable model validation for increased speeds",
+        description=(
+            "Is this source ready for production? Skips entry validation for increased speed. "
+            "Bulk responses also bypass result schema validation. "
+            "Classification validation and user-clearance filtering always apply."
+        ),
         default=False,
     )
     include_default: bool = Field(
