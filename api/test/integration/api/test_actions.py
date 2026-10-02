@@ -282,7 +282,7 @@ def test_no_actions(host, access_token):
 
     response = res.json()
 
-    assert response["api_error_message"] == "slow_server does not support any actions."
+    assert response["api_error_message"] == "Action not found."
 
 
 def test_run_action_email(host, access_token):

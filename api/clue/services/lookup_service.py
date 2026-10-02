@@ -26,11 +26,12 @@ from clue.common.logging.audit import audit
 from clue.config import CLASSIFICATION as CLASSIFICATION
 from clue.config import DEBUG, config
 from clue.helper.headers import generate_headers
+from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.network import QueryEntry, QueryResult
 from clue.models.selector import Selector
-from clue.services import auth_service, mongo_service, type_service, user_service
+from clue.services import mongo_service, type_service, user_service
 
 logger = get_logger(__file__)
 CLIENTS: dict[str, Session] = {}
@@ -361,8 +362,8 @@ def query_external(
     value: str,
     limit: int,
     timeout: float,
-    access_token: str,
-    clue_access_token: str | None,
+    access_token: str | None,
+    obo_access_token: str | None,
     no_annotation: bool = False,
     no_cache: bool = False,
     include_raw: bool = True,
@@ -375,7 +376,10 @@ def query_external(
     finish_result = functools.partial(build_result, type_name, value, source)
 
     with capture_span(query_external.__name__, span_type="greenlet"):
-        if type_name not in type_service.all_supported_types(user, access_token=access_token).get(source.name, {}):
+        supported_types = type_service.get_supported_types(
+            source.url, access_token=access_token, obo_access_token=obo_access_token
+        )
+        if not supported_types or type_name not in supported_types:
             return finish_result(error="invalid_type")
 
         if config.api.audit:
@@ -407,7 +411,7 @@ def query_external(
                     get_client(source.url, timeout).get,
                     url,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
-                    headers=generate_headers(access_token, clue_access_token),
+                    headers=generate_headers(obo_access_token=obo_access_token, access_token=access_token),
                     timeout=(timeout, timeout * 3),
                 )
                 rsp.raise_for_status()
@@ -493,15 +497,10 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
 
         finish_result = functools.partial(build_result, type_name, value, source)
 
-        obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-
-        # TODO: sa-clue support
-        if not obo_access_token and source.obo_target:
-            results[source.name] = finish_result(error="You must have a valid JWT to access this plugin.")
-            continue
-
-        if error:
-            results[source.name] = finish_result(error=error)
+        try:
+            access_token, obo_access_token = get_obo_access_token(source, user)
+        except AuthenticationException as err:
+            results[source.name] = finish_result(error=err.message)
             continue
 
         # check query against the max supported classification of the external system
@@ -527,8 +526,8 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
                     value=value,
                     limit=query_params.limit,
                     timeout=query_params.max_timeout,
-                    access_token=obo_access_token or access_token,
-                    clue_access_token=access_token if obo_access_token else None,
+                    access_token=access_token,
+                    obo_access_token=obo_access_token,
                     no_annotation=query_params.no_annotation,
                     include_raw=query_params.include_raw,
                     no_cache=query_params.no_cache,
@@ -562,8 +561,8 @@ def bulk_query_external(  # noqa: C901
     source: ExternalSource,
     limit: int,
     timeout: float,
-    access_token: str,
-    clue_access_token: str | None,
+    access_token: str | None,
+    obo_access_token: str | None,
     no_annotation: bool = False,
     no_cache: bool = False,
     include_raw: bool = True,
@@ -574,14 +573,16 @@ def bulk_query_external(  # noqa: C901
         execution_context.set_transaction(apm_transaction)
 
     with capture_span(bulk_query_external.__name__, span_type="greenlet"):
-        supported_types = type_service.all_supported_types(user, access_token=access_token).get(source.name, {})
+        supported_types = type_service.get_supported_types(
+            source.url, access_token=access_token, obo_access_token=obo_access_token
+        )
         bulk_result: dict[str, dict[str, QueryResult]] = {}
 
         filtered_data: list[Selector] = []
         for entry in data:
             bulk_result.setdefault(entry.type, {})
 
-            if entry.type not in supported_types:
+            if not supported_types or entry.type not in supported_types:
                 bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, "invalid_type")
                 continue
 
@@ -629,7 +630,7 @@ def bulk_query_external(  # noqa: C901
                     get_method=client.get,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     json=[entry.model_dump(exclude_none=True, exclude_unset=True) for entry in data],
-                    headers=generate_headers(access_token, clue_access_token),
+                    headers=generate_headers(obo_access_token=obo_access_token, access_token=access_token),
                     timeout=(timeout * 3, timeout * 3),
                 )
                 rsp.raise_for_status()
@@ -697,11 +698,6 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         f"excluding sources [{','.join(excluded_sources)}]"
     )
 
-    access_token = request.headers.get("Authorization", type=str)
-    if not access_token:
-        raise AuthenticationException("Access token is required to enrich.")
-    access_token = access_token.split(" ")[1]
-
     if len(data) < 1:
         raise InvalidDataException("You must provide at least one value to lookup.")
 
@@ -744,16 +740,12 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
 
     greenlets: list[tuple[list[Selector], ExternalSource, Greenlet[Any, dict[str, dict[str, QueryResult]]]]] = []
     for source in selected_sources:
-        obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", source.name, error)
-
-        # TODO: sa-clue support
-        if not obo_access_token and source.obo_target:
+        try:
+            access_token, obo_access_token = get_obo_access_token(source, user)
+        except AuthenticationException as err:
             for entry in data:
                 bulk_result[entry.type][entry.value][source.name] = build_result(
-                    entry.type, entry.value, source, "You must have a valid JWT to access this plugin."
+                    entry.type, entry.value, source, err.message
                 )
             continue
 
@@ -811,8 +803,8 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                     source=source,
                     limit=query_params.limit,
                     timeout=query_params.max_timeout,
-                    access_token=obo_access_token or access_token,
-                    clue_access_token=access_token if obo_access_token else None,
+                    access_token=access_token,
+                    obo_access_token=obo_access_token,
                     no_annotation=query_params.no_annotation,
                     no_cache=query_params.no_cache,
                     include_raw=query_params.include_raw,

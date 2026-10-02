@@ -5,15 +5,16 @@ from elasticapm.traces import capture_span
 from flask import request
 from requests import exceptions
 
+from clue.common.exceptions import AuthenticationException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, DEBUG, cache, config
 from clue.constants.env import DISABLE_CACHE
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.helper.headers import generate_headers
+from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.cache import RedisCache
-from clue.services import auth_service
 
 logger = get_logger(__file__)
 
@@ -28,10 +29,7 @@ def get_types_regular_expressions(user: dict[str, Any]):
     if access_token:
         access_token = access_token.split(" ")[1]
 
-    all_types = all_supported_types(
-        user,
-        access_token=access_token,
-    )
+    all_types = all_supported_types(user)
 
     type_detection = {}
 
@@ -47,7 +45,9 @@ def get_types_regular_expressions(user: dict[str, Any]):
 
 
 @cache.memoize(timeout=CACHE_TIMEOUT)
-def get_supported_types(source_url: str, access_token: str | None = None, obo_access_token: str | None = None):
+def get_supported_types(
+    source_url: str, access_token: str | None = None, obo_access_token: str | None = None
+) -> dict[str, str] | None:
     """Gets all supported types for the specified source.
 
     Args:
@@ -65,7 +65,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
 
     logger.debug("Cache miss, polling plugin")
     with capture_span(f"GET {url}", span_type="http"):
-        headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+        headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
         try:
             rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=3.0)
@@ -111,7 +111,7 @@ def get_supported_types(source_url: str, access_token: str | None = None, obo_ac
             return None
 
 
-def all_supported_types(user: dict[str, Any], access_token: str | None = None) -> dict[str, dict[str, str]]:
+def all_supported_types(user: dict[str, Any]) -> dict[str, dict[str, str]]:
     """Gets supported types by all sources.
 
     Args:
@@ -123,12 +123,13 @@ def all_supported_types(user: dict[str, Any], access_token: str | None = None) -
     all_types = {}
 
     for source in config.api.external_sources:
-        obo_access_token = None
-        if access_token:
-            obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
+        if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
+            continue
 
-            if error:
-                logger.error("%s: %s", source.name, error)
+        try:
+            access_token, obo_access_token = get_obo_access_token(source, user)
+        except AuthenticationException:
+            continue
 
         supported_types = get_supported_types(source.url, access_token=access_token, obo_access_token=obo_access_token)
         if supported_types is not None:
@@ -142,11 +143,7 @@ def get_plugins_supported_types(user: dict[str, Any]) -> dict[str, list[str]]:
     configured_sources: list[ExternalSource] = getattr(config.api, "external_sources", [])
     available_types: dict[str, list[str]] = {}
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    all_types = all_supported_types(user, access_token=access_token)
+    all_types = all_supported_types(user)
 
     logger.info("Fetching sources for classification %s", user["classification"])
 

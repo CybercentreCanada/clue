@@ -8,7 +8,7 @@ List and execute fetchers that provide data to be rendered client-side
 
 from flask_cors import CORS
 
-from clue.api import bad_gateway, bad_request, make_subapi_blueprint, not_found, ok
+from clue.api import bad_gateway, bad_request, make_subapi_blueprint, not_found, ok, service_unavailable
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
@@ -120,6 +120,8 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, **kwargs):
     except NotFoundException as err:
         return not_found(err=err.message)
     except ClueException as err:
+        if err.status_code == 503:
+            return service_unavailable(err=err.message)
         if err.status_code == 400:
             logger.warning(
                 "Bad request from fetcher %s.%s with task_id: %s: %s", plugin_id, fetcher_id, task_id, err.message

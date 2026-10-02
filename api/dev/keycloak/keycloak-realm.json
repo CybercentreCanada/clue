@@ -2991,7 +2991,6 @@
             "firstName": "Huey",
             "groups": [
                 "/airflow_user",
-                "/users-sg",
                 "/hogwarts_user",
                 "/clue_user"
             ],

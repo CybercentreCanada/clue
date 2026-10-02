@@ -11,6 +11,7 @@ import clue.services.user_service as user_service
 from clue.common.exceptions import AccessDeniedException, InvalidDataException
 from clue.config import config
 from clue.models.auth_user import APIKeyConf, AuthUser, UserRole
+from clue.models.config import ExternalSource
 
 
 def test_login_rejects_oauth_response_without_access_token():
@@ -136,3 +137,29 @@ def test_validate_apikey_adds_user_role_to_admin_key():
 def test_basic_auth_rejects_credentials_without_separator():
     with pytest.raises(InvalidDataException, match="key_name:key_secret"):
         auth_service.basic_auth("malformed", is_base64=False)
+
+
+def test_check_obo_fails_closed_when_service_account_token_is_unavailable():
+    source = ExternalSource(name="test", url="http://plugin/", obo_target="test-service")
+
+    with patch.object(auth_service.jwt_service, "fetch_sa_token", return_value=None):
+        access_token, error = auth_service.check_obo(source, "api-key-credentials", "analyst")
+
+    assert access_token is None
+    assert error == "Valid access token not provided."
+
+
+def test_check_obo_accepts_token_already_scoped_for_target():
+    source = ExternalSource(name="test", url="http://plugin/", obo_target="test-service")
+    obo_targets = {"test-service": SimpleNamespace(scope="target-service/read")}
+
+    with (
+        patch.object(config.api, "obo_targets", obo_targets),
+        patch.object(auth_service.jwt_service, "extract_audience", return_value=["target-service"]),
+        patch.object(auth_service.jwt_service, "get_provider", return_value="provider"),
+        patch.object(auth_service.jwt_service, "get_audience", return_value="clue-audience"),
+    ):
+        access_token, error = auth_service.check_obo(source, "header.payload.signature", "analyst")
+
+    assert access_token is None
+    assert error is None

@@ -160,11 +160,11 @@ def test_no_fetchers(host, access_token):
         json={"type": "ip", "value": "127.0.0.1"},
     )
 
-    assert not res.ok
+    assert res.status_code == 404
 
     response = res.json()
 
-    assert response["api_error_message"] == "slow does not support any fetchers."
+    assert response["api_error_message"] == "Fetcher not found."
 
     res = requests.post(
         f"{host}/api/v1/fetchers/test/json_missing_though",
@@ -173,11 +173,11 @@ def test_no_fetchers(host, access_token):
         json={"type": "ip", "value": "127.0.0.1"},
     )
 
-    assert not res.ok
+    assert res.status_code == 404
 
     response = res.json()
 
-    assert response["api_error_message"] == "Fetcher json_missing_though does not exist"
+    assert response["api_error_message"] == "Fetcher not found."
 
 
 def test_invalid_input(host, access_token):

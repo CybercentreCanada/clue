@@ -8,7 +8,7 @@ List and execute actions
 
 from flask_cors import CORS
 
-from clue.api import internal_error, make_subapi_blueprint, not_found, ok
+from clue.api import internal_error, make_subapi_blueprint, not_found, ok, service_unavailable
 from clue.common.exceptions import ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
@@ -22,7 +22,7 @@ logger = get_logger(__file__)
 
 SUB_API = "actions"
 actions_api = make_subapi_blueprint(SUB_API, api_version=1)
-actions_api._doc = "Run actions on data through configured external data sources/systems."
+actions_api._doc = "Run actions on data through configured external data sources/systems."  # type: ignore
 
 CORS(actions_api, origins=config.ui.cors_origins, supports_credentials=True)
 
@@ -122,4 +122,6 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, **kwargs) ->
     except NotFoundException as err:
         return not_found(err=err.message)
     except ClueException as err:
+        if err.status_code == 503:
+            return service_unavailable(err=err.message)
         return internal_error(err=err.message)
