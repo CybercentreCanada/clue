@@ -1,80 +1,76 @@
-from typing import Any, Optional
+from time import monotonic
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
 from elasticapm.traces import capture_span
 from flask import request
-from pydantic import TypeAdapter, ValidationError
+from pydantic import TypeAdapter
 from requests import JSONDecodeError, exceptions
 
-from clue.common.exceptions import ClueException, NotFoundException
+from clue.common.exceptions import AuthenticationException, ClueException, NotFoundException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
+from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
-from clue.services import auth_service
 
 logger = get_logger(__file__)
 
 
+def _raise_action_metadata_unavailable(error: Exception | None = None) -> None:
+    raise ClueException(
+        "Unable to verify action availability with the upstream source.", error, status_code=503
+    ) from error
+
+
 def get_supported_actions(
-    source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
+    source: ExternalSource,
+    headers: dict[str, str],
+    *,
+    timeout: float = 10.0,
+    raise_on_error: bool = False,
 ) -> dict[str, ActionSpec]:
     """Gets all supported actions for a source
 
     Args:
-        source_url (str): The URL of the source
-        access_token (Optional[str], optional): The access token to use, if necessary. Defaults to None.
+        source (ExternalSource): The source whose actions to retrieve.
+        headers (dict[str, str]): Headers to include in the upstream request.
+        timeout (float): The upstream request timeout in seconds.
+        raise_on_error (bool): Raise a 503 when metadata cannot be verified.
 
     Returns:
         dict[str, ActionSpec]: A dict of each action and their schema
     """
     logger.info("Fetching actions for source %s", source.name)
-
     url = urljoin(source.url, "actions/")
-
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
-
-        if error:
-            logger.error("%s: %s", source.name, error)
-            return {}
-
-    headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
 
     with capture_span(f"GET {url}", span_type="http"):
         rsp = None
         try:
-            rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=10.0)
+            rsp = request_with_safe_redirects(requests.get, url, headers=headers, timeout=timeout)
             result = rsp.json()
 
             if not rsp.ok:
                 err = result["api_error_message"]
                 logger.error(f"Error from upstream server: {rsp.status_code=}, {err=}")
+                if raise_on_error:
+                    _raise_action_metadata_unavailable()
+                return {}
 
             return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
-        except (exceptions.ConnectionError, exceptions.Timeout):
-            # any errors are logged and no result is saved to local cache to enable retry on next query
-            logger.exception("Unable to connect: %s", url)
-            return {}
-        except (requests.exceptions.JSONDecodeError, KeyError, JSONDecodeError):
-            logger.exception(
-                "External API did not return expected format. Full data:\n\n%s\n\nStack Trace:",
-                rsp.text if rsp else "None",
-            )
-            return {}
-        except ValidationError:
-            logger.exception("ValidationError in response from %s:\n%s", source.url)
-            return {}
-        except Exception:
-            logger.exception("Unknown exception occurred on action fetching:")
+        except ClueException:
+            raise
+        except Exception as err:
+            logger.exception("Unable to retrieve action metadata from %s", source.url)
+            if raise_on_error:
+                _raise_action_metadata_unavailable(err)
             return {}
 
 
-def all_supported_actions(user: dict[str, Any], access_token: Optional[str] = None) -> dict[str, ActionSpec]:
+def all_supported_actions(user: dict[str, Any]) -> dict[str, ActionSpec]:
     """Gets all supported actions for all sources
 
     Args:
@@ -86,7 +82,17 @@ def all_supported_actions(user: dict[str, Any], access_token: Optional[str] = No
     all_actions: dict[str, ActionSpec] = {}
 
     for source in config.api.external_sources:
-        supported_actions = get_supported_actions(source, user, access_token=access_token)
+        if not CLASSIFICATION.is_accessible(user["classification"], source.classification):
+            continue
+
+        try:
+            access_token, obo_access_token = get_obo_access_token(source, user)
+        except AuthenticationException:
+            continue
+
+        supported_actions = get_supported_actions(
+            source, generate_headers(obo_access_token=obo_access_token, access_token=access_token)
+        )
         total_actions = 0
         for key, action in supported_actions.items():
             total_actions += 1
@@ -100,14 +106,7 @@ def get_plugins_supported_actions(user: dict[str, Any]) -> dict[str, ActionSpec]
     """Return the supported actions of each external service, filtered to what the user has access to."""
     available_actions: dict[str, ActionSpec] = {}
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
-
-    all_actions = all_supported_actions(
-        user,
-        access_token=access_token,
-    )
+    all_actions = all_supported_actions(user)
 
     logger.info("Fetching actions for classification %s", user["classification"])
 
@@ -144,22 +143,19 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
     """
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
-    if not plugin:
-        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+    if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
+    try:
+        access_token, obo_access_token = get_obo_access_token(plugin, user)
+    except AuthenticationException:
+        return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
 
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
-        if error:
-            logger.error("%s: %s", plugin.name, error)
-            return ActionResult(outcome="failure", summary="Invalid token provided for this enrichment.")
-
-    headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+    action = get_supported_actions(plugin, headers).get(action_id)
+    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
     if request.content_type == "application/json":
         parameters = request.json
@@ -211,22 +207,29 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     """
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
-    if not plugin:
-        raise NotFoundException(f"Plugin {plugin_id} does not exist.")
+    if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
+    try:
+        access_token, obo_access_token = get_obo_access_token(plugin, user)
+    except AuthenticationException:
+        return ActionResult(outcome="failure", summary="Invalid token provided.")
 
-    obo_access_token = None
-    if access_token:
-        obo_access_token, error = auth_service.check_obo(plugin, access_token, user["uname"])
+    headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
-        if error:
-            logger.error("%s: %s", plugin.name, error)
-            return ActionResult(outcome="failure", summary="Invalid token provided.")
+    timeout = request.args.get("max_timeout", plugin.default_timeout, type=float)
+    metadata_started = monotonic()
+    # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
+    action = get_supported_actions(
+        plugin,
+        headers,
+        timeout=max(min(timeout, 10.0), 0.001),
+        raise_on_error=True,
+    ).get(action_id)
+    if action is None or not CLASSIFICATION.is_accessible(user["classification"], action.classification):
+        raise NotFoundException("Action not found.", status_code=404)
 
-    headers = generate_headers(obo_access_token or access_token, access_token if obo_access_token else None)
+    remaining_timeout = max(timeout - (monotonic() - metadata_started), 0.001)
 
     try:
         req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")
@@ -236,7 +239,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
             requests.get,
             req_url,
             headers=headers,
-            timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
+            timeout=remaining_timeout,
         )
 
         result = response.json()
