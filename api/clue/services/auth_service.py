@@ -283,7 +283,7 @@ def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
 
 
 # TODO: sa-clue support
-def check_obo(source: ExternalSource, access_token: str, username: str) -> tuple[Optional[str], Optional[str]]:
+def check_obo(source: ExternalSource, access_token: str | None, username: str) -> tuple[Optional[str], Optional[str]]:
     """Checks whether a token's audience matches the source, and if it doesn't, tries to get an OBO token for the source
 
     Args:
@@ -295,16 +295,16 @@ def check_obo(source: ExternalSource, access_token: str, username: str) -> tuple
         tuple[Optional[str], Optional[str]]: A tuple with either the valid access token in the first arg, or the error
             message in the second arg.
     """
-    obo_access_token: Optional[str] = None
+    obo_access_token: str | None = None
     if source.obo_target:
         logger.debug("Source %s requires OBO to %s", source.name, source.obo_target)
 
-        if "." not in access_token:
+        if access_token and "." not in access_token:
             logger.warning("JWT not provided, using service account.")
-            if not (sa_token := jwt_service.fetch_sa_token()):
-                return None, None
+            access_token = jwt_service.fetch_sa_token()
 
-            access_token = sa_token
+        if not access_token:
+            return None, "Valid access token not provided."
 
         audience = jwt_service.extract_audience(access_token)
 
