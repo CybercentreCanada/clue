@@ -166,6 +166,35 @@ def test_production_response_rejects_invalid_or_inaccessible_classification(sour
     assert "RESTRICTED_TEST_MARKER" not in caplog.text
 
 
+@pytest.mark.parametrize("production", [False, True])
+@pytest.mark.parametrize("bulk", [False, True])
+def test_response_requires_explicit_item_classification(source, user, production, bulk, caplog):
+    source.production = production
+    items = [{"classification": "TLP:CLEAR"}, {"raw_data": "RESTRICTED_TEST_MARKER"}]
+
+    if bulk:
+        result = lookup_service.parse_bulk_response(source, user, {"ipv4": {"127.0.0.1": {"items": items}}})["ipv4"][
+            "127.0.0.1"
+        ]
+    else:
+        result = lookup_service.build_result(
+            "ipv4", "127.0.0.1", source, user=user, items=lookup_service.parse_response(source, user, items)
+        )
+
+    assert [item.classification for item in result.items] == ["TLP:CLEAR"]
+    assert "RESTRICTED_TEST_MARKER" not in result.model_dump_json()
+    assert "RESTRICTED_TEST_MARKER" not in caplog.text
+
+
+def test_query_result_rejects_defaulted_item_classification(classified_result, user):
+    classified_result["items"] = [QueryEntry.model_construct(raw_data="RESTRICTED_TEST_MARKER")]
+
+    result = QueryResult.model_validate(classified_result, context={"user": user})
+
+    assert result.items == []
+    assert "RESTRICTED_TEST_MARKER" not in result.model_dump_json()
+
+
 @pytest.mark.parametrize("classification", [None, "", 123, "INVALID", "NOT_A_CLASSIFICATION"])
 def test_query_result_rejects_unvalidated_item_classification(classified_result, user, classification):
     classified_result["items"] = [

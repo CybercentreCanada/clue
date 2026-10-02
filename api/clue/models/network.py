@@ -551,7 +551,8 @@ class QueryResult(ResultMetadata):
         filtered_results: list[QueryEntry] = []
         for item in items:
             if (
-                isinstance(item.classification, str)
+                "classification" in item.model_fields_set
+                and isinstance(item.classification, str)
                 and item.classification
                 and item.classification.upper().partition("//")[0] not in {"INV", CLASSIFICATION.INVALID_CLASSIFICATION}
                 and CLASSIFICATION.is_valid(item.classification)
