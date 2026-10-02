@@ -37,8 +37,7 @@ def get_supported_actions(
 
     Args:
         source (ExternalSource): The source whose actions to retrieve.
-        access_token (Optional[str]): The caller's access token, if available.
-        obo_access_token (Optional[str]): The source-specific OBO token, if available.
+        headers (dict[str, str]): Headers to include in the upstream request.
         timeout (float): The upstream request timeout in seconds.
         raise_on_error (bool): Raise a 503 when metadata cannot be verified.
 
