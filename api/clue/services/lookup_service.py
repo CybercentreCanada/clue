@@ -287,6 +287,10 @@ def parse_response(source: ExternalSource, user: dict[str, Any], api_response: A
             len(api_response),
         )
 
+        if source.production:
+            logger.debug("Skipping validation for production source %s", source.name)
+            return [QueryEntry.model_construct(**data) for data in api_response]
+
         return [QueryEntry.model_validate(data, context={"user": user}) for data in api_response]
 
 
@@ -325,10 +329,14 @@ def parse_bulk_response(
                 # This allows plugins to overwrite the default values if they want
                 data = {**data, **api_response[type][value], "latency": latency or 0.0}
 
-                bulk_result[type][value] = QueryResult.model_validate(
-                    data,
-                    context={"user": user},
-                )
+                if source.production:
+                    logger.debug("Skipping validation for production source %s", source.name)
+                    bulk_result[type][value] = QueryResult.model_construct(**data)
+                else:
+                    bulk_result[type][value] = QueryResult.model_validate(
+                        data,
+                        context={"user": user},
+                    )
 
         return bulk_result
 

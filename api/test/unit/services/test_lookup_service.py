@@ -111,9 +111,8 @@ def test_query_result_item_assignment_without_context_fails_closed(classified_re
     assert result.items == []
 
 
-@pytest.mark.parametrize("production", [False, True])
-def test_parse_bulk_response_filters_items_by_user_classification(source, classified_result, production):
-    source.production = production
+def test_parse_bulk_response_filters_items_by_user_classification(source, classified_result):
+    source.production = False
     result = lookup_service.parse_bulk_response(
         source,
         {"classification": "TLP:GREEN"},
@@ -121,6 +120,22 @@ def test_parse_bulk_response_filters_items_by_user_classification(source, classi
     )["ipv4"]["127.0.0.1"]
 
     assert [item.classification for item in result.items] == ["TLP:CLEAR", "TLP:GREEN"]
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+def test_production_response_bypasses_validation(source, user, bulk):
+    source.production = True
+    items = [{"classification": "TLP:AMBER+STRICT", "count": "not-an-integer"}]
+
+    if bulk:
+        result = lookup_service.parse_bulk_response(source, user, {"ipv4": {"127.0.0.1": {"items": items}}})["ipv4"][
+            "127.0.0.1"
+        ]
+        assert result.items == items
+    else:
+        result_items = lookup_service.parse_response(source, user, items)
+        assert result_items[0].classification == "TLP:AMBER+STRICT"
+        assert result_items[0].count == "not-an-integer"
 
 
 @pytest.mark.parametrize("production", [False, True])
@@ -152,11 +167,10 @@ def test_query_external_filters_items_by_user_classification(app, source, classi
     assert [item.classification for item in result.items] == ["TLP:CLEAR", "TLP:GREEN"]
 
 
-@pytest.mark.parametrize("production", [False, True])
 @pytest.mark.parametrize("bulk", [False, True])
-def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, source, user, production, bulk, caplog):
+def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, source, user, bulk, caplog):
     """Prevent disclosure when nested validation runs before classification filtering."""
-    source.production = production
+    source.production = False
     restricted_marker = "RESTRICTED_TEST_MARKER"
     items = [
         {
@@ -256,7 +270,10 @@ def test_lookup_route_passes_authenticated_user_context(app, source, classified_
     results = api_response.get_json()["api_response"]
     result = results["ipv4"]["127.0.0.1"]["test"] if bulk else results["test"]
     assert not result.get("error")
-    assert [item["classification"] for item in result["items"]] == ["TLP:CLEAR", "TLP:GREEN"]
+    expected = ["TLP:CLEAR", "TLP:GREEN"]
+    if production and bulk:
+        expected.append("TLP:AMBER+STRICT")
+    assert [item["classification"] for item in result["items"]] == expected
 
 
 @pytest.mark.parametrize("base_url", ["http://plugin", "http://plugin/", "http://plugin/api/"])
