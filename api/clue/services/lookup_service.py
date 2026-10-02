@@ -484,7 +484,7 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
         if not query_sources and not source.include_default:
             continue
 
-        finish_result = functools.partial(build_result, type_name, value, source)
+        finish_result = functools.partial(build_result, type_name, value, source, user=user)
 
         obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
 
@@ -541,7 +541,11 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
             results[source.name] = result
         else:
             results[source.name] = build_result(
-                type_name, value, source, "Request Timed Out" if not greenlet.exception else str(greenlet.exception)
+                type_name,
+                value,
+                source,
+                "Request Timed Out" if not greenlet.exception else str(greenlet.exception),
+                user=user,
             )
 
     thread_pool.kill(block=False)
@@ -575,7 +579,9 @@ def bulk_query_external(  # noqa: C901
             bulk_result.setdefault(entry.type, {})
 
             if entry.type not in supported_types:
-                bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, "invalid_type")
+                bulk_result[entry.type][entry.value] = build_result(
+                    entry.type, entry.value, source, "invalid_type", user=user
+                )
                 continue
 
             filtered_data.append(entry)
@@ -601,7 +607,9 @@ def bulk_query_external(  # noqa: C901
         if quota_error := user_service.check_quota(source, user):
             for entry in data:
                 bulk_result.setdefault(entry.type, {})
-                bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, error=quota_error)
+                bulk_result[entry.type][entry.value] = build_result(
+                    entry.type, entry.value, source, error=quota_error, user=user
+                )
 
             return bulk_result
 
@@ -644,7 +652,7 @@ def bulk_query_external(  # noqa: C901
         if error:
             for entry in data:
                 bulk_result[entry.type][entry.value] = build_result(
-                    entry.type, entry.value, source, error=error, latency=latency
+                    entry.type, entry.value, source, error=error, latency=latency, user=user
                 )
 
             return bulk_result
@@ -655,7 +663,7 @@ def bulk_query_external(  # noqa: C901
             if not api_response:
                 for entry in data:
                     bulk_result[entry.type][entry.value] = build_result(
-                        entry.type, entry.value, source, latency=latency
+                        entry.type, entry.value, source, latency=latency, user=user
                     )
             else:
                 bulk_result = parse_bulk_response(source, user, api_response, latency)
@@ -664,7 +672,7 @@ def bulk_query_external(  # noqa: C901
 
             for entry in data:
                 bulk_result[entry.type][entry.value] = build_result(
-                    entry.type, entry.value, source, error=error_message, latency=latency
+                    entry.type, entry.value, source, error=error_message, latency=latency, user=user
                 )
 
         return bulk_result
@@ -746,7 +754,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         if not obo_access_token and source.obo_target:
             for entry in data:
                 bulk_result[entry.type][entry.value][source.name] = build_result(
-                    entry.type, entry.value, source, "You must have a valid JWT to access this plugin."
+                    entry.type, entry.value, source, "You must have a valid JWT to access this plugin.", user=user
                 )
             continue
 
@@ -783,6 +791,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                             f"Selector classification ({entry.classification}) exceeds max classification "
                             f"of source: {source.name} ({source.max_classification})."
                         ),
+                        user=user,
                     )
 
                 continue
@@ -829,6 +838,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                     source,
                     "Request Timed Out" if not greenlet.exception else str(greenlet.exception),
                     (time.perf_counter() - start) * 1000,
+                    user=user,
                 )
 
             continue
