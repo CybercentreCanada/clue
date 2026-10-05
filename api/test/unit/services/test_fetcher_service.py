@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock, patch
+from urllib.parse import urlsplit
 
 import pytest
 from flask import Flask
-from requests import exceptions
+from requests import Request, exceptions
 
 from clue.common.exceptions import AuthenticationException, ClueException, InvalidDataException, NotFoundException
 from clue.config import cache
@@ -56,6 +57,69 @@ def make_response(api_response, *, ok=True, status_code=200, error_message=None)
         "api_error_message": error_message,
     }
     return response
+
+
+@pytest.mark.parametrize(
+    ("operation", "target"),
+    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher"), ("get_fetcher_status", "task")],
+)
+@pytest.mark.parametrize(
+    ("payload", "encoded"),
+    [
+        ("..", None),
+        (".", None),
+        ("", None),
+        ("../admin/keys", "%2E%2E%2Fadmin%2Fkeys"),
+        ("x?role=admin", "x%3Frole%3Dadmin"),
+        ("../../../shutdown", "%2E%2E%2F%2E%2E%2F%2E%2E%2Fshutdown"),
+        ("x#fragment", "x%23fragment"),
+        ("%2e%2e%2fadmin", "%252e%252e%252fadmin"),
+        ("//attacker.invalid/admin", "%2F%2Fattacker%2Einvalid%2Fadmin"),
+        ("test_fetcher-123", "test_fetcher-123"),
+    ],
+)
+def test_fetcher_urls_keep_identifiers_in_one_path_segment(
+    app, configured_plugin, user, fetcher, operation, target, payload, encoded
+):
+    configured_plugin.url = "http://plugin.internal:8080/api/"
+    fetcher_id = payload if target == "fetcher" else "test_fetcher"
+    task_id = payload if target == "task" else "task-123"
+    response = make_response({"outcome": "success", "data": {}, "format": "json"})
+    parameters = {"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"}
+
+    with (
+        app.test_request_context(json=parameters),
+        patch.object(fetcher_service, "get_supported_fetchers", return_value={fetcher_id: fetcher}),
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(fetcher_service, "generate_headers", return_value={}),
+        patch.object(fetcher_service.requests, "post", return_value=response) as post,
+        patch.object(fetcher_service.requests, "get", return_value=response) as get,
+    ):
+        arguments = ("test", fetcher_id, user) if operation == "run_fetcher" else ("test", fetcher_id, task_id, user)
+        if encoded is None:
+            with pytest.raises(NotFoundException) as error:
+                getattr(fetcher_service, operation)(*arguments)
+            assert error.value.status_code == 404
+            post.assert_not_called()
+            get.assert_not_called()
+            return
+
+        assert getattr(fetcher_service, operation)(*arguments).outcome == "success"
+        upstream = post if operation == "run_fetcher" else get
+        upstream.assert_called_once()
+        path = f"/api/fetchers/{encoded}" if target == "fetcher" else f"/api/fetchers/test_fetcher/status/{encoded}"
+        if operation == "get_fetcher_status" and target == "fetcher":
+            path += "/status/task-123"
+        url = upstream.call_args.args[0]
+        assert url == f"http://plugin.internal:8080{path}"
+        for candidate in (url, Request("GET", url).prepare().url):
+            parsed = urlsplit(candidate)
+            assert (parsed.scheme, parsed.netloc) == ("http", "plugin.internal:8080")
+            assert parsed.path.startswith("/api/fetchers/")
+            assert len(parsed.path.split("/")) == len(path.split("/"))
+            assert all(segment not in {".", ".."} for segment in parsed.path.split("/"))
+            assert not parsed.query
+            assert not parsed.fragment
 
 
 def test_get_obo_access_token_returns_none_without_authorization(app, plugin, user):

@@ -13,7 +13,7 @@ from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
 from clue.helper.obo import get_obo_access_token
-from clue.helper.plugin_requests import request_with_safe_redirects
+from clue.helper.plugin_requests import quote_plugin_path_segment, request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
 
@@ -164,7 +164,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
         parameters = {}
 
     try:
-        req_url = urljoin(plugin.url, f"actions/{action_id}")
+        req_url = urljoin(plugin.url, f"actions/{quote_plugin_path_segment(action_id)}")
         logger.debug("Executing action %s for user %s", req_url, user["uname"])
 
         response = request_with_safe_redirects(
@@ -232,7 +232,9 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     remaining_timeout = max(timeout - (monotonic() - metadata_started), 0.001)
 
     try:
-        req_url = urljoin(plugin.url, f"actions/{action_id}/status/{task_id}")
+        req_url = urljoin(
+            plugin.url, f"actions/{quote_plugin_path_segment(action_id)}/status/{quote_plugin_path_segment(task_id)}"
+        )
         logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
 
         response = request_with_safe_redirects(

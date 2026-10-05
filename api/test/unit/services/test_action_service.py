@@ -1,8 +1,9 @@
 from unittest.mock import MagicMock, patch
+from urllib.parse import urlsplit
 
 import pytest
 from flask import Flask
-from requests import exceptions
+from requests import Request, exceptions
 
 from clue.common.exceptions import AuthenticationException, ClueException, NotFoundException
 from clue.config import cache
@@ -10,6 +11,74 @@ from clue.helper.obo import get_obo_access_token
 from clue.models.actions import ActionSpec
 from clue.models.config import ExternalSource
 from clue.services import action_service
+
+
+@pytest.mark.parametrize(
+    ("operation", "target"),
+    [("execute_action", "action"), ("get_action_status", "action"), ("get_action_status", "task")],
+)
+@pytest.mark.parametrize(
+    ("payload", "encoded"),
+    [
+        ("..", None),
+        (".", None),
+        ("", None),
+        ("../admin/keys", "%2E%2E%2Fadmin%2Fkeys"),
+        ("x?role=admin", "x%3Frole%3Dadmin"),
+        ("../../../shutdown", "%2E%2E%2F%2E%2E%2F%2E%2E%2Fshutdown"),
+        ("x#fragment", "x%23fragment"),
+        ("%2e%2e%2fadmin", "%252e%252e%252fadmin"),
+        ("//attacker.invalid/admin", "%2F%2Fattacker%2Einvalid%2Fadmin"),
+        ("test_action-123", "test_action-123"),
+    ],
+)
+def test_action_urls_keep_identifiers_in_one_path_segment(operation, target, payload, encoded):
+    app = Flask(__name__)
+    plugin = ExternalSource(name="test", url="http://plugin.internal:8080/api/")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    action_id = payload if target == "action" else "test_action"
+    task_id = payload if target == "task" else "task-123"
+    action = ActionSpec(
+        id="test_action", name="Test action", classification="TLP:CLEAR", supported_types={"ipv4"}, params={}
+    )
+    response = MagicMock(status_code=200, ok=True)
+    response.json.return_value = {"api_response": {"outcome": "success", "format": "json", "output": []}}
+
+    with (
+        app.test_request_context(json={}),
+        patch.object(action_service, "config") as configuration,
+        patch.object(action_service, "get_supported_actions", return_value={action_id: action}),
+        patch.object(action_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(action_service, "generate_headers", return_value={}),
+        patch.object(action_service.requests, "post", return_value=response) as post,
+        patch.object(action_service.requests, "get", return_value=response) as get,
+    ):
+        configuration.api.external_sources = [plugin]
+        arguments = ("test", action_id, user) if operation == "execute_action" else ("test", action_id, task_id, user)
+        if encoded is None:
+            with pytest.raises(NotFoundException) as error:
+                getattr(action_service, operation)(*arguments)
+            assert error.value.status_code == 404
+            post.assert_not_called()
+            get.assert_not_called()
+            return
+
+        assert getattr(action_service, operation)(*arguments).outcome == "success"
+        upstream = post if operation == "execute_action" else get
+        upstream.assert_called_once()
+        path = f"/api/actions/{encoded}" if target == "action" else f"/api/actions/test_action/status/{encoded}"
+        if operation == "get_action_status" and target == "action":
+            path += "/status/task-123"
+        url = upstream.call_args.args[0]
+        assert url == f"http://plugin.internal:8080{path}"
+        for candidate in (url, Request("GET", url).prepare().url):
+            parsed = urlsplit(candidate)
+            assert (parsed.scheme, parsed.netloc) == ("http", "plugin.internal:8080")
+            assert parsed.path.startswith("/api/actions/")
+            assert len(parsed.path.split("/")) == len(path.split("/"))
+            assert all(segment not in {".", ".."} for segment in parsed.path.split("/"))
+            assert not parsed.query
+            assert not parsed.fragment
 
 
 @pytest.mark.parametrize(
