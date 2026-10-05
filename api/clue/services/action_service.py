@@ -5,10 +5,10 @@ from urllib.parse import urljoin
 import requests
 from elasticapm.traces import capture_span
 from flask import request
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 from requests import JSONDecodeError, exceptions
 
-from clue.common.exceptions import AuthenticationException, ClueException, NotFoundException
+from clue.common.exceptions import AuthenticationException, ClueException, ClueValueError, NotFoundException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
@@ -16,6 +16,7 @@ from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import quote_plugin_path_segment, request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
+from clue.models.validators import validate_plugin_identifier
 
 logger = get_logger(__file__)
 
@@ -60,7 +61,15 @@ def get_supported_actions(
                     _raise_action_metadata_unavailable()
                 return {}
 
-            return TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
+            actions = TypeAdapter(dict[str, ActionSpec]).validate_python(result["api_response"])
+            for identifier in actions:
+                validate_plugin_identifier(identifier)
+            return actions
+        except (ClueValueError, ValidationError) as err:
+            logger.warning("Invalid action metadata from %s", source.name)
+            if raise_on_error:
+                _raise_action_metadata_unavailable(err)
+            return {}
         except ClueException:
             raise
         except Exception as err:
@@ -141,6 +150,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
     Returns:
         ActionResult: The result of the action.
     """
+    validate_plugin_identifier(action_id)
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
@@ -205,6 +215,8 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
     Returns:
         ActionResult: The result of the action.
     """
+    validate_plugin_identifier(action_id)
+    validate_plugin_identifier(task_id)
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):

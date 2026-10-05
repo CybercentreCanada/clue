@@ -4,7 +4,62 @@ import pytest
 from requests import Response
 from requests.exceptions import ConnectionError, Timeout
 
-from clue.helper.plugin_requests import request_with_safe_redirects
+from clue.common.exceptions import ClueValueError, NotFoundException
+from clue.helper.plugin_requests import quote_plugin_path_segment, request_with_safe_redirects
+from clue.models.validators import validate_plugin_identifier
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        ".",
+        "..",
+        "../admin/keys",
+        "x?role=admin",
+        "../../etc/passwd",
+        "../../../shutdown",
+        "x#fragment",
+        "%2e%2e%2fadmin",
+        "x\\admin",
+        ".x",
+        "x.",
+        "x..y",
+        "x y",
+        "x\n",
+        "caf\u00e9",
+    ],
+)
+def test_rejects_invalid_plugin_identifiers(value):
+    with pytest.raises(ClueValueError) as error:
+        validate_plugin_identifier(value)
+    assert error.value.status_code == 400
+
+
+@pytest.mark.parametrize("value", ["test_action-123", "ABC_09", "123", "a", "-", "_", "plugin.fetcher", "a.b.c"])
+def test_accepts_safe_plugin_identifiers(value):
+    assert validate_plugin_identifier(value) == value
+
+
+@pytest.mark.parametrize(
+    ("value", "encoded"),
+    [
+        ("../admin/keys", "%2E%2E%2Fadmin%2Fkeys"),
+        ("x?role=admin", "x%3Frole%3Dadmin"),
+        ("../../etc/passwd", "%2E%2E%2F%2E%2E%2Fetc%2Fpasswd"),
+        ("../../../shutdown", "%2E%2E%2F%2E%2E%2F%2E%2E%2Fshutdown"),
+        ("x#fragment", "x%23fragment"),
+        ("%2e%2e%2fadmin", "%252e%252e%252fadmin"),
+    ],
+)
+def test_path_segment_encoding_is_preserved(value, encoded):
+    assert quote_plugin_path_segment(value) == encoded
+
+
+@pytest.mark.parametrize("value", ["", ".", ".."])
+def test_path_segment_encoding_rejects_standalone_dot_segments(value):
+    with pytest.raises(NotFoundException):
+        quote_plugin_path_segment(value)
 
 
 def redirect(url: str, location: str, status_code: int = 308) -> Response:

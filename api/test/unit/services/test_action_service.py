@@ -1,14 +1,15 @@
 from unittest.mock import MagicMock, patch
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 import pytest
 from flask import Flask
 from requests import Request, exceptions
 
-from clue.common.exceptions import AuthenticationException, ClueException, NotFoundException
-from clue.config import cache
+from clue.common.exceptions import AuthenticationException, ClueException, ClueValueError, NotFoundException
+from clue.config import cache, config
 from clue.helper.obo import get_obo_access_token
-from clue.models.actions import ActionSpec
+from clue.models.actions import ActionResult, ActionSpec
+from clue.models.auth_user import AuthResult, AuthUser, Privilege
 from clue.models.config import ExternalSource
 from clue.services import action_service
 
@@ -23,12 +24,16 @@ from clue.services import action_service
         ("..", None),
         (".", None),
         ("", None),
-        ("../admin/keys", "%2E%2E%2Fadmin%2Fkeys"),
-        ("x?role=admin", "x%3Frole%3Dadmin"),
-        ("../../../shutdown", "%2E%2E%2F%2E%2E%2F%2E%2E%2Fshutdown"),
-        ("x#fragment", "x%23fragment"),
-        ("%2e%2e%2fadmin", "%252e%252e%252fadmin"),
-        ("//attacker.invalid/admin", "%2F%2Fattacker%2Einvalid%2Fadmin"),
+        ("../admin/keys", None),
+        ("x?role=admin", None),
+        ("../../etc/passwd", None),
+        ("../../../shutdown", None),
+        ("x#fragment", None),
+        ("%2e%2e%2fadmin", None),
+        ("//attacker.invalid/admin", None),
+        ("x\\admin", None),
+        ("x..y", None),
+        ("x.y", "x%2Ey"),
         ("test_action-123", "test_action-123"),
     ],
 )
@@ -47,8 +52,8 @@ def test_action_urls_keep_identifiers_in_one_path_segment(operation, target, pay
     with (
         app.test_request_context(json={}),
         patch.object(action_service, "config") as configuration,
-        patch.object(action_service, "get_supported_actions", return_value={action_id: action}),
-        patch.object(action_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(action_service, "get_supported_actions", return_value={action_id: action}) as metadata,
+        patch.object(action_service, "get_obo_access_token", return_value=(None, None)) as obo,
         patch.object(action_service, "generate_headers", return_value={}),
         patch.object(action_service.requests, "post", return_value=response) as post,
         patch.object(action_service.requests, "get", return_value=response) as get,
@@ -56,9 +61,11 @@ def test_action_urls_keep_identifiers_in_one_path_segment(operation, target, pay
         configuration.api.external_sources = [plugin]
         arguments = ("test", action_id, user) if operation == "execute_action" else ("test", action_id, task_id, user)
         if encoded is None:
-            with pytest.raises(NotFoundException) as error:
+            with pytest.raises(ClueValueError) as error:
                 getattr(action_service, operation)(*arguments)
-            assert error.value.status_code == 404
+            assert error.value.status_code == 400
+            metadata.assert_not_called()
+            obo.assert_not_called()
             post.assert_not_called()
             get.assert_not_called()
             return
@@ -79,6 +86,159 @@ def test_action_urls_keep_identifiers_in_one_path_segment(operation, target, pay
             assert all(segment not in {".", ".."} for segment in parsed.path.split("/"))
             assert not parsed.query
             assert not parsed.fragment
+
+
+@pytest.mark.parametrize(
+    ("operation", "target"),
+    [("execute_action", "action"), ("get_action_status", "action"), ("get_action_status", "task")],
+)
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "",
+        ".",
+        "..",
+        "../admin/keys",
+        "x?role=admin",
+        "../../etc/passwd",
+        "../../../shutdown",
+        "x#fragment",
+        "%2e%2e%2fadmin",
+        "x\\admin",
+        "x..y",
+        "plugin.action",
+        "Safe_id-123",
+    ],
+)
+def test_action_routes_validate_identifiers_before_calling_service(operation, target, payload):
+    from clue.api.v1.actions import actions_api
+
+    app = Flask(__name__)
+    app.testing = True
+    app.register_blueprint(actions_api)
+    action_id = quote(payload, safe="") if target == "action" else "test_action"
+    task_id = quote(payload, safe="") if target == "task" else "task-123"
+    path = (
+        f"/api/v1/actions/execute/test/{action_id}"
+        if operation == "execute_action"
+        else f"/api/v1/actions/test/{action_id}/status/{task_id}"
+    )
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+        patch.object(
+            action_service, operation, return_value=ActionResult(outcome="success", format="json", output=[])
+        ) as service,
+        app.test_client() as client,
+    ):
+        response = client.open(
+            path,
+            method="POST" if operation == "execute_action" else "GET",
+            headers={"Authorization": "Bearer test-token"},
+            json={},
+        )
+    if payload in {"Safe_id-123", "plugin.action"}:
+        assert response.status_code == 200
+        service.assert_called_once()
+        assert service.call_args.args[1 if target == "action" else 2] == payload
+    else:
+        assert response.status_code in {400, 404}
+        service.assert_not_called()
+
+
+@pytest.mark.parametrize("raise_on_error", [False, True])
+@pytest.mark.parametrize(
+    ("key", "identifier"),
+    [
+        ("test_action/../admin", "test_action"),
+        ("test_action", "test_action/../admin"),
+        ("test_action", "test..test_action"),
+        ("test_action\n", "test_action"),
+        ("test_action", ""),
+        ("..", "test_action"),
+    ],
+)
+def test_action_metadata_rejects_unsafe_identifiers(key, identifier, raise_on_error):
+    plugin = ExternalSource(name="test", url="http://plugin/")
+    response = MagicMock(status_code=200, ok=True)
+    response.json.return_value = {
+        "api_response": {
+            key: {
+                "id": identifier,
+                "name": "Test",
+                "classification": "TLP:CLEAR",
+                "supported_types": ["ipv4"],
+                "params": {},
+            }
+        }
+    }
+    with patch.object(action_service.requests, "get", return_value=response):
+        if raise_on_error:
+            with pytest.raises(ClueException, match="Unable to verify action availability") as error:
+                action_service.get_supported_actions(plugin, {}, raise_on_error=True)
+            assert error.value.status_code == 503
+        else:
+            assert action_service.get_supported_actions(plugin, {}) == {}
+
+
+@pytest.mark.parametrize("identifier", ["Action_123-test", "test.action", "action.v2"])
+@pytest.mark.parametrize("key", [None, "lookup_alias"])
+@pytest.mark.parametrize("raise_on_error", [False, True])
+def test_action_metadata_accepts_safe_ascii_identifiers(identifier, key, raise_on_error):
+    key = identifier if key is None else key
+    action = ActionSpec(
+        id=identifier,
+        name="Test",
+        classification="TLP:CLEAR",
+        supported_types={"ipv4"},
+        params={},
+    )
+    response = MagicMock(status_code=200, ok=True)
+    response.json.return_value = {"api_response": {key: action.model_dump()}}
+    with patch.object(action_service.requests, "get", return_value=response):
+        assert action_service.get_supported_actions(
+            ExternalSource(name="test", url="http://plugin/"), {}, raise_on_error=raise_on_error
+        ) == {key: action}
+
+
+@pytest.mark.parametrize("operation", ["get_plugins_supported_actions", "execute_action", "get_action_status"])
+@pytest.mark.parametrize("identifier", ["test.test_action", "other_action", "other.test_action"])
+def test_action_metadata_preserves_local_lookup_key(operation, identifier):
+    app = Flask(__name__)
+    plugin = ExternalSource(name="test", url="http://plugin/")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    action = ActionSpec(id=identifier, name="Test", classification="TLP:CLEAR", supported_types={"ipv4"}, params={})
+    metadata_response = MagicMock(status_code=200, ok=True)
+    metadata_response.json.return_value = {"api_response": {"test_action": action.model_dump()}}
+    result_response = MagicMock(status_code=200, ok=True)
+    result_response.json.return_value = {"api_response": {"outcome": "success", "format": "json", "output": []}}
+    with (
+        app.test_request_context(json={}),
+        patch.object(action_service, "config") as configuration,
+        patch.object(action_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(action_service, "generate_headers", return_value={}),
+        patch.object(action_service.requests, "get", side_effect=[metadata_response, result_response]) as get,
+        patch.object(action_service.requests, "post", return_value=result_response) as post,
+    ):
+        configuration.api.external_sources = [plugin]
+        if operation == "get_plugins_supported_actions":
+            result = action_service.get_plugins_supported_actions(user)
+            assert set(result) == {"test.test_action"}
+            assert result["test.test_action"].id == identifier
+            post.assert_not_called()
+        elif operation == "execute_action":
+            assert action_service.execute_action("test", "test_action", user).outcome == "success"
+            assert post.call_args.args[0] == "http://plugin/actions/test_action"
+        else:
+            assert action_service.get_action_status("test", "test_action", "task-123", user).outcome == "success"
+            assert get.call_args.args[0] == "http://plugin/actions/test_action/status/task-123"
+            post.assert_not_called()
+    assert get.call_args_list[0].args[0] == "http://plugin/actions/"
 
 
 @pytest.mark.parametrize(
