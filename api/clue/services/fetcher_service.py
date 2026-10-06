@@ -23,7 +23,7 @@ from clue.helper.plugin_requests import quote_plugin_path_segment, request_with_
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
-from clue.models.validators import validate_plugin_identifier
+from clue.models.validators import validate_plugin_identifier, validate_task_id
 
 logger = get_logger(__file__)
 
@@ -243,7 +243,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
         ActionResult: The result of the action.
     """
     validate_plugin_identifier(fetcher_id)
-    validate_plugin_identifier(task_id)
+    validate_task_id(task_id)
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):

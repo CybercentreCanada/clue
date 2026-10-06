@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock, patch
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
 import pytest
 from flask import Flask
@@ -16,7 +16,7 @@ from clue.services import action_service
 
 @pytest.mark.parametrize(
     ("operation", "target"),
-    [("execute_action", "action"), ("get_action_status", "action"), ("get_action_status", "task")],
+    [("execute_action", "action"), ("get_action_status", "action")],
 )
 @pytest.mark.parametrize(
     ("payload", "encoded"),
@@ -90,7 +90,7 @@ def test_action_urls_keep_identifiers_in_one_path_segment(operation, target, pay
 
 @pytest.mark.parametrize(
     ("operation", "target"),
-    [("execute_action", "action"), ("get_action_status", "action"), ("get_action_status", "task")],
+    [("execute_action", "action"), ("get_action_status", "action")],
 )
 @pytest.mark.parametrize(
     "payload",
@@ -149,6 +149,144 @@ def test_action_routes_validate_identifiers_before_calling_service(operation, ta
     else:
         assert response.status_code in {400, 404}
         service.assert_not_called()
+
+
+LEGACY_TASK_IDS = [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "task-123",
+    "abc:123",
+    "job@worker",
+    "YWJj==",
+    "x.y",
+    "x..y",
+    "...",
+    "x?role=admin",
+    "x#fragment",
+    "%2e%2e%2fadmin",
+    "x\\admin",
+    "x y",
+    "caf\u00e9",
+]
+BAD_TASK_IDS = ["", ".", "..", "a/b", "../admin/keys", "//attacker.invalid/admin", "x\n", "x\x00", "a" * 257]
+
+
+def _task_status_context(app, plugin, user, responses):
+    from contextlib import ExitStack
+
+    action = ActionSpec(
+        id="test_action", name="Test action", classification="TLP:CLEAR", supported_types={"ipv4"}, params={}
+    )
+    stack = ExitStack()
+    stack.enter_context(app.test_request_context(json={}))
+    configuration = stack.enter_context(patch.object(action_service, "config"))
+    configuration.api.external_sources = [plugin]
+    stack.enter_context(patch.object(action_service, "get_supported_actions", return_value={"test_action": action}))
+    stack.enter_context(patch.object(action_service, "get_obo_access_token", return_value=(None, None)))
+    stack.enter_context(patch.object(action_service, "generate_headers", return_value={}))
+    post = stack.enter_context(patch.object(action_service.requests, "post", return_value=responses[0]))
+    get = stack.enter_context(patch.object(action_service.requests, "get", return_value=responses[1]))
+    return stack, post, get
+
+
+@pytest.mark.parametrize("task_id", LEGACY_TASK_IDS)
+def test_pending_task_id_can_be_polled_to_completion(task_id):
+    app = Flask(__name__)
+    plugin = ExternalSource(name="test", url="http://plugin.internal:8080/api/")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    pending = MagicMock(status_code=200, ok=True)
+    pending.json.return_value = {"api_response": {"outcome": "pending", "summary": "started", "task_id": task_id}}
+    done = MagicMock(status_code=200, ok=True)
+    done.json.return_value = {"api_response": {"outcome": "success", "format": "json", "output": []}}
+
+    stack, _, get = _task_status_context(app, plugin, user, (pending, done))
+    with stack:
+        started = action_service.execute_action("test", "test_action", user)
+        assert started.outcome == "pending"
+        assert started.task_id == task_id
+
+        assert action_service.get_action_status("test", "test_action", started.task_id, user).outcome == "success"
+
+    url = get.call_args.args[0]
+    expected = quote(task_id, safe="").replace(".", "%2E")
+    assert url == f"http://plugin.internal:8080/api/actions/test_action/status/{expected}"
+    parsed = urlsplit(url)
+    assert (parsed.scheme, parsed.netloc) == ("http", "plugin.internal:8080")
+    assert len(parsed.path.split("/")) == 6
+    assert not parsed.query
+    assert not parsed.fragment
+    assert unquote(parsed.path.split("/")[-1]) == task_id
+
+
+@pytest.mark.parametrize("task_id", BAD_TASK_IDS)
+def test_status_rejects_unroutable_task_ids_before_any_upstream_call(task_id):
+    app = Flask(__name__)
+    plugin = ExternalSource(name="test", url="http://plugin.internal:8080/api/")
+    user = {"uname": "test-user", "classification": "TLP:CLEAR"}
+    response = MagicMock(status_code=200, ok=True)
+    stack, post, get = _task_status_context(app, plugin, user, (response, response))
+    with stack:
+        with pytest.raises(ClueValueError) as error:
+            action_service.get_action_status("test", "test_action", task_id, user)
+    assert error.value.status_code == 400
+    post.assert_not_called()
+    get.assert_not_called()
+
+
+@pytest.mark.parametrize("task_id", LEGACY_TASK_IDS)
+def test_action_status_route_accepts_legacy_task_ids(task_id):
+    from clue.api.v1.actions import actions_api
+
+    app = Flask(__name__)
+    app.testing = True
+    app.register_blueprint(actions_api)
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+        patch.object(
+            action_service, "get_action_status", return_value=ActionResult(outcome="success", format="json", output=[])
+        ) as service,
+        app.test_client() as client,
+    ):
+        response = client.get(
+            f"/api/v1/actions/test/test_action/status/{quote(task_id, safe='')}",
+            headers={"Authorization": "Bearer test-token"},
+        )
+    assert response.status_code == 200
+    assert service.call_args.args[2] == task_id
+
+
+@pytest.mark.parametrize(
+    "encoded",
+    [".", "..", "%2E%2E", "..%2Fadmin%2Fkeys", "%2E%2E%2F%2E%2E%2Fetc%2Fpasswd", "a%2Fb", "x%0A", "x%00"],
+)
+def test_action_status_route_neutralizes_traversal_task_ids(encoded):
+    from clue.api.v1.actions import actions_api
+
+    app = Flask(__name__)
+    app.testing = True
+    app.register_blueprint(actions_api)
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+        patch.object(action_service, "get_action_status") as service,
+        app.test_client() as client,
+    ):
+        response = client.get(
+            f"/api/v1/actions/test/test_action/status/{encoded}",
+            headers={"Authorization": "Bearer test-token"},
+        )
+    assert response.status_code in {400, 404}
+    service.assert_not_called()
 
 
 @pytest.mark.parametrize("raise_on_error", [False, True])

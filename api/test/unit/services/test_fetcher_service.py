@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock, patch
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 
 import pytest
 from flask import Flask
@@ -68,7 +68,7 @@ def make_response(api_response, *, ok=True, status_code=200, error_message=None)
 
 @pytest.mark.parametrize(
     ("operation", "target"),
-    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher"), ("get_fetcher_status", "task")],
+    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher")],
 )
 @pytest.mark.parametrize(
     ("payload", "encoded"),
@@ -137,7 +137,7 @@ def test_fetcher_urls_keep_identifiers_in_one_path_segment(
 
 @pytest.mark.parametrize(
     ("operation", "target"),
-    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher"), ("get_fetcher_status", "task")],
+    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher")],
 )
 @pytest.mark.parametrize(
     "payload",
@@ -191,6 +191,130 @@ def test_fetcher_routes_validate_identifiers_before_calling_service(app, operati
     else:
         assert response.status_code in {400, 404}
         service.assert_not_called()
+
+
+LEGACY_TASK_IDS = [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "task-123",
+    "abc:123",
+    "job@worker",
+    "YWJj==",
+    "x.y",
+    "x..y",
+    "...",
+    "x?role=admin",
+    "x#fragment",
+    "%2e%2e%2fadmin",
+    "x\\admin",
+    "x y",
+    "caf\u00e9",
+]
+BAD_TASK_IDS = ["", ".", "..", "a/b", "../admin/keys", "//attacker.invalid/admin", "x\n", "x\x00", "a" * 257]
+
+
+@pytest.mark.parametrize("task_id", LEGACY_TASK_IDS)
+def test_pending_task_id_can_be_polled_to_completion(app, configured_plugin, user, fetcher, task_id):
+    configured_plugin.url = "http://plugin.internal:8080/api/"
+    pending = make_response({"outcome": "pending", "task_id": task_id})
+    done = make_response({"outcome": "success", "data": {}, "format": "json"})
+    parameters = {"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"}
+
+    with (
+        app.test_request_context(json=parameters),
+        patch.object(fetcher_service, "get_supported_fetchers", return_value={"test_fetcher": fetcher}),
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(fetcher_service, "generate_headers", return_value={}),
+        patch.object(fetcher_service.requests, "post", return_value=pending),
+        patch.object(fetcher_service.requests, "get", return_value=done) as get,
+    ):
+        started = fetcher_service.run_fetcher("test", "test_fetcher", user)
+        assert started.outcome == "pending"
+        assert started.task_id == task_id
+
+        assert fetcher_service.get_fetcher_status("test", "test_fetcher", started.task_id, user).outcome == "success"
+
+    url = get.call_args.args[0]
+    expected = quote(task_id, safe="").replace(".", "%2E")
+    assert url == f"http://plugin.internal:8080/api/fetchers/test_fetcher/status/{expected}"
+    parsed = urlsplit(url)
+    assert (parsed.scheme, parsed.netloc) == ("http", "plugin.internal:8080")
+    assert len(parsed.path.split("/")) == 6
+    assert not parsed.query
+    assert not parsed.fragment
+    assert unquote(parsed.path.split("/")[-1]) == task_id
+
+
+@pytest.mark.parametrize("task_id", BAD_TASK_IDS)
+def test_status_rejects_unroutable_task_ids_before_any_upstream_call(app, configured_plugin, user, fetcher, task_id):
+    response = make_response({"outcome": "success", "data": {}, "format": "json"})
+
+    with (
+        app.test_request_context(json={}),
+        patch.object(fetcher_service, "get_supported_fetchers", return_value={"test_fetcher": fetcher}) as metadata,
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)) as obo,
+        patch.object(fetcher_service.requests, "get", return_value=response) as get,
+    ):
+        with pytest.raises(ClueValueError) as error:
+            fetcher_service.get_fetcher_status("test", "test_fetcher", task_id, user)
+    assert error.value.status_code == 400
+    metadata.assert_not_called()
+    obo.assert_not_called()
+    get.assert_not_called()
+
+
+def _status_client(app):
+    from clue.api.v1.fetchers import fetchers_api
+
+    app.testing = True
+    app.register_blueprint(fetchers_api)
+    return app.test_client()
+
+
+@pytest.fixture
+def authenticated():
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+    ):
+        yield
+
+
+@pytest.mark.parametrize("task_id", LEGACY_TASK_IDS)
+def test_fetcher_status_route_accepts_legacy_task_ids(app, authenticated, task_id):
+    with (
+        patch.object(
+            fetcher_service, "get_fetcher_status", return_value=FetcherResult(outcome="success", data={})
+        ) as service,
+        _status_client(app) as client,
+    ):
+        response = client.get(
+            f"/api/v1/fetchers/test/test_fetcher/status/{quote(task_id, safe='')}",
+            headers={"Authorization": "Bearer test-token"},
+        )
+    assert response.status_code == 200
+    assert service.call_args.args[2] == task_id
+
+
+@pytest.mark.parametrize(
+    "encoded",
+    [".", "..", "%2E%2E", "..%2Fadmin%2Fkeys", "%2E%2E%2F%2E%2E%2Fetc%2Fpasswd", "a%2Fb", "x%0A", "x%00"],
+)
+def test_fetcher_status_route_neutralizes_traversal_task_ids(app, authenticated, encoded):
+    with (
+        patch.object(fetcher_service, "get_fetcher_status") as service,
+        _status_client(app) as client,
+    ):
+        response = client.get(
+            f"/api/v1/fetchers/test/test_fetcher/status/{encoded}",
+            headers={"Authorization": "Bearer test-token"},
+        )
+    assert response.status_code in {400, 404}
+    service.assert_not_called()
 
 
 @pytest.mark.parametrize("raise_on_error", [False, True])

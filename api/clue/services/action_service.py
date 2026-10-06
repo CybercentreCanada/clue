@@ -16,7 +16,7 @@ from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import quote_plugin_path_segment, request_with_safe_redirects
 from clue.models.actions import ActionResult, ActionSpec
 from clue.models.config import ExternalSource
-from clue.models.validators import validate_plugin_identifier
+from clue.models.validators import validate_plugin_identifier, validate_task_id
 
 logger = get_logger(__file__)
 
@@ -216,7 +216,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
         ActionResult: The result of the action.
     """
     validate_plugin_identifier(action_id)
-    validate_plugin_identifier(task_id)
+    validate_task_id(task_id)
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):

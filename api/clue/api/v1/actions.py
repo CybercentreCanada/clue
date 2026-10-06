@@ -14,7 +14,7 @@ from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
 from clue.models.actions import Action, ActionResult
-from clue.models.validators import validate_plugin_identifier
+from clue.models.validators import validate_plugin_identifier, validate_task_id
 from clue.security import api_login
 from clue.services import action_service
 
@@ -121,7 +121,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, **kwargs) ->
     """
     try:
         validate_plugin_identifier(action_id)
-        validate_plugin_identifier(task_id)
+        validate_task_id(task_id)
         return ok(action_service.get_action_status(plugin_id, action_id, task_id, kwargs["user"]))
     except NotFoundException as err:
         return not_found(err=err.message)
