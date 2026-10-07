@@ -154,16 +154,9 @@ def test_enrich_active_range_in_details(mock_lookup, base_params):
     assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
 
 
-def test_enrich_asn(app, monkeypatch, base_params):
-    calls = []
-
-    def fake_lookup(misp_types, value, **kwargs):
-        calls.append(value)
-        return []
-
-    monkeypatch.setattr(app, "lookup_attributes", fake_lookup)
-    app.enrich("asn", "as15169", base_params)
-    assert calls == ["15169"]
+def test__normalize(app):
+    assert app._normalize("asn", "as15169") == "15169"
+    assert app._normalize("ipv4", TEST_IP) == TEST_IP
 
 
 # Helpers

@@ -58,8 +58,7 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> list[QueryEntr
     misp_types = TYPE_MAPPING.get(type_name)
     if misp_types is None:
         raise InvalidDataException(f"{type_name} is not a valid type for this plugin.")
-    if type_name == "asn":
-        value = value.upper().removeprefix("AS")
+    value = _normalize(type_name, value)
 
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
     attributes = lookup_attributes(misp_types, value, limit=params.limit, timeout=params.max_timeout)
@@ -90,7 +89,7 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
 
     sighting_request = cast(ReportSighting, request)
 
-    values = [s.value for s in sighting_request.selectors]
+    values = [_normalize(s.type, s.value) for s in sighting_request.selectors]
 
     try:
         report_sighting(values, sighting_request)
@@ -108,3 +107,9 @@ def run_action(action: Action, request: ExecuteRequest, token: str | None) -> Ac
         format="markdown",
         output=output,
     )
+
+
+def _normalize(type_name: str, value: str) -> str:
+    if type_name == "asn":
+        return value.upper().removeprefix("AS")
+    return value
