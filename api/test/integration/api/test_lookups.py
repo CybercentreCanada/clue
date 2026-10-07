@@ -87,10 +87,10 @@ def test_get_enrichment(host):
     }
 
     assert json["test"]["items"][0]["raw_data"][0] == {"classification": "TLP:CLEAR", "data": '{"test": "raw data"}'}
-    assert '"count": Input should be a valid integer' in json["bad"]["error"]
-    assert '"annotations.[0].type": Field required' in json["bad"]["error"]
-    assert '"annotations.[0].value": Field required' in json["bad"]["error"]
-    assert '"annotations.[0].summary": Field required' in json["bad"]["error"]
+    error = json["bad"]["error"]
+    assert error.startswith("bad returned an improperly formatted response. Error ID: ")
+    assert "Input should be a valid integer" not in error
+    assert "Field required" not in error
 
 
 def test_separators(host):
@@ -175,16 +175,10 @@ def test_bulk_enrichment(host):
             "data": '{"test": "raw data"}',
         }
 
-        assert (
-            '"items.[0].count": Input should be a valid integer' in json[entry["type"]][entry["value"]]["bad"]["error"]
-        )
-        assert '"items.[0].annotations.[0].type": Field required' in json[entry["type"]][entry["value"]]["bad"]["error"]
-        assert (
-            '"items.[0].annotations.[0].value": Field required' in json[entry["type"]][entry["value"]]["bad"]["error"]
-        )
-        assert (
-            '"items.[0].annotations.[0].summary": Field required' in json[entry["type"]][entry["value"]]["bad"]["error"]
-        )
+        error = json[entry["type"]][entry["value"]]["bad"]["error"]
+        assert error.startswith("bad returned an improperly formatted response. Error ID: ")
+        assert "Input should be a valid integer" not in error
+        assert "Field required" not in error
 
 
 def test_bulk_enrichment_ip_entry(host):

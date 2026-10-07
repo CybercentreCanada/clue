@@ -1,5 +1,4 @@
 # ruff: noqa: D101
-import re
 from typing import Dict, Generic, Literal, Optional, Self
 
 from pydantic import (
@@ -17,13 +16,16 @@ from clue.common.logging import get_logger
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.models.results import DATA, FORMAT_MAPPINGS_REVERSE
 from clue.models.results.validation import validate_result
-from clue.models.validators import validate_classification
+from clue.models.validators import validate_classification, validate_plugin_identifier
 
 logger = get_logger(__file__)
 
 
 class FetcherDefinition(BaseModel):
-    id: str = Field(description="An ID for the given fetcher. Structured as <plugin_id>.<fetcher_id>.")
+    id: str = Field(
+        description="Fetcher identifier, optionally plugin_id.fetcher_id; components use ASCII letters, digits, "
+        "underscores, or hyphens."
+    )
     classification: str = Field(
         description="Classification of the fetcher. Denotes the maximum classification of data sent to the fetcher.",
     )
@@ -49,10 +51,7 @@ class FetcherDefinition(BaseModel):
         Returns:
             str: The validated ID.
         """
-        if re.match(r"[^a-z_]", fetcher_id):
-            raise ClueValueError("Invalid fetcher id - can only contain lowercase letters and underscores.")
-
-        return fetcher_id
+        return validate_plugin_identifier(fetcher_id)
 
     @field_validator("classification")
     @classmethod
