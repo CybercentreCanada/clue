@@ -72,7 +72,14 @@ def get_client(base_url: str, timeout: float) -> Session:
 
 
 def build_result(
-    type_name: str, value: str, source: ExternalSource, error: Optional[str] = None, latency: Optional[float] = None
+    type_name: str,
+    value: str,
+    source: ExternalSource,
+    error: Optional[str] = None,
+    latency: Optional[float] = None,
+    *,
+    user: dict[str, Any] | None = None,
+    items: list[QueryEntry] | None = None,
 ):
     """Builds the QueryResult object using the provided values.
 
@@ -83,6 +90,8 @@ def build_result(
         error (Optional[str], optional): The error that occured during the request. Defaults to None.
         latency (Optional[float], optional): The amount of time between the request and the response (in milliseconds).
             Defaults to None.
+        user (dict[str, Any] | None): The user whose classification controls access to items.
+        items (list[QueryEntry] | None): The items returned by the source.
 
     Returns:
         QueryResult: The QueryResult object built.
@@ -93,15 +102,19 @@ def build_result(
     if DEBUG:
         logger.debug("Building query result for source %s", source.name)
 
-    return QueryResult(
-        type=type_name,
-        value=value,
-        source=source.name,
-        maintainer=source.maintainer,
-        datahub_link=source.datahub_link,
-        documentation_link=source.documentation_link,
-        error=error,
-        latency=latency or 0,
+    return QueryResult.model_validate(
+        {
+            "type": type_name,
+            "value": value,
+            "source": source.name,
+            "maintainer": source.maintainer,
+            "datahub_link": source.datahub_link,
+            "documentation_link": source.documentation_link,
+            "error": error,
+            "latency": latency or 0,
+            "items": items or [],
+        },
+        context={"user": user},
     )
 
 
@@ -275,12 +288,14 @@ def parse_response(source: ExternalSource, user: dict[str, Any], api_response: A
         )
 
         if source.production:
-            logger.debug(f"Skipping validation for production source {source.name}")
-            items: list[QueryEntry] = [QueryEntry.model_construct(data) for data in api_response]
-        else:
-            items = [QueryEntry.model_validate(data, context={"user": user}) for data in api_response]
+            logger.debug("Skipping validation for production source %s", source.name)
+            items = [
+                QueryEntry.model_construct(**{**data, "classification": data.get("classification")})
+                for data in api_response
+            ]
+            return QueryResult.filter_items(items, user)
 
-        return items
+        return [QueryEntry.model_validate(data, context={"user": user}) for data in api_response]
 
 
 def parse_bulk_response(
@@ -302,9 +317,6 @@ def parse_bulk_response(
     """
     bulk_result: dict[str, dict[str, QueryResult]] = {}
 
-    if source.production:
-        logger.debug(f"Skipping validation for production source {source.name}")
-
     with capture_span(f"{source.name}-bulk", "parsing"):
         for type in api_response:
             bulk_result.setdefault(type, {})
@@ -322,6 +334,8 @@ def parse_bulk_response(
                 data = {**data, **api_response[type][value], "latency": latency or 0.0}
 
                 if source.production:
+                    logger.debug("Skipping validation for production source %s", source.name)
+                    data["items"] = parse_response(source, user, data.get("items", []))
                     bulk_result[type][value] = QueryResult.model_construct(**data)
                 else:
                     bulk_result[type][value] = QueryResult.model_validate(
@@ -342,16 +356,12 @@ def handle_validation_error(source: ExternalSource, err: ValidationError) -> str
     Returns:
         str: A formatted error message.
     """
-    pydantic_errs: list[str] = []
-
-    for validation_err in err.errors():
-        loc = ".".join(
-            section if isinstance(section, str) else f"[{str(section)}]" for section in validation_err["loc"]
-        )
-        pydantic_errs.append(f'"{loc}": {validation_err["msg"]}')
-
-    err_msg = f"{source.name} returned an improperly formatted response: {', '.join(pydantic_errs)}"
-    err_id = log_error(logger, err_msg, err)
+    err_msg = f"{source.name} returned an improperly formatted response"
+    details = [
+        {"type": detail["type"], "loc": detail["loc"]}
+        for detail in err.errors(include_input=False, include_context=False)
+    ]
+    err_id = log_error(logger, err_msg, details)
     return f"{err_msg}. Error ID: {err_id}"
 
 
@@ -373,7 +383,7 @@ def query_external(
     if apm_transaction:
         execution_context.set_transaction(apm_transaction)
 
-    finish_result = functools.partial(build_result, type_name, value, source)
+    finish_result = functools.partial(build_result, type_name, value, source, user=user)
 
     with capture_span(query_external.__name__, span_type="greenlet"):
         supported_types = type_service.get_supported_types(
@@ -433,17 +443,16 @@ def query_external(
             )
 
         try:
-            result = finish_result(latency=(time.perf_counter() - start) * 1000)
-
             api_response = response["api_response"]
-            if api_response:
-                result.items = parse_response(source, user, api_response)
+            result = finish_result(
+                latency=(time.perf_counter() - start) * 1000,
+                items=parse_response(source, user, api_response) if api_response else [],
+            )
 
             logger.debug("Returning valid result from source %s", source)
 
             return result
         except ValidationError as err:
-            logger.exception("Validation error on response from %s", source)
             return finish_result(
                 error=handle_validation_error(source, err),
                 latency=(time.perf_counter() - start) * 1000,
@@ -495,7 +504,7 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
         if not query_sources and not source.include_default:
             continue
 
-        finish_result = functools.partial(build_result, type_name, value, source)
+        finish_result = functools.partial(build_result, type_name, value, source, user=user)
 
         try:
             access_token, obo_access_token = get_obo_access_token(source, user)
@@ -547,7 +556,11 @@ def enrich(type_name: str, value: str, user: dict[str, Any]):  # noqa: C901
             results[source.name] = result
         else:
             results[source.name] = build_result(
-                type_name, value, source, "Request Timed Out" if not greenlet.exception else str(greenlet.exception)
+                type_name,
+                value,
+                source,
+                "Request Timed Out" if not greenlet.exception else str(greenlet.exception),
+                user=user,
             )
 
     thread_pool.kill(block=False)
@@ -583,7 +596,9 @@ def bulk_query_external(  # noqa: C901
             bulk_result.setdefault(entry.type, {})
 
             if not supported_types or entry.type not in supported_types:
-                bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, "invalid_type")
+                bulk_result[entry.type][entry.value] = build_result(
+                    entry.type, entry.value, source, "invalid_type", user=user
+                )
                 continue
 
             filtered_data.append(entry)
@@ -609,7 +624,9 @@ def bulk_query_external(  # noqa: C901
         if quota_error := user_service.check_quota(source, user):
             for entry in data:
                 bulk_result.setdefault(entry.type, {})
-                bulk_result[entry.type][entry.value] = build_result(entry.type, entry.value, source, error=quota_error)
+                bulk_result[entry.type][entry.value] = build_result(
+                    entry.type, entry.value, source, error=quota_error, user=user
+                )
 
             return bulk_result
 
@@ -652,7 +669,7 @@ def bulk_query_external(  # noqa: C901
         if error:
             for entry in data:
                 bulk_result[entry.type][entry.value] = build_result(
-                    entry.type, entry.value, source, error=error, latency=latency
+                    entry.type, entry.value, source, error=error, latency=latency, user=user
                 )
 
             return bulk_result
@@ -663,7 +680,7 @@ def bulk_query_external(  # noqa: C901
             if not api_response:
                 for entry in data:
                     bulk_result[entry.type][entry.value] = build_result(
-                        entry.type, entry.value, source, latency=latency
+                        entry.type, entry.value, source, latency=latency, user=user
                     )
             else:
                 bulk_result = parse_bulk_response(source, user, api_response, latency)
@@ -672,7 +689,7 @@ def bulk_query_external(  # noqa: C901
 
             for entry in data:
                 bulk_result[entry.type][entry.value] = build_result(
-                    entry.type, entry.value, source, error=error_message, latency=latency
+                    entry.type, entry.value, source, error=error_message, latency=latency, user=user
                 )
 
         return bulk_result
@@ -745,7 +762,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
         except AuthenticationException as err:
             for entry in data:
                 bulk_result[entry.type][entry.value][source.name] = build_result(
-                    entry.type, entry.value, source, err.message
+                    entry.type, entry.value, source, err.message, user=user
                 )
             continue
 
@@ -782,6 +799,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                             f"Selector classification ({entry.classification}) exceeds max classification "
                             f"of source: {source.name} ({source.max_classification})."
                         ),
+                        user=user,
                     )
 
                 continue
@@ -828,6 +846,7 @@ def bulk_enrich(data: list[Selector], user: dict[str, Any]):  # noqa: C901
                     source,
                     "Request Timed Out" if not greenlet.exception else str(greenlet.exception),
                     (time.perf_counter() - start) * 1000,
+                    user=user,
                 )
 
             continue
