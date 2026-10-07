@@ -154,6 +154,11 @@ def test_enrich_active_range_in_details(mock_lookup, base_params):
     assert "Active: 2026-01-01 - 2026-06-01" in result.annotations[0].details
 
 
+def test__normalize(app):
+    assert app._normalize("asn", "as15169") == "15169"
+    assert app._normalize("ipv4", TEST_IP) == TEST_IP
+
+
 # Helpers
 @pytest.mark.parametrize(
     ("tag_name", "exp_ns", "exp_pred", "exp_val"),
