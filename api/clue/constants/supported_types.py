@@ -25,6 +25,7 @@ SUPPORTED_TYPES = {
     "ipv6": IPV6_ONLY_REGEX,
     # We don't auto-detect ip types, as it's redundant with ipv4/v6. This is just a convenience/backwards compat thing
     "ip": None,
+    "asn": None,
     "domain": DOMAIN_ONLY_REGEX,
     "port": PORT_REGEX,
     "url": URI_ONLY,

@@ -1,5 +1,10 @@
 # Clue API Release Notes
 
+
+## `v1.6.0`
+
+- **ASN Enrichment Type** *(new feature)*: Added Autonomous System Number as a default supported type.
+
 ## `v1.6.0`
 
 - **Source Exclusions for Enrichment** *(new feature)*: Enrichment requests can now exclude configured sources, with exclusions taking precedence over inclusions and support for per-selector source filters ([#81](https://github.com/CybercentreCanada/clue/pull/81)).
