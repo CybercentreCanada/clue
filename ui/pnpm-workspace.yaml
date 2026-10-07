@@ -5,7 +5,6 @@ allowBuilds:
   msw: true
   protobufjs: true
   rxdb: true
-onlyBuiltDependencies:
-  - msw
+  unrs-resolver: false
 packages:
   - .
