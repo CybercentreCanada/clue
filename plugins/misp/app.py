@@ -58,6 +58,8 @@ def enrich(type_name: str, value: str, params: Params, *_args) -> list[QueryEntr
     misp_types = TYPE_MAPPING.get(type_name)
     if misp_types is None:
         raise InvalidDataException(f"{type_name} is not a valid type for this plugin.")
+    if type_name == "asn":
+        value = value.upper().removeprefix("AS")
 
     logger.info(f"Enriching [{type_name}] {value} limit {params.limit} (annotate={params.annotate})")
     attributes = lookup_attributes(misp_types, value, limit=params.limit, timeout=params.max_timeout)

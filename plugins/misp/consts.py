@@ -32,6 +32,7 @@ TYPE_MAPPING: dict[str, list[str]] = {
     "sha1": ["sha1"],
     "sha256": ["sha256"],
     "md5": ["md5"],
+    "asn": ["as"],
 }
 
 TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER": 2, "TLP:AMBER+STRICT": 3, "TLP:RED": 4}
