@@ -5,7 +5,9 @@ from pydantic import ValidationError
 
 from clue.models.auth_user import APIKeyConf, UserRole
 from clue.models.config import (
+    API,
     Auth,
+    Config,
     OAuth,
     OAuthProvider,
     ServiceAccount,
@@ -134,3 +136,105 @@ def test_auth_converts_legacy_api_keys_with_warning(caplog):
 def test_auth_rejects_empty_api_key_name():
     with pytest.raises(ValidationError, match="API key names must not be empty"):
         Auth(apikeys={"": "secret"})
+
+
+@pytest.mark.parametrize(
+    "frontend_url,expected",
+    [
+        (None, None),
+        ("https://clue.example", "https://clue.example"),
+        ("https://clue.example/", "https://clue.example"),
+        ("http://localhost:3000/", "http://localhost:3000"),
+        ("HTTPS://Clue.Example:8443", "https://Clue.Example:8443"),
+        ("http://[::1]:3000/", "http://[::1]:3000"),
+        ("http://127.0.0.1", "http://127.0.0.1"),
+        ("http://clue-ui_1:3000", "http://clue-ui_1:3000"),
+    ],
+)
+def test_api_frontend_url_accepts_valid_urls(frontend_url, expected):
+    assert API(frontend_url=frontend_url).frontend_url == expected
+
+
+@pytest.mark.parametrize(
+    "frontend_url",
+    [
+        "",
+        "clue.example",
+        "/login",
+        "//clue.example",
+        "ftp://clue.example",
+        "javascript:alert(1)",
+        "https://",
+        "https://clue.example?next=1",
+        "https://clue.example/#frag",
+        "https://user:pass@clue.example",
+        "https://clue.example:notaport",
+        "https://clue.example\\@evil.example",
+        "https://clue.example /",
+        # Path prefixes are unsupported: the UI is served from the root of its origin
+        "https://clue.example/ui",
+        "https://clue.example/ui/",
+        "https://clue.example//",
+        "https://clue.example/../other",
+        "https://clue.example/%2e%2e/other",
+        "https://clue.example/a%2Fb",
+        "https://clue.example/./",
+        # Control characters and malformed authorities
+        "https://clue.example\x00",
+        "https://clue.example\n/",
+        "https://clue\t.example",
+        "https://clue.example\x7f",
+        "https://clue.example%2540evil.example",
+        "https://clue.example%40evil.example",
+        "https://clue.example%2f@evil.example",
+        "https://clue.example:",
+        "https://clue.example:0",
+        "https://clue.example:65536",
+        "https://clue.example:-1",
+        "https://clue.example:80:80",
+        "https://:443",
+        "https://clue.example@evil.example",
+        "https://@clue.example",
+        "https://[::1",
+        "https://[not-an-ip]",
+        "https://clue..example",
+        "https://.clue.example",
+        "https://-clue.example",
+        "https://clue.example,evil.example",
+        "https://clue.example;evil.example",
+        "https://cl\u00fce.example",
+        "https:clue.example",
+        "https:///clue.example",
+    ],
+)
+def test_api_frontend_url_rejects_invalid_urls(frontend_url):
+    with pytest.raises(ValidationError, match="frontend_url"):
+        API(frontend_url=frontend_url)
+
+
+def test_frontend_url_goes_through_config_loading(monkeypatch):
+    monkeypatch.setenv("API__FRONTEND_URL", "https://clue.example:8443/")
+    assert Config().api.frontend_url == "https://clue.example:8443"
+
+    for bad_url in ("", "https://clue.example/ui", "https://user@clue.example", "https://clue.example\n"):
+        monkeypatch.setenv("API__FRONTEND_URL", bad_url)
+        with pytest.raises(ValidationError, match="frontend_url"):
+            Config()
+
+
+def test_config_requires_frontend_url_when_oauth_enabled():
+    # model_construct skips settings sources, so the YAML test config does not interfere
+    for frontend_url in (None, ""):
+        unsafe_config = Config.model_construct(
+            api=API.model_construct(frontend_url=frontend_url), auth=Auth(oauth=OAuth(enabled=True))
+        )
+        with pytest.raises(ValueError, match="api.frontend_url must be set"):
+            unsafe_config.validate_oauth_frontend_url()
+
+    Config.model_construct(
+        api=API(frontend_url="https://clue.example"), auth=Auth(oauth=OAuth(enabled=True))
+    ).validate_oauth_frontend_url()
+
+
+def test_config_does_not_require_frontend_url_when_oauth_disabled():
+    Config.model_construct(api=API(), auth=Auth(oauth=OAuth(enabled=False))).validate_oauth_frontend_url()

@@ -36,6 +36,7 @@ api:
   audit: false
   debug: true
   validate_session_useragent: false
+  frontend_url: http://localhost:3000
   registration_allowed_origins:
     - http://localhost:5008
   external_sources:
