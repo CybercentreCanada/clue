@@ -1,5 +1,7 @@
 # ruff: noqa: D101
+import ipaddress
 import os
+import re
 from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
@@ -536,6 +538,10 @@ class API(BaseModel):
     audit: bool = Field(description="Should API calls be audited and saved to a separate log file?", default=True)
     debug: bool = Field(description="Enable debugging?", default=False)
     discover_url: str | None = Field(description="Discover URL", default=None)
+    frontend_url: str | None = Field(
+        description="Trusted Clue UI origin used to build the OAuth redirect URI. Required when OAuth is enabled.",
+        default=None,
+    )
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
     registration_allowed_origins: list[str] = Field(
         description="Exact URL origins permitted for runtime external source registration", default=[]
@@ -554,6 +560,64 @@ class API(BaseModel):
     validate_session_xsrf_token: bool = Field(
         description="Validate if the XSRF token matches the randomly generated token for the session", default=True
     )
+
+    @field_validator("frontend_url")
+    @classmethod
+    def validate_frontend_url(cls, frontend_url: str | None) -> str | None:  # noqa: ANN102
+        """Validates that frontend_url is a plain http(s) origin, and normalizes it to ``scheme://host[:port]``.
+
+        The UI is served from the root of its origin (no router basename, absolute /api and /login paths), so a
+        path other than an optional trailing slash is rejected.
+
+        Args:
+            frontend_url (str | None): The configured UI origin.
+
+        Raises:
+            ValueError: Raised whenever the URL is not a safe, unambiguous http(s) origin.
+
+        Returns:
+            str | None: The validated origin, without a trailing slash.
+        """
+        if frontend_url is None:
+            return None
+
+        error = (
+            "frontend_url must be an http(s) origin such as https://clue.example[:port] (an optional trailing slash "
+            "is allowed) with a valid ASCII host, and no credentials, path, query, fragment or percent-encoding"
+        )
+
+        # urlsplit silently drops tabs/newlines, so check the raw string first
+        if any(not char.isprintable() or char.isspace() or ord(char) > 126 or char in "\\%" for char in frontend_url):
+            raise ValueError(error)
+
+        try:
+            parsed = urlsplit(frontend_url)
+            port = parsed.port
+            host = parsed.hostname
+        except ValueError as err:
+            raise ValueError(error) from err
+
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not host
+            or "@" in parsed.netloc
+            or parsed.netloc.endswith(":")
+            or (port is not None and port < 1)
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            or "?" in frontend_url
+            or "#" in frontend_url
+        ):
+            raise ValueError(error)
+
+        try:
+            ipaddress.ip_address(host)
+        except ValueError as err:
+            if not re.fullmatch(r"[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?(\.[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?)*", host):
+                raise ValueError(error) from err
+
+        return f"{parsed.scheme}://{parsed.netloc}"
 
 
 class Retention(BaseModel):
@@ -614,6 +678,14 @@ class Config(BaseSettings):
         strict=True,
         env_nested_delimiter="__",
     )
+
+    @model_validator(mode="after")
+    def validate_oauth_frontend_url(self: Self) -> Self:
+        """The OAuth redirect URI is built from api.frontend_url, so it must be set when OAuth is enabled."""
+        if self.auth.oauth.enabled and not self.api.frontend_url:
+            raise ValueError("api.frontend_url must be set when auth.oauth.enabled is true")
+
+        return self
 
     @classmethod
     def settings_customise_sources(

@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlencode
 
 from authlib.integrations.base_client import OAuthError
 from flask import current_app, request
@@ -121,10 +121,12 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
 
             # This means that they want to start the oauth process, so we'll redirect them to their chosen provider
             if "code" not in request.args and not refresh_token:
-                referer = request.headers.get("Referer", None)
-                uri = urlparse(referer if referer else request.host_url)
-                port_portion = ":" + str(uri.port) if uri.port else ""
-                redirect_uri = f"{uri.scheme}://{uri.hostname}{port_portion}/login?provider={oauth_provider}"
+                # The redirect URI must only come from trusted configuration, never from request headers
+                if not config.api.frontend_url:
+                    logger.critical("api.frontend_url not set! Cannot start oauth")
+                    raise ClueValueError()
+
+                redirect_uri = f"{config.api.frontend_url.rstrip('/')}/login?{urlencode({'provider': oauth_provider})}"
                 return provider.authorize_redirect(redirect_uri=redirect_uri, nonce=request.args.get("nonce", None))
 
             # At this point we know the code exists, so we're good to use that to exchange for an JSON Web Token with
