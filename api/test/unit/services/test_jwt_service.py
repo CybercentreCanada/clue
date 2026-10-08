@@ -632,6 +632,36 @@ def test_fetch_failure_with_expired_pinned_keys_propagates(service, monkeypatch)
             service.get_jwk(token("known"))
 
 
+def test_fallback_snapshot_retains_authoritative_empty_keys_with_mixed_expired_provider(service, monkeypatch):
+    monkeypatch.setattr(
+        service.config.auth.oauth,
+        "providers",
+        {
+            "provider-a": SimpleNamespace(jwks_uri="https://idp-a/jwks"),
+            "provider-b": SimpleNamespace(jwks_uri="https://idp-b/jwks"),
+        },
+    )
+    expired_at = 100.0 - service.MAX_PINNED_JWKS_STALE_SECONDS - 1
+    service._pinned_jwks = JWKSSnapshot(
+        {"key-b": key("key-b")},
+        {"key-b": "provider-b"},
+        {"provider-a": 100.0, "provider-b": expired_at},
+    )
+
+    fallback = service._unexpired_pinned_jwks()
+    assert fallback is not None
+    assert set(fallback.timestamps) == {"provider-a"}
+    assert fallback.jwks == {}
+
+    # All providers failing serves the authoritative empty snapshot instead of propagating the error.
+    with patch.object(service.requests, "get", side_effect=requests.Timeout):
+        jwks, providers = service.get_jwks(refresh=True)
+    assert jwks == {}
+    assert providers == {}
+    with pytest.raises(service.ClueKeyError):
+        service.get_jwk(token("key-b"))
+
+
 def test_fallback_keys_never_overwrite_a_fresh_cache_entry(service, monkeypatch):
     service._pinned_jwks = snapshot({"old": key("old")}, {"old": "provider"})
     started = Event()

@@ -116,16 +116,16 @@ def _unexpired_pinned_jwks() -> JWKSSnapshot | None:
     """Returns the pinned snapshot with expired providers removed, for use as a fallback.
 
     Returns:
-        The unexpired part of the pinned snapshot, or None if there is no pinned snapshot, every provider has
-        expired, or only expired keys remain. An authoritative empty set (no keys, fresh provider) is usable.
+        The unexpired part of the pinned snapshot, or None if there is no pinned snapshot or every provider has
+        expired. A fresh provider that returned no keys is authoritative, so the result may have no keys.
     """
     pinned = _pinned_jwks  # single read: keys and timestamps travel together
     if pinned is None:
         return None
 
     fresh = _fresh_only(pinned)
-    # Nothing fresh left, or only expired keys remain (an empty set from a fresh provider is still usable).
-    return fresh if fresh.timestamps and (fresh.jwks or not pinned.jwks) else None
+    # Any fresh timestamp is authoritative, even with no keys; other providers' expired keys don't matter.
+    return fresh if fresh.timestamps else None
 
 
 def _known_jwks(cached_jwks: JWKSSnapshot | None) -> JWKSSnapshot:
