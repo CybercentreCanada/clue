@@ -102,7 +102,7 @@ redis:
 
 config:
   api:
-    frontend_url: "" # This must be overridden
+    frontend_url: null # This must be overridden when OAuth is enabled
   auth:
     oauth:
       enabled: true
