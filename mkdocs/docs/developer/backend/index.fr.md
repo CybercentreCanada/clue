@@ -272,6 +272,7 @@ auth:
   oauth:
     enabled: false # Activer l'authentification OAuth
     gravatar_enabled: false # Activer Gravatar pour les avatars d'utilisateur
+    jwks_refresh_cooldown_seconds: 60 # Intervalle minimal entre les tentatives JWKS (au moins 1 seconde)
     other_audiences: [] # Audiences JWT supplémentaires à accepter
     providers: {} # Configurations des fournisseurs OAuth
 
