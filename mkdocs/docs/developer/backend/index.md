@@ -242,6 +242,11 @@ api:
   # Service discovery
   discover_url: null # Optional service discovery URL
 
+  # Trusted UI origin used to build the OAuth redirect URI (required when OAuth is enabled).
+  # Must be an http(s) origin served from the root (no path prefix, credentials, query or fragment).
+  # Never derived from request headers.
+  frontend_url: "https://clue.example.com"
+
   # External enrichment sources
   external_sources: [] # List of external enrichment services
 
