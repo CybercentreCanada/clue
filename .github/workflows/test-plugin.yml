@@ -76,18 +76,17 @@ jobs:
           if [ -f "$PLUGIN_PATH/requirements.txt" ]; then
             echo "✅ Found requirements.txt in $PLUGIN_PATH"
             echo "Installing plugin dependencies..."
-            pip install -r "$PLUGIN_PATH/requirements.txt"
+            # pip install -r "$PLUGIN_PATH/requirements.txt"
+            poetry -C api run pip instal -r "$PLUGIN_PATH/requirements.txt"
           else
             echo "ℹ️ No requirements.txt found in $PLUGIN_PATH"
           fi
-
-      - name: Install pytest
-        if: steps.check-tests.outputs.run_tests == 'true'
-        run: pip install pytest
 
       - name: Run Tests
         if: steps.check-tests.outputs.run_tests == 'true'
         run: |
           PLUGIN_NAME="${PLUGIN_PATH#plugins/}"
-          python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
+          # python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
+          poetry -C ../api run python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
+
         working-directory: plugins
