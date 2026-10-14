@@ -611,7 +611,7 @@ class API(BaseModel):
 
         TypeAdapter(HttpUrl).validate_python(frontend_url)
 
-        # Block pydantic to accept invalid domain such as clue..com
+        # Prevent Pydantic from accepting invalid domains such as clue..com
         if ":" not in host:
             if any(char not in "abcdefghijklmnopqrstuvwxyz0123456789_-." for char in host) or any(
                 not label or label.startswith("-") or label.endswith("-") for label in host.split(".")
