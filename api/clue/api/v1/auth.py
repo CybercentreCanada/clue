@@ -123,8 +123,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
             if "code" not in request.args and not refresh_token:
                 # The redirect URI must only come from trusted configuration, never from request headers
                 if not config.api.frontend_url:
-                    logger.critical("api.frontend_url not set! Cannot start oauth")
-                    raise ClueValueError()
+                    raise ClueValueError("api.frontend_url not set! Cannot start oauth")
 
                 redirect_uri = f"{config.api.frontend_url.rstrip('/')}/login?{urlencode({'provider': oauth_provider})}"
                 return provider.authorize_redirect(redirect_uri=redirect_uri, nonce=request.args.get("nonce", None))

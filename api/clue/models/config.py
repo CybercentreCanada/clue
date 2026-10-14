@@ -1,7 +1,5 @@
 # ruff: noqa: D101
-import ipaddress
 import os
-import re
 from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
@@ -611,11 +609,14 @@ class API(BaseModel):
         ):
             raise ValueError(error)
 
-        try:
-            ipaddress.ip_address(host)
-        except ValueError as err:
-            if not re.fullmatch(r"[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?(\.[a-z0-9_]([a-z0-9_-]*[a-z0-9_])?)*", host):
-                raise ValueError(error) from err
+        TypeAdapter(HttpUrl).validate_python(frontend_url)
+
+        # Block pydantic to accept invalid domain such as clue..com
+        if ":" not in host:
+            if any(char not in "abcdefghijklmnopqrstuvwxyz0123456789_-." for char in host) or any(
+                not label or label.startswith("-") or label.endswith("-") for label in host.split(".")
+            ):
+                raise ValueError(error)
 
         return f"{parsed.scheme}://{parsed.netloc}"
 
