@@ -72,21 +72,18 @@ jobs:
 
       - name: Check and install plugin requirements
         if: steps.check-tests.outputs.run_tests == 'true'
+        working-directory: api
         run: |
-          if [ -f "$PLUGIN_PATH/requirements.txt" ]; then
+          if [ -f "../$PLUGIN_PATH/requirements.txt" ]; then
             echo "✅ Found requirements.txt in $PLUGIN_PATH"
             echo "Installing plugin dependencies..."
-            # pip install -r "$PLUGIN_PATH/requirements.txt"
-            poetry --project api run pip install -r "$PLUGIN_PATH/requirements.txt"
+            poetry run pip install -r "../$PLUGIN_PATH/requirements.txt"
           else
             echo "ℹ️ No requirements.txt found in $PLUGIN_PATH"
           fi
 
       - name: Run Tests
         if: steps.check-tests.outputs.run_tests == 'true'
+        working-directory: api
         run: |
-          PLUGIN_NAME="${PLUGIN_PATH#plugins/}"
-          # python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
-          poetry --project ../api run python -m pytest -s -v $PLUGIN_NAME -c pytest.ini
-
-        working-directory: plugins
+          poetry run python -m pytest -s -v "../$PLUGIN_PATH" -c ../plugins/pytest.ini
