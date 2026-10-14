@@ -77,7 +77,7 @@ jobs:
             echo "✅ Found requirements.txt in $PLUGIN_PATH"
             echo "Installing plugin dependencies..."
             # pip install -r "$PLUGIN_PATH/requirements.txt"
-            poetry -C api run pip instal -r "$PLUGIN_PATH/requirements.txt"
+            poetry -C api run pip install -r "$PLUGIN_PATH/requirements.txt"
           else
             echo "ℹ️ No requirements.txt found in $PLUGIN_PATH"
           fi
