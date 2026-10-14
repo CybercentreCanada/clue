@@ -396,6 +396,8 @@ auth:
         uid_format: "{0}"                        # Chaîne de format de nom d'utilisateur
 ```
 
+**Gestion du nonce OIDC** : L'API n'accepte jamais de nonce OIDC fourni par le navigateur. Lorsque `scope` inclut `openid`, Authlib génère le nonce et le lie, avec `state`, à la session de l'utilisateur au début de la connexion, puis valide les deux lors du retour (callback). L'identité de l'utilisateur provient uniquement des revendications du jeton d'identité validées par Authlib. Les anciennes versions de l'interface peuvent encore envoyer un paramètre de requête `nonce` ; l'API l'ignore, donc aucune modification de configuration ou du client n'est requise.
+
 #### Configuration de classification (`classification.yml`)
 
 La configuration de classification définit le système de classification des données utilisé par Clue. Ce fichier suit le format du moteur de classification Assemblyline.

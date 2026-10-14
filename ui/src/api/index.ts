@@ -163,7 +163,7 @@ export const hfetch = async <R>(
   }
 
   if (statusCode === 401) {
-    if (!getLocalStored(StorageKey.NEXT_LOCATION)) {
+    if (!_uri.includes('/auth/login') && !getLocalStored(StorageKey.NEXT_LOCATION)) {
       setLocalStored(StorageKey.NEXT_LOCATION, window.location.pathname);
       setLocalStored(StorageKey.NEXT_SEARCH, window.location.search);
     }

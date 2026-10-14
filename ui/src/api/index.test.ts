@@ -4,6 +4,7 @@ import { URLSearchParams } from 'url';
 import * as localStorage from 'utils/localStorage';
 import * as xsrf from 'utils/xsrf';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import * as oauthLogin from './auth/login';
 import { hdelete, hget, hpatch, hpost, hput, joinAllUri, joinParams, joinUri, setHeaders, uri } from './index';
 
 interface MockAxiosClientType {
@@ -32,6 +33,35 @@ describe('API Index', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('forwards OAuth state without sourcing a nonce from browser storage', async () => {
+    const search = new URLSearchParams({ provider: 'local', code: 'local-code', state: 'server-state' });
+    client.fetch.mockResolvedValue([{ api_response: { app_token: 'local-token' } }, 200]);
+    const getItem = vi.spyOn(window.localStorage, 'getItem');
+
+    await oauthLogin.get(search);
+
+    expect(search.get('nonce')).toBeNull();
+    expect(search.get('state')).toBe('server-state');
+    expect(client.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/auth/login'),
+      'get',
+      null,
+      search,
+      expect.any(Object)
+    );
+    expect(getItem).not.toHaveBeenCalled();
+    getItem.mockRestore();
+  });
+
+  it('does not persist rejected OAuth callback parameters as the next location', async () => {
+    const search = new URLSearchParams({ provider: 'local', code: 'local-code', state: 'server-state' });
+    client.fetch.mockResolvedValue([{ api_error_message: 'OAuth authentication failed.' }, 401]);
+
+    await oauthLogin.get(search);
+
+    expect(localStorage.setStored).not.toHaveBeenCalled();
   });
 
   describe('joinParams', () => {

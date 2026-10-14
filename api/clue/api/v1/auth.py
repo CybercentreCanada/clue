@@ -2,6 +2,7 @@ from typing import Any, Optional
 from urllib.parse import urlparse
 
 from authlib.integrations.base_client import OAuthError
+from authlib.jose.errors import JoseError
 from flask import current_app, request
 from pydantic import ValidationError
 
@@ -53,7 +54,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
         oauth_provider: Alternative name for ``provider``.
         code: The authorization code returned by the OAuth provider.
         refresh_token: An OAuth refresh token used to obtain a new access token.
-        nonce: Optional nonce used during the OAuth authorization flow.
+        nonce: Ignored. Accepted for compatibility with older clients; the OIDC nonce is generated server-side.
 
     Returns:
         A Clue API response containing the access token, refresh token, user
@@ -125,7 +126,8 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
                 uri = urlparse(referer if referer else request.host_url)
                 port_portion = ":" + str(uri.port) if uri.port else ""
                 redirect_uri = f"{uri.scheme}://{uri.hostname}{port_portion}/login?provider={oauth_provider}"
-                return provider.authorize_redirect(redirect_uri=redirect_uri, nonce=request.args.get("nonce", None))
+                # Authlib generates the nonce and binds it to the session; never accept one from the browser.
+                return provider.authorize_redirect(redirect_uri=redirect_uri)
 
             # At this point we know the code exists, so we're good to use that to exchange for an JSON Web Token with
             # user data in it. token_data contains the access token, expiry, refresh token, and id token,
@@ -166,9 +168,20 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
                     grant_type="refresh_token",
                     **kwargs,
                 )
+                # Refreshed ID tokens have no authorization-request nonce to compare against.
+                identity_data = (
+                    provider.parse_id_token(token_data, nonce=None) if "id_token" in token_data else token_data
+                )
             else:
                 # Finally, ask for the access token with whatever info the provider needs
                 token_data = provider.authorize_access_token(**kwargs)
+                if "userinfo" in token_data:
+                    # Already validated by Authlib against the session-bound state and nonce
+                    identity_data = token_data["userinfo"]
+                elif "id_token" in token_data:
+                    raise AuthenticationException("The OAuth provider returned an unverified identity token.")
+                else:
+                    identity_data = token_data
 
             access_token = token_data.get("access_token", None)
             refresh_token = token_data.get("refresh_token", None)
@@ -178,7 +191,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
 
             # Get a useful dict of user data from the web token
             try:
-                cur_user = user_service.parse_user_data(token_data, oauth_provider)
+                cur_user = user_service.parse_user_data(identity_data, oauth_provider)
             except ValidationError as e:
                 raise AuthenticationException("The OAuth provider returned invalid user information.") from e
 
@@ -209,7 +222,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
 
     # For sanity's sake, we throw exceptions throughout the authentication code and simply catch the exceptions here to
     # return the corresponding HTTP Code to the user
-    except (OAuthError, AuthenticationException) as err:
+    except (OAuthError, JoseError, AuthenticationException) as err:
         logger.warning(f"Authentication failure. (U:{user} - IP:{ip}) [{err}]")
         return unauthorized(err=str(err))
 

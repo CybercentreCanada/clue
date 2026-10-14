@@ -396,6 +396,8 @@ auth:
         uid_format: "{0}"                        # Username format string
 ```
 
+**OIDC nonce handling**: The API never accepts an OIDC nonce from the browser. When `scope` includes `openid`, Authlib generates the nonce and binds it, with `state`, to the user's session at login initiation, then validates both on the callback. User identity comes only from the ID token claims Authlib has validated. Older UI versions may still send a `nonce` query parameter; the API ignores it, so no configuration or client change is required.
+
 #### Classification Configuration (`classification.yml`)
 
 The classification configuration defines the data classification system used by Clue. This file follows the Assemblyline classification engine format.
