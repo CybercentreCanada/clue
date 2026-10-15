@@ -28,7 +28,7 @@ def get_token(user=None):
     if data.status_code == 200:
         return data.json()["access_token"]
     else:
-        logging.error("Non 200 status:", json.dumps(data.json()))
+        logging.error("Non 200 status: %s", json.dumps(data.json()))
 
     return None
 
