@@ -19,10 +19,11 @@ from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
 from clue.helper.obo import get_obo_access_token
-from clue.helper.plugin_requests import request_with_safe_redirects
+from clue.helper.plugin_requests import quote_plugin_path_segment, request_with_safe_redirects
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.models.selector import Selector
+from clue.models.validators import validate_plugin_identifier, validate_task_id
 
 logger = get_logger(__file__)
 
@@ -67,7 +68,15 @@ def get_supported_fetchers(
                     _raise_fetcher_metadata_unavailable()
                 return {}
 
-            return TypeAdapter(dict[str, FetcherDefinition]).validate_python(result["api_response"])
+            fetchers = TypeAdapter(dict[str, FetcherDefinition]).validate_python(result["api_response"])
+            for identifier in fetchers:
+                validate_plugin_identifier(identifier)
+            return fetchers
+        except (ClueValueError, ValidationError) as err:
+            logger.warning("Invalid fetcher metadata from %s", source.name)
+            if raise_on_error:
+                _raise_fetcher_metadata_unavailable(err)
+            return {}
         except ClueException:
             raise
         except Exception as err:
@@ -157,6 +166,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
     Returns:
         ActionResult: The result of the action.
     """
+    validate_plugin_identifier(fetcher_id)
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
@@ -188,7 +198,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
 
         response = request_with_safe_redirects(
             requests.post,
-            urljoin(plugin.url, f"fetchers/{fetcher_id}"),
+            urljoin(plugin.url, f"fetchers/{quote_plugin_path_segment(fetcher_id)}"),
             get_method=requests.get,
             json=parameters,
             headers=headers,
@@ -232,6 +242,8 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
     Returns:
         ActionResult: The result of the action.
     """
+    validate_plugin_identifier(fetcher_id)
+    validate_task_id(task_id)
     plugin = next((source for source in config.api.external_sources if source.name == plugin_id), None)
 
     if not plugin or not CLASSIFICATION.is_accessible(user["classification"], plugin.classification):
@@ -256,7 +268,9 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
     remaining_timeout = max(timeout - (monotonic() - metadata_started), 0.001)
 
     try:
-        req_url = urljoin(plugin.url, f"fetchers/{fetcher_id}/status/{task_id}")
+        req_url = urljoin(
+            plugin.url, f"fetchers/{quote_plugin_path_segment(fetcher_id)}/status/{quote_plugin_path_segment(task_id)}"
+        )
         logger.debug("Getting status for action %s with task_id %s for user %s", req_url, task_id, user["uname"])
 
         response = request_with_safe_redirects(
