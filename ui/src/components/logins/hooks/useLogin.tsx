@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
 import { saveLoginCredential } from 'utils/localStorage';
+import { buildOAuthCallbackParams, getSafeRedirectDestination } from 'utils/oauth';
 
 const useLogin = () => {
   const navigate = useNavigate();
@@ -46,13 +47,20 @@ const useLogin = () => {
         if (user) {
           setUser(user);
 
-          // Either navigate to the original URL, or just the home page
-          if (get(StorageKey.NEXT_LOCATION)) {
-            navigate(get<string>(StorageKey.NEXT_LOCATION) + (get<string>(StorageKey.NEXT_SEARCH) ?? ''));
-            remove(StorageKey.NEXT_LOCATION);
-            remove(StorageKey.NEXT_SEARCH);
+          // Either navigate to the original URL, or just the home page. Persisted destinations are revalidated
+          // because older versions could have stored OAuth callback URLs.
+          const destination = getSafeRedirectDestination(
+            get<string>(StorageKey.NEXT_LOCATION),
+            get<string>(StorageKey.NEXT_SEARCH)
+          );
+          remove(StorageKey.NEXT_LOCATION);
+          remove(StorageKey.NEXT_SEARCH);
+
+          // Replace the history entry so an OAuth callback URL is not kept in the browser history.
+          if (destination) {
+            navigate(destination, { replace: location.pathname === '/login' });
           } else if (location.pathname === '/login') {
-            navigate('/');
+            navigate('/', { replace: true });
           }
           // If the user is null but there's no exception?
         } else {
@@ -86,9 +94,9 @@ const useLogin = () => {
     [dispatchApi, getUser, showErrorMessage, t]
   );
 
-  // OAuth login flow.
+  // OAuth login flow. Only allowlisted callback parameters are forwarded to the API.
   const doOAuth = useCallback(async () => {
-    const userCredential = await dispatchApi(api.auth.login.get(searchParams));
+    const userCredential = await dispatchApi(api.auth.login.get(buildOAuthCallbackParams(searchParams)));
     if (saveLoginCredential(userCredential)) {
       getUser(userCredential);
     }

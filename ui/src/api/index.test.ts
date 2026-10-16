@@ -35,22 +35,30 @@ describe('API Index', () => {
     vi.clearAllMocks();
   });
 
-  it('forwards OAuth state without sourcing a nonce from browser storage', async () => {
-    const search = new URLSearchParams({ provider: 'local', code: 'local-code', state: 'server-state' });
+  it('forwards only allowlisted OAuth callback parameters', async () => {
+    const search = new URLSearchParams({
+      provider: 'local',
+      code: 'local-code',
+      state: 'server-state',
+      nonce: 'injected-nonce',
+      refresh_token: 'injected-refresh',
+      id_token: 'injected.id.token',
+      access_token: 'injected-access',
+      arbitrary: 'value'
+    });
     client.fetch.mockResolvedValue([{ api_response: { app_token: 'local-token' } }, 200]);
     const getItem = vi.spyOn(window.localStorage, 'getItem');
 
     await oauthLogin.get(search);
 
-    expect(search.get('nonce')).toBeNull();
-    expect(search.get('state')).toBe('server-state');
-    expect(client.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/login'),
-      'get',
-      null,
-      search,
-      expect.any(Object)
-    );
+    const forwarded: URLSearchParams = client.fetch.mock.calls[0][3];
+    expect(client.fetch.mock.calls[0][0]).toContain('/auth/login');
+    expect(Object.fromEntries(forwarded.entries())).toEqual({
+      provider: 'local',
+      code: 'local-code',
+      state: 'server-state'
+    });
+    expect(forwarded.toString()).not.toMatch(/injected|nonce|refresh_token|id_token|access_token|arbitrary/);
     expect(getItem).not.toHaveBeenCalled();
     getItem.mockRestore();
   });
@@ -63,6 +71,26 @@ describe('API Index', () => {
 
     expect(localStorage.setStored).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['/login', '?provider=local&code=c&state=s&id_token=a.b.c', ''],
+    ['/login', '', ''],
+    ['/fetchers', '?code=c&state=s', ''],
+    ['/fetchers', '?refresh_token=attacker', ''],
+    ['/fetchers', '', '#access_token=t']
+  ])(
+    'does not persist %s%s%s when an unrelated request returns 401 on an OAuth callback URL',
+    async (pathname, search, hash) => {
+      Object.defineProperty(global, 'location', { value: { pathname, search, hash }, writable: true });
+      vi.mocked(localStorage.getStored).mockReturnValue(null);
+      client.fetch.mockResolvedValue([{ api_error_message: 'Unauthorized' }, 401]);
+
+      await hget('/configs');
+
+      expect(localStorage.setStored).not.toHaveBeenCalledWith(StorageKey.NEXT_LOCATION, expect.anything());
+      expect(localStorage.setStored).not.toHaveBeenCalledWith(StorageKey.NEXT_SEARCH, expect.anything());
+    }
+  );
 
   describe('joinParams', () => {
     it('should return original URI when no search params provided', () => {
@@ -379,9 +407,42 @@ describe('API Index', () => {
 
       expect(result).toBe('retry-success');
       expect(client.fetch).toHaveBeenCalledTimes(3);
+      expect(client.fetch.mock.calls[1][0]).toBe('/api/v1/auth/refresh');
+      expect(client.fetch.mock.calls[1][1]).toBe('post');
+      expect(client.fetch.mock.calls[1][2]).toEqual({ provider: 'mock-provider', refresh_token: 'mock-refresh-token' });
+      expect(client.fetch.mock.calls[1][3]).toBeUndefined();
       expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({ access_token: 'new-token' });
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_LOCATION);
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_SEARCH);
+    });
+
+    it('does not recurse when the refresh request itself is rejected', async () => {
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
+        .mockResolvedValueOnce([{ api_error_message: 'Authentication failed.' }, 401]);
+      vi.mocked(localStorage.getStored).mockImplementation(key =>
+        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
+      );
+
+      const result = await hget('/test');
+
+      expect(result).toBeUndefined();
+      expect(client.fetch).toHaveBeenCalledTimes(2);
+      expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({});
+    });
+
+    it('falls back to re-login when the refresh request is invalid', async () => {
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
+        .mockResolvedValueOnce([{ api_error_message: 'Invalid token refresh request.' }, 400]);
+      vi.mocked(localStorage.getStored).mockImplementation(key =>
+        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : null
+      );
+
+      const result = await hget('/test');
+
+      expect(result).toBeUndefined();
+      expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({});
     });
   });
 });

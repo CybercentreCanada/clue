@@ -38,10 +38,9 @@ if config.api.debug and EXTENSION_PATH.exists():
 import logging
 import os
 import re
-from typing import Any, cast
+from typing import cast
 
 import elasticapm
-from authlib.integrations.flask_client import OAuth
 from elasticapm.contrib.flask import ElasticAPM
 from flasgger import Swagger
 from flask import Flask
@@ -65,6 +64,7 @@ from clue.cronjobs import setup_jobs as setup_cron_jobs
 from clue.error import errors
 from clue.extensions import get_extensions
 from clue.healthz import healthz
+from clue.security import oidc
 
 SESSION_COOKIE_SAMESITE = os.environ.get("CLUE_SESSION_COOKIE_SAMESITE", None)
 HSTS_MAX_AGE = os.environ.get("CLUE_HSTS_MAX_AGE", None)
@@ -152,34 +152,8 @@ for extension in get_extensions():
 logger.info("%s types configured (%s custom types)", len(SUPPORTED_TYPES), len(SUPPORTED_TYPES) - num_buildin_types)
 
 # Setup OAuth providers
-if config.auth.oauth.enabled:
-    providers = []
-    for name, provider in config.auth.oauth.providers.items():
-        raw_provider: dict[str, Any] = provider.model_dump(mode="json", exclude_none=True)
-
-        # Set provider name
-        raw_provider["name"] = name
-
-        # Remove clue specific fields from oAuth config
-        raw_provider.pop("auto_create", None)
-        raw_provider.pop("auto_sync", None)
-        raw_provider.pop("user_get", None)
-        raw_provider.pop("auto_properties", None)
-        raw_provider.pop("uid_regex", None)
-        raw_provider.pop("uid_format", None)
-        raw_provider.pop("user_groups", None)
-        raw_provider.pop("user_groups_data_field", None)
-        raw_provider.pop("user_groups_name_field", None)
-        raw_provider.pop("app_provider", None)
-
-        # Add the provider to the list of providers
-        providers.append(raw_provider)
-
-    if providers:
-        oauth = OAuth()
-        for raw_provider in providers:
-            oauth.register(**raw_provider)
-        oauth.init_app(app)
+if config.auth.oauth.enabled and config.auth.oauth.providers:
+    oidc.build_oauth(config.auth.oauth.providers).init_app(app)
 
 if config.auth.allow_apikeys:
     logger.debug(f"Allowing API Key use. Registered keys: {','.join(config.auth.apikeys.keys())}")

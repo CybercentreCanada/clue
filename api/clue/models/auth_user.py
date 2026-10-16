@@ -59,3 +59,12 @@ class AuthResult(BaseModel):
 
     user: AuthUser
     privileges: set[Privilege]
+
+
+class RefreshRequest(BaseModel):
+    """Request body for POST /api/v1/auth/refresh: an OAuth refresh token exchanged for a new access token."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    provider: str = Field(min_length=1, max_length=128)
+    refresh_token: str = Field(min_length=1, max_length=16384)

@@ -19,7 +19,7 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
   const codeRedemption = useRef<Promise<void>>();
 
   useEffect(() => {
-    if (searchParams.get('code')) {
+    if (searchParams.get('code') && searchParams.get('state')) {
       setButtonLoading(true);
 
       if (!codeRedemption.current) {

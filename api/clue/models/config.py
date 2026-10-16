@@ -88,7 +88,13 @@ class OAuthProvider(BaseModel):
         description="The audience to validate against. Only must be set if audience is different than the client id."
     )
     scope: str = Field(description="The scope to validate against")
-    iss: str | None = Field(description="Optional issuer field for JWT validation", default=None)
+    iss: str | None = Field(
+        description=(
+            "Trusted issuer that ID tokens must exactly match. Required for OIDC login (scope containing openid); "
+            "ID tokens are rejected when it is not set."
+        ),
+        default=None,
+    )
     jwks_uri: str = Field(description="URL used to verify if a returned JWKS token is valid")
 
     @field_validator("role_map", mode="before")
