@@ -1,12 +1,11 @@
 import { hget, hpost, joinUri } from 'api';
 import { uri as parentUri } from 'api/auth';
-import { MY_LOCAL_STORAGE_PREFIX, StorageKey } from 'lib/utils/constants';
 import type { ClueUser } from 'models/entities/ClueUser';
+import { buildOAuthCallbackParams } from 'utils/oauth';
 
 export type PostLoginBody = {
   user?: string;
   password?: string;
-  refresh_token?: string;
   provider?: string;
 };
 
@@ -25,13 +24,9 @@ export const post = (body: PostLoginBody): Promise<LoginResponse> => {
   return hpost(uri(), body);
 };
 
+/**
+ * Redeem an OAuth authorization-code callback. Only allowlisted callback parameters are forwarded.
+ */
 export const get = (search: URLSearchParams): Promise<LoginResponse> => {
-  const nonce = localStorage.getItem(`${MY_LOCAL_STORAGE_PREFIX}.${StorageKey.LOGIN_NONCE}`);
-
-  if (nonce) {
-    search.set('nonce', JSON.parse(nonce));
-    localStorage.removeItem(`${MY_LOCAL_STORAGE_PREFIX}.${StorageKey.LOGIN_NONCE}`);
-  }
-
-  return hget(uri(), search);
+  return hget(uri(), buildOAuthCallbackParams(search));
 };

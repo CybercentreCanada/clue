@@ -373,6 +373,7 @@ auth:
         client_secret: "your-client-secret" # OAuth client secret
         audience: "clue-api" # JWT audience
         scope: "openid profile email groups" # OAuth scopes
+        iss: "https://auth.example.com/realms/clue" # Trusted ID token issuer (required with openid)
         jwks_uri: "https://auth.example.com/realms/clue/protocol/openid-connect/certs"
         access_token_url: "https://auth.example.com/realms/clue/protocol/openid-connect/token"
         authorize_url: "https://auth.example.com/realms/clue/protocol/openid-connect/auth"

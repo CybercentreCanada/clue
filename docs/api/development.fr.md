@@ -372,6 +372,7 @@ auth:
         client_secret: "votre-secret-client"     # Secret client OAuth
         audience: "clue-api"                     # Audience JWT
         scope: "openid profile email groups"    # Portées OAuth
+        iss: "https://auth.example.com/realms/clue" # Émetteur de confiance des jetons d'identité (requis avec openid)
         jwks_uri: "https://auth.exemple.com/realms/clue/protocol/openid-connect/certs"
         access_token_url: "https://auth.exemple.com/realms/clue/protocol/openid-connect/token"
         authorize_url: "https://auth.exemple.com/realms/clue/protocol/openid-connect/auth"
@@ -395,6 +396,14 @@ auth:
         uid_regex: "^(.+)@exemple\\.com$"       # Extraire le nom d'utilisateur de l'e-mail
         uid_format: "{0}"                        # Chaîne de format de nom d'utilisateur
 ```
+
+**Connexion OIDC et validation des jetons** :
+
+- `iss` est **obligatoire** pour tout fournisseur dont le `scope` inclut `openid`. Il doit correspondre exactement à la revendication `iss` des jetons d'identité du fournisseur (pour Keycloak, `https://<hôte>/realms/<realm>`) ; les jetons d'identité sont rejetés s'il est absent.
+- Les jetons d'identité doivent être signés par une clé publiée à `jwks_uri` avec un algorithme asymétrique, provenir de l'`iss` configuré, inclure `client_id` dans `aud` (`azp` seul n'est jamais suffisant) et contenir des revendications `sub`, `exp` et `iat` valides.
+- Le point de terminaison de connexion du navigateur (`GET /api/v1/auth/login`) n'effectue que le flux par code d'autorisation. Authlib génère `state` et le nonce et les lie à la session de l'utilisateur au début de la connexion ; lors du retour (callback), un `state` absent, falsifié, provenant d'une autre session ou rejoué est rejeté avant l'échange du code, et le nonce du jeton d'identité doit correspondre. Une revendication signée `nonce_supported=false` ne désactive pas cette vérification.
+- Le retour n'accepte que `provider`/`oauth_provider`, `code`, `state`, `session_state`, `iss`, `error`, `error_description` et `error_uri`. Tout autre paramètre ou paramètre répété, y compris `nonce`, `refresh_token`, `id_token` ou `access_token`, est rejeté avec un code 400 avant tout échange de jeton. L'initiation de la connexion n'accepte que `provider`/`oauth_provider`.
+- Le rafraîchissement des jetons utilise `POST /api/v1/auth/refresh` avec un corps JSON contenant exactement `provider` et `refresh_token` ; les paramètres de requête et les corps de formulaire sont rejetés. Les jetons d'identité rafraîchis sont validés comme ceux de la connexion, sauf pour le nonce, qui n'existe que pour une demande d'autorisation. Le point de terminaison de connexion n'accepte plus les jetons de rafraîchissement ; les anciennes versions de l'interface reviennent donc à une connexion complète lorsque leur jeton d'accès expire.
 
 #### Configuration de classification (`classification.yml`)
 

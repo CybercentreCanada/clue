@@ -1,5 +1,6 @@
 import * as actions from 'api/actions';
 import * as auth from 'api/auth';
+import type { LoginResponse } from 'api/auth/login';
 import * as configs from 'api/configs';
 import * as fetchers from 'api/fetchers';
 import * as lookup from 'api/lookup';
@@ -17,6 +18,7 @@ import {
   saveLoginCredential,
   setStored as setLocalStored
 } from 'utils/localStorage';
+import { isSafeRedirectDestination } from 'utils/oauth';
 import getXSRFCookie from 'utils/xsrf';
 
 /**
@@ -163,20 +165,27 @@ export const hfetch = async <R>(
   }
 
   if (statusCode === 401) {
-    if (!getLocalStored(StorageKey.NEXT_LOCATION)) {
+    const isAuthRequest = _uri.includes('/auth/login') || _uri.includes('/auth/refresh');
+
+    // Never remember an OAuth callback (or any URL carrying OAuth data) as the post-login destination.
+    if (
+      !isAuthRequest &&
+      !getLocalStored(StorageKey.NEXT_LOCATION) &&
+      isSafeRedirectDestination(window.location.pathname, window.location.search, window.location.hash)
+    ) {
       setLocalStored(StorageKey.NEXT_LOCATION, window.location.pathname);
       setLocalStored(StorageKey.NEXT_SEARCH, window.location.search);
     }
 
-    if (!_uri.includes('/auth/login') && getLocalStored(StorageKey.REFRESH_TOKEN)) {
+    if (!isAuthRequest && getLocalStored(StorageKey.REFRESH_TOKEN)) {
       //Refresh access token if possible
       //And re-execute the previous api call (seamless)
       const refreshToken: string = getLocalStored(StorageKey.REFRESH_TOKEN);
       const provider: string = getLocalStored(StorageKey.PROVIDER);
-      const refreshResponse = await api.auth.login.post({
-        refresh_token: refreshToken,
-        provider: provider
-      });
+      // A rejected refresh (e.g. 400 for a malformed stored value) falls through to a normal re-login.
+      const refreshResponse = await api.auth.refresh
+        .post({ refresh_token: refreshToken, provider: provider })
+        .catch((): LoginResponse => null);
 
       if (refreshResponse) {
         saveLoginCredential(refreshResponse);

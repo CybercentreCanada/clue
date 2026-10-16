@@ -1,8 +1,6 @@
 import { Button, CircularProgress, Stack } from '@mui/material';
 import api from 'api';
-import { useMyLocalStorageItem } from 'lib/hooks/useMyLocalStorage';
-import { StorageKey } from 'lib/utils/constants';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import useLogin from '../hooks/useLogin';
@@ -15,14 +13,13 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
   const { doOAuth } = useLogin();
-  const setNonce = useMyLocalStorageItem(StorageKey.LOGIN_NONCE)[1];
 
   const [buttonLoading, setButtonLoading] = useState(false);
 
   const codeRedemption = useRef<Promise<void>>();
 
   useEffect(() => {
-    if (searchParams.get('code')) {
+    if (searchParams.get('code') && searchParams.get('state')) {
       setButtonLoading(true);
 
       if (!codeRedemption.current) {
@@ -36,13 +33,6 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
     }
   }, [doOAuth, searchParams]);
 
-  const nonce = useMemo(() => {
-    // Generate a cryptographically secure random 16-byte nonce, hex-encoded
-    const array = new Uint8Array(16);
-    window.crypto.getRandomValues(array);
-    return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-  }, []);
-
   return (
     <Stack spacing={1}>
       {providers.map(item => (
@@ -52,8 +42,7 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
           variant="contained"
           color="primary"
           disabled={buttonLoading}
-          href={api.auth.login.uri(new URLSearchParams({ oauth_provider: item, nonce }))}
-          onClick={() => setNonce(nonce)}
+          href={api.auth.login.uri(new URLSearchParams({ oauth_provider: item }))}
           startIcon={buttonLoading && <CircularProgress size={24} />}
         >
           {t('route.login.button.oauth.' + item.replace(/_/g, ' '))}
