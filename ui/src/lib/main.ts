@@ -3,6 +3,7 @@
 import type {
   ClueDatabase,
   ClueDatabaseCollections,
+  DatabaseConfig,
   SelectorCollection,
   SelectorCollectionMethods,
   SelectorDocMethods,
@@ -49,6 +50,7 @@ import GroupControl from './components/group/GroupControl';
 import SourcePicker from './components/SourcePicker';
 import { SNACKBAR_EVENT_ID, type SnackbarEvents } from './data/event';
 import buildDatabase from './database';
+import { ClueReplicationError } from './database/errors';
 import { ClueComponentContext } from './hooks/ClueComponentContext';
 import type { ClueConfigContextProps } from './hooks/ClueConfigProvider';
 import { ClueConfigContext } from './hooks/ClueConfigProvider';
@@ -81,6 +83,7 @@ export {
   ClueEnrichContext,
   CluePopupContext,
   ClueProvider,
+  ClueReplicationError,
   ClueUIPlugin,
   ContextIcon,
   CountBadge,
@@ -117,6 +120,7 @@ export type {
   ClueDatabaseContextProps,
   ClueResponse,
   ClueUIPluginDefinition,
+  DatabaseConfig,
   EnrichedCardProps,
   EnrichedTypographyProps,
   Enrichment,
