@@ -191,7 +191,7 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
 
     xhr.onload = () => void handleEnd();
     xhr.onerror = () => void handleEnd();
-    xhr.onprogress = () => (xhr.status >= 400 ? void handleEnd() : processLines());
+    xhr.onprogress = () => processLines();
 
     xhr.send();
   };
