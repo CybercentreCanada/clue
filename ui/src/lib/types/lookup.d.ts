@@ -57,6 +57,15 @@ export type EnrichResponses = {
 
 export type BulkEnrichResponses = { [type: string]: { [value: string]: EnrichResponses } };
 
-export type TypesDetectionResponse = { [type: string]: string };
+export type TypesDetectionResponse = { [type: string]: string | null };
+
+export interface SupportedType {
+  regex: string | null;
+  case_sensitive: boolean;
+  /** Higher values win. Omission defaults to zero; ties use registry insertion order. */
+  priority?: number;
+}
+
+export type TypesDetectionV2Response = { [type: string]: SupportedType };
 
 export type TypesResponse = { [type: string]: string[] };

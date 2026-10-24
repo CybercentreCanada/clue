@@ -61,7 +61,7 @@ def get_types(**kwargs) -> dict[str, list[str]]:
 @generate_swagger_docs(responses={200: "A list of types and their regex detectors"})
 @lookup_api.route("/types_detection/", methods=["GET"])
 @api_login()
-def get_types_detection(**kwargs) -> dict[str, str]:
+def get_types_detection(**kwargs) -> dict[str, str | None]:
     """Return the regular expression to detect the different types
 
     Variables:
