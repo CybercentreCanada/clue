@@ -5,9 +5,6 @@ Status: In Development
 Enriches `asn` selectors with the autonomous system name and country code from
 the [RIPE NCC ASN names dataset](https://ftp.ripe.net/ripe/asnames/asn.txt).
 
-Adapted from [clue-plugins commit
-6adc2ca](https://github.com/CybercentreCanada/clue-plugins/commit/6adc2ca51eb7718faf36fe2223e8700766615a0a).
-
 Values may be supplied as either a bare integer (for example, `15169`) or with
 the conventional prefix (for example, `AS15169`). Whitespace and prefix case
 are normalized. Unknown, malformed, and out-of-range ASNs return no matches.
