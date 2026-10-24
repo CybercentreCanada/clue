@@ -6,6 +6,14 @@ on:
       plugin-path:
         required: true
         type: string
+      dockerfile:
+        required: false
+        type: string
+        default: plugins/base/plugin.Dockerfile
+      no-cache:
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   push_to_registry:
@@ -68,7 +76,8 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{inputs.plugin-path}}
-          file: plugins/base/plugin.Dockerfile
+          file: ${{inputs.dockerfile}}
+          no-cache: ${{inputs.no-cache}}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
