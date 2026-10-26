@@ -14,15 +14,15 @@ vi.mock('api/lookup', () => {
         Promise.resolve({
           ip: ['example']
         })
-    },
-    types_detection: {
-      get: () =>
-        Promise.resolve({
-          ip: /.+/
-        })
     }
   };
 });
+
+vi.mock('api/v2/lookup', () => ({
+  types_detection: {
+    get: () => Promise.resolve({ ip: { regex: '.+', case_sensitive: false } })
+  }
+}));
 
 // Test component to use the useAnnotations hook
 const TestComponent = ({ skipEnrichment = true }) => {

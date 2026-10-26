@@ -2,7 +2,7 @@ from sys import exc_info
 from traceback import format_tb
 from typing import Any, Union, cast
 
-from flask import Blueprint, Response, make_response, request
+from flask import Blueprint, Response, current_app, make_response, request
 from prometheus_client import Counter
 from pydantic import BaseModel
 
@@ -21,13 +21,19 @@ RAW_API_COUNTER = Counter(
 logger = get_logger(__file__)
 
 
-def make_subapi_blueprint(name, api_version=1):
+def make_subapi_blueprint(name: str, api_version: int = 1, *, blueprint_name: str | None = None):
     """Create a flask Blueprint for a subapi in a standard way."""
-    return Blueprint(name, name, url_prefix="/".join([API_PREFIX, f"v{api_version}", name]))
+    return Blueprint(blueprint_name or name, name, url_prefix="/".join([API_PREFIX, f"v{api_version}", name]))
 
 
 def _make_api_response(
-    data: Any, err: Union[str, Exception] = "", warnings: list[str] = [], status_code: int = 200, cookies: Any = None
+    data: Any,
+    err: Union[str, Exception] = "",
+    warnings: list[str] = [],
+    status_code: int = 200,
+    cookies: Any = None,
+    *,
+    sort_keys: bool | None = None,
 ) -> Response:
     if isinstance(err, Exception):  # pragma: no cover
         trace = exc_info()[2]
@@ -41,11 +47,12 @@ def _make_api_response(
             entry.model_dump(mode="json", by_alias=True, exclude_none=True) for entry in cast(list[BaseModel], data)
         ]
 
+    payload = ClueResponse(response=data, error_message=err, warning=warnings, status_code=status_code).model_dump(
+        mode="json", by_alias=True, exclude_none=True
+    )
+    # Keep existing endpoint serialization unchanged unless ordering is explicitly requested.
     resp = make_response(
-        ClueResponse(response=data, error_message=err, warning=warnings, status_code=status_code).model_dump(
-            mode="json", by_alias=True, exclude_none=True
-        ),
-        status_code,
+        payload if sort_keys is None else current_app.json.dumps(payload, sort_keys=sort_keys), status_code
     )
 
     resp.headers["Content-Type"] = "application/json"
@@ -65,9 +72,9 @@ def _make_api_response(
 DEFAULT_DATA = {True: {"success": True}, False: {"success": False}}
 
 
-def ok(data=DEFAULT_DATA[True], cookies=None):
+def ok(data: Any = DEFAULT_DATA[True], cookies: Any = None, *, sort_keys: bool | None = None):
     """Returns response with status code 200"""
-    return _make_api_response(data, status_code=200, cookies=cookies)
+    return _make_api_response(data, status_code=200, cookies=cookies, sort_keys=sort_keys)
 
 
 def created(data=DEFAULT_DATA[True], warnings=[], cookies=None):

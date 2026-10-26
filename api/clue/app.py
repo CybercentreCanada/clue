@@ -60,6 +60,8 @@ from clue.api.v1.lookup import lookup_api
 from clue.api.v1.registration import registration_api
 from clue.api.v1.static import static_api
 from clue.api.v1.sync import sync_api
+from clue.api.v2 import apiv2
+from clue.api.v2.lookup import lookup_api as lookup_v2_api
 from clue.common.logging import get_logger
 from clue.cronjobs import setup_jobs as setup_cron_jobs
 from clue.error import errors
@@ -125,12 +127,14 @@ if SESSION_COOKIE_SAMESITE:
 app.register_blueprint(healthz)
 app.register_blueprint(api)
 app.register_blueprint(apiv1)
+app.register_blueprint(apiv2)
 app.register_blueprint(errors)
 app.register_blueprint(auth_api)
 app.register_blueprint(actions_api)
 app.register_blueprint(configs_api)
 app.register_blueprint(fetchers_api)
 app.register_blueprint(lookup_api)
+app.register_blueprint(lookup_v2_api)
 app.register_blueprint(registration_api)
 app.register_blueprint(static_api)
 app.register_blueprint(sync_api)

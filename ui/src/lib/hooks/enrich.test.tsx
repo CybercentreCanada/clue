@@ -109,11 +109,10 @@ describe('enrich functionality', () => {
     });
 
     /**
-     * Test that type guessing handles case-insensitive matching
-     * Should convert uppercase strings to lowercase before matching
+     * Case-sensitive patterns must not be retried against lowercased input.
      */
-    it('should test lowercased versions of strings', () => {
-      expect(hook.result.current('ABCDEF')).toBe('sha256');
+    it('should respect case-sensitive patterns', () => {
+      expect(hook.result.current('ABCDEF')).toBe(null);
     });
   });
 
