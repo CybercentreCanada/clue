@@ -1,7 +1,9 @@
 from unittest.mock import patch
 
+import pytest
 from flask import Flask
 
+from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.models.config import ExternalSource
 from clue.services import type_service
 
@@ -35,3 +37,41 @@ def test_all_supported_types_skips_sources_above_user_classification():
     ]
     get_obo.assert_called_once_with(public_source, user)
     get_types.assert_called_once_with(public_source.url, access_token=None, obo_access_token=None)
+
+
+@pytest.mark.parametrize("getter", [type_service.get_types_regular_expressions, type_service.get_types_detection])
+def test_detection_filters_inaccessible_types(getter):
+    user = {"classification": "TLP:CLEAR"}
+    with (
+        patch.object(
+            type_service, "all_supported_types", return_value={"plugin": {"domain": "TLP:CLEAR", "md5": "SECRET"}}
+        ),
+        patch.object(type_service.CLASSIFICATION, "is_accessible", side_effect=lambda _, c: c == "TLP:CLEAR"),
+    ):
+        result = getter(user)
+    assert list(result) == ["domain"]
+
+
+def test_v1_retains_regex_and_null_values_in_plugin_discovery_order():
+    source_types = {"plugin": {"ja3": "TLP:CLEAR", "ip": "TLP:CLEAR", "md5": "TLP:CLEAR"}}
+    with patch.object(type_service, "all_supported_types", return_value=source_types):
+        result = type_service.get_types_regular_expressions({"classification": "TLP:CLEAR"})
+    assert list(result) == ["ja3", "ip", "md5"]
+    assert result == {"ja3": SUPPORTED_TYPES["ja3"]["regex"], "ip": None, "md5": SUPPORTED_TYPES["md5"]["regex"]}
+
+
+def test_v2_returns_metadata_in_registry_order_with_optional_priority():
+    source_types = {"plugin": {"ja3": "TLP:CLEAR", "md5": "TLP:CLEAR", "ip": "TLP:CLEAR", "ipv4": "TLP:CLEAR"}}
+    with patch.object(type_service, "all_supported_types", return_value=source_types):
+        result = type_service.get_types_detection({"classification": "TLP:CLEAR"})
+    assert list(result) == ["ipv4", "ip", "md5", "ja3"]
+    assert result["ipv4"]["priority"] == 10
+    assert result["ip"] == {"regex": None, "case_sensitive": False}
+    assert "priority" not in result["md5"]
+    assert result["md5"] is not SUPPORTED_TYPES["md5"]
+
+
+@pytest.mark.parametrize("getter", [type_service.get_types_regular_expressions, type_service.get_types_detection])
+def test_detection_without_accessible_plugins_is_empty(getter):
+    with patch.object(type_service, "all_supported_types", return_value={}):
+        assert getter({"classification": "TLP:CLEAR"}) == {}

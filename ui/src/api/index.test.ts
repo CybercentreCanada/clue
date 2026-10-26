@@ -4,7 +4,7 @@ import { URLSearchParams } from 'url';
 import * as localStorage from 'utils/localStorage';
 import * as xsrf from 'utils/xsrf';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-import { hdelete, hget, hpatch, hpost, hput, joinAllUri, joinParams, joinUri, setHeaders, uri } from './index';
+import api, { hdelete, hget, hpatch, hpost, hput, joinAllUri, joinParams, joinUri, setHeaders, uri } from './index';
 
 interface MockAxiosClientType {
   fetch: Mock;
@@ -54,15 +54,18 @@ describe('API Index', () => {
   });
 
   describe('joinUri', () => {
+    it.each([1, 2, 3, 10])('preserves explicitly versioned V%s paths', version => {
+      expect(joinUri(`/api/v${version}/lookup`, 'types_detection')).toBe(`/api/v${version}/lookup/types_detection`);
+    });
     it('should join two URIs without search params', () => {
       const result = joinUri('/api', 'test');
-      expect(result).toBe('/api/v1/api/test');
+      expect(result).toBe('/api/test');
     });
 
     it('should join two URIs with search params', () => {
       const params = new URLSearchParams({ key: 'value' });
       const result = joinUri('/api', 'test', params);
-      expect(result).toBe('/api/v1/api/test?key=value');
+      expect(result).toBe('/api/test?key=value');
     });
   });
 
@@ -91,6 +94,13 @@ describe('API Index', () => {
   });
 
   describe('uri', () => {
+    it('exposes V2 as its own API section without moving V1 endpoints', () => {
+      expect(api.lookup.uri()).toBe('/api/v1/lookup');
+      expect(api.lookup.types_detection.uri()).toBe('/api/v1/lookup/types_detection');
+      expect(api.v2.uri()).toBe('/api/v2');
+      expect(api.v2.lookup.uri()).toBe('/api/v2/lookup');
+      expect(api.v2.lookup.types_detection.uri()).toBe('/api/v2/lookup/types_detection');
+    });
     it('should return the base API URI', () => {
       const result = uri();
       expect(result).toBe('/api/v1');
@@ -103,6 +113,16 @@ describe('API Index', () => {
     });
 
     describe('hget', () => {
+      it('preserves the V2 path when sending a request with a base URL', async () => {
+        await hget('/api/v2/lookup/types_detection', null, { baseURL: 'https://clue.example' });
+        expect(client.fetch).toHaveBeenCalledWith(
+          'https://clue.example/api/v2/lookup/types_detection',
+          'get',
+          null,
+          null,
+          expect.objectContaining({ baseURL: 'https://clue.example' })
+        );
+      });
       it('should perform GET request with correct parameters', async () => {
         const params = new URLSearchParams({ test: 'value' });
         const config = { timeout: 5000 };
