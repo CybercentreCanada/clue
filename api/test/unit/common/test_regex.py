@@ -85,6 +85,8 @@ class TestEmailRegex:
             ("user123@example.com", True),
             ("user@subdomain.example.com", True),
             ("valid.email+tag@very-long-domain.example.org", True),
+            ("Alice@EXAMPLE.COM", True),
+            ("Alice@SubDomain.Example.COM", True),
             # Invalid cases
             ("", False),
             ("user", False),
@@ -179,6 +181,11 @@ class TestIPv6Regex:
         "ip,expected",
         [
             ("2001:db8::1", True),
+            ("::ffff:192.0.2.1", True),
+            ("::FFFF:192.0.2.1", True),
+            ("::FfFf:0:192.0.2.1", True),
+            ("FE80::1%eth0", True),
+            ("Fe80::1%ETH0", True),
             ("prefix-2001:db8::1-suffix", False),  # IPV6_ONLY should match entire string
             ("text 2001:db8::1", False),
             ("2001:db8::1 text", False),
@@ -390,6 +397,10 @@ class TestURIRegex:
         [
             ("http://example.com", True),
             ("https://example.com/path", True),
+            ("http://[::ffff:192.0.2.1]/path", True),
+            ("http://[::FFFF:192.0.2.1]/path", True),
+            ("http://[::FfFf:192.0.2.1]/MixedCase", True),
+            ("http://[FE80::1%eth0]/path", True),
             ("prefix http://example.com suffix", False),  # URI_ONLY should match entire string
             ("text before http://example.com", False),
             ("://example.com", False),  # Missing scheme name

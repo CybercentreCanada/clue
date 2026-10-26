@@ -1,3 +1,4 @@
+import re
 from unittest.mock import patch
 
 import pytest
@@ -7,6 +8,7 @@ from clue.api.v1.lookup import lookup_api as lookup_v1_api
 from clue.api.v2.lookup import lookup_api as lookup_v2_api
 from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.models.auth_user import AuthResult, AuthUser, Privilege
+from clue.models.selector import Selector
 
 
 @pytest.fixture
@@ -51,3 +53,29 @@ def test_v1_and_v2_payloads_and_serialized_registry_order(app):
     assert metadata["domain"]["case_sensitive"] is False
     assert "priority" not in metadata["md5"]
     assert v2.json["api_status_code"] == 200
+
+
+@pytest.mark.parametrize(
+    "type_name,value",
+    [
+        ("email_address", "Alice@EXAMPLE.COM"),
+        ("email_address", "Alice@SubDomain.Example.COM"),
+        ("ipv6", "::FFFF:192.0.2.1"),
+        ("ipv6", "FE80::1%eth0"),
+        ("url", "http://[::FFFF:192.0.2.1]/MixedCase"),
+        ("url", "http://[FE80::1%eth0]/MixedCase"),
+    ],
+)
+def test_builtin_metadata_accepts_case_variants_without_normalizing_selectors(app, type_name, value):
+    auth = AuthResult(user=AuthUser(uname="test", classification="TLP:CLEAR"), privileges={Privilege.READ})
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth),
+        patch("clue.services.type_service.all_supported_types", return_value={"plugin": {type_name: "TLP:CLEAR"}}),
+    ):
+        response = app.test_client().get("/api/v2/lookup/types_detection/", headers={"Authorization": "Bearer test"})
+
+    assert response.status_code == 200
+    metadata = response.json["api_response"][type_name]
+    assert metadata["case_sensitive"] is True
+    assert re.fullmatch(metadata["regex"], value)
+    assert Selector(type=type_name, value=value).value == value
