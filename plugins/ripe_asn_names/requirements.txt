@@ -1,0 +1,1 @@
+# This plugin has no dependencies beyond clue-plugin-base.
