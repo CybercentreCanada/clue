@@ -1,5 +1,4 @@
 # ruff: noqa: D101
-import re
 from inspect import isclass
 from typing import (
     Any,
@@ -29,7 +28,7 @@ from clue.constants.supported_types import SUPPORTED_TYPES
 from clue.models.results import DATA
 from clue.models.results.validation import validate_result
 from clue.models.selector import Selector
-from clue.models.validators import validate_classification
+from clue.models.validators import validate_classification, validate_plugin_identifier
 
 logger = get_logger(__file__)
 
@@ -123,7 +122,10 @@ ER = TypeVar("ER", bound=ExecuteRequest)
 
 
 class ActionBase(BaseModel):
-    id: str = Field(description="Unique identifier for the action.")
+    id: str = Field(
+        description="Unique action identifier with optional dot-separated components using ASCII letters, digits, "
+        "underscores, or hyphens."
+    )
     name: str = Field(description="Name of the action.")
     classification: str = Field(
         description="Classification of the action. Denotes the maximum classification of data sent to the action.",
@@ -162,10 +164,7 @@ class ActionBase(BaseModel):
         Returns:
             str: The validated ID.
         """
-        if re.match(r"[^a-z_]", action_id):
-            raise ClueValueError("Invalid action id - can only contain lowercase letters and underscores.")
-
-        return action_id
+        return validate_plugin_identifier(action_id)
 
     @field_validator("classification")
     @classmethod

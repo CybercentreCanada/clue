@@ -87,7 +87,10 @@ def test_get_enrichment(host):
     }
 
     assert json["test"]["items"][0]["raw_data"][0] == {"classification": "TLP:CLEAR", "data": '{"test": "raw data"}'}
-    message, separator, error_id = json["bad"]["error"].partition(". Error ID: ")
+    error = json["bad"]["error"]
+    assert "Input should be a valid integer" not in error
+    assert "Field required" not in error
+    message, separator, error_id = error.partition(". Error ID: ")
     assert message == "bad returned an improperly formatted response"
     assert separator == ". Error ID: "
     assert error_id
@@ -175,7 +178,10 @@ def test_bulk_enrichment(host):
             "data": '{"test": "raw data"}',
         }
 
-        message, separator, error_id = json[entry["type"]][entry["value"]]["bad"]["error"].partition(". Error ID: ")
+        error = json[entry["type"]][entry["value"]]["bad"]["error"]
+        assert "Input should be a valid integer" not in error
+        assert "Field required" not in error
+        message, separator, error_id = error.partition(". Error ID: ")
         assert message == "bad returned an improperly formatted response"
         assert separator == ". Error ID: "
         assert error_id

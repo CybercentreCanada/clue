@@ -1,12 +1,21 @@
 from collections.abc import Callable
 from time import monotonic
 from typing import Any, TypeAlias
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urljoin, urlsplit
 
 from requests import Response
 from requests.exceptions import ConnectionError, Timeout
 
+from clue.common.exceptions import NotFoundException
+
 _Timeout: TypeAlias = int | float | tuple[int | float | None, int | float | None] | None
+
+
+def quote_plugin_path_segment(value: str) -> str:
+    """Encode an opaque plugin identifier, rejecting client-normalized dot segments."""
+    if value in {"", ".", ".."}:
+        raise NotFoundException("Invalid plugin identifier.", status_code=404)
+    return quote(value, safe="").replace(".", "%2E")
 
 
 def _timeout_budget(timeout: _Timeout) -> float | None:
