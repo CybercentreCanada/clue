@@ -36,7 +36,7 @@ Clue est livré avec plusieurs plugins intégrés pour enrichir vos données de 
 
 - **🛡️ VirusTotal** : S'intègre avec l'API VirusTotal pour effectuer des vérifications de réputation sur les fichiers, URLs, domaines et adresses IP.
 
-- **💬️ MISP** : Se synchronise avec la Malware Information Sharing Platform (MISP) pour enrichir les IOC avec des données d'attributs et d'événements. Prend en charge les hashes (MD5, SHA1, SHA256), les adresses IP (IPv4, IPv6), les adresses MAC, les adresses e-mail, les domaines et les URL.
+- **💬️ MISP** : Se synchronise avec la Malware Information Sharing Platform (MISP) pour enrichir les IOC avec des données d'attributs et d'événements. Prend en charge les hashes (MD5, SHA1, SHA256), les adresses IP (IPv4, IPv6), les ASN, les adresses MAC, les adresses e-mail, les domaines, les noms d'hôte, les URL, les user agents, les empreintes JA3 et les Community ID.
 
 ## Documentation
 
