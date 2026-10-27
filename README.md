@@ -36,7 +36,7 @@ Clue comes with several built-in plugins to enrich your security data:
 
 - **🛡️ VirusTotal**: Unlocks global threat context via the VirusTotal API. Enriches IPs, domains, URLs, and file hashes with reputation scores, geographic ownership data (ASN/Country), and detailed threat intelligence attributes to accelerate decision-making. 
 
-- **💬️ MISP**: Syncs with the Malware Information Sharing Platform (MISP) to enrich IOCs with attribute and event data. Supports hashes (MD5, SHA1, SHA256), IP addresses (IPv4, IPv6), MAC addresses, email addresses, domains and URLs.
+- **💬️ MISP**: Syncs with the Malware Information Sharing Platform (MISP) to enrich IOCs with attribute and event data. Supports hashes (MD5, SHA1, SHA256), IP addresses (IPv4, IPv6), ASNs, MAC addresses, email addresses, domains, hostnames, URLs, user agents, JA3 fingerprints and Community IDs.
 
 ## Documentation
 
