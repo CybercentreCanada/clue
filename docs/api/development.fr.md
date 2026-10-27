@@ -242,6 +242,11 @@ api:
   # Découverte de services
   discover_url: null                  # URL optionnelle de découverte de services
 
+  # Origine de confiance de l'interface, utilisée pour construire le redirect URI OAuth (requise lorsque OAuth est activé).
+  # Doit être une origine http(s) servie à la racine (sans préfixe de chemin, identifiants, paramètres de requête ni fragment).
+  # Jamais dérivée des en-têtes de requête.
+  frontend_url: "https://clue.example.com"
+
   # Sources d'enrichissement externes
   external_sources: []                # Liste des services d'enrichissement externes
 

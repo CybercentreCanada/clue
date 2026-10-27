@@ -1,5 +1,6 @@
 import type { Annotation, Selector, WithExtra } from 'lib/types/lookup';
 import type { RxCollection, RxDatabase, RxDocument } from 'rxdb';
+import type { ClueReplicationError } from './errors';
 
 /**
  * Configuration options for the database.
@@ -65,6 +66,27 @@ export interface DatabaseConfig {
    * @returns An access token valid for use with the clue API.
    */
   getToken?: () => string;
+
+  /**
+   * Handle an HTTP error from the selector replication stream. For an expired-token (401) response,
+   * return `true` only after refreshing the token returned by `getToken`; replication resumes when that
+   * token is nonempty and differs from the token rejected by the server. Returning `false`, throwing,
+   * or leaving the token unchanged stops stream retries for that connection. Other 4xx responses are
+   * terminal, while network and 5xx failures retry with exponential backoff regardless of this callback's result.
+   *
+   * @example
+   * ```ts
+   * {
+   *   getToken: () => accessToken,
+   *   onReplicationError: async error => {
+   *     if (error.status !== 401) return false;
+   *     accessToken = await refreshAccessToken();
+   *     return true;
+   *   }
+   * }
+   * ```
+   */
+  onReplicationError?: (error: ClueReplicationError) => boolean | Promise<boolean>;
 }
 
 export type WithLastUpdated<T> = T & {

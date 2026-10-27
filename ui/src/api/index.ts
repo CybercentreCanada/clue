@@ -5,6 +5,7 @@ import * as fetchers from 'api/fetchers';
 import * as lookup from 'api/lookup';
 import * as _static from 'api/static';
 import * as sync from 'api/sync';
+import * as v2 from 'api/v2';
 import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
 import type { ClueResponse } from 'lib/types/network';
 import { StorageKey } from 'lib/utils/constants';
@@ -25,7 +26,7 @@ import getXSRFCookie from 'utils/xsrf';
 const client = new AxiosClient();
 
 /**
- * Defining the default export exposing all children routes of '/api/v1/'.
+ * Expose V1 routes at the root and versioned routes in their own sections.
  */
 // prettier-ignore
 const api = {
@@ -35,7 +36,8 @@ const api = {
   actions,
   fetchers,
   sync,
-  _static
+  _static,
+  v2
 };
 
 /**
@@ -50,13 +52,13 @@ export const uri = () => {
 /**
  * Format/Adapt the specified URI to an Clue API uri.
  *
- * Ensure it starts with '/api/v1' and doesn't end with a '/'.
+ * Preserve explicitly rooted API paths; default unversioned paths to V1.
  *
  * @param _uri - the uri to format.
  * @returns `string` - properly formatted clue uri.
  */
 const format = (_uri: string, baseURL?: string): string => {
-  const path = _uri.startsWith(uri()) ? _uri : `${uri()}/${_uri.replace(/\/$/, '')}`.replace('//', '/');
+  const path = _uri.startsWith('/api') ? _uri : `${uri()}/${_uri.replace(/\/$/, '')}`.replace('//', '/');
 
   return baseURL ? baseURL + path : path;
 };

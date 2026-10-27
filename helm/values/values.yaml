@@ -101,6 +101,8 @@ redis:
         memory: 4Gi
 
 config:
+  api:
+    frontend_url: null # This must be overridden when OAuth is enabled
   auth:
     oauth:
       enabled: true

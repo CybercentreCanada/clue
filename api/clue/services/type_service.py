@@ -2,14 +2,13 @@ from typing import Any
 
 import requests
 from elasticapm.traces import capture_span
-from flask import request
 from requests import exceptions
 
 from clue.common.exceptions import AuthenticationException
 from clue.common.logging import get_logger
 from clue.config import CLASSIFICATION, DEBUG, cache, config
 from clue.constants.env import DISABLE_CACHE
-from clue.constants.supported_types import SUPPORTED_TYPES
+from clue.constants.supported_types import SUPPORTED_TYPES, SupportedType
 from clue.helper.headers import generate_headers
 from clue.helper.obo import get_obo_access_token
 from clue.helper.plugin_requests import request_with_safe_redirects
@@ -23,12 +22,13 @@ CACHE_TIMEOUT: int = 1 if DEBUG else 5 * 60
 CACHE = RedisCache(prefix="clue_types", ttl=CACHE_TIMEOUT)
 
 
-def get_types_regular_expressions(user: dict[str, Any]):
-    """Return the regular expression to detect the different types"""
-    access_token = request.headers.get("Authorization", type=str)
-    if access_token:
-        access_token = access_token.split(" ")[1]
+def get_types_regular_expressions(user: dict[str, Any]) -> dict[str, str | None]:
+    """Return the legacy V1 regex mapping in plugin discovery order."""
+    return {type_name: metadata["regex"] for type_name, metadata in _get_accessible_type_definitions(user).items()}
 
+
+def _get_accessible_type_definitions(user: dict[str, Any]) -> dict[str, SupportedType]:
+    """Collect definitions for types exposed by plugins accessible to the user."""
     all_types = all_supported_types(user)
 
     type_detection = {}
@@ -42,6 +42,14 @@ def get_types_regular_expressions(user: dict[str, Any]):
             type_detection[data_type] = SUPPORTED_TYPES[data_type]
 
     return type_detection
+
+
+def get_types_detection(user: dict[str, Any]) -> dict[str, SupportedType]:
+    """Return V2 detection metadata in registry order for deterministic priority ties."""
+    accessible_types = _get_accessible_type_definitions(user)
+    return {
+        type_name: metadata.copy() for type_name, metadata in SUPPORTED_TYPES.items() if type_name in accessible_types
+    }
 
 
 @cache.memoize(timeout=CACHE_TIMEOUT)

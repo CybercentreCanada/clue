@@ -184,7 +184,7 @@ pydantic-settings = { extras = ["yaml"], version = "^2.3.4" }
 redis = { version = "^5.0.3" }
 beautifulsoup4 = "^4.13.3"
 imgkit = "^1.2.3"
-pillow = ">=11.1,<13.0"
+pillow = ">=11.1,<14.0"
 cart = "^1.2.3"
 setuptools = "<84.0.0"
 requests = "^2.32.5"

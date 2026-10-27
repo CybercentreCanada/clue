@@ -1,0 +1,61 @@
+name: Clue RIPE ASN Names Plugin
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/ripe_asn_names/**
+      - .github/workflows/ripe-asn-names-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - rc/*
+      - patch/*
+    paths:
+      - plugins/ripe_asn_names/**
+      - .github/workflows/ripe-asn-names-plugin-workflow.yml
+      - .github/workflows/*-plugin.yml
+  workflow_dispatch: {}
+  workflow_run:
+    workflows:
+      - Clue Base Plugin Image
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-ripe-asn-names-plugin-formatting:
+    name: Lint RIPE ASN Names Plugin
+    uses: ./.github/workflows/lint-plugin.yml
+    with:
+      plugin-path: plugins/ripe_asn_names
+  test-ripe-asn-names-plugin:
+    needs: check-ripe-asn-names-plugin-formatting
+    name: Test RIPE ASN Names Plugin
+    uses: ./.github/workflows/test-plugin.yml
+    with:
+      plugin-path: plugins/ripe_asn_names
+  build-ripe-asn-names-plugin:
+    needs: test-ripe-asn-names-plugin
+    name: Build RIPE ASN Names Plugin's Docker Image
+    uses: ./.github/workflows/build-plugin.yml
+    with:
+      plugin-path: plugins/ripe_asn_names
+      dockerfile: plugins/ripe_asn_names/Dockerfile
+      no-cache: true
+    permissions:
+      id-token: write
+      contents: read
+      attestations: write
+    secrets: inherit

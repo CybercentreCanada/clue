@@ -41,6 +41,15 @@ class TestMakeSubapiBlueprint:
         bp = api.make_subapi_blueprint("my_service")
         assert bp.name == "my_service"
 
+    def test_versioned_blueprints_can_share_a_path_name(self):
+        app = Flask("versions")
+        v1 = api.make_subapi_blueprint("lookup")
+        v2 = api.make_subapi_blueprint("lookup", api_version=2, blueprint_name="lookup_v2")
+        app.register_blueprint(v1)
+        app.register_blueprint(v2)
+        assert v2.url_prefix == "/api/v2/lookup"
+        assert set(app.blueprints) == {"lookup", "lookup_v2"}
+
 
 # ---------------------------------------------------------------------------
 # _make_api_response (exercised via public helpers)
@@ -86,6 +95,16 @@ class TestMakeApiResponse:
     def test_custom_dict_data(self):
         resp = api.ok({"items": [1, 2, 3]})
         assert resp.json["api_response"] == {"items": [1, 2, 3]}
+
+    def test_explicit_unsorted_json_preserves_nested_mapping_order(self):
+        resp = api.ok({"z_type": {"regex": None}, "a_type": {"regex": "a"}}, sort_keys=False)
+        assert list(resp.json["api_response"]) == ["z_type", "a_type"]
+        assert resp.json["api_response"]["z_type"]["regex"] is None
+        assert resp.content_type == "application/json"
+
+    def test_default_json_ordering_is_unchanged(self):
+        resp = api.ok({"z_type": "z", "a_type": "a"})
+        assert list(resp.json["api_response"]) == ["a_type", "z_type"]
 
     def test_basemodel_data_is_serialized(self):
         model = _SampleModel(name="foo", value=42)

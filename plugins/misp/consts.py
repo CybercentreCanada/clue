@@ -23,15 +23,20 @@ else:
     VERIFY = _verify_raw  # path to a CA bundle
 
 TYPE_MAPPING: dict[str, list[str]] = {
-    "ipv4": ["ip-src", "ip-dst"],
-    "ipv6": ["ip-src", "ip-dst"],
+    "ipv4": ["ip-src", "ip-dst", "ip-src|port", "ip-dst|port", "domain|ip"],
+    "ipv6": ["ip-src", "ip-dst", "ip-src|port", "ip-dst|port", "domain|ip"],
     "mac_address": ["mac-address"],
-    "domain": ["domain"],
+    "domain": ["domain", "hostname", "domain|ip", "hostname|port"],
+    "hostname": ["hostname", "domain", "domain|ip", "hostname|port"],
     "url": ["url", "link"],
-    "email_address": ["email-src", "email-dst"],
-    "sha1": ["sha1"],
-    "sha256": ["sha256"],
-    "md5": ["md5"],
+    "email_address": ["email", "email-src", "email-dst", "email-reply-to"],
+    "user_agent": ["user-agent"],
+    "ja3": ["ja3-fingerprint-md5"],
+    "community_id": ["community-id"],
+    "sha1": ["sha1", "filename|sha1"],
+    "sha256": ["sha256", "filename|sha256"],
+    "md5": ["md5", "filename|md5"],
+    "asn": ["AS"],
 }
 
 TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER": 2, "TLP:AMBER+STRICT": 3, "TLP:RED": 4}
