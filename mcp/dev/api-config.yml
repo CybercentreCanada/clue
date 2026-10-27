@@ -36,6 +36,7 @@ api:
   audit: false
   debug: true
   validate_session_useragent: false
+  frontend_url: http://localhost:3000
   external_sources:
     - name: test
       classification: TLP:CLEAR
