@@ -529,6 +529,9 @@ class QueryResult(ResultMetadata):
         Returns:
             list[QueryEntry]: The validated items field.
         """
+        if not CLASSIFICATION.enforce:
+            return items
+
         if not isinstance(info.context, dict) or "user" not in info.context:
             logger.warning("No user context given, dropping all query items")
             return []
@@ -538,6 +541,9 @@ class QueryResult(ResultMetadata):
     @classmethod
     def filter_items(cls, items: list[QueryEntry], user: Any) -> list[QueryEntry]:  # noqa: ANN102
         """Apply classification authorization independently of response schema validation."""
+        if not CLASSIFICATION.enforce:
+            return items
+
         user_classification = user.get("classification") if isinstance(user, dict) else None
         if (
             not isinstance(user_classification, str)

@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import pytest
 from flask import Flask
 
-from clue.config import config
+from clue.config import CLASSIFICATION, config
 from clue.models.auth_user import AuthResult, AuthUser, Privilege
 from clue.models.config import ExternalSource
 from clue.models.network import QueryEntry, QueryResult
@@ -85,6 +85,31 @@ def test_query_result_without_user_classification_fails_closed(classified_result
 
 def test_query_result_direct_construction_fails_closed(classified_result):
     assert QueryResult(**classified_result).items == []
+
+
+@pytest.mark.parametrize("context", [None, {}, {"user": None}, {"user": {"classification": "INVALID"}}])
+def test_query_result_keeps_all_items_when_classification_disabled(classified_result, context):
+    classified_result["items"].append({"raw_data": "no explicit classification"})
+
+    with patch.object(CLASSIFICATION, "enforce", False):
+        result = QueryResult.model_validate(classified_result, context=context)
+
+    assert len(result.items) == 4
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+def test_production_response_keeps_items_when_classification_disabled(source, bulk):
+    source.production = True
+    items = [{"classification": "TLP:AMBER+STRICT"}, {"raw_data": "no explicit classification"}]
+
+    with patch.object(CLASSIFICATION, "enforce", False):
+        if bulk:
+            result = lookup_service.parse_bulk_response(source, None, {"ipv4": {"127.0.0.1": {"items": items}}})[
+                "ipv4"
+            ]["127.0.0.1"]
+            assert len(result.items) == 2
+        else:
+            assert len(lookup_service.parse_response(source, None, items)) == 2
 
 
 @pytest.mark.parametrize(

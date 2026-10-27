@@ -14,6 +14,7 @@ from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
 from clue.models.fetchers import FetcherDefinition
+from clue.models.validators import validate_plugin_identifier, validate_task_id
 from clue.security import api_login
 from clue.services import fetcher_service
 
@@ -82,6 +83,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, **kwargs):
     }
     """
     try:
+        validate_plugin_identifier(fetcher_id)
         return ok(fetcher_service.run_fetcher(plugin_id, fetcher_id, kwargs["user"]))
     except NotFoundException as err:
         return not_found(err=err.message)
@@ -116,6 +118,8 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, **kwargs):
     }
     """
     try:
+        validate_plugin_identifier(fetcher_id)
+        validate_task_id(task_id)
         return ok(fetcher_service.get_fetcher_status(plugin_id, fetcher_id, task_id, kwargs["user"]))
     except NotFoundException as err:
         return not_found(err=err.message)
