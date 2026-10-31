@@ -15,9 +15,18 @@ on:
         type: boolean
         default: false
 
+env:
+  BUILD_REF: ${{ github.event_name == 'workflow_run' && format('refs/heads/{0}', github.event.workflow_run.head_branch) || github.ref }}
+  BUILD_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
 jobs:
   push_to_registry:
-    if: github.event_name != 'pull_request'
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event != 'pull_request' &&
+       github.event.workflow_run.conclusion == 'success')
 
     runs-on: ubuntu-latest
 
@@ -29,18 +38,16 @@ jobs:
       attestations: write
 
     steps:
-      - name: Checkout develop
-        uses: actions/checkout@v4
-        with:
-          ref: develop
       - name: Checkout current ref
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BUILD_SHA }}
       - name: Install yq
         run: sudo snap install yq
       - name: Extract Plugin Medata
         id: plugin-metadata
         run: |
-          BASE_PLUGIN_TAG=$(yq '.base-plugin-tag // "${{github.ref == 'refs/heads/develop' && 'nightly' || 'latest'}}"' '${{inputs.plugin-path}}/manifest.yml')
+          BASE_PLUGIN_TAG=$(yq '.base-plugin-tag // "${{env.BUILD_REF == 'refs/heads/develop' && 'nightly' || 'latest'}}"' '${{inputs.plugin-path}}/manifest.yml')
           PLUGIN_VERSION=$(yq '.version // "0.0.1"' '${{inputs.plugin-path}}/manifest.yml')
           PLUGIN_NAME=$(yq '.name' '${{inputs.plugin-path}}/manifest.yml')
           echo "base-plugin-tag=$BASE_PLUGIN_TAG" >> $GITHUB_OUTPUT
@@ -61,9 +68,9 @@ jobs:
         with:
           images: cccs/clue-plugin-${{steps.plugin-metadata.outputs.name}}
           tags: |
-            type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
-            type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
+            type=raw,event=branch,value=nightly,enable=${{ env.BUILD_REF == format('refs/heads/{0}', 'develop') }}
+            type=raw,event=branch,value=latest,enable=${{ env.BUILD_REF == format('refs/heads/{0}', 'main') }}
+            type=raw,value=latest,enable=${{ startsWith(env.BUILD_REF, 'refs/tags') }}
             type=semver,pattern={{version}}
             type=raw,value=${{steps.plugin-metadata.outputs.version}}_{{branch}}
             type=raw,value=${{steps.plugin-metadata.outputs.version}}_{{branch}}_{{sha}}
@@ -84,8 +91,8 @@ jobs:
           build-args: |
             base_plugin_version=${{steps.plugin-metadata.outputs.base-plugin-tag}}
             version=${{ steps.plugin-metadata.outputs.version }}
-            branch=${{ github.ref }}
-            commit=${{ github.sha }}
+            branch=${{ env.BUILD_REF }}
+            commit=${{ env.BUILD_SHA }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
