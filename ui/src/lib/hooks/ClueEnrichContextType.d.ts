@@ -80,7 +80,7 @@ export interface ClueEnrichContextType {
   queueEnrich: (type: string, value: string, classification?: string) => Promise<StatusDocument | null>;
 
   /**
-   * A set of regexes applications can use for detecting the clue type of a given string
+   * Compiled detection regexes with per-type case sensitivity. Use guessType for priority-aware matching.
    */
   typesDetection: { [type: string]: RegExp };
 

@@ -54,6 +54,7 @@ config:
 
   api:
     audit: false
+    frontend_url: https://clue.example.url
     external_sources:
       - name: virustotal
         classification: TLP:CLEAR

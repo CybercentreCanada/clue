@@ -1,12 +1,20 @@
 from unittest.mock import MagicMock, patch
+from urllib.parse import quote, unquote, urlsplit
 
 import pytest
 from flask import Flask
-from requests import exceptions
+from requests import Request, exceptions
 
-from clue.common.exceptions import AuthenticationException, ClueException, InvalidDataException, NotFoundException
-from clue.config import cache
+from clue.common.exceptions import (
+    AuthenticationException,
+    ClueException,
+    ClueValueError,
+    InvalidDataException,
+    NotFoundException,
+)
+from clue.config import cache, config
 from clue.helper.obo import get_obo_access_token
+from clue.models.auth_user import AuthResult, AuthUser, Privilege
 from clue.models.config import ExternalSource
 from clue.models.fetchers import FetcherDefinition, FetcherResult
 from clue.services import fetcher_service
@@ -56,6 +64,325 @@ def make_response(api_response, *, ok=True, status_code=200, error_message=None)
         "api_error_message": error_message,
     }
     return response
+
+
+@pytest.mark.parametrize(
+    ("operation", "target"),
+    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher")],
+)
+@pytest.mark.parametrize(
+    ("payload", "encoded"),
+    [
+        ("..", None),
+        (".", None),
+        ("", None),
+        ("../admin/keys", None),
+        ("x?role=admin", None),
+        ("../../etc/passwd", None),
+        ("../../../shutdown", None),
+        ("x#fragment", None),
+        ("%2e%2e%2fadmin", None),
+        ("//attacker.invalid/admin", None),
+        ("x\\admin", None),
+        ("x..y", None),
+        ("x.y", "x%2Ey"),
+        ("test_fetcher-123", "test_fetcher-123"),
+    ],
+)
+def test_fetcher_urls_keep_identifiers_in_one_path_segment(
+    app, configured_plugin, user, fetcher, operation, target, payload, encoded
+):
+    configured_plugin.url = "http://plugin.internal:8080/api/"
+    fetcher_id = payload if target == "fetcher" else "test_fetcher"
+    task_id = payload if target == "task" else "task-123"
+    response = make_response({"outcome": "success", "data": {}, "format": "json"})
+    parameters = {"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"}
+
+    with (
+        app.test_request_context(json=parameters),
+        patch.object(fetcher_service, "get_supported_fetchers", return_value={fetcher_id: fetcher}) as metadata,
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)) as obo,
+        patch.object(fetcher_service, "generate_headers", return_value={}),
+        patch.object(fetcher_service.requests, "post", return_value=response) as post,
+        patch.object(fetcher_service.requests, "get", return_value=response) as get,
+    ):
+        arguments = ("test", fetcher_id, user) if operation == "run_fetcher" else ("test", fetcher_id, task_id, user)
+        if encoded is None:
+            with pytest.raises(ClueValueError) as error:
+                getattr(fetcher_service, operation)(*arguments)
+            assert error.value.status_code == 400
+            metadata.assert_not_called()
+            obo.assert_not_called()
+            post.assert_not_called()
+            get.assert_not_called()
+            return
+
+        assert getattr(fetcher_service, operation)(*arguments).outcome == "success"
+        upstream = post if operation == "run_fetcher" else get
+        upstream.assert_called_once()
+        path = f"/api/fetchers/{encoded}" if target == "fetcher" else f"/api/fetchers/test_fetcher/status/{encoded}"
+        if operation == "get_fetcher_status" and target == "fetcher":
+            path += "/status/task-123"
+        url = upstream.call_args.args[0]
+        assert url == f"http://plugin.internal:8080{path}"
+        for candidate in (url, Request("GET", url).prepare().url):
+            parsed = urlsplit(candidate)
+            assert (parsed.scheme, parsed.netloc) == ("http", "plugin.internal:8080")
+            assert parsed.path.startswith("/api/fetchers/")
+            assert len(parsed.path.split("/")) == len(path.split("/"))
+            assert all(segment not in {".", ".."} for segment in parsed.path.split("/"))
+            assert not parsed.query
+            assert not parsed.fragment
+
+
+@pytest.mark.parametrize(
+    ("operation", "target"),
+    [("run_fetcher", "fetcher"), ("get_fetcher_status", "fetcher")],
+)
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "",
+        ".",
+        "..",
+        "../admin/keys",
+        "x?role=admin",
+        "../../etc/passwd",
+        "../../../shutdown",
+        "x#fragment",
+        "%2e%2e%2fadmin",
+        "x\\admin",
+        "x..y",
+        "plugin.fetcher",
+        "Safe_id-123",
+    ],
+)
+def test_fetcher_routes_validate_identifiers_before_calling_service(app, operation, target, payload):
+    from clue.api.v1.fetchers import fetchers_api
+
+    app.testing = True
+    app.register_blueprint(fetchers_api)
+    fetcher_id = quote(payload, safe="") if target == "fetcher" else "test_fetcher"
+    task_id = quote(payload, safe="") if target == "task" else "task-123"
+    path = f"/api/v1/fetchers/test/{fetcher_id}"
+    if operation == "get_fetcher_status":
+        path += f"/status/{task_id}"
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+        patch.object(fetcher_service, operation, return_value=FetcherResult(outcome="success", data={})) as service,
+        app.test_client() as client,
+    ):
+        response = client.open(
+            path,
+            method="POST" if operation == "run_fetcher" else "GET",
+            headers={"Authorization": "Bearer test-token"},
+            json={},
+        )
+    if payload in {"Safe_id-123", "plugin.fetcher"}:
+        assert response.status_code == 200
+        service.assert_called_once()
+        assert service.call_args.args[1 if target == "fetcher" else 2] == payload
+    else:
+        assert response.status_code in {400, 404}
+        service.assert_not_called()
+
+
+LEGACY_TASK_IDS = [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "task-123",
+    "abc:123",
+    "job@worker",
+    "YWJj==",
+    "x.y",
+    "x..y",
+    "...",
+    "x?role=admin",
+    "x#fragment",
+    "%2e%2e%2fadmin",
+    "x\\admin",
+    "x y",
+    "caf\u00e9",
+]
+BAD_TASK_IDS = ["", ".", "..", "a/b", "../admin/keys", "//attacker.invalid/admin", "x\n", "x\x00", "a" * 257]
+
+
+@pytest.mark.parametrize("task_id", LEGACY_TASK_IDS)
+def test_pending_task_id_can_be_polled_to_completion(app, configured_plugin, user, fetcher, task_id):
+    configured_plugin.url = "http://plugin.internal:8080/api/"
+    pending = make_response({"outcome": "pending", "task_id": task_id})
+    done = make_response({"outcome": "success", "data": {}, "format": "json"})
+    parameters = {"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"}
+
+    with (
+        app.test_request_context(json=parameters),
+        patch.object(fetcher_service, "get_supported_fetchers", return_value={"test_fetcher": fetcher}),
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(fetcher_service, "generate_headers", return_value={}),
+        patch.object(fetcher_service.requests, "post", return_value=pending),
+        patch.object(fetcher_service.requests, "get", return_value=done) as get,
+    ):
+        started = fetcher_service.run_fetcher("test", "test_fetcher", user)
+        assert started.outcome == "pending"
+        assert started.task_id == task_id
+
+        assert fetcher_service.get_fetcher_status("test", "test_fetcher", started.task_id, user).outcome == "success"
+
+    url = get.call_args.args[0]
+    expected = quote(task_id, safe="").replace(".", "%2E")
+    assert url == f"http://plugin.internal:8080/api/fetchers/test_fetcher/status/{expected}"
+    parsed = urlsplit(url)
+    assert (parsed.scheme, parsed.netloc) == ("http", "plugin.internal:8080")
+    assert len(parsed.path.split("/")) == 6
+    assert not parsed.query
+    assert not parsed.fragment
+    assert unquote(parsed.path.split("/")[-1]) == task_id
+
+
+@pytest.mark.parametrize("task_id", BAD_TASK_IDS)
+def test_status_rejects_unroutable_task_ids_before_any_upstream_call(app, configured_plugin, user, fetcher, task_id):
+    response = make_response({"outcome": "success", "data": {}, "format": "json"})
+
+    with (
+        app.test_request_context(json={}),
+        patch.object(fetcher_service, "get_supported_fetchers", return_value={"test_fetcher": fetcher}) as metadata,
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)) as obo,
+        patch.object(fetcher_service.requests, "get", return_value=response) as get,
+    ):
+        with pytest.raises(ClueValueError) as error:
+            fetcher_service.get_fetcher_status("test", "test_fetcher", task_id, user)
+    assert error.value.status_code == 400
+    metadata.assert_not_called()
+    obo.assert_not_called()
+    get.assert_not_called()
+
+
+def _status_client(app):
+    from clue.api.v1.fetchers import fetchers_api
+
+    app.testing = True
+    app.register_blueprint(fetchers_api)
+    return app.test_client()
+
+
+@pytest.fixture
+def authenticated():
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+    ):
+        yield
+
+
+@pytest.mark.parametrize("task_id", LEGACY_TASK_IDS)
+def test_fetcher_status_route_accepts_legacy_task_ids(app, authenticated, task_id):
+    with (
+        patch.object(
+            fetcher_service, "get_fetcher_status", return_value=FetcherResult(outcome="success", data={})
+        ) as service,
+        _status_client(app) as client,
+    ):
+        response = client.get(
+            f"/api/v1/fetchers/test/test_fetcher/status/{quote(task_id, safe='')}",
+            headers={"Authorization": "Bearer test-token"},
+        )
+    assert response.status_code == 200
+    assert service.call_args.args[2] == task_id
+
+
+@pytest.mark.parametrize(
+    "encoded",
+    [".", "..", "%2E%2E", "..%2Fadmin%2Fkeys", "%2E%2E%2F%2E%2E%2Fetc%2Fpasswd", "a%2Fb", "x%0A", "x%00"],
+)
+def test_fetcher_status_route_neutralizes_traversal_task_ids(app, authenticated, encoded):
+    with (
+        patch.object(fetcher_service, "get_fetcher_status") as service,
+        _status_client(app) as client,
+    ):
+        response = client.get(
+            f"/api/v1/fetchers/test/test_fetcher/status/{encoded}",
+            headers={"Authorization": "Bearer test-token"},
+        )
+    assert response.status_code in {400, 404}
+    service.assert_not_called()
+
+
+@pytest.mark.parametrize("raise_on_error", [False, True])
+@pytest.mark.parametrize(
+    ("key", "identifier"),
+    [
+        ("test_fetcher/../admin", "test_fetcher"),
+        ("test_fetcher", "test_fetcher/../admin"),
+        ("test_fetcher", "test..test_fetcher"),
+        ("test_fetcher\n", "test_fetcher"),
+        ("test_fetcher", ""),
+        ("..", "test_fetcher"),
+    ],
+)
+def test_fetcher_metadata_rejects_unsafe_identifiers(plugin, fetcher, key, identifier, raise_on_error):
+    metadata = fetcher.model_dump()
+    metadata["id"] = identifier
+    response = make_response({key: metadata})
+    with patch.object(fetcher_service.requests, "get", return_value=response):
+        if raise_on_error:
+            with pytest.raises(ClueException, match="Unable to verify fetcher availability") as error:
+                fetcher_service.get_supported_fetchers(plugin, {}, raise_on_error=True)
+            assert error.value.status_code == 503
+        else:
+            assert fetcher_service.get_supported_fetchers(plugin, {}) == {}
+
+
+@pytest.mark.parametrize("identifier", ["Fetcher_123-test", "test.fetcher", "fetcher.v2"])
+@pytest.mark.parametrize("key", [None, "lookup_alias"])
+@pytest.mark.parametrize("raise_on_error", [False, True])
+def test_fetcher_metadata_accepts_safe_ascii_identifiers(plugin, fetcher, identifier, key, raise_on_error):
+    key = identifier if key is None else key
+    metadata = fetcher.model_dump()
+    metadata["id"] = identifier
+    response = make_response({key: metadata})
+    with patch.object(fetcher_service.requests, "get", return_value=response):
+        result = fetcher_service.get_supported_fetchers(plugin, {}, raise_on_error=raise_on_error)
+    assert set(result) == {key}
+    assert result[key].id == identifier
+
+
+@pytest.mark.parametrize("operation", ["get_plugins_supported_fetchers", "run_fetcher", "get_fetcher_status"])
+@pytest.mark.parametrize("identifier", ["test.test_fetcher", "other_fetcher", "other.test_fetcher"])
+def test_fetcher_metadata_preserves_local_lookup_key(app, configured_plugin, user, fetcher, operation, identifier):
+    metadata = fetcher.model_dump()
+    metadata["id"] = identifier
+    metadata_response = make_response({"test_fetcher": metadata})
+    result_response = make_response({"outcome": "success", "data": {}, "format": "json"})
+    with (
+        app.test_request_context(json={"type": "ipv4", "value": "127.0.0.1", "classification": "TLP:CLEAR"}),
+        patch.object(fetcher_service, "get_obo_access_token", return_value=(None, None)),
+        patch.object(fetcher_service, "generate_headers", return_value={}),
+        patch.object(fetcher_service.requests, "get", side_effect=[metadata_response, result_response]) as get,
+        patch.object(fetcher_service.requests, "post", return_value=result_response) as post,
+    ):
+        if operation == "get_plugins_supported_fetchers":
+            result = fetcher_service.get_plugins_supported_fetchers(user)
+            assert set(result) == {"test.test_fetcher"}
+            assert result["test.test_fetcher"].id == identifier
+            post.assert_not_called()
+        elif operation == "run_fetcher":
+            assert fetcher_service.run_fetcher("test", "test_fetcher", user).outcome == "success"
+            assert post.call_args.args[0] == "http://plugin/fetchers/test_fetcher"
+        else:
+            assert fetcher_service.get_fetcher_status("test", "test_fetcher", "task-123", user).outcome == "success"
+            assert get.call_args.args[0] == "http://plugin/fetchers/test_fetcher/status/task-123"
+            post.assert_not_called()
+    assert get.call_args_list[0].args[0] == "http://plugin/fetchers/"
 
 
 def test_get_obo_access_token_returns_none_without_authorization(app, plugin, user):

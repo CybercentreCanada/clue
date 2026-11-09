@@ -79,7 +79,7 @@ def test_init_can_add_supported_type(caplog):
 
     # Verify the type was added
     assert test_type in SUPPORTED_TYPES, f"Type '{test_type}' should have been added to SUPPORTED_TYPES"
-    assert SUPPORTED_TYPES[test_type] == test_regex, f"Regex for '{test_type}' should match"
+    assert SUPPORTED_TYPES[test_type]["regex"] == test_regex, f"Regex for '{test_type}' should match"
 
     # Verify logging
     assert f"Adding new type {test_type} to the default namespace with regex {test_regex}" in caplog.text
@@ -114,7 +114,7 @@ def test_init_can_add_namespaced_type(caplog):
 
     # Verify the type was added with namespace
     assert expected_key in SUPPORTED_TYPES, f"Type '{expected_key}' should have been added to SUPPORTED_TYPES"
-    assert SUPPORTED_TYPES[expected_key] == test_regex, f"Regex for '{expected_key}' should match"
+    assert SUPPORTED_TYPES[expected_key]["regex"] == test_regex, f"Regex for '{expected_key}' should match"
 
     # Verify logging
     assert f"Adding type {test_type} to namespace {test_namespace} with regex {test_regex}" in caplog.text
@@ -155,7 +155,7 @@ def test_init_can_add_multiple_types(caplog):
     for type_name, regex, namespace in test_types:
         key = f"{namespace}_{type_name}" if namespace else type_name
         assert key in SUPPORTED_TYPES, f"Type '{key}' should have been added to SUPPORTED_TYPES"
-        assert SUPPORTED_TYPES[key] == regex, f"Regex for '{key}' should match"
+        assert SUPPORTED_TYPES[key]["regex"] == regex, f"Regex for '{key}' should match"
 
     # Cleanup
     for type_name, _, namespace in test_types:

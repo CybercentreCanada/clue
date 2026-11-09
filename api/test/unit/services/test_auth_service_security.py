@@ -60,6 +60,7 @@ def _make_oidc(monkeypatch, **provider_overrides):
         "oauth",
         SimpleNamespace(enabled=True, gravatar_enabled=False, providers={"local": provider_config}),
     )
+    monkeypatch.setattr(config.api, "frontend_url", BASE_URL)
 
     jwks_fetches = []
 
@@ -411,6 +412,11 @@ INVALID_ID_TOKENS = {
     "missing_iat": lambda oidc, nonce: oidc.token(nonce, drop=("iat",)),
     "bad_at_hash": lambda oidc, nonce: oidc.token(nonce, at_hash="AAAAAAAAAAAAAAAAAAAAAA"),
     "missing_id_token": lambda oidc, nonce: {"access_token": "synthetic-access", "refresh_token": "synthetic-refresh"},
+    "missing_id_token_with_userinfo": lambda oidc, nonce: {
+        "access_token": "synthetic-access",
+        "refresh_token": "synthetic-refresh",
+        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
+    },
 }
 
 
@@ -424,6 +430,32 @@ def test_oidc_invalid_identity_token_is_controlled_401(oidc, case):
     assert response.status_code == 401
     assert "app_token" not in response.get_data(as_text=True)
     assert_no_secrets(response, params["nonce"], params["state"], "synthetic-code", "local-key", "unknown-key")
+
+
+def test_oidc_validated_id_token_claims_override_token_response_userinfo(oidc):
+    params = begin_login(oidc)
+    oidc.exchange.return_value = {
+        **oidc.token(params["nonce"]),
+        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
+    }
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == 200
+    assert response.json["api_response"]["user"]["uname"] == "local-user"
+
+
+def test_oidc_invalid_id_token_cannot_be_bypassed_with_userinfo(oidc):
+    params = begin_login(oidc)
+    oidc.exchange.return_value = {
+        **oidc.token("wrong-nonce"),
+        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
+    }
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == 401
+    assert_no_secrets(response, "forged-user")
 
 
 def test_oidc_audience_list_with_matching_azp_is_accepted(oidc):
@@ -480,6 +512,35 @@ def test_oidc_rejects_id_token_when_openid_scope_was_not_requested(monkeypatch):
 
     assert response.status_code == 401
     assert response.json["api_error_message"] == "The OAuth provider did not return a verified identity token."
+
+
+def test_oidc_rejects_unverified_id_token_with_userinfo_when_openid_was_not_requested(monkeypatch):
+    oidc = _make_oidc(monkeypatch, scope="email profile")
+    params = begin_login(oidc)
+    oidc.exchange.return_value = {
+        **oidc.token(),
+        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
+    }
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == 401
+    assert response.json["api_error_message"] == "The OAuth provider did not return a verified identity token."
+    assert_no_secrets(response, "forged-user")
+
+
+def test_non_openid_oauth_response_with_userinfo_remains_supported(monkeypatch):
+    oidc = _make_oidc(monkeypatch, scope="email profile")
+    params = begin_login(oidc)
+    oidc.exchange.return_value = {
+        "access_token": "synthetic-access",
+        "userinfo": {"sub": "local-user", "preferred_username": "local-user"},
+    }
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == 200
+    assert response.json["api_response"]["user"]["uname"] == "local-user"
 
 
 def test_login_rejects_oauth_response_without_access_token(oidc):
@@ -572,6 +633,7 @@ def test_refresh_endpoint_exchanges_refresh_token_and_validates_identity(oidc):
         "wrong_issuer",
         "wrong_audience_with_matching_azp",
         "missing_id_token",
+        "missing_id_token_with_userinfo",
     ],
 )
 def test_refresh_endpoint_rejects_invalid_identity_token(oidc, case):

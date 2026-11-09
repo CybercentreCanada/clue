@@ -1,8 +1,9 @@
 from typing import Any, Callable, Mapping, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlencode
 
 from authlib.integrations.base_client import OAuthError
 from authlib.jose.errors import JoseError
+from authlib.oidc.core import UserInfo
 from flask import current_app, request
 from pydantic import ValidationError
 
@@ -133,6 +134,13 @@ def _get_oauth_client(oauth_provider: str) -> tuple[ClueOAuth2App, dict[str, str
         kwargs["client_secret"] = client_secret
 
     return provider, kwargs
+
+
+def _oauth_redirect_uri(oauth_provider: str) -> str:
+    if not config.api.frontend_url:
+        raise ClueValueError("api.frontend_url not set! Cannot start OAuth")
+
+    return f"{config.api.frontend_url.rstrip('/')}/login?{urlencode({'provider': oauth_provider})}"
 
 
 def _requests_openid(provider: ClueOAuth2App) -> bool:
@@ -278,22 +286,19 @@ def login(**_) -> dict[str, Any]:
         provider, kwargs = _get_oauth_client(oauth_provider)
 
         if not is_callback:
-            referer = request.headers.get("Referer", None)
-            uri = urlparse(referer if referer else request.host_url)
-            port_portion = ":" + str(uri.port) if uri.port else ""
-            redirect_uri = f"{uri.scheme}://{uri.hostname}{port_portion}/login?provider={oauth_provider}"
             # Authlib generates the state and nonce and binds them to this browser session.
-            return provider.authorize_redirect(redirect_uri=redirect_uri)
+            return provider.authorize_redirect(redirect_uri=_oauth_redirect_uri(oauth_provider))
 
         # Authlib rejects missing, forged, foreign-session and replayed state before exchanging the code, then
         # validates the ID token with ClueOAuth2App.parse_id_token against the session-bound nonce.
         token_data = provider.authorize_access_token(**kwargs)
-        if "userinfo" in token_data:
-            identity_data = token_data["userinfo"]
-        elif "id_token" in token_data or _requests_openid(provider):
-            raise AuthenticationException("The OAuth provider did not return a verified identity token.")
+        if "id_token" in token_data or _requests_openid(provider):
+            # Authlib replaces raw JSON userinfo with UserInfo only after parse_id_token succeeds.
+            identity_data = token_data.get("userinfo")
+            if "id_token" not in token_data or not isinstance(identity_data, UserInfo):
+                raise AuthenticationException("The OAuth provider did not return a verified identity token.")
         else:
-            identity_data = token_data
+            identity_data = token_data.get("userinfo", token_data)
 
         return _authenticated_response(oauth_provider, token_data, identity_data)
 

@@ -62,6 +62,7 @@ services:
       # Application Settings
       API__SECRET_KEY: dev-secret-key
       API__DEBUG: "true"
+      API__FRONTEND_URL: "http://localhost"
 
       # Authentication
       AUTH__OAUTH__ENABLED: "true"

@@ -20,7 +20,7 @@ export const get = (
   }
 
   return hget<FetcherResult>(
-    joinUri(parentUri(), `${fetcherId.replace('.', '/')}/status/${taskId}`),
+    joinUri(parentUri(), `${fetcherId.replace('.', '/')}/status/${encodeURIComponent(taskId)}`),
     searchParams.length > 0 ? new URLSearchParams(searchParams.join('&')) : null,
     config
   );
