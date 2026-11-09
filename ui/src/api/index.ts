@@ -7,7 +7,7 @@ import * as lookup from 'api/lookup';
 import * as _static from 'api/static';
 import * as sync from 'api/sync';
 import * as v2 from 'api/v2';
-import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
+import { AxiosHeaders, type AxiosRequestConfig, type RawAxiosRequestHeaders } from 'axios';
 import type { ClueResponse } from 'lib/types/network';
 import { StorageKey } from 'lib/utils/constants';
 import AxiosClient from 'rest/AxiosClient';
@@ -203,8 +203,13 @@ export const hfetch = async <R>(
         });
 
       if (refreshResponse) {
+        if (typeof refreshResponse.app_token !== 'string' || !refreshResponse.app_token.trim()) {
+          throw new Error('Token refresh returned no access token.');
+        }
         saveLoginCredential(refreshResponse);
-        const result = await hfetch<R>(_uri, method, body, searchParams, axiosConfig);
+        const headers = new AxiosHeaders(axiosConfig?.headers);
+        headers.set('Authorization', `Bearer ${refreshResponse.app_token}`, true);
+        const result = await hfetch<R>(_uri, method, body, searchParams, { ...axiosConfig, headers });
 
         removeLocalStored(StorageKey.NEXT_LOCATION);
         removeLocalStored(StorageKey.NEXT_SEARCH);

@@ -351,7 +351,7 @@ def refresh(**_) -> dict[str, Any]:
         elif _requests_openid(provider):
             raise AuthenticationException("The OAuth provider did not return a verified identity token.")
         else:
-            identity_data = token_data
+            identity_data = token_data.get("userinfo", token_data)
 
         return _authenticated_response(body.provider, token_data, identity_data)
 

@@ -623,6 +623,22 @@ def test_refresh_endpoint_exchanges_refresh_token_and_validates_identity(oidc):
     assert oidc.exchange.call_args.kwargs["refresh_token"] == "refresh-credential"
 
 
+@pytest.mark.parametrize("groups, status", [(["allowed"], 200), ([], 403)])
+def test_non_openid_refresh_parses_userinfo(monkeypatch, groups, status):
+    oidc = _make_oidc(monkeypatch, scope="email profile", required_groups=["allowed"])
+    oidc.exchange.return_value = {
+        "access_token": "synthetic-access",
+        "userinfo": {"sub": "local-user", "preferred_username": "local-user", "groups": groups},
+    }
+
+    response = refresh(oidc, {"provider": "local", "refresh_token": "refresh-credential"})
+
+    assert response.status_code == status
+    if status == 200:
+        assert response.json["api_response"]["user"]["uname"] == "local-user"
+        assert response.json["api_response"]["user"]["groups"] == groups
+
+
 @pytest.mark.parametrize(
     "case",
     [
