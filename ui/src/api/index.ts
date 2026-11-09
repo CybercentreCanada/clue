@@ -27,6 +27,13 @@ import getXSRFCookie from 'utils/xsrf';
 const client = new AxiosClient();
 
 /**
+ * Whether a token refresh failed because the API rejected the stored refresh credentials as invalid (400). Network,
+ * timeout and server failures are transient: the stored credentials may still be valid.
+ */
+const isInvalidRefresh = (error: unknown): boolean =>
+  error instanceof Error && (error.cause as ClueResponse<unknown>)?.api_status_code === 400;
+
+/**
  * Defining the default export exposing all children routes of '/api/v1/'.
  */
 // prettier-ignore
@@ -182,10 +189,16 @@ export const hfetch = async <R>(
       //And re-execute the previous api call (seamless)
       const refreshToken: string = getLocalStored(StorageKey.REFRESH_TOKEN);
       const provider: string = getLocalStored(StorageKey.PROVIDER);
-      // A rejected refresh (e.g. 400 for a malformed stored value) falls through to a normal re-login.
+      // A 401 resolves empty once the refresh request has cleared the stored credentials, and a 400 means they are
+      // unusable: both fall through to a fresh login below. Any other failure is re-thrown and keeps them for a retry.
       const refreshResponse = await api.auth.refresh
         .post({ refresh_token: refreshToken, provider: provider })
-        .catch((): LoginResponse => null);
+        .catch((error: unknown): LoginResponse => {
+          if (isInvalidRefresh(error)) {
+            return null;
+          }
+          throw error;
+        });
 
       if (refreshResponse) {
         saveLoginCredential(refreshResponse);

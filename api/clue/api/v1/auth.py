@@ -39,16 +39,34 @@ logger = get_logger(__file__)
 OAUTH_PROVIDER_PARAMS = frozenset({"provider", "oauth_provider"})
 # Parameters an authorization server may append to the redirect URI: RFC 6749 section 4.1.2 (code, state, error*),
 # OIDC Session Management (session_state) and RFC 9207 (iss). Anything else, notably credentials such as
-# refresh_token, id_token, access_token or nonce, is rejected before any token exchange.
+# refresh_token, id_token or access_token, is rejected before any token exchange.
 OAUTH_CALLBACK_PARAMS = OAUTH_PROVIDER_PARAMS | frozenset(
     {"code", "state", "session_state", "iss", "error", "error_description", "error_uri"}
 )
+# Transitional: UIs released before CLUE-010 add their own nonce to the login link and to the callback. It is accepted
+# (once) so a cached UI can still sign in, then discarded: it is never read, so it cannot reach Authlib, the session or
+# ID-token validation, which only use the nonce Authlib generated and stored for this browser session.
+LEGACY_IGNORED_LOGIN_PARAMS = frozenset({"nonce"})
+# Transitional: the JSON body those UIs post to this endpoint to refresh their tokens.
+LEGACY_REFRESH_PARAMS = frozenset({"provider", "oauth_provider", "refresh_token"})
+LEGACY_REFRESH_ERROR = "Token refresh moved to POST /api/v1/auth/refresh. Reload Clue and sign in again."
 # Presence of any of these makes the request an authorization callback rather than a login initiation.
 OAUTH_CALLBACK_MARKERS = frozenset({"code", "state", "error"})
 # Keys that must never reach the browser login endpoint through a POST either.
 OAUTH_POST_REJECTED_PARAMS = OAUTH_CALLBACK_PARAMS | frozenset(
     {"refresh_token", "id_token", "access_token", "nonce", "grant_type"}
 )
+
+
+def _is_legacy_refresh(body: Any) -> bool:
+    """Whether a POST is the JSON token refresh that UIs released before CLUE-010 send to the login endpoint."""
+    return (
+        request.is_json
+        and not request.args
+        and isinstance(body, Mapping)
+        and "refresh_token" in body
+        and set(body.keys()) <= LEGACY_REFRESH_PARAMS
+    )
 
 
 def _single_valued(args: Mapping[str, Any], allowed: frozenset[str]) -> None:
@@ -189,12 +207,14 @@ def login(**_) -> dict[str, Any]:
     trusted issuer and client ID, and returns the provider-issued access token as the application token.
 
     Only the parameters listed below are accepted. Requests containing any other parameter (for example
-    ``refresh_token``, ``id_token``, ``access_token`` or ``nonce``) or a repeated parameter are rejected with a 400
-    before any token exchange. Token refresh is handled by ``POST /api/v1/auth/refresh``.
+    ``refresh_token``, ``id_token`` or ``access_token``) or a repeated parameter are rejected with a 400 before any
+    token exchange. Token refresh is handled by ``POST /api/v1/auth/refresh``; the JSON refresh request that UIs
+    released before this change post here gets a 401 without any token exchange, so they clear their credentials.
 
     Args:
         provider: The OAuth provider to use for authentication.
         oauth_provider: Alternative name for ``provider``.
+        nonce: Deprecated and ignored. Still sent by UIs released before this change; never used for validation.
         code: The authorization code returned by the OAuth provider (callback only).
         state: The state returned by the OAuth provider (callback only).
         session_state: Provider session state, accepted and ignored (callback only).
@@ -232,6 +252,11 @@ def login(**_) -> dict[str, Any]:
         # deny any post to request handle
         if request.method != "GET":
             body = request.get_json(silent=True) if request.is_json else request.form
+            if _is_legacy_refresh(body):
+                # Nothing is exchanged. The 401 makes those UIs clear their stored credentials instead of keeping
+                # unusable tokens; the user then signs in again, and reloading loads the current UI.
+                raise AuthenticationException(LEGACY_REFRESH_ERROR)
+
             keys = set(request.args.keys()) | (set(body.keys()) if isinstance(body, Mapping) else set())
             if keys & OAUTH_POST_REJECTED_PARAMS:
                 raise InvalidDataException(
@@ -245,7 +270,8 @@ def login(**_) -> dict[str, Any]:
             raise AuthenticationException("Not enough information to proceed with authentication")
 
         is_callback = bool(OAUTH_CALLBACK_MARKERS & args.keys())
-        _single_valued(args, OAUTH_CALLBACK_PARAMS if is_callback else OAUTH_PROVIDER_PARAMS)
+        allowed = OAUTH_CALLBACK_PARAMS if is_callback else OAUTH_PROVIDER_PARAMS
+        _single_valued(args, allowed | LEGACY_IGNORED_LOGIN_PARAMS)
         if is_callback and ("state" not in args or not ({"code", "error"} & args.keys())):
             raise AuthenticationException("The OAuth callback is missing its state or authorization code.")
 

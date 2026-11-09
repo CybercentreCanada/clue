@@ -162,7 +162,7 @@ def test_oidc_initiation_generates_server_side_nonce_bound_to_session(oidc):
     assert stored["nonce"] == params["nonce"]
 
 
-@pytest.mark.parametrize("extra", ["nonce", "state", "refresh_token", "redirect_uri", "unexpected"])
+@pytest.mark.parametrize("extra", ["state", "refresh_token", "redirect_uri", "unexpected"])
 def test_oidc_initiation_rejects_parameters_outside_allowlist(oidc, extra):
     response = oidc.client.get(f"{LOGIN}?provider=local&{extra}=attacker-chosen", base_url=BASE_URL)
 
@@ -184,6 +184,38 @@ def test_oidc_rejects_unknown_provider(oidc):
     response = oidc.client.get(f"{LOGIN}?provider=unknown", base_url=BASE_URL)
 
     assert response.status_code == 400
+
+
+def test_legacy_nonce_at_login_initiation_is_discarded(oidc):
+    """UIs released before CLUE-010 add their own nonce to the login link; it must never become the session nonce."""
+    with patch.object(oidc.provider, "authorize_redirect", wraps=oidc.provider.authorize_redirect) as authorize:
+        params = begin_login(oidc, query="oauth_provider=local&nonce=legacy-browser-nonce")
+
+    assert authorize.call_args.kwargs == {"redirect_uri": f"{BASE_URL}/login?provider=local"}
+    assert params["nonce"] != "legacy-browser-nonce"
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert session[f"_state_local_{params['state']}"]["data"]["nonce"] == params["nonce"]
+
+    # An ID token bound to the browser's nonce does not validate; only the nonce Authlib stored does.
+    oidc.exchange.return_value = oidc.token("legacy-browser-nonce")
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+    assert response.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "oauth_provider=local&nonce=legacy-a&nonce=legacy-b",
+        "provider=local&code=synthetic-code&state=any&nonce=legacy-a&nonce=legacy-b",
+    ],
+)
+def test_legacy_nonce_must_be_single_valued(oidc, query):
+    response = oidc.client.get(f"{LOGIN}?{query}", base_url=BASE_URL)
+
+    assert response.status_code == 400
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert not [key for key in session.keys() if key.startswith("_state_")]
+    assert not oidc.exchange.called
 
 
 # --- Authorization-code callback ----------------------------------------------------------------------------------
@@ -241,7 +273,6 @@ def test_oidc_login_rejects_attacker_refresh_token_link_in_fresh_session(oidc):
         {"refresh_token": "attacker-refresh"},
         {"id_token": "attacker.id.token"},
         {"access_token": "attacker-access"},
-        {"nonce": "attacker-nonce"},
         {"grant_type": "refresh_token"},
         {"redirect_uri": "https://evil.invalid/"},
         {"unexpected": "value"},
@@ -271,6 +302,21 @@ def test_oidc_callback_rejects_repeated_parameters(oidc, repeated):
 
     assert response.status_code == 400
     assert not oidc.exchange.called
+
+
+@pytest.mark.parametrize("token_nonce", ["session", "legacy"])
+def test_legacy_nonce_on_callback_is_discarded(oidc, token_nonce):
+    """UIs released before CLUE-010 also send their nonce on the callback; it is never compared to the ID token."""
+    params = begin_login(oidc)
+    oidc.exchange.return_value = oidc.token(params["nonce"] if token_nonce == "session" else "legacy-browser-nonce")
+
+    response = callback(
+        oidc,
+        {"provider": "local", "code": "synthetic-code", "state": params["state"], "nonce": "legacy-browser-nonce"},
+    )
+
+    assert response.status_code == (200 if token_nonce == "session" else 401)
+    assert oidc.exchange.call_count == 1
 
 
 @pytest.mark.parametrize("case", ["forged", "missing", "foreign_session", "reused", "other_provider"])
@@ -467,15 +513,38 @@ def test_login_rejects_invalid_normalized_user_data(oidc):
 @pytest.mark.parametrize(
     "body",
     [
-        {"provider": "local", "refresh_token": "attacker-refresh"},
-        {"oauth_provider": "local", "refresh_token": "attacker-refresh"},
-        {"provider": "local", "code": "synthetic-code", "state": "forged"},
+        {"provider": "local", "refresh_token": "legacy-refresh"},
+        {"oauth_provider": "local", "refresh_token": "legacy-refresh"},
+        {"provider": None, "refresh_token": "legacy-refresh"},
+        {"refresh_token": "legacy-refresh"},
     ],
 )
-def test_login_endpoint_no_longer_accepts_refresh_or_oauth_post(oidc, body):
+def test_legacy_refresh_post_to_login_gets_401_without_exchange(oidc, body):
+    """UIs released before CLUE-010 refresh through the login endpoint; they must clear their credentials instead."""
     oidc.exchange.return_value = oidc.token()
 
     response = oidc.client.post(LOGIN, json=body, base_url=BASE_URL)
+
+    assert response.status_code == 401
+    assert response.json["api_error_message"] == auth_api.LEGACY_REFRESH_ERROR
+    assert not oidc.exchange.called
+    assert_no_secrets(response, "legacy-refresh")
+
+
+@pytest.mark.parametrize(
+    "request_kwargs",
+    [
+        {"json": {"provider": "local", "code": "synthetic-code", "state": "forged"}},
+        {"json": {"provider": "local", "refresh_token": "attacker-refresh", "grant_type": "refresh_token"}},
+        {"json": {"provider": "local", "refresh_token": "attacker-refresh", "nonce": "attacker-nonce"}},
+        {"json": {"refresh_token": "attacker-refresh"}, "query_string": {"provider": "local"}},
+        {"data": {"provider": "local", "refresh_token": "attacker-refresh"}},
+    ],
+)
+def test_login_endpoint_rejects_other_refresh_and_oauth_posts(oidc, request_kwargs):
+    oidc.exchange.return_value = oidc.token()
+
+    response = oidc.client.post(LOGIN, base_url=BASE_URL, **request_kwargs)
 
     assert response.status_code == 400
     assert not oidc.exchange.called

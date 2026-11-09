@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { StorageKey } from 'lib/utils/constants';
 import AxiosClient from 'rest/AxiosClient';
 import { URLSearchParams } from 'url';
@@ -412,37 +413,68 @@ describe('API Index', () => {
       expect(client.fetch.mock.calls[1][2]).toEqual({ provider: 'mock-provider', refresh_token: 'mock-refresh-token' });
       expect(client.fetch.mock.calls[1][3]).toBeUndefined();
       expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({ access_token: 'new-token' });
+      expect(localStorage.saveLoginCredential).not.toHaveBeenCalledWith({});
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_LOCATION);
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_SEARCH);
     });
 
-    it('does not recurse when the refresh request itself is rejected', async () => {
-      client.fetch
-        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
-        .mockResolvedValueOnce([{ api_error_message: 'Authentication failed.' }, 401]);
-      vi.mocked(localStorage.getStored).mockImplementation(key =>
-        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
-      );
+    describe('when the refresh fails', () => {
+      beforeEach(() => {
+        Object.defineProperty(global, 'location', {
+          value: { pathname: '/fetchers', search: '?type=ip', hash: '' },
+          writable: true
+        });
+        vi.mocked(localStorage.getStored).mockImplementation(key =>
+          key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
+        );
+        client.fetch.mockResolvedValueOnce([{ api_error_message: 'Unauthorized', api_status_code: 401 }, 401]);
+      });
 
-      const result = await hget('/test');
+      it.each([
+        [
+          'rejected as unauthenticated (401)',
+          [{ api_error_message: 'Authentication failed.', api_status_code: 401 }, 401]
+        ],
+        [
+          'rejected as invalid (400)',
+          [{ api_error_message: 'Invalid token refresh request.', api_status_code: 400 }, 400]
+        ]
+      ])('clears the stored credentials and keeps the page for the next login when %s', async (_, refreshResult) => {
+        client.fetch.mockResolvedValueOnce(refreshResult);
 
-      expect(result).toBeUndefined();
-      expect(client.fetch).toHaveBeenCalledTimes(2);
-      expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({});
-    });
+        const result = await hget('/test');
 
-    it('falls back to re-login when the refresh request is invalid', async () => {
-      client.fetch
-        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
-        .mockResolvedValueOnce([{ api_error_message: 'Invalid token refresh request.' }, 400]);
-      vi.mocked(localStorage.getStored).mockImplementation(key =>
-        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : null
-      );
+        expect(result).toBeUndefined();
+        expect(client.fetch).toHaveBeenCalledTimes(2);
+        expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({});
+        expect(localStorage.setStored).toHaveBeenCalledWith(StorageKey.NEXT_LOCATION, '/fetchers');
+        expect(localStorage.setStored).toHaveBeenCalledWith(StorageKey.NEXT_SEARCH, '?type=ip');
+      });
 
-      const result = await hget('/test');
+      it.each([
+        [
+          'a server error (503)',
+          () => client.fetch.mockResolvedValueOnce([{ api_error_message: 'Unavailable', api_status_code: 503 }, 503])
+        ],
+        [
+          'an unexpected status (403)',
+          () => client.fetch.mockResolvedValueOnce([{ api_error_message: 'Forbidden', api_status_code: 403 }, 403])
+        ],
+        ['a network failure', () => client.fetch.mockRejectedValueOnce(new AxiosError('Network Error', 'ERR_NETWORK'))],
+        ['a timeout', () => client.fetch.mockRejectedValueOnce(new AxiosError('timeout exceeded', 'ECONNABORTED'))],
+        ['a rejection that is not an Error', () => client.fetch.mockRejectedValueOnce({ api_status_code: 400 })]
+      ])('keeps the stored credentials and propagates %s', async (_, failRefresh) => {
+        failRefresh();
 
-      expect(result).toBeUndefined();
-      expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({});
+        const outcome = await hget('/test').then(
+          () => 'resolved',
+          () => 'rejected'
+        );
+
+        expect(outcome).toBe('rejected');
+        expect(client.fetch).toHaveBeenCalledTimes(2);
+        expect(localStorage.saveLoginCredential).not.toHaveBeenCalled();
+      });
     });
   });
 });
