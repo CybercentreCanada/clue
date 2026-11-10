@@ -1,5 +1,5 @@
 import { act, renderHook, RenderHookResult, waitFor } from '@testing-library/react';
-import { hpost } from 'api';
+import api, { hpost } from 'api';
 import buildDatabase from 'lib/database';
 import { Selector } from 'lib/types/lookup';
 import cloneDeep from 'lodash-es/cloneDeep';
@@ -108,12 +108,38 @@ describe('enrich functionality', () => {
       expect(hook.result.current('abc')).toBe(null);
     });
 
-    /**
-     * Test that type guessing handles case-insensitive matching
-     * Should convert uppercase strings to lowercase before matching
-     */
-    it('should test lowercased versions of strings', () => {
+    it('matches case-insensitive detectors using their metadata', () => {
       expect(hook.result.current('ABCDEF')).toBe('sha256');
+    });
+
+    it('uses metadata priority and case flags while preserving the original plugin selector', async () => {
+      vi.spyOn(api.v2.lookup.types_detection, 'get').mockResolvedValueOnce({
+        extension: { regex: '^[0-9.]+$', case_sensitive: true },
+        ipv4: { regex: '^(?:\\d{1,3}\\.){3}\\d{1,3}$', case_sensitive: true, priority: 10 },
+        domain: { regex: '^[a-z]+\\.com$', case_sensitive: false },
+        url: { regex: '^[a-zA-Z]+\\.com$', case_sensitive: true },
+        ticket: { regex: '^ticket-\\d+$', case_sensitive: true },
+        md5: { regex: '^[a-fA-F0-9]{32}$', case_sensitive: true },
+        ja3: { regex: '^[a-fA-F0-9]{32}$', case_sensitive: true }
+      });
+      const { result, unmount } = renderHook(() => useClueEnrichSelector(ctx => ctx), { wrapper: Wrapper });
+      await waitFor(() => expect(result.current.guessType('EXAMPLE.COM')).toBe('domain'));
+      expect(result.current.guessType('ticket-123')).toBe('ticket');
+      expect(result.current.guessType('TICKET-123')).toBeNull();
+      expect(result.current.guessType('192.0.2.1')).toBe('ipv4');
+      expect(result.current.guessType('a'.repeat(32))).toBe('md5');
+      expect(result.current.typesDetection.domain.flags).toBe('i');
+      expect(result.current.typesDetection.ticket.flags).toBe('');
+      vi.mocked(hpost).mockResolvedValueOnce({ domain: { 'EXAMPLE.COM': {} } });
+      await act(async () => {
+        await result.current.enrich(result.current.guessType('EXAMPLE.COM'), 'EXAMPLE.COM');
+      });
+      expect(hpost).toHaveBeenLastCalledWith(
+        expect.any(String),
+        [expect.objectContaining({ type: 'domain', value: 'EXAMPLE.COM' })],
+        expect.any(Object)
+      );
+      unmount();
     });
   });
 

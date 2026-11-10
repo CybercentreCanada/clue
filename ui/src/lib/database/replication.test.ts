@@ -335,6 +335,7 @@ describe('replicateSelectorCollection', () => {
           abort: vi.fn(),
           setRequestHeader: vi.fn(),
           responseText: '',
+          status: 200,
           onload: null as (() => void) | null,
           onerror: null as (() => void) | null,
           onprogress: null as (() => void) | null
@@ -430,6 +431,197 @@ describe('replicateSelectorCollection', () => {
 
       // Should NOT have opened another connection
       expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('cancels a pending retry when the collection closes', async () => {
+      const collection = buildMockCollection();
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      xhrInstances[0].onerror();
+      expect(vi.getTimerCount()).toBe(1);
+      await Promise.all(collection.onClose.map(close => close()));
+      expect(vi.getTimerCount()).toBe(0);
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(xhrInstances).toHaveLength(1);
+      expect(xhrInstances[0].abort).toHaveBeenCalledOnce();
+    });
+
+    it('checks closed state again immediately before a scheduled connection', async () => {
+      const collection = buildMockCollection();
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      xhrInstances[0].onload();
+      collection.closed = true;
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it.each([400, 401, 403, 404, 429])('stops on HTTP %s without emitting error bodies', async status => {
+      const onReplicationError = vi.fn(() => true);
+      await replicateSelectorCollection(
+        DUMMY_ID,
+        buildMockCollection({ synced: true }),
+        buildMockConfig({ onReplicationError })
+      );
+      const next = vi.fn();
+      capturedConfig.pull.stream$.subscribe(next);
+      const xhr = xhrInstances[0];
+      xhr.status = status;
+      xhr.responseText = JSON.stringify({ id: 1, documents: [], checkpoint: null }) + '\n';
+      xhr.onprogress();
+      await xhr.onload();
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(next).not.toHaveBeenCalled();
+      expect(xhrInstances).toHaveLength(1);
+      expect(onReplicationError).toHaveBeenCalledWith(expect.objectContaining({ status, collection: 'selectors' }));
+    });
+
+    it.each(['unchanged', 'whitespace-only-change', 'empty', 'declined', 'throws', 'missing'])(
+      'does not retry a 401 when recovery is %s',
+      async recovery => {
+        let token = 'rejected';
+        const onReplicationError = vi.fn(() => {
+          if (recovery === 'throws') throw new Error('Recovery failed');
+          if (recovery === 'whitespace-only-change') token = ' rejected ';
+          if (recovery === 'empty') token = '';
+          if (recovery === 'declined') token = 'new-token';
+          return recovery !== 'declined';
+        });
+        await replicateSelectorCollection(
+          DUMMY_ID,
+          buildMockCollection(),
+          buildMockConfig({
+            getToken: () => token,
+            onReplicationError: recovery === 'missing' ? undefined : onReplicationError
+          })
+        );
+        xhrInstances[0].status = 401;
+        xhrInstances[0].onload();
+        await vi.advanceTimersByTimeAsync(60000);
+        expect(xhrInstances).toHaveLength(1);
+      }
+    );
+
+    it('waits for token recovery and stops if the refreshed token is also rejected unchanged', async () => {
+      let token = 'rejected';
+      let recover: (result: boolean) => void;
+      const onReplicationError = vi.fn(
+        () =>
+          new Promise<boolean>(resolve => {
+            recover = resolve;
+          })
+      );
+      await replicateSelectorCollection(
+        DUMMY_ID,
+        buildMockCollection(),
+        buildMockConfig({ getToken: () => token, onReplicationError })
+      );
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload();
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(xhrInstances).toHaveLength(1);
+      token = 'refreshed';
+      recover(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(xhrInstances).toHaveLength(2);
+      expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed');
+      xhrInstances[1].status = 401;
+      xhrInstances[1].onload();
+      recover(true);
+      await vi.advanceTimersByTimeAsync(60000);
+      expect(xhrInstances).toHaveLength(2);
+    });
+
+    it('sends the exact replacement token approved after recovery', async () => {
+      const getToken = vi
+        .fn()
+        .mockReturnValueOnce('rejected')
+        .mockReturnValueOnce('refreshed')
+        .mockReturnValue('rejected');
+      await replicateSelectorCollection(
+        DUMMY_ID,
+        buildMockCollection(),
+        buildMockConfig({ getToken, onReplicationError: () => true })
+      );
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(xhrInstances).toHaveLength(2);
+      expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed');
+      expect(getToken).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not reconnect if the collection closes during token recovery', async () => {
+      const collection = buildMockCollection();
+      let token = 'rejected';
+      let recover: (result: boolean) => void;
+      await replicateSelectorCollection(
+        DUMMY_ID,
+        collection,
+        buildMockConfig({
+          getToken: () => token,
+          onReplicationError: () => new Promise(resolve => (recover = resolve))
+        })
+      );
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload();
+      await Promise.all(collection.onClose.map(close => close()));
+      token = 'refreshed';
+      recover(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('retries 5xx failures with backoff and excludes their bodies', async () => {
+      const onReplicationError = vi.fn(() => false);
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ onReplicationError }));
+      const next = vi.fn();
+      capturedConfig.pull.stream$.subscribe(next);
+      xhrInstances[0].status = 503;
+      xhrInstances[0].responseText = '{"id":1,"documents":[],"checkpoint":null}\n';
+      xhrInstances[0].onprogress();
+      xhrInstances[0].onload();
+      await vi.advanceTimersByTimeAsync(1000);
+      xhrInstances[1].status = 503;
+      xhrInstances[1].responseText = xhrInstances[0].responseText;
+      xhrInstances[1].onprogress();
+      xhrInstances[1].onload();
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(xhrInstances).toHaveLength(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(xhrInstances).toHaveLength(3);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('normalizes wire checkpoints before emitting and reusing them in the pull handler', async () => {
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const next = vi.fn();
+      capturedConfig.pull.stream$.subscribe(next);
+      const event = {
+        id: 1,
+        documents: [buildSelectorDoc('wire', 1234)],
+        checkpoint: { id: 'wire', updated_at: 1234 }
+      };
+      xhrInstances[0].responseText = JSON.stringify(event) + '\n';
+      xhrInstances[0].onprogress();
+      expect(next).toHaveBeenCalledExactlyOnceWith({
+        ...event,
+        checkpoint: { id: 'wire', last_updated: 1234 }
+      });
+      vi.mocked(api.sync.get).mockResolvedValueOnce([]);
+      await capturedConfig.pull.handler(next.mock.calls[0][0].checkpoint);
+      expect(api.sync.get).toHaveBeenCalledWith('selectors', 'wire', 1234, false, expect.any(Object));
+    });
+
+    it('buffers split events and emits complete events only once', async () => {
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const next = vi.fn();
+      capturedConfig.pull.stream$.subscribe(next);
+      const line = '{"id":1,"documents":[],"checkpoint":null}';
+      xhrInstances[0].responseText = line.slice(0, 15);
+      xhrInstances[0].onprogress();
+      expect(next).not.toHaveBeenCalled();
+      xhrInstances[0].responseText = line + '\n' + line + '\n';
+      xhrInstances[0].onprogress();
+      expect(next).toHaveBeenCalledExactlyOnceWith({ id: 1, documents: [], checkpoint: null });
     });
 
     it('should use exponential backoff for reconnections capped at 60 seconds', async () => {

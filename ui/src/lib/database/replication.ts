@@ -5,6 +5,7 @@ import { last } from 'lodash-es';
 import type { DocumentsWithCheckpoint, ReplicationPullHandlerResult } from 'rxdb';
 import { replicateRxCollection } from 'rxdb/plugins/replication';
 import { Subject } from 'rxjs';
+import { ClueReplicationError } from './errors';
 import { REPLICATORS } from './globals';
 import type { Checkpoint } from './sync';
 import type { DatabaseConfig, SelectorCollection, SelectorDocType } from './types';
@@ -41,18 +42,46 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
   const loggedEvents: number[] = [];
 
   let currentXhr: XMLHttpRequest | null = null;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  let closed = false;
+  const isClosed = () => closed || collection.closed;
+
   collection.onClose.push(() => {
+    closed = true;
+    if (retryTimer !== null) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
     currentXhr?.abort();
   });
 
-  const connect = (timeout = 1000) => {
+  const reportHttpFailure = async (error: ClueReplicationError): Promise<boolean> => {
+    if (!config.onReplicationError) {
+      // eslint-disable-next-line no-console
+      console.error(error);
+      return false;
+    }
+    try {
+      return (await config.onReplicationError(error)) === true;
+    } catch (recoveryError) {
+      // eslint-disable-next-line no-console
+      console.error('Replication recovery failed', recoveryError);
+      return false;
+    }
+  };
+
+  const connect = (timeout = 1000, recoveredToken?: string) => {
+    if (isClosed()) {
+      return;
+    }
+
     let lastProcessedIndex = 0;
+    let done = false;
     const _xhr = new XMLHttpRequest();
     currentXhr = _xhr;
 
     const reconnect = () => {
-      // eslint-disable-next-line no-console
-      if (collection.closed) {
+      if (isClosed()) {
         return;
       }
 
@@ -61,10 +90,14 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
         console.log(`Retrying live connection in ${timeout}ms...`);
       }
 
-      setTimeout(() => {
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
         // Exponential increase
         connect(Math.min(timeout * 2, MAX_RETRY_DELAY));
       }, timeout);
+      if (collection.synced) {
+        stream$.next('RESYNC');
+      }
     };
 
     const fullUrl = (config.baseURL ?? '') + joinAllUri(uri(), collection.name, 'stream');
@@ -72,59 +105,91 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
 
     _xhr.setRequestHeader('Accept', 'text/event-stream');
 
-    const token = config.getToken?.();
+    const token = (recoveredToken ?? config.getToken?.())?.trim();
     if (token) {
       _xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
 
-    _xhr.onload = () => {
-      reconnect();
-      if (collection.synced) {
-        stream$.next('RESYNC');
-      }
-    };
-
-    _xhr.onerror = () => {
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
-      reconnect();
-      if (collection.synced) {
-        stream$.next('RESYNC');
-      }
-    };
-
-    _xhr.onprogress = () => {
-      if (_xhr.responseText) {
-        timeout = 1000;
-      }
-
-      const newText = _xhr!.responseText.substring(lastProcessedIndex);
-      const lines = newText
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => !!line);
-
-      try {
-        for (const line of lines) {
-          const event: EventStreamEntry = JSON.parse(line);
-
-          if (loggedEvents.includes(event.id)) {
-            continue;
-          }
-
-          // Ensure the list of events doesn't grow too large
-          if (loggedEvents.length > 1000) {
-            loggedEvents.shift();
-          }
-
-          loggedEvents.push(event.id);
-          stream$.next(event);
-        }
-      } catch {
+    const processLines = (flush = false) => {
+      if (done || isClosed() || _xhr.status < 200 || _xhr.status >= 300) {
         return;
       }
 
-      lastProcessedIndex = _xhr!.responseText.length;
+      const lines = _xhr.responseText.slice(lastProcessedIndex).split('\n');
+      lastProcessedIndex = _xhr.responseText.length - (flush ? 0 : (lines.pop()?.length ?? 0));
+
+      for (const line of lines) {
+        if (!line.trim()) {
+          continue;
+        }
+        let event: EventStreamEntry;
+        try {
+          const parsed = JSON.parse(line);
+          const lastUpdated = parsed?.checkpoint?.last_updated ?? parsed?.checkpoint?.updated_at;
+          if (
+            !Number.isFinite(parsed?.id) ||
+            !Array.isArray(parsed.documents) ||
+            (parsed.checkpoint !== null && (typeof parsed.checkpoint?.id !== 'string' || !Number.isFinite(lastUpdated)))
+          ) {
+            throw new Error('Invalid replication stream event');
+          }
+          event = {
+            ...parsed,
+            checkpoint: parsed.checkpoint === null ? null : { id: parsed.checkpoint.id, last_updated: lastUpdated }
+          };
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Invalid replication stream event', error);
+          continue;
+        }
+
+        timeout = 1000;
+        if (loggedEvents.includes(event.id)) {
+          continue;
+        }
+
+        if (loggedEvents.length >= 1000) {
+          loggedEvents.shift();
+        }
+
+        loggedEvents.push(event.id);
+        stream$.next(event);
+      }
     };
+
+    const handleEnd = async () => {
+      if (done || isClosed()) {
+        return;
+      }
+      processLines(true);
+      done = true;
+
+      if (_xhr.status >= 400) {
+        const error = new ClueReplicationError(_xhr.status, fullUrl, collection.name);
+        if (_xhr.status >= 500) {
+          void reportHttpFailure(error);
+          reconnect();
+        } else if (_xhr.status === 401) {
+          if (await reportHttpFailure(error)) {
+            const refreshedToken = config.getToken?.()?.trim();
+            if (refreshedToken && refreshedToken !== token && !isClosed()) {
+              connect(1000, refreshedToken);
+              if (collection.synced) {
+                stream$.next('RESYNC');
+              }
+            }
+          }
+        } else {
+          void reportHttpFailure(error);
+        }
+        return;
+      }
+      reconnect();
+    };
+
+    _xhr.onload = () => void handleEnd();
+    _xhr.onerror = () => void handleEnd();
+    _xhr.onprogress = () => processLines();
 
     _xhr.send();
   };

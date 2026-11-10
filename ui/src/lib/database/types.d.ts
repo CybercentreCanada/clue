@@ -1,5 +1,6 @@
 import type { Annotation, Selector, WithExtra } from 'lib/types/lookup';
 import type { RxCollection, RxDatabase, RxDocument } from 'rxdb';
+import type { ClueReplicationError } from './errors';
 
 /**
  * Configuration options for the database.
@@ -65,6 +66,13 @@ export interface DatabaseConfig {
    * @returns An access token valid for use with the clue API.
    */
   getToken?: () => string;
+
+  /**
+   * Recover from stream HTTP failures. For 401, return true only after updating
+   * getToken to a different, nonempty token. Otherwise stream retries stop.
+   * Other 4xx responses are terminal; network and 5xx failures use backoff.
+   */
+  onReplicationError?: (error: ClueReplicationError) => boolean | Promise<boolean>;
 }
 
 export type WithLastUpdated<T> = T & {

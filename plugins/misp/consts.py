@@ -29,9 +29,9 @@ TYPE_MAPPING: dict[str, list[str]] = {
     "domain": ["domain"],
     "url": ["url", "link"],
     "email_address": ["email-src", "email-dst"],
-    "sha1": ["sha1"],
-    "sha256": ["sha256"],
-    "md5": ["md5"],
+    "sha1": ["sha1", "filename|sha1"],
+    "sha256": ["sha256", "filename|sha256"],
+    "md5": ["md5", "filename|md5"],
 }
 
 TLP_ENUM = {"TLP:CLEAR": 0, "TLP:GREEN": 1, "TLP:AMBER": 2, "TLP:AMBER+STRICT": 3, "TLP:RED": 4}

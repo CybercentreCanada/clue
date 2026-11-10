@@ -59,4 +59,12 @@ export type BulkEnrichResponses = { [type: string]: { [value: string]: EnrichRes
 
 export type TypesDetectionResponse = { [type: string]: string };
 
+export interface TypeDetectionDefinition {
+  regex: string | null;
+  case_sensitive: boolean;
+  priority?: number;
+}
+
+export type TypesDetectionV2Response = { [type: string]: TypeDetectionDefinition };
+
 export type TypesResponse = { [type: string]: string[] };

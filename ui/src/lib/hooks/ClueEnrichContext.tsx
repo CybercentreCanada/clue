@@ -7,6 +7,7 @@ import { REPLICATORS } from 'lib/database/globals';
 import type { SelectorDocType, StatusDocType } from 'lib/database/types';
 import type { EnrichResponse, EnrichResponses, Selector } from 'lib/types/lookup';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
+import { detectType } from 'lib/utils/typeDetection';
 import { computeStatusId } from 'lib/utils/utils';
 import { isEmpty } from 'lodash-es';
 import chunk from 'lodash-es/chunk';
@@ -73,7 +74,7 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   const [sources, setSources] = useState<string[]>([]);
 
   // Initialize the sources and type detection for the user
-  const { availableSources, typesDetection, supportedTypes } = useClueTypeConfig(
+  const { availableSources, typesDetection, typeDetectors, supportedTypes } = useClueTypeConfig(
     enabled && isReady,
     baseURL,
     debugLogging,
@@ -596,27 +597,8 @@ export const ClueEnrichProvider: FC<PropsWithChildren<ClueEnrichProps>> = ({
   }, [database, enabled, enrichQueued, isReady]);
 
   const guessType: ClueEnrichContextType['guessType'] = useCallback(
-    value => {
-      if (!value) {
-        return null;
-      }
-
-      const types = Object.entries(typesDetection);
-
-      const regularCheck = types.find(([_type, _regexp]) => _regexp.exec(value))?.[0];
-      if (regularCheck) {
-        return regularCheck;
-      }
-
-      const lowercased = value.toLowerCase();
-      const lowercaseCheck = types.find(([_type, _regexp]) => _regexp.exec(lowercased))?.[0];
-      if (lowercaseCheck) {
-        return lowercaseCheck;
-      }
-
-      return null;
-    },
-    [typesDetection]
+    value => detectType(value, typeDetectors),
+    [typeDetectors]
   );
 
   const value: ClueEnrichContextType = useMemo(

@@ -6,6 +6,7 @@ import * as fetchers from 'api/fetchers';
 import * as lookup from 'api/lookup';
 import * as _static from 'api/static';
 import * as sync from 'api/sync';
+import * as v2 from 'api/v2';
 import { AxiosHeaders, type AxiosRequestConfig, type RawAxiosRequestHeaders } from 'axios';
 import type { ClueResponse } from 'lib/types/network';
 import { StorageKey } from 'lib/utils/constants';
@@ -44,6 +45,7 @@ const api = {
   actions,
   fetchers,
   sync,
+  v2,
   _static
 };
 
@@ -65,7 +67,7 @@ export const uri = () => {
  * @returns `string` - properly formatted clue uri.
  */
 const format = (_uri: string, baseURL?: string): string => {
-  const path = _uri.startsWith(uri()) ? _uri : `${uri()}/${_uri.replace(/\/$/, '')}`.replace('//', '/');
+  const path = /^\/api\/v\d+(?:\/|$)/.test(_uri) ? _uri : `${uri()}/${_uri.replace(/\/$/, '')}`.replace('//', '/');
 
   return baseURL ? baseURL + path : path;
 };

@@ -77,6 +77,8 @@ class TestEmailRegex:
         "email,expected",
         [
             ("user@example.com", True),
+            ("Alice@EXAMPLE.COM", True),
+            ("Alice.Smith@Sub.Example.COM", True),
             ("test.email@domain.co.uk", True),
             ("user+tag@example.org", True),
             ("user_name@example.com", True),
@@ -101,6 +103,10 @@ class TestEmailRegex:
     def test_email_regex(self, email, expected):
         result = bool(re.match(EMAIL_REGEX, email))
         assert result == expected
+
+    def test_email_preserves_local_part(self):
+        email = "Alice.Smith@EXAMPLE.COM"
+        assert re.fullmatch(EMAIL_REGEX, email).group(0) == email
 
 
 class TestIPv4Regex:
@@ -149,6 +155,15 @@ class TestIPv4Regex:
 
 
 class TestIPv6Regex:
+    @pytest.mark.parametrize("ip", ["::FFFF:192.0.2.1", "::FfFf:192.0.2.1", "FE80::1%eth0", "fE80::1%eth0"])
+    def test_uppercase_hex_and_uri_hosts(self, ip):
+        assert re.fullmatch(IPV6_ONLY_REGEX, ip)
+        uri = f"http://[{ip}]/MixedCase/Path"
+        assert re.fullmatch(URI_ONLY, uri).group(0) == uri
+        assert not re.compile(URI_ONLY).flags & re.IGNORECASE
+        assert re.fullmatch(f"{URI_REGEX}/CaseSensitive", f"http://[{ip}]/CaseSensitive")
+        assert not re.fullmatch(f"{URI_REGEX}/CaseSensitive", f"http://[{ip}]/casesensitive")
+
     @pytest.mark.parametrize(
         "ip,expected",
         [

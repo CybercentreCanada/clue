@@ -105,6 +105,36 @@ def test_enrich(enrich_result):
     assert annotation.severity == 0.75
 
 
+@pytest.mark.parametrize("hash_type,length", [("md5", 32), ("sha1", 40), ("sha256", 64)])
+def test_hash_search_includes_filename_composites(app, enrichments, base_params, monkeypatch, hash_type, length):
+    value = "a" * length
+    attribute = {**MISP_RESPONSE["Attribute"][0], "type": f"filename|{hash_type}", "value": f"sample.exe|{value}"}
+    calls = []
+
+    def search(method, path, timeout, *, json):
+        calls.append((method, path, json))
+        assert json["type"] == [hash_type, f"filename|{hash_type}"]
+        return {"response": {"Attribute": [attribute]}}
+
+    monkeypatch.setattr(enrichments, "misp_request", search)
+    assert app.enrich(hash_type, value, base_params)[0].count == 1
+    assert calls == [
+        (
+            "post",
+            TEST_PATH,
+            {
+                "type": [hash_type, f"filename|{hash_type}"],
+                "value": value,
+                "limit": base_params.limit,
+                "includeEventTags": True,
+                "includeSightings": True,
+                "excludeDecayed": enrichments.EXCLUDE_DECAYED,
+                "returnFormat": "json",
+            },
+        )
+    ]
+
+
 def test_enrich_no_annotate(mock_lookup, base_params):
     base_params.annotate = False
     result = mock_lookup().enrich(TEST_TYPE, TEST_IP, base_params)
