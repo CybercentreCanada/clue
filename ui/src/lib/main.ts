@@ -27,9 +27,7 @@ import type {
   EnrichResponses,
   FailedRequest,
   Selector,
-  SupportedType,
   TypesDetectionResponse,
-  TypesDetectionV2Response,
   TypesResponse,
   WithExtra
 } from 'lib/types/lookup';
@@ -146,9 +144,7 @@ export type {
   StatusDocMethods,
   StatusDocType,
   StatusDocument,
-  SupportedType,
   TypesDetectionResponse,
-  TypesDetectionV2Response,
   TypesResponse,
   WithExtra
 };

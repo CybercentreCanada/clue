@@ -1,10 +1,9 @@
-import api from 'api';
+import * as lookup from 'api/lookup';
 import type { AxiosRequestConfig } from 'axios';
 import { clueDebugLogger } from 'lib/utils/loggerUtil';
-import { compileTypeDetectors, type TypeDetector } from 'lib/utils/typeDetection';
 import { uniq } from 'lodash-es';
 import isEmpty from 'lodash-es/isEmpty';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /**
  * Hook to populate and provide the types detection and the available sources.
@@ -21,17 +20,11 @@ const useClueTypeConfig = (
   debugLogging: boolean,
   getToken?: () => string,
   onNetworkCall?: (config: AxiosRequestConfig) => AxiosRequestConfig
-): {
-  availableSources: Array<string>;
-  typesDetection: { [type: string]: RegExp };
-  typeDetectors: TypeDetector[];
-  supportedTypes: string[];
-} => {
+): { availableSources: Array<string>; typesDetection: { [type: string]: RegExp }; supportedTypes: string[] } => {
   // Initialize the sources and type detection for the user
   const [availableSources, setAvailableSources] = useState<string[]>([]);
 
-  const [typeDetectors, setTypeDetectors] = useState<TypeDetector[]>([]);
-  const typesDetection = useMemo(() => Object.fromEntries(typeDetectors), [typeDetectors]);
+  const [typesDetection, setTypesDetection] = useState<{ [type: string]: RegExp }>({});
   const [supportedTypes, setSupportedTypes] = useState<string[]>([]);
 
   useEffect(() => {
@@ -58,8 +51,8 @@ const useClueTypeConfig = (
 
       clueDebugLogger('Executing types and type detection lookup', debugLogging);
       const [_typesPerSource, _typesDetections] = await Promise.all([
-        api.lookup.types.get(requestConfig),
-        api.v2.lookup.types_detection.get(requestConfig)
+        lookup.types.get(requestConfig),
+        lookup.types_detection.get(requestConfig)
       ]);
 
       if (_typesPerSource) {
@@ -68,7 +61,15 @@ const useClueTypeConfig = (
       }
 
       if (_typesDetections) {
-        setTypeDetectors(compileTypeDetectors(_typesDetections));
+        setTypesDetection(
+          Object.entries(_typesDetections).reduce((acc, [key, regex]) => {
+            if (regex !== null) {
+              acc[key] = new RegExp(regex);
+            }
+
+            return acc;
+          }, {})
+        );
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +78,6 @@ const useClueTypeConfig = (
   return {
     availableSources,
     typesDetection,
-    typeDetectors,
     supportedTypes
   };
 };
