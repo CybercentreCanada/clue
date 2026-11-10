@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
 import { saveLoginCredential } from 'utils/localStorage';
-import { buildOAuthCallbackParams, getSafeRedirectDestination } from 'utils/oauth';
+import { buildOAuthCallbackParams, getSafeRedirectDestination, removeOAuthCallbackParams } from 'utils/oauth';
 
 const useLogin = () => {
   const navigate = useNavigate();
@@ -97,12 +97,12 @@ const useLogin = () => {
   // OAuth login flow. Only allowlisted callback parameters are forwarded to the API.
   const doOAuth = useCallback(async () => {
     const callbackParams = buildOAuthCallbackParams(searchParams);
-    navigate(location.pathname, { replace: true });
+    navigate(`${location.pathname}${removeOAuthCallbackParams(location.search)}${location.hash}`, { replace: true });
     const userCredential = await dispatchApi(api.auth.login.get(callbackParams));
     if (saveLoginCredential(userCredential)) {
       getUser(userCredential);
     }
-  }, [dispatchApi, searchParams, getUser, navigate, location.pathname]);
+  }, [dispatchApi, searchParams, getUser, navigate, location.pathname, location.search, location.hash]);
 
   // login service.
   return useMemo(

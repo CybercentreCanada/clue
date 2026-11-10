@@ -428,8 +428,8 @@ describe('API Index', () => {
       );
 
       const config = { baseURL: 'https://clue.example', timeout: 5000 };
-      expect(await hget('/api/v2/lookup/types_detection', null, config)).toBe('retry-success');
-      expect(client.fetch.mock.calls[2][0]).toBe('https://clue.example/api/v2/lookup/types_detection');
+      expect(await hget('/configs', null, config)).toBe('retry-success');
+      expect(client.fetch.mock.calls[2][0]).toBe('https://clue.example/api/v1/configs');
       expect(client.fetch.mock.calls[2][4]).toEqual(expect.objectContaining(config));
     });
 

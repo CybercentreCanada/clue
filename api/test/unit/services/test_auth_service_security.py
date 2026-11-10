@@ -655,9 +655,32 @@ def test_oidc_jwks_older_than_max_age_are_never_used(oidc, monkeypatch):
 
     response = _login_status(oidc)
 
-    assert response.status_code == 401
-    assert response.json["api_error_message"] == "The ID token signing keys are unavailable."
+    assert response.status_code == 502
+    assert response.json["api_error_message"] == "The OAuth provider could not be reached. Try again later."
     assert_no_secrets(response)
+
+
+@pytest.mark.parametrize("failure", [requests.Timeout(), requests.ConnectionError(), requests.HTTPError()])
+def test_oidc_jwks_fetch_failure_without_cache_is_retryable(oidc, failure):
+    oidc.provider.server_metadata.pop("jwks")
+    oidc.network.jwks_failure = failure
+
+    response = _login_status(oidc)
+
+    assert response.status_code == 502
+    assert oidc.jwks_fetches == [JWKS_URI]
+    assert_no_secrets(response)
+
+
+def test_oidc_jwks_fetch_failure_without_cache_is_retryable_during_cooldown(oidc):
+    oidc.provider.server_metadata.pop("jwks")
+    oidc.network.jwks_failure = requests.Timeout()
+
+    first = _login_status(oidc)
+    second = _login_status(oidc)
+
+    assert first.status_code == second.status_code == 502
+    assert oidc.jwks_fetches == [JWKS_URI]
 
 
 @pytest.mark.parametrize(
@@ -674,8 +697,8 @@ def test_oidc_malformed_jwks_payload_fails_closed(oidc, monkeypatch, payload):
 
     response = _login_status(oidc)
 
-    assert response.status_code == 401
-    assert response.json["api_error_message"] == "The ID token signing keys are unavailable."
+    assert response.status_code == 502
+    assert response.json["api_error_message"] == "The OAuth provider could not be reached. Try again later."
     assert_no_secrets(response)
 
 

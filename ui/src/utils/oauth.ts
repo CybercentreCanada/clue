@@ -32,7 +32,25 @@ export const OAUTH_SENSITIVE_PARAMS = [
   'error_uri'
 ] as const;
 
+const OAUTH_URL_PARAMS: Set<string> = new Set([...OAUTH_CALLBACK_PARAMS, ...OAUTH_SENSITIVE_PARAMS]);
+
 const AUTH_ROUTES = ['/login', '/logout'];
+
+/**
+ * Remove OAuth callback and credential parameters while preserving other query parameters.
+ */
+export const removeOAuthCallbackParams = (search: string): string => {
+  const params = new URLSearchParams(search);
+  const remaining = new URLSearchParams();
+  params.forEach((value, key) => {
+    if (!OAUTH_URL_PARAMS.has(key.toLowerCase())) {
+      remaining.append(key, value);
+    }
+  });
+
+  const query = remaining.toString();
+  return query ? `?${query}` : '';
+};
 
 /**
  * Build the parameters to send to the API for an OAuth callback, keeping only the first value of allowlisted keys.

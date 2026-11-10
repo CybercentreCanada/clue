@@ -435,6 +435,7 @@ def test_get_supported_fetchers_parses_upstream_response(app, plugin, fetcher):
         headers={"accept": "application/json", "content-type": "application/json"},
         timeout=5.0,
         allow_redirects=False,
+        stream=True,
     )
 
 
@@ -491,6 +492,7 @@ def test_get_supported_fetchers_can_fail_closed_when_metadata_is_unavailable(app
         headers={"accept": "application/json", "content-type": "application/json"},
         timeout=2.0,
         allow_redirects=False,
+        stream=True,
     )
 
 
@@ -616,6 +618,7 @@ def test_run_fetcher_returns_upstream_result(app, configured_plugin, user, fetch
         },
         timeout=60.0,
         allow_redirects=False,
+        stream=True,
     )
 
 
@@ -720,6 +723,7 @@ def test_get_fetcher_status_returns_upstream_result(app, configured_plugin, user
         headers={"accept": "application/json", "content-type": "application/json"},
         timeout=10.0,
         allow_redirects=False,
+        stream=True,
     )
 
 
@@ -906,5 +910,6 @@ def test_previous_fetcher_metadata_does_not_bypass_token_failure(app, configured
         },
         timeout=5.0,
         allow_redirects=False,
+        stream=True,
     )
     post.assert_not_called()

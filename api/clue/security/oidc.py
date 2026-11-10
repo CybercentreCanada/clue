@@ -68,6 +68,7 @@ class ClueOAuth2App(FlaskOAuth2App):
         self._jwks_lock = Lock()
         self._jwks_fetched_at: float | None = None
         self._jwks_attempted_at: float | None = None
+        self._jwks_refresh_failed = False
 
     def _jwks_age(self, now: float) -> float | None:
         """Age of the cached JWKS, or None if there is none. Keys supplied at registration count from first use."""
@@ -77,10 +78,12 @@ class ClueOAuth2App(FlaskOAuth2App):
             self._jwks_fetched_at = now
         return now - self._jwks_fetched_at
 
-    def _usable_jwk_set(self) -> dict[str, Any]:
+    def _usable_jwk_set(self, *, upstream_unavailable: bool = False) -> dict[str, Any]:
         """The cached JWKS if it is still within its maximum age; never stale keys."""
         age = self._jwks_age(time.monotonic())
         if age is None or age >= JWKS_MAX_AGE_SECONDS:
+            if upstream_unavailable:
+                raise requests.RequestException("The OAuth provider's signing keys are unavailable.")
             raise AuthenticationException("The ID token signing keys are unavailable.")
         return self.server_metadata["jwks"]
 
@@ -102,8 +105,9 @@ class ClueOAuth2App(FlaskOAuth2App):
         """Return the provider's signing keys, refreshing them when stale or when ``force`` is set.
 
         Unlike Authlib's default, cached keys expire, outbound fetches have a timeout, are serialized and rate-limited
-        by ``jwks_refresh_cooldown_seconds`` (an unknown ``kid`` cannot trigger a request per login), and any failure
-        is an authentication error. Keys older than ``JWKS_MAX_AGE_SECONDS`` are never used.
+        by ``jwks_refresh_cooldown_seconds`` (an unknown ``kid`` cannot trigger a request per login). A failed refresh
+        may use still-valid cached keys; if none remain, the upstream failure is returned for retry. Keys older than
+        ``JWKS_MAX_AGE_SECONDS`` are never used.
         """
         metadata = self.load_server_metadata()
         age = self._jwks_age(time.monotonic())
@@ -112,7 +116,7 @@ class ClueOAuth2App(FlaskOAuth2App):
 
         # Nonblocking: concurrent logins use the known keys instead of queueing behind a slow provider.
         if not self._jwks_lock.acquire(blocking=False):
-            return self._usable_jwk_set()
+            return self._usable_jwk_set(upstream_unavailable=True)
 
         try:
             now = time.monotonic()
@@ -120,7 +124,7 @@ class ClueOAuth2App(FlaskOAuth2App):
                 self._jwks_attempted_at is not None
                 and now - self._jwks_attempted_at < config.auth.oauth.jwks_refresh_cooldown_seconds
             ):
-                return self._usable_jwk_set()
+                return self._usable_jwk_set(upstream_unavailable=self._jwks_refresh_failed)
 
             # Recorded before fetching so failed and timed-out attempts are rate-limited too.
             self._jwks_attempted_at = now
@@ -132,11 +136,13 @@ class ClueOAuth2App(FlaskOAuth2App):
             try:
                 jwk_set = self._download_jwk_set(uri)
             except (requests.RequestException, ValueError) as e:
+                self._jwks_refresh_failed = True
                 logger.warning("Failed to fetch the JWKS of OAuth provider %s [%s]", self.name, type(e).__name__)
-                return self._usable_jwk_set()
+                return self._usable_jwk_set(upstream_unavailable=True)
 
             metadata["jwks"] = jwk_set
             self._jwks_fetched_at = time.monotonic()
+            self._jwks_refresh_failed = False
             return jwk_set
         finally:
             self._jwks_lock.release()

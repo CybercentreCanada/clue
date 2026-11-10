@@ -663,6 +663,7 @@ def test_action_status_fails_closed_when_metadata_is_unavailable(cached_app, fai
         headers={"accept": "application/json", "content-type": "application/json"},
         timeout=3.0,
         allow_redirects=False,
+        stream=True,
     )
 
 
@@ -698,6 +699,7 @@ def test_action_status_shares_timeout_budget_with_metadata(cached_app):
         headers={"accept": "application/json", "content-type": "application/json"},
         timeout=10.0,
         allow_redirects=False,
+        stream=True,
     )
 
 

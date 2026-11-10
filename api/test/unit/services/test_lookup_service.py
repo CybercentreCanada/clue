@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock, patch
 
 import pytest
@@ -9,6 +10,13 @@ from clue.models.config import ExternalSource
 from clue.models.network import QueryEntry, QueryResult
 from clue.models.selector import Selector
 from clue.services import lookup_service
+
+
+def _mock_response(payload):
+    response = Mock(status_code=200)
+    response.json.return_value = payload
+    response.iter_content.return_value = iter([json.dumps(payload).encode()])
+    return response
 
 
 @pytest.fixture
@@ -251,8 +259,7 @@ def test_production_response_requires_valid_user_classification(source, user, bu
 @pytest.mark.parametrize("production", [False, True])
 def test_query_external_filters_items_by_user_classification(app, source, classified_result, production):
     source.production = production
-    response = Mock(status_code=200)
-    response.json.return_value = {"api_response": classified_result["items"]}
+    response = _mock_response({"api_response": classified_result["items"]})
     client = Mock()
     client.get.return_value = response
 
@@ -296,8 +303,7 @@ def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, 
             ],
         }
     ]
-    response = Mock(status_code=200)
-    response.json.return_value = {"api_response": {"ipv4": {"127.0.0.1": {"items": items}}} if bulk else items}
+    response = _mock_response({"api_response": {"ipv4": {"127.0.0.1": {"items": items}}} if bulk else items})
     client = Mock()
     client.get.return_value = response
     client.post.return_value = response
@@ -342,10 +348,9 @@ def test_lookup_route_passes_authenticated_user_context(app, source, classified_
         user=AuthUser(uname="test-user", classification="TLP:GREEN"),
         privileges={Privilege.READ, Privilege.WRITE},
     )
-    response = Mock(status_code=200)
-    response.json.return_value = {
-        "api_response": {"ipv4": {"127.0.0.1": classified_result}} if bulk else classified_result["items"]
-    }
+    response = _mock_response(
+        {"api_response": {"ipv4": {"127.0.0.1": classified_result}} if bulk else classified_result["items"]}
+    )
     client = Mock()
     client.get.return_value = response
     client.post.return_value = response
@@ -386,8 +391,7 @@ def test_lookup_route_passes_authenticated_user_context(app, source, classified_
 @pytest.mark.parametrize("base_url", ["http://plugin", "http://plugin/", "http://plugin/api/"])
 def test_query_external_uses_single_slash_after_base_url(base_url, app, user):
     source = ExternalSource(name="test", url=base_url)
-    response = Mock(status_code=200)
-    response.json.return_value = {"api_response": []}
+    response = _mock_response({"api_response": []})
     client = Mock()
     client.get.return_value = response
 
@@ -413,8 +417,7 @@ def test_query_external_uses_single_slash_after_base_url(base_url, app, user):
 @pytest.mark.parametrize("base_url", ["http://plugin", "http://plugin/", "http://plugin/api/"])
 def test_bulk_query_external_uses_single_slash_after_base_url(base_url, app, user):
     source = ExternalSource(name="test", url=base_url)
-    response = Mock(status_code=200)
-    response.json.return_value = {"api_response": []}
+    response = _mock_response({"api_response": []})
     client = Mock()
     client.post.return_value = response
     selector = Selector(type="ipv4", value="127.0.0.1")

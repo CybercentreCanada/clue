@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   setUser: vi.fn(),
   loginGet: vi.fn(),
   saveLoginCredential: vi.fn(),
-  location: { pathname: '/login', search: '' },
+  location: { pathname: '/login', search: '', hash: '' },
   searchParams: new URLSearchParams()
 }));
 
@@ -34,6 +34,7 @@ describe('useLogin', () => {
     window.localStorage.clear();
     mocks.location.pathname = '/login';
     mocks.location.search = '';
+    mocks.location.hash = '';
     mocks.searchParams = new URLSearchParams();
     mocks.saveLoginCredential.mockReturnValue(true);
   });
@@ -76,10 +77,17 @@ describe('useLogin', () => {
   });
 
   it('forwards only allowlisted callback parameters when redeeming an OAuth code', async () => {
+    mocks.location.search =
+      '?type=ip&code=c&state=s&session_state=x&iss=https%3A%2F%2Fissuer.invalid&error_description=bad&provider=keycloak&oauth_provider=keycloak';
+    mocks.location.hash = '#section';
     mocks.searchParams = new URLSearchParams({
       provider: 'keycloak',
       code: 'c',
       state: 's',
+      type: 'ip',
+      session_state: 'x',
+      iss: 'https://issuer.invalid',
+      error_description: 'bad',
       nonce: 'injected-nonce',
       refresh_token: 'injected-refresh',
       id_token: 'injected.id.token',
@@ -92,13 +100,24 @@ describe('useLogin', () => {
     await act(() => result.current.doOAuth());
 
     const forwarded: URLSearchParams = mocks.loginGet.mock.calls[0][0];
-    expect(Object.fromEntries(forwarded.entries())).toEqual({ provider: 'keycloak', code: 'c', state: 's' });
-    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login', { replace: true });
+    expect(Object.fromEntries(forwarded.entries())).toEqual({
+      provider: 'keycloak',
+      code: 'c',
+      state: 's',
+      session_state: 'x',
+      iss: 'https://issuer.invalid',
+      error_description: 'bad'
+    });
+    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login?type=ip#section', { replace: true });
     expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
   });
 
-  it('clears OAuth callback params before a failed code exchange', async () => {
-    mocks.searchParams = new URLSearchParams({ provider: 'keycloak', code: 'c', state: 's' });
+  it('clears callback params before redeeming an OAuth error response', async () => {
+    mocks.location.search =
+      '?type=ip&state=s&error=access_denied&error_description=denied&error_uri=https%3A%2F%2Fissuer.invalid%2Ferror';
+    mocks.searchParams = new URLSearchParams(
+      'type=ip&provider=keycloak&state=s&error=access_denied&error_description=denied&error_uri=https%3A%2F%2Fissuer.invalid%2Ferror'
+    );
     mocks.loginGet.mockRejectedValue(new Error('exchange failed'));
     const { result } = renderHook(() => useLogin());
 
@@ -106,7 +125,20 @@ describe('useLogin', () => {
       await expect(result.current.doOAuth()).rejects.toThrow('exchange failed');
     });
 
-    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login', { replace: true });
+    expect(mocks.loginGet.mock.calls[0][0].get('error')).toBe('access_denied');
+    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login?type=ip', { replace: true });
+    expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
+  });
+
+  it('clears callback params before handling a resolved API error response', async () => {
+    mocks.location.search = '?filter=recent&code=c&state=s';
+    mocks.loginGet.mockResolvedValue({ api_error_message: 'Authentication failed.' });
+    mocks.saveLoginCredential.mockReturnValue(false);
+    const { result } = renderHook(() => useLogin());
+
+    await act(() => result.current.doOAuth());
+
+    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login?filter=recent', { replace: true });
     expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
   });
 });
