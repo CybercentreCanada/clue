@@ -531,6 +531,48 @@ def test_oidc_invalid_identity_token_is_controlled_401(oidc, case):
     assert_no_secrets(response, params["nonce"], params["state"], "synthetic-code", "local-key", "unknown-key")
 
 
+def test_oidc_previous_transaction_id_token_cannot_authenticate_a_new_transaction(oidc, caplog):
+    first = begin_login(oidc)
+    token = oidc.token(first["nonce"])
+    oidc.exchange.return_value = token
+    assert callback(oidc, {"provider": "local", "code": "first-code", "state": first["state"]}).status_code == 200
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert f"_state_local_{first['state']}" not in session
+        previous_session = dict(session)
+
+    second = begin_login(oidc)
+    assert second["nonce"] != first["nonce"]
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert session[f"_state_local_{second['state']}"]["data"]["nonce"] == second["nonce"]
+
+    oidc.exchange.reset_mock()
+    caplog.clear()
+    with patch.object(user_service, "parse_user_data") as parse_user:
+        response = callback(oidc, {"provider": "local", "code": "second-code", "state": second["state"]})
+
+    assert response.status_code == 401
+    oidc.exchange.assert_called_once()
+    assert oidc.exchange.call_args.kwargs["code"] == "second-code"
+    parse_user.assert_not_called()
+    assert not {"app_token", "refresh_token", "user"} & response.json["api_response"].keys()
+    assert all(not cookie.startswith("XSRF-TOKEN=") for cookie in response.headers.getlist("Set-Cookie"))
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert dict(session) == previous_session
+    secrets = (
+        token["id_token"],
+        token["id_token"].split(".")[1],
+        first["nonce"],
+        second["nonce"],
+        first["state"],
+        second["state"],
+        "first-code",
+        "second-code",
+    )
+    assert_no_secrets(response, *secrets)
+    for secret in (*secrets, "synthetic-access", "synthetic-refresh", "Traceback"):
+        assert secret not in caplog.text
+
+
 def test_oidc_validated_id_token_claims_override_token_response_userinfo(oidc):
     params = begin_login(oidc)
     oidc.exchange.return_value = {
