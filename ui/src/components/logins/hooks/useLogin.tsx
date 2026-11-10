@@ -96,11 +96,13 @@ const useLogin = () => {
 
   // OAuth login flow. Only allowlisted callback parameters are forwarded to the API.
   const doOAuth = useCallback(async () => {
-    const userCredential = await dispatchApi(api.auth.login.get(buildOAuthCallbackParams(searchParams)));
+    const callbackParams = buildOAuthCallbackParams(searchParams);
+    navigate(location.pathname, { replace: true });
+    const userCredential = await dispatchApi(api.auth.login.get(callbackParams));
     if (saveLoginCredential(userCredential)) {
       getUser(userCredential);
     }
-  }, [dispatchApi, searchParams, getUser]);
+  }, [dispatchApi, searchParams, getUser, navigate, location.pathname]);
 
   // login service.
   return useMemo(

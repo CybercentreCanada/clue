@@ -1,6 +1,7 @@
 from typing import Any, Callable, Mapping, Optional
 from urllib.parse import urlencode
 
+import requests
 from authlib.integrations.base_client import OAuthError
 from authlib.jose.errors import JoseError
 from authlib.oidc.core import UserInfo
@@ -9,6 +10,7 @@ from pydantic import ValidationError
 
 import clue.services.user_service as user_service
 from clue.api import (
+    bad_gateway,
     bad_request,
     forbidden,
     internal_error,
@@ -199,6 +201,9 @@ def _handle_auth_errors(handler: Callable[[], Any]) -> Any:
         return forbidden(err=err.message)
     except InvalidDataException as err:
         return bad_request(err=err.message or str(err))
+    except requests.RequestException as err:
+        logger.warning("OAuth provider request failed. (IP:%s) [%s]", _client_ip(), type(err).__name__)
+        return bad_gateway(err="The OAuth provider could not be reached. Try again later.")
     except ClueException:
         logger.exception(f"Internal Authentication Error. (IP:{_client_ip()})")
         return internal_error(err="Unhandled exception occured while Authenticating. Contact your administrator.")
@@ -226,7 +231,8 @@ def login(**_) -> dict[str, Any]:
         code: The authorization code returned by the OAuth provider (callback only).
         state: The state returned by the OAuth provider (callback only).
         session_state: Provider session state, accepted and ignored (callback only).
-        iss: Authorization server issuer identifier, accepted and ignored (callback only).
+        iss: Authorization server issuer identifier (RFC 9207). When present it must equal the provider's configured
+            trusted issuer, otherwise the callback is rejected before the code exchange (callback only).
         error: OAuth error returned by the provider (callback only).
         error_description: OAuth error description returned by the provider (callback only).
         error_uri: OAuth error URI returned by the provider (callback only).
@@ -291,6 +297,7 @@ def login(**_) -> dict[str, Any]:
 
         # Authlib rejects missing, forged, foreign-session and replayed state before exchanging the code, then
         # validates the ID token with ClueOAuth2App.parse_id_token against the session-bound nonce.
+        provider.validate_callback_issuer(args.get("iss"))
         token_data = provider.authorize_access_token(**kwargs)
         if "id_token" in token_data or _requests_openid(provider):
             # Authlib replaces raw JSON userinfo with UserInfo only after parse_id_token succeeds.

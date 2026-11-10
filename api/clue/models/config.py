@@ -132,7 +132,9 @@ class OAuth(BaseModel):
     enabled: bool = Field(description="Enable use of OAuth?", default=False)
     gravatar_enabled: bool = Field(description="Enable gravatar?", default=False)
     jwks_refresh_cooldown_seconds: int = Field(
-        default=60, ge=1, description="Minimum interval in seconds between outbound JWKS refresh attempts"
+        default=60,
+        ge=1,
+        description="Minimum interval between outbound JWKS refresh attempts and bearer-key revalidation interval",
     )
     providers: dict[str, OAuthProvider] = Field(default={}, description="OAuth provider configuration")
     other_audiences: list[str] | None = Field(

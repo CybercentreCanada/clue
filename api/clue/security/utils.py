@@ -15,6 +15,20 @@ PASS_BASIC = (
     + ["!", "@", "$", "^", "?", "&", "*", "(", ")"]
 )
 
+# Asymmetric algorithms only: symmetric or "none" algorithms must never verify a provider-issued token.
+PROVIDER_TOKEN_SIGNING_ALGORITHMS = (
+    "RS256",
+    "RS384",
+    "RS512",
+    "PS256",
+    "PS384",
+    "PS512",
+    "ES256",
+    "ES384",
+    "ES512",
+    "EdDSA",
+)
+
 
 def generate_random_secret(length: int = 25) -> str:
     """Generate a random secret

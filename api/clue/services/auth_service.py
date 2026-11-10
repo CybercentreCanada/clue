@@ -3,6 +3,8 @@ import hashlib
 import hmac
 from typing import Any, Optional, Union
 
+import jwt
+import requests
 from elasticapm.traces import capture_span
 from flask import request
 from pydantic import ValidationError
@@ -12,6 +14,7 @@ from clue.common.exceptions import (
     AuthenticationException,
     ClueException,
     ClueNotImplementedError,
+    ClueRuntimeError,
     InvalidDataException,
 )
 from clue.common.logging import get_logger
@@ -137,18 +140,30 @@ def bearer_auth(data: str) -> AuthResult:
         The authenticated user and effective privileges.
 
     Raises:
-        AuthenticationException: If the token cannot be decoded or contains invalid user information.
+        AuthenticationException: If the token is malformed, unverifiable, invalid, or contains invalid user
+            information.
+        jwt.ExpiredSignatureError: If the token has expired.
+        ClueRuntimeError: If the provider signing keys cannot be retrieved.
         InvalidDataException: If the token is not a JWT.
     """
     if "." in data:
         try:
             jwt_data = jwt_service.decode(data, validate_audience=True)
+        except jwt.ExpiredSignatureError:
+            raise
+        except jwt.PyJWTError as e:
+            # Only the error class is logged: the message can echo attacker-supplied token content.
+            logger.warning("Rejected an invalid JWT. [%s]", type(e).__name__)
+            raise AuthenticationException("Invalid JWT, please reauthenticate.", cause=e) from e
         except ClueException as e:
             logger.exception("Exception when decoding JWT:")
             raise AuthenticationException(
                 "Something went wrong when decoding your key. Please reauthenticate.",
                 cause=e,
             )
+        except (requests.RequestException, ValueError) as e:
+            logger.exception("Failed to retrieve the OAuth provider signing keys:")
+            raise ClueRuntimeError("Failed to retrieve the OAuth provider signing keys") from e
 
         if not jwt_data:
             logger.error("Invalid JWT provided.")

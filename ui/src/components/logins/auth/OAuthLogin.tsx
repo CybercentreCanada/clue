@@ -3,6 +3,7 @@ import api from 'api';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
+import { OAUTH_SENSITIVE_PARAMS } from 'utils/oauth';
 import useLogin from '../hooks/useLogin';
 
 type OAuthLoginProps = {
@@ -19,7 +20,7 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
   const codeRedemption = useRef<Promise<void>>();
 
   useEffect(() => {
-    if (searchParams.get('code') && searchParams.get('state')) {
+    if (OAUTH_SENSITIVE_PARAMS.some(param => searchParams.has(param))) {
       setButtonLoading(true);
 
       if (!codeRedemption.current) {

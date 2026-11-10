@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import time
 from types import SimpleNamespace
@@ -6,11 +7,13 @@ from unittest.mock import Mock, patch
 from urllib.parse import parse_qs, urlencode, urlsplit
 
 import pytest
+import requests
 from authlib.jose import JsonWebKey, jwt
 from flask import Flask
 from pydantic import ValidationError
 
 import clue.api.v1.auth as auth_api
+import clue.security.oidc as oidc_module
 import clue.services.auth_service as auth_service
 import clue.services.user_service as user_service
 from clue.common.exceptions import AccessDeniedException, InvalidDataException
@@ -58,15 +61,24 @@ def _make_oidc(monkeypatch, **provider_overrides):
     monkeypatch.setattr(
         config.auth,
         "oauth",
-        SimpleNamespace(enabled=True, gravatar_enabled=False, providers={"local": provider_config}),
+        SimpleNamespace(
+            enabled=True,
+            gravatar_enabled=False,
+            jwks_refresh_cooldown_seconds=60,
+            providers={"local": provider_config},
+        ),
     )
     monkeypatch.setattr(config.api, "frontend_url", BASE_URL)
 
     jwks_fetches = []
+    network = SimpleNamespace(jwks_failure=None, jwks_timeouts=[])
 
     def fake_network(_session, method, url, *args, **kwargs):
         if method == "GET" and url == JWKS_URI:
             jwks_fetches.append(url)
+            network.jwks_timeouts.append(kwargs.get("timeout"))
+            if network.jwks_failure is not None:
+                raise network.jwks_failure
             return SimpleNamespace(json=lambda: published, raise_for_status=lambda: None)
         raise AssertionError("Network forbidden")
 
@@ -106,6 +118,7 @@ def _make_oidc(monkeypatch, **provider_overrides):
         token=token,
         published=published,
         jwks_fetches=jwks_fetches,
+        network=network,
     )
 
 
@@ -145,6 +158,30 @@ def test_registration_maps_configured_iss_to_trusted_issuer_metadata():
     assert "iss" not in kwargs
     assert "auto_create" not in kwargs
     assert kwargs["client_id"] == CLIENT_ID
+    assert kwargs["client_kwargs"] == {"code_challenge_method": "S256", "default_timeout": 10}
+
+
+def test_token_endpoint_requests_have_a_timeout(monkeypatch):
+    app = Flask("clue_token_timeout")
+    build_oauth({"local": _provider_config()}).init_app(app)
+    with app.app_context():
+        provider = app.extensions["authlib.integrations.flask_client"].create_client("local")
+    requests_sent = []
+
+    def fake_network(_session, method, url, *args, **kwargs):
+        requests_sent.append((method, url, kwargs.get("timeout")))
+        return SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"access_token": "synthetic-access", "token_type": "Bearer"},
+            raise_for_status=lambda: None,
+        )
+
+    monkeypatch.setattr("requests.sessions.Session.request", fake_network)
+    with app.test_request_context():
+        provider.fetch_access_token(code="synthetic-code", redirect_uri=f"{BASE_URL}/login?provider=local")
+
+    assert requests_sent == [("POST", "https://provider.invalid/token", 10)]
 
 
 def test_registered_clients_use_strict_oidc_client(oidc):
@@ -236,6 +273,29 @@ def test_oidc_login_succeeds_with_server_nonce(oidc):
     assert "refresh_token" not in oidc.exchange.call_args.kwargs
 
 
+@pytest.mark.parametrize("scope", ["openid email profile", "email profile"])
+def test_login_uses_s256_pkce_bound_to_session(monkeypatch, scope):
+    oidc = _make_oidc(monkeypatch, scope=scope)
+    params = begin_login(oidc)
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        verifier = session[f"_state_local_{params['state']}"]["data"]["code_verifier"]
+    expected_challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+    oidc.exchange.return_value = (
+        oidc.token(params["nonce"])
+        if "openid" in scope
+        else {"access_token": "synthetic-access", "userinfo": {"sub": "local-user", "preferred_username": "local-user"}}
+    )
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert params["code_challenge_method"] == "S256"
+    assert params["code_challenge"] == expected_challenge
+    assert len(verifier) >= 43
+    assert response.status_code == 200
+    assert oidc.exchange.call_args.kwargs["code_verifier"] == verifier
+    assert oidc.exchange.call_args.kwargs["redirect_uri"] == f"{BASE_URL}/login?provider=local"
+
+
 def test_oidc_login_accepts_provider_informational_callback_parameters(oidc):
     params = begin_login(oidc, query="oauth_provider=local")
     oidc.exchange.return_value = oidc.token(params["nonce"])
@@ -252,6 +312,45 @@ def test_oidc_login_accepts_provider_informational_callback_parameters(oidc):
     )
 
     assert response.status_code == 200
+
+
+@pytest.mark.parametrize("iss", ["https://attacker.invalid", f"{ISSUER}/", ""])
+def test_oidc_callback_from_untrusted_issuer_is_rejected_before_exchange(oidc, iss):
+    """RFC 9207 mix-up defence: the iss authorization-response parameter must name the trusted issuer."""
+    params = begin_login(oidc)
+    oidc.exchange.return_value = oidc.token(params["nonce"])
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], "iss": iss})
+
+    assert response.status_code == 401
+    assert not oidc.exchange.called
+    assert_no_secrets(response, "synthetic-code", params["state"])
+
+
+def test_callback_iss_is_ignored_when_no_issuer_is_configured(monkeypatch):
+    oidc = _make_oidc(monkeypatch, scope="email profile", iss=None)
+    params = begin_login(oidc)
+    oidc.exchange.return_value = {
+        "access_token": "synthetic-access",
+        "userinfo": {"sub": "local-user", "preferred_username": "local-user"},
+    }
+
+    response = callback(
+        oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], "iss": "https://any.invalid"}
+    )
+
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("failure", [requests.Timeout(), requests.ConnectionError(), requests.HTTPError()])
+def test_token_exchange_network_failure_is_a_controlled_502(oidc, failure):
+    params = begin_login(oidc)
+    oidc.exchange.side_effect = failure
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == 502
+    assert_no_secrets(response, "synthetic-code", params["state"])
 
 
 def test_oidc_login_rejects_attacker_refresh_token_link_in_fresh_session(oidc):
@@ -489,6 +588,103 @@ def test_oidc_rotated_signing_key_is_fetched_from_trusted_jwks(oidc):
 
     assert response.status_code == 200
     assert oidc.jwks_fetches == [JWKS_URI]
+
+
+def _clock(monkeypatch, start=1000.0):
+    clock = SimpleNamespace(now=start)
+    monkeypatch.setattr(oidc_module.time, "monotonic", lambda: clock.now)
+    return clock
+
+
+def _login_status(oidc, **token_kwargs):
+    params = begin_login(oidc)
+    oidc.exchange.return_value = oidc.token(params["nonce"], **token_kwargs)
+    return callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+
+def test_oidc_jwks_fetch_has_a_timeout(oidc):
+    _login_status(oidc, key=JsonWebKey.generate_key("RSA", 2048, is_private=True), kid="unknown-key")
+
+    assert oidc.network.jwks_timeouts == [10]
+
+
+def test_oidc_unknown_kids_cannot_trigger_a_jwks_fetch_per_login(oidc, monkeypatch):
+    clock = _clock(monkeypatch)
+    attacker_key = JsonWebKey.generate_key("RSA", 2048, is_private=True)
+
+    statuses = [_login_status(oidc, key=attacker_key, kid=f"unknown-{i}").status_code for i in range(3)]
+    clock.now += 61
+    statuses.append(_login_status(oidc, key=attacker_key, kid="unknown-after-cooldown").status_code)
+
+    assert statuses == [401, 401, 401, 401]
+    assert oidc.jwks_fetches == [JWKS_URI, JWKS_URI]
+
+
+def test_oidc_cached_jwks_are_refreshed_after_the_refresh_interval(oidc, monkeypatch):
+    clock = _clock(monkeypatch)
+    oidc.provider.server_metadata["jwks"] = {"keys": list(oidc.published["keys"])}
+    assert _login_status(oidc).status_code == 200
+    assert oidc.jwks_fetches == []
+
+    # The provider withdrew the key: once the cache is refreshed it is no longer trusted.
+    oidc.published["keys"] = []
+    clock.now += oidc_module.JWKS_REFRESH_AFTER_SECONDS + 1
+
+    assert _login_status(oidc).status_code == 401
+    assert oidc.jwks_fetches == [JWKS_URI]
+
+
+@pytest.mark.parametrize(
+    "failure", [requests.Timeout(), requests.ConnectionError(), requests.HTTPError(), ValueError("bad json")]
+)
+def test_oidc_failed_jwks_refresh_keeps_keys_within_max_age(oidc, monkeypatch, failure):
+    clock = _clock(monkeypatch)
+    assert _login_status(oidc).status_code == 200
+    oidc.network.jwks_failure = failure
+    clock.now += oidc_module.JWKS_REFRESH_AFTER_SECONDS + 1
+
+    assert _login_status(oidc).status_code == 200
+    assert oidc.jwks_fetches == [JWKS_URI]
+
+
+def test_oidc_jwks_older_than_max_age_are_never_used(oidc, monkeypatch):
+    clock = _clock(monkeypatch)
+    assert _login_status(oidc).status_code == 200
+    oidc.network.jwks_failure = requests.ConnectionError()
+    clock.now += oidc_module.JWKS_MAX_AGE_SECONDS
+
+    response = _login_status(oidc)
+
+    assert response.status_code == 401
+    assert response.json["api_error_message"] == "The ID token signing keys are unavailable."
+    assert_no_secrets(response)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [None, "text", [], {}, {"keys": "x"}, {"keys": [None, {"kty": "RSA"}]}],
+    ids=["null", "text", "list", "empty", "keys_not_list", "only_invalid_keys"],
+)
+def test_oidc_malformed_jwks_payload_fails_closed(oidc, monkeypatch, payload):
+    oidc.provider.server_metadata.pop("jwks")
+    monkeypatch.setattr(
+        "requests.sessions.Session.request",
+        lambda *_args, **_kwargs: SimpleNamespace(json=lambda: payload, raise_for_status=lambda: None),
+    )
+
+    response = _login_status(oidc)
+
+    assert response.status_code == 401
+    assert response.json["api_error_message"] == "The ID token signing keys are unavailable."
+    assert_no_secrets(response)
+
+
+def test_oidc_malformed_jwks_entries_are_ignored(oidc):
+    oidc.published["keys"] = [None, "text", {"kty": "RSA"}, *oidc.published["keys"]]
+    oidc.provider.server_metadata.pop("jwks")
+
+    assert _login_status(oidc).status_code == 200
+    assert oidc.provider.server_metadata["jwks"]["keys"] == oidc.published["keys"][3:]
 
 
 def test_oidc_rejects_id_tokens_when_no_trusted_issuer_is_configured(monkeypatch):

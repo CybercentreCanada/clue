@@ -1,3 +1,7 @@
+import base64
+import hashlib
+import hmac
+import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event, current_thread
@@ -7,13 +11,16 @@ from unittest.mock import Mock, patch
 import jwt
 import pytest
 import requests
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from flask import Flask
+from flask import Flask, current_app
 from pydantic import ValidationError
 
+from clue.common.exceptions import AuthenticationException, ClueRuntimeError
 from clue.models.config import OAuth
 from clue.models.jwks import JWKSSnapshot
-from clue.services import jwt_service
+from clue.security import api_login
+from clue.services import auth_service, jwt_service
 from clue.services.jwt_service import extract_audience
 from test.utils.oauth_credentials import get_token
 
@@ -33,12 +40,16 @@ def service(monkeypatch):
         yield jwt_service
 
 
-def token(kid):
-    return jwt.encode({"sub": "user"}, "test-secret", algorithm="HS256", headers={"kid": kid})
+SIGNING_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+CLAIMS = {"sub": "user", "exp": 4102444800}
+
+
+def token(kid, claims=CLAIMS, algorithm="RS256", signing_key=SIGNING_KEY):
+    return jwt.encode(claims, signing_key, algorithm=algorithm, headers={"kid": kid})
 
 
 def key(kid):
-    return {"kid": kid, "kty": "oct", "k": "dGVzdC1zZWNyZXQ", "alg": "HS256"}
+    return jwt.algorithms.RSAAlgorithm.to_jwk(SIGNING_KEY.public_key(), as_dict=True) | {"kid": kid, "alg": "RS256"}
 
 
 def snapshot(jwks, providers, fetched_at=100.0):
@@ -117,12 +128,34 @@ def test_cooldown_allows_one_more_fetch_after_expiry(service):
 def test_failed_refresh_preserves_cache_and_starts_cooldown(service):
     seed_cache(service)
     with patch.object(service.requests, "get", side_effect=requests.Timeout) as fetch:
-        with pytest.raises(requests.Timeout):
+        with pytest.raises(service.ClueKeyError):
             service.get_jwk(token("unknown"))
         with pytest.raises(service.ClueKeyError):
             service.get_jwk(token("another-unknown"))
         assert service.get_jwk(token("known")).key_id == "known"
     assert fetch.call_count == 1
+
+
+def test_known_removed_key_is_rejected_after_refresh_cooldown(service, monkeypatch):
+    seed_cache(service)
+    service._pinned_jwks = snapshot({"known": key("known")}, {"known": "provider"})
+    service._last_jwks_refresh_time = 100.0
+    clock = Mock(return_value=159.0)
+    monkeypatch.setattr(time, "monotonic", clock)
+
+    with patch.object(service.requests, "get", return_value=Mock(json=lambda: {"keys": [key("new")]})) as fetch:
+        assert service.get_jwk(token("known")).key_id == "known"
+        fetch.assert_not_called()
+
+        clock.return_value = 160.0
+        with pytest.raises(service.ClueKeyError):
+            service.get_jwk(token("known"))
+
+        assert service.get_jwk(token("new")).key_id == "new"
+
+    fetch.assert_called_once_with("https://idp/jwks", timeout=10)
+    assert set(service.cache.get("get_jwks").jwks) == {"new"}
+    assert set(service._pinned_jwks.jwks) == {"new"}
 
 
 def test_cold_cache_fetch_is_also_debounced(service):
@@ -226,7 +259,7 @@ def test_cache_pressure_does_not_reset_cooldown(service, evict_jwks):
             with pytest.raises(service.ClueValueError):
                 service.get_provider(token(f"unknown-provider-{index}"))
         if not evict_jwks:
-            assert service.decode(token("known"), algorithms=["HS256"]) == {"sub": "user"}
+            assert service.decode(token("known"), algorithms=["RS256"]) == CLAIMS
     assert fetch.call_count == 1
 
 
@@ -241,7 +274,7 @@ def test_wall_clock_changes_do_not_reset_cooldown(service):
             with pytest.raises(service.ClueKeyError):
                 service.get_jwk(token(f"unknown-{index}"))
         assert service._last_jwks_refresh_time == 100.0
-        assert service.decode(token("known"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("known"), algorithms=["RS256"]) == CLAIMS
     assert fetch.call_count == 1
 
 
@@ -358,7 +391,7 @@ def test_pinned_keys_survive_cache_eviction_during_cooldown(service):
         # Still inside the cooldown: legitimate tokens must verify and no fetch may occur.
         assert service.get_jwk(token("known")).key_id == "known"
         assert service.get_provider(token("known")) == "provider"
-        assert service.decode(token("known"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("known"), algorithms=["RS256"]) == CLAIMS
         with pytest.raises(service.ClueKeyError):
             service.get_jwk(token("still-unknown"))
     assert fetch.call_count == 1
@@ -511,7 +544,7 @@ def test_keys_kept_through_a_partial_failure_still_expire(service, monkeypatch):
 def test_malformed_payload_falls_back_to_unexpired_pinned_keys(service, payload):
     service._pinned_jwks = snapshot({"known": key("known")}, {"known": "provider"})
     with patch.object(service.requests, "get", return_value=Mock(json=lambda: payload)) as fetch:
-        assert service.decode(token("known"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("known"), algorithms=["RS256"]) == CLAIMS
     assert fetch.call_count == 1
 
 
@@ -546,7 +579,7 @@ def test_malformed_crypto_key_does_not_overwrite_pinned_key(service, bad_key):
     pinned = snapshot({"known": key("known")}, {"known": "provider"})
     service._pinned_jwks = pinned
     with patch.object(service.requests, "get", return_value=Mock(json=lambda: {"keys": [bad_key]})) as fetch:
-        assert service.decode(token("known"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("known"), algorithms=["RS256"]) == CLAIMS
     assert fetch.call_count == 1
     assert service._pinned_jwks == pinned
     assert service.cache.get("get_jwks") is None
@@ -587,16 +620,16 @@ def test_cache_hit_does_not_serve_keys_older_than_max_stale_age(service, monkeyp
     with patch.object(service.requests, "get", side_effect=fetch_keys) as fetch:
         service.get_jwks()
         assert set(service.cache.get("get_jwks").jwks) == {"key-a", "key-b"}
-        assert service.decode(token("key-b"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("key-b"), algorithms=["RS256"]) == CLAIMS
 
         # Past the limit the cache is left untouched, but provider B's key must no longer verify.
         monkeypatch.setattr(time, "monotonic", Mock(return_value=100.0 + limit))
         assert set(service.cache.get("get_jwks").jwks) == {"key-a", "key-b"}
         with pytest.raises(service.ClueKeyError):
-            service.decode(token("key-b"), algorithms=["HS256"])
+            service.decode(token("key-b"), algorithms=["RS256"])
         with pytest.raises(service.ClueValueError):
             service.get_provider(token("key-b"))
-        assert service.decode(token("key-a"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("key-a"), algorithms=["RS256"]) == CLAIMS
     assert fetch.call_count == 2
 
 
@@ -617,7 +650,7 @@ def test_fetch_failure_falls_back_to_unexpired_pinned_keys(service, failure):
     effect = failure if isinstance(failure, type) else None
     value = None if effect else failure()
     with patch.object(service.requests, "get", side_effect=effect, return_value=value) as fetch:
-        assert service.decode(token("known"), algorithms=["HS256"]) == {"sub": "user"}
+        assert service.decode(token("known"), algorithms=["RS256"]) == CLAIMS
         with pytest.raises(service.ClueKeyError):
             service.get_jwk(token("unknown"))
     assert fetch.call_count == 1
@@ -695,6 +728,7 @@ def test_fallback_keys_never_overwrite_a_fresh_cache_entry(service, monkeypatch)
 
 def test_snapshot_timestamp_concurrency_race(service, monkeypatch):
     limit = service.MAX_PINNED_JWKS_STALE_SECONDS
+    monkeypatch.setattr(service.config.auth.oauth, "jwks_refresh_cooldown_seconds", limit + 2)
     old_snapshot = snapshot({"old": key("old")}, {"old": "provider"}, fetched_at=0.0)
     service._pinned_jwks = old_snapshot
     service.cache.set("get_jwks", old_snapshot, timeout=43200)
@@ -767,3 +801,127 @@ def test_extract_audience():
         pytest.skip("Could not connect to keycloak.")
 
     assert "clue" in extract_audience(access_token)
+
+
+# --- Access-token validation -------------------------------------------------------------------------------------
+
+
+def _b64(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+def _hmac_token(secret: bytes, kid="known", claims=CLAIMS):
+    signing_input = f"{_b64(json.dumps({'alg': 'HS256', 'kid': kid}).encode())}.{_b64(json.dumps(claims).encode())}"
+    return f"{signing_input}.{_b64(hmac.new(secret, signing_input.encode(), hashlib.sha256).digest())}"
+
+
+PUBLIC_KEY_PEM = SIGNING_KEY.public_key().public_bytes(
+    serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo
+)
+OTHER_KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+INVALID_ACCESS_TOKENS = {
+    "public_key_as_hmac_secret": lambda: _hmac_token(PUBLIC_KEY_PEM),
+    "unsigned_alg_none": lambda: jwt.encode(CLAIMS, None, algorithm="none", headers={"kid": "known"}),
+    "alg_differs_from_jwk": lambda: token("known", algorithm="PS256"),
+    "symmetric_jwk": lambda: _hmac_token(b"test-secret" * 4, kid="symmetric"),
+    "bad_signature": lambda: token("known", signing_key=OTHER_KEY),
+    "missing_exp": lambda: token("known", claims={"sub": "user"}),
+}
+
+
+@pytest.fixture
+def known_keys(service):
+    symmetric = {"kid": "symmetric", "kty": "oct", "k": _b64(b"test-secret" * 4), "alg": "HS256"}
+    service.cache.set(
+        "get_jwks",
+        snapshot({"known": key("known"), "symmetric": symmetric}, {"known": "provider", "symmetric": "provider"}),
+        timeout=43200,
+    )
+    return service
+
+
+@pytest.mark.parametrize("case", sorted(INVALID_ACCESS_TOKENS))
+def test_decode_rejects_invalid_access_tokens(known_keys, case):
+    with pytest.raises(jwt.PyJWTError):
+        known_keys.decode(INVALID_ACCESS_TOKENS[case]())
+
+
+def test_decode_rejects_expired_access_token(known_keys):
+    with pytest.raises(jwt.ExpiredSignatureError):
+        known_keys.decode(token("known", claims={"sub": "user", "exp": int(time.time()) - 3600}))
+
+
+def test_decode_cannot_be_widened_to_symmetric_algorithms_by_the_caller(known_keys):
+    with pytest.raises(jwt.InvalidAlgorithmError):
+        known_keys.decode(_hmac_token(PUBLIC_KEY_PEM), key=PUBLIC_KEY_PEM.decode(), algorithms=["HS256"])
+
+
+def test_decode_uses_key_type_algorithm_when_jwk_declares_none(service):
+    undeclared = {name: value for name, value in key("known").items() if name != "alg"}
+    service.cache.set("get_jwks", snapshot({"known": undeclared}, {"known": "provider"}), timeout=43200)
+
+    assert service.decode(token("known")) == CLAIMS
+    with pytest.raises(jwt.InvalidAlgorithmError):
+        service.decode(token("known", algorithm="RS512"))
+
+
+@pytest.fixture
+def bearer(known_keys, monkeypatch):
+    provider = SimpleNamespace(jwks_uri="https://idp/jwks", audience="clue", client_id="clue", scope="openid")
+    monkeypatch.setattr(known_keys.config.auth.oauth, "providers", {"provider": provider})
+    monkeypatch.setattr(known_keys.config.auth.oauth, "other_audiences", None)
+    return auth_service
+
+
+MALFORMED_ACCESS_TOKENS = {
+    "two_segments": "abc.def",
+    "garbage_segments": "not.a.jwt",
+    "non_json_header": f"{_b64(b'not-json')}.{_b64(b'{}')}.sig",
+    "missing_kid": jwt.encode(CLAIMS, SIGNING_KEY, algorithm="RS256"),
+    "unknown_kid": jwt.encode(CLAIMS, SIGNING_KEY, algorithm="RS256", headers={"kid": "unknown"}),
+}
+
+
+@pytest.mark.parametrize(
+    "access_token",
+    [*MALFORMED_ACCESS_TOKENS.values(), *(build() for build in INVALID_ACCESS_TOKENS.values())],
+    ids=[*MALFORMED_ACCESS_TOKENS, *INVALID_ACCESS_TOKENS],
+)
+def test_bearer_auth_fails_closed_with_a_controlled_error(bearer, access_token):
+    known = Mock(json=lambda: {"keys": [key("known")]})
+    with patch.object(jwt_service.requests, "get", return_value=known):
+        with pytest.raises(AuthenticationException):
+            bearer.bearer_auth(access_token)
+
+
+def test_bearer_auth_rejects_wrong_audience(bearer):
+    with pytest.raises(AuthenticationException):
+        bearer.bearer_auth(token("known", claims={**CLAIMS, "aud": "other-client"}))
+
+
+def test_bearer_auth_lets_expired_tokens_be_reported_as_expired(bearer):
+    with pytest.raises(jwt.ExpiredSignatureError):
+        bearer.bearer_auth(token("known", claims={"sub": "user", "aud": "clue", "exp": int(time.time()) - 3600}))
+
+
+def test_bearer_auth_reports_unreachable_signing_keys_without_details(service, monkeypatch):
+    monkeypatch.setattr(service.config.auth.oauth, "other_audiences", None)
+    with patch.object(service.requests, "get", side_effect=requests.ConnectionError("provider-detail")):
+        with pytest.raises(ClueRuntimeError) as error:
+            auth_service.bearer_auth(token("known"))
+
+    assert "provider-detail" not in error.value.message
+
+
+@pytest.mark.parametrize("access_token", ["abc.def", "not.a.jwt", INVALID_ACCESS_TOKENS["unsigned_alg_none"]()])
+def test_protected_endpoint_returns_401_without_traceback_for_invalid_bearer_tokens(bearer, access_token):
+    @api_login(audit=False)
+    def endpoint(**kwargs):
+        return kwargs["user"]
+
+    with current_app.test_request_context("/", headers={"Authorization": f"Bearer {access_token}"}):
+        response = endpoint()
+
+    assert response.status_code == 401
+    assert "Traceback" not in response.get_data(as_text=True)

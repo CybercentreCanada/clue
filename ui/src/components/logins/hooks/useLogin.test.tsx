@@ -93,5 +93,20 @@ describe('useLogin', () => {
 
     const forwarded: URLSearchParams = mocks.loginGet.mock.calls[0][0];
     expect(Object.fromEntries(forwarded.entries())).toEqual({ provider: 'keycloak', code: 'c', state: 's' });
+    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login', { replace: true });
+    expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
+  });
+
+  it('clears OAuth callback params before a failed code exchange', async () => {
+    mocks.searchParams = new URLSearchParams({ provider: 'keycloak', code: 'c', state: 's' });
+    mocks.loginGet.mockRejectedValue(new Error('exchange failed'));
+    const { result } = renderHook(() => useLogin());
+
+    await act(async () => {
+      await expect(result.current.doOAuth()).rejects.toThrow('exchange failed');
+    });
+
+    expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login', { replace: true });
+    expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
   });
 });

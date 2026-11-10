@@ -56,4 +56,13 @@ describe('OAuthLogin', () => {
     expect(window.localStorage.length).toBe(0);
     expect(window.sessionStorage.length).toBe(0);
   });
+
+  it('redeems provider error callbacks so their sensitive URL params are cleared', async () => {
+    mocks.searchParams = new URLSearchParams({ state: 'server-state', error: 'access_denied' });
+    mocks.doOAuth.mockResolvedValueOnce(undefined);
+
+    await renderLogin(['keycloak']);
+
+    expect(mocks.doOAuth).toHaveBeenCalledOnce();
+  });
 });
