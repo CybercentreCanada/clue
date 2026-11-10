@@ -22,7 +22,7 @@ const useClueTypeConfig = (
   getToken?: () => string,
   onNetworkCall?: (config: AxiosRequestConfig) => AxiosRequestConfig
 ): {
-  availableSources: string[];
+  availableSources: Array<string>;
   typesDetection: { [type: string]: RegExp };
   typeDetectors: TypeDetector[];
   supportedTypes: string[];

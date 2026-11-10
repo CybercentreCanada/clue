@@ -2,15 +2,6 @@
 
 This guide outlines how to set up a development environment for the Clue API.
 
-## Type detection metadata
-
-`GET /api/v2/lookup/types_detection/` returns each accessible type's `regex`,
-`case_sensitive` and optional `priority` (default `0`). Higher priorities win;
-registry insertion order breaks ties. IPv4 and IPv6 have priority `10`.
-The V1 endpoint retains its regex-only response. Extensions may pass `priority`
-to `add_supported_type`; `case_insensitive` controls detection and normalization.
-UI detection applies each pattern's flags without changing the selector value.
-
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:

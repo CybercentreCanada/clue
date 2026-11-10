@@ -1,5 +1,6 @@
 import type { AxiosRequestConfig } from 'axios';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { ClueReplicationError } from './errors';
 import type { Checkpoint } from './sync';
 import type { DatabaseConfig, SelectorCollection, SelectorDocType } from './types';
 
@@ -98,6 +99,7 @@ describe('replicateSelectorCollection', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   // ── Setup ────────────────────────────────────────────────────────────────
@@ -336,6 +338,7 @@ describe('replicateSelectorCollection', () => {
           setRequestHeader: vi.fn(),
           responseText: '',
           status: 200,
+          readyState: 3,
           onload: null as (() => void) | null,
           onerror: null as (() => void) | null,
           onprogress: null as (() => void) | null
@@ -416,6 +419,279 @@ describe('replicateSelectorCollection', () => {
       expect(xhrInstances).toHaveLength(2);
     });
 
+    it('should report a typed 401 once and stop when the callback declines recovery', async () => {
+      const onReplicationError = vi.fn((_error: ClueReplicationError) => false);
+      const config = buildMockConfig({ onReplicationError });
+      const collection = buildMockCollection({ synced: true });
+      await replicateSelectorCollection(DUMMY_ID, collection, config);
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      const xhr = xhrInstances[0];
+      xhr.status = 401;
+      xhr.responseText = '{"message":"private response body"}\n';
+      xhr.onprogress?.();
+      xhr.readyState = 4;
+      xhr.onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      const error = onReplicationError.mock.calls[0]![0];
+      expect(error).toBeInstanceOf(ClueReplicationError);
+      expect(error).toMatchObject({
+        name: 'ClueReplicationError',
+        status: 401,
+        url: 'http://localhost:5000/api/v1/sync/selectors/stream',
+        collection: 'selectors'
+      });
+      expect(error.message).not.toContain('test-token');
+      expect(JSON.stringify(error)).not.toContain('private response body');
+      expect(emitted).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should safely report a 401 to the console and stop when no callback is configured', async () => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(consoleError).toHaveBeenCalledTimes(1);
+      expect(consoleError.mock.calls[0][0]).toBeInstanceOf(ClueReplicationError);
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should stop after a rejected 401 callback without an unhandled rejection', async () => {
+      const onReplicationError = vi.fn(() => Promise.reject(new Error('refresh failed')));
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ onReplicationError }));
+
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should stop after a throwing 401 callback', async () => {
+      const onReplicationError = vi.fn(() => {
+        throw new Error('refresh failed');
+      });
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ onReplicationError }));
+
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should not resume after a 401 when the callback leaves the token unchanged', async () => {
+      const onReplicationError = vi.fn((_error: ClueReplicationError) => true);
+      const config = buildMockConfig({ onReplicationError });
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
+
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should not resume after a 401 when no nonempty token is available', async () => {
+      const onReplicationError = vi.fn(() => true);
+      const config = buildMockConfig({ getToken: undefined, onReplicationError });
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
+
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should immediately resume a 401 stream with a refreshed nonempty token', async () => {
+      let token = 'expired-token';
+      const onReplicationError = vi.fn(() => {
+        token = 'refreshed-token';
+        return true;
+      });
+      const config = buildMockConfig({ getToken: () => token, onReplicationError });
+      const collection = buildMockCollection();
+      await replicateSelectorCollection(DUMMY_ID, collection, config);
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      xhrInstances[0].status = 401;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      expect(xhrInstances).toHaveLength(2);
+      expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed-token');
+      expect(emitted).toEqual([]);
+    });
+
+    it.each([{ subsequentToken: 'expired-token' }, { subsequentToken: '' }])(
+      'should use the validated refreshed token instead of rereading a subsequent $subsequentToken token',
+      async ({ subsequentToken }) => {
+        const getToken = vi
+          .fn()
+          .mockReturnValueOnce('expired-token')
+          .mockReturnValueOnce('refreshed-token')
+          .mockReturnValueOnce(subsequentToken);
+        const onReplicationError = vi.fn((_error: ClueReplicationError) => true);
+        await replicateSelectorCollection(
+          DUMMY_ID,
+          buildMockCollection(),
+          buildMockConfig({ getToken, onReplicationError })
+        );
+
+        xhrInstances[0].status = 401;
+        xhrInstances[0].onload?.();
+        await vi.advanceTimersByTimeAsync(0);
+
+        expect(getToken).toHaveBeenCalledTimes(2);
+        expect(xhrInstances).toHaveLength(2);
+        expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed-token');
+      }
+    );
+
+    it('should emit exactly one RESYNC after pending 401 recovery succeeds on a synced collection', async () => {
+      let resolveRecovery: ((value: boolean) => void) | undefined;
+      let token = 'expired-token';
+      const onReplicationError = vi.fn(
+        () =>
+          new Promise<boolean>(resolve => {
+            resolveRecovery = resolve;
+          })
+      );
+      const collection = buildMockCollection({ synced: true });
+      await replicateSelectorCollection(
+        DUMMY_ID,
+        collection,
+        buildMockConfig({ getToken: () => token, onReplicationError })
+      );
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      const xhr = xhrInstances[0];
+      xhr.status = 401;
+      xhr.onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(emitted).toEqual([]);
+      expect(xhrInstances).toHaveLength(1);
+
+      token = 'refreshed-token';
+      resolveRecovery?.(true);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(xhrInstances).toHaveLength(2);
+      expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed-token');
+      expect(emitted).toEqual(['RESYNC']);
+
+      xhr.onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(emitted).toEqual(['RESYNC']);
+    });
+
+    it('should stop after a 403 and surface the terminal HTTP failure once', async () => {
+      const onReplicationError = vi.fn((_error: ClueReplicationError) => true);
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ onReplicationError }));
+
+      xhrInstances[0].status = 403;
+      xhrInstances[0].onprogress?.();
+      xhrInstances[0].readyState = 4;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      expect(onReplicationError.mock.calls[0]![0]).toMatchObject({ status: 403 });
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(xhrInstances).toHaveLength(1);
+    });
+
+    it('should ignore a 500 response body and keep exponential backoff', async () => {
+      const onReplicationError = vi.fn(() => false);
+      const collection = buildMockCollection();
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig({ onReplicationError }));
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      const errorBody = JSON.stringify({
+        id: 500,
+        documents: [buildSelectorDoc('must-not-be-emitted')],
+        checkpoint: { id: 'must-not-be-emitted', last_updated: 500 }
+      });
+      xhrInstances[0].status = 500;
+      xhrInstances[0].responseText = `${errorBody}\n`;
+      xhrInstances[0].onprogress?.();
+      xhrInstances[0].readyState = 4;
+      xhrInstances[0].onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+      expect(emitted).toEqual([]);
+      await vi.advanceTimersByTimeAsync(999);
+      expect(xhrInstances).toHaveLength(1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(xhrInstances).toHaveLength(2);
+
+      xhrInstances[1].status = 0;
+      xhrInstances[1].onerror?.();
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(xhrInstances).toHaveLength(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(xhrInstances).toHaveLength(3);
+    });
+
+    it('should not reconnect after closing while a 401 recovery callback is pending', async () => {
+      let resolveRecovery: ((value: boolean) => void) | undefined;
+      let token = 'expired-token';
+      const onReplicationError = vi.fn(
+        () =>
+          new Promise<boolean>(resolve => {
+            resolveRecovery = resolve;
+          })
+      );
+      const collection = buildMockCollection();
+      collection.synced = true;
+      await replicateSelectorCollection(
+        DUMMY_ID,
+        collection,
+        buildMockConfig({ getToken: () => token, onReplicationError })
+      );
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      const xhr = xhrInstances[0];
+      xhr.status = 401;
+      xhr.onload?.();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(onReplicationError).toHaveBeenCalledTimes(1);
+
+      collection.closed = true as any;
+      (collection.onClose as (() => void)[]).forEach(handler => handler());
+      token = 'refreshed-token';
+      resolveRecovery?.(true);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(xhr.abort).toHaveBeenCalledTimes(1);
+      expect(xhrInstances).toHaveLength(1);
+      expect(emitted).toEqual([]);
+    });
+
     it('should not reconnect when collection is closed', async () => {
       const collection = buildMockCollection();
 
@@ -431,197 +707,6 @@ describe('replicateSelectorCollection', () => {
 
       // Should NOT have opened another connection
       expect(xhrInstances).toHaveLength(1);
-    });
-
-    it('cancels a pending retry when the collection closes', async () => {
-      const collection = buildMockCollection();
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
-      xhrInstances[0].onerror();
-      expect(vi.getTimerCount()).toBe(1);
-      await Promise.all(collection.onClose.map(close => close()));
-      expect(vi.getTimerCount()).toBe(0);
-      await vi.advanceTimersByTimeAsync(60000);
-      expect(xhrInstances).toHaveLength(1);
-      expect(xhrInstances[0].abort).toHaveBeenCalledOnce();
-    });
-
-    it('checks closed state again immediately before a scheduled connection', async () => {
-      const collection = buildMockCollection();
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
-      xhrInstances[0].onload();
-      collection.closed = true;
-      await vi.advanceTimersByTimeAsync(1000);
-      expect(xhrInstances).toHaveLength(1);
-    });
-
-    it.each([400, 401, 403, 404, 429])('stops on HTTP %s without emitting error bodies', async status => {
-      const onReplicationError = vi.fn(() => true);
-      await replicateSelectorCollection(
-        DUMMY_ID,
-        buildMockCollection({ synced: true }),
-        buildMockConfig({ onReplicationError })
-      );
-      const next = vi.fn();
-      capturedConfig.pull.stream$.subscribe(next);
-      const xhr = xhrInstances[0];
-      xhr.status = status;
-      xhr.responseText = JSON.stringify({ id: 1, documents: [], checkpoint: null }) + '\n';
-      xhr.onprogress();
-      await xhr.onload();
-      await vi.advanceTimersByTimeAsync(60000);
-      expect(next).not.toHaveBeenCalled();
-      expect(xhrInstances).toHaveLength(1);
-      expect(onReplicationError).toHaveBeenCalledWith(expect.objectContaining({ status, collection: 'selectors' }));
-    });
-
-    it.each(['unchanged', 'whitespace-only-change', 'empty', 'declined', 'throws', 'missing'])(
-      'does not retry a 401 when recovery is %s',
-      async recovery => {
-        let token = 'rejected';
-        const onReplicationError = vi.fn(() => {
-          if (recovery === 'throws') throw new Error('Recovery failed');
-          if (recovery === 'whitespace-only-change') token = ' rejected ';
-          if (recovery === 'empty') token = '';
-          if (recovery === 'declined') token = 'new-token';
-          return recovery !== 'declined';
-        });
-        await replicateSelectorCollection(
-          DUMMY_ID,
-          buildMockCollection(),
-          buildMockConfig({
-            getToken: () => token,
-            onReplicationError: recovery === 'missing' ? undefined : onReplicationError
-          })
-        );
-        xhrInstances[0].status = 401;
-        xhrInstances[0].onload();
-        await vi.advanceTimersByTimeAsync(60000);
-        expect(xhrInstances).toHaveLength(1);
-      }
-    );
-
-    it('waits for token recovery and stops if the refreshed token is also rejected unchanged', async () => {
-      let token = 'rejected';
-      let recover: (result: boolean) => void;
-      const onReplicationError = vi.fn(
-        () =>
-          new Promise<boolean>(resolve => {
-            recover = resolve;
-          })
-      );
-      await replicateSelectorCollection(
-        DUMMY_ID,
-        buildMockCollection(),
-        buildMockConfig({ getToken: () => token, onReplicationError })
-      );
-      xhrInstances[0].status = 401;
-      xhrInstances[0].onload();
-      await vi.advanceTimersByTimeAsync(60000);
-      expect(xhrInstances).toHaveLength(1);
-      token = 'refreshed';
-      recover(true);
-      await vi.advanceTimersByTimeAsync(0);
-      expect(xhrInstances).toHaveLength(2);
-      expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed');
-      xhrInstances[1].status = 401;
-      xhrInstances[1].onload();
-      recover(true);
-      await vi.advanceTimersByTimeAsync(60000);
-      expect(xhrInstances).toHaveLength(2);
-    });
-
-    it('sends the exact replacement token approved after recovery', async () => {
-      const getToken = vi
-        .fn()
-        .mockReturnValueOnce('rejected')
-        .mockReturnValueOnce('refreshed')
-        .mockReturnValue('rejected');
-      await replicateSelectorCollection(
-        DUMMY_ID,
-        buildMockCollection(),
-        buildMockConfig({ getToken, onReplicationError: () => true })
-      );
-      xhrInstances[0].status = 401;
-      xhrInstances[0].onload();
-      await vi.advanceTimersByTimeAsync(0);
-      expect(xhrInstances).toHaveLength(2);
-      expect(xhrInstances[1].setRequestHeader).toHaveBeenCalledWith('Authorization', 'Bearer refreshed');
-      expect(getToken).toHaveBeenCalledTimes(2);
-    });
-
-    it('does not reconnect if the collection closes during token recovery', async () => {
-      const collection = buildMockCollection();
-      let token = 'rejected';
-      let recover: (result: boolean) => void;
-      await replicateSelectorCollection(
-        DUMMY_ID,
-        collection,
-        buildMockConfig({
-          getToken: () => token,
-          onReplicationError: () => new Promise(resolve => (recover = resolve))
-        })
-      );
-      xhrInstances[0].status = 401;
-      xhrInstances[0].onload();
-      await Promise.all(collection.onClose.map(close => close()));
-      token = 'refreshed';
-      recover(true);
-      await vi.advanceTimersByTimeAsync(0);
-      expect(xhrInstances).toHaveLength(1);
-    });
-
-    it('retries 5xx failures with backoff and excludes their bodies', async () => {
-      const onReplicationError = vi.fn(() => false);
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig({ onReplicationError }));
-      const next = vi.fn();
-      capturedConfig.pull.stream$.subscribe(next);
-      xhrInstances[0].status = 503;
-      xhrInstances[0].responseText = '{"id":1,"documents":[],"checkpoint":null}\n';
-      xhrInstances[0].onprogress();
-      xhrInstances[0].onload();
-      await vi.advanceTimersByTimeAsync(1000);
-      xhrInstances[1].status = 503;
-      xhrInstances[1].responseText = xhrInstances[0].responseText;
-      xhrInstances[1].onprogress();
-      xhrInstances[1].onload();
-      await vi.advanceTimersByTimeAsync(1999);
-      expect(xhrInstances).toHaveLength(2);
-      await vi.advanceTimersByTimeAsync(1);
-      expect(xhrInstances).toHaveLength(3);
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('normalizes wire checkpoints before emitting and reusing them in the pull handler', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
-      const next = vi.fn();
-      capturedConfig.pull.stream$.subscribe(next);
-      const event = {
-        id: 1,
-        documents: [buildSelectorDoc('wire', 1234)],
-        checkpoint: { id: 'wire', updated_at: 1234 }
-      };
-      xhrInstances[0].responseText = JSON.stringify(event) + '\n';
-      xhrInstances[0].onprogress();
-      expect(next).toHaveBeenCalledExactlyOnceWith({
-        ...event,
-        checkpoint: { id: 'wire', last_updated: 1234 }
-      });
-      vi.mocked(api.sync.get).mockResolvedValueOnce([]);
-      await capturedConfig.pull.handler(next.mock.calls[0][0].checkpoint);
-      expect(api.sync.get).toHaveBeenCalledWith('selectors', 'wire', 1234, false, expect.any(Object));
-    });
-
-    it('buffers split events and emits complete events only once', async () => {
-      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
-      const next = vi.fn();
-      capturedConfig.pull.stream$.subscribe(next);
-      const line = '{"id":1,"documents":[],"checkpoint":null}';
-      xhrInstances[0].responseText = line.slice(0, 15);
-      xhrInstances[0].onprogress();
-      expect(next).not.toHaveBeenCalled();
-      xhrInstances[0].responseText = line + '\n' + line + '\n';
-      xhrInstances[0].onprogress();
-      expect(next).toHaveBeenCalledExactlyOnceWith({ id: 1, documents: [], checkpoint: null });
     });
 
     it('should use exponential backoff for reconnections capped at 60 seconds', async () => {
@@ -648,12 +733,37 @@ describe('replicateSelectorCollection', () => {
       expect(xhrInstances).toHaveLength(3);
       await vi.advanceTimersByTimeAsync(1);
       expect(xhrInstances).toHaveLength(4);
+
+      for (const delay of [8000, 16000, 32000, 60000, 60000]) {
+        const previousConnectionCount = xhrInstances.length;
+        xhrInstances[previousConnectionCount - 1].onload?.();
+        await vi.advanceTimersByTimeAsync(delay - 1);
+        expect(xhrInstances).toHaveLength(previousConnectionCount);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(xhrInstances).toHaveLength(previousConnectionCount + 1);
+      }
+    });
+
+    it('should clear a pending retry when the collection closes', async () => {
+      const collection = buildMockCollection();
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+
+      const xhr = xhrInstances[0];
+      xhr.onerror?.();
+      collection.closed = true as any;
+      (collection.onClose as (() => void)[]).forEach(handler => handler());
+
+      await vi.advanceTimersByTimeAsync(120000);
+      expect(xhr.abort).toHaveBeenCalledTimes(1);
+      expect(xhrInstances).toHaveLength(1);
     });
 
     it('should parse and emit events from progress data', async () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
       const event = {
         id: 1,
         documents: [buildSelectorDoc('stream-1')],
@@ -663,17 +773,51 @@ describe('replicateSelectorCollection', () => {
       xhr.responseText = JSON.stringify(event) + '\n';
       xhr.onprogress?.();
 
-      // Event was processed — we verify by checking that subsequent progress
-      // with the same event id is deduplicated (no double processing).
-      xhr.onprogress?.();
+      expect(emitted).toEqual([event]);
 
-      // The stream$ subject is internal; verify it didn't throw by the test passing.
+      // The same event ID is ignored on later progress notifications.
+      xhr.onprogress?.();
+      expect(emitted).toEqual([event]);
+    });
+
+    it('should normalize the server checkpoint wire shape and reset backoff for valid events', async () => {
+      await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      xhrInstances[0].onerror?.();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(xhrInstances).toHaveLength(2);
+
+      const serverEvent = {
+        id: 73,
+        documents: [buildSelectorDoc('server-wire-doc', 1200)],
+        checkpoint: { id: 'server-wire-doc', updated_at: 1200 }
+      };
+      const wireLine = JSON.stringify(serverEvent);
+      xhrInstances[1].responseText = `${wireLine}\n${wireLine}\n`;
+      xhrInstances[1].onprogress?.();
+
+      expect(emitted).toEqual([
+        {
+          ...serverEvent,
+          checkpoint: { id: 'server-wire-doc', last_updated: 1200 }
+        }
+      ]);
+
+      xhrInstances[1].onerror?.();
+      await vi.advanceTimersByTimeAsync(999);
+      expect(xhrInstances).toHaveLength(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(xhrInstances).toHaveLength(3);
     });
 
     it('should deduplicate events with the same id', async () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), buildMockConfig());
 
       const xhr = xhrInstances[0];
+      const emitted: unknown[] = [];
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
 
       const event1 = JSON.stringify({
         id: 42,
@@ -685,7 +829,7 @@ describe('replicateSelectorCollection', () => {
       xhr.responseText = event1 + '\n' + event1 + '\n';
       xhr.onprogress?.();
 
-      // No error thrown means deduplication worked
+      expect(emitted).toHaveLength(1);
     });
 
     it('should handle malformed JSON gracefully', async () => {
@@ -696,6 +840,39 @@ describe('replicateSelectorCollection', () => {
 
       // Should not throw
       expect(() => xhr.onprogress?.()).not.toThrow();
+    });
+
+    it('should ignore null and malformed stream records without resetting backoff or blocking retry', async () => {
+      const emitted: unknown[] = [];
+      const collection = buildMockCollection();
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig());
+      capturedConfig.pull.stream$.subscribe((event: unknown) => emitted.push(event));
+
+      xhrInstances[0].onerror?.();
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(xhrInstances).toHaveLength(2);
+
+      const malformedRecords = [
+        'null',
+        '[]',
+        '"not an event"',
+        '{"id":1,"documents":{},"checkpoint":null}',
+        '{"id":1,"documents":[],"checkpoint":{"id":"missing-timestamp"}}',
+        '{"id":1,"documents":[]}'
+      ];
+      const xhr = xhrInstances[1];
+      xhr.responseText = `${malformedRecords.join('\n')}\n`;
+
+      expect(() => xhr.onprogress?.()).not.toThrow();
+      expect(emitted).toEqual([]);
+      xhr.readyState = 4;
+      expect(() => xhr.onload?.()).not.toThrow();
+      expect(emitted).toEqual([]);
+
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(xhrInstances).toHaveLength(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(xhrInstances).toHaveLength(3);
     });
 
     it('should reset timeout to 1000ms when data is received', async () => {

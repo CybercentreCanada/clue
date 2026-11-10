@@ -24,7 +24,7 @@ logger = get_logger(__file__)
 
 
 class SupportedType(TypedDict):
-    """Detection metadata; omitted priority is equivalent to zero."""
+    """Type detection metadata; an omitted priority is equivalent to zero."""
 
     regex: str | None
     case_sensitive: bool
@@ -36,6 +36,7 @@ SUPPORTED_TYPES: dict[str, SupportedType] = {
     "ipv6": {"regex": IPV6_ONLY_REGEX, "case_sensitive": True, "priority": 10},
     # We don't auto-detect ip types, as it's redundant with ipv4/v6. This is just a convenience/backwards compat thing
     "ip": {"regex": None, "case_sensitive": False},
+    "asn": {"regex": None, "case_sensitive": True},
     "domain": {"regex": DOMAIN_ONLY_REGEX, "case_sensitive": False},
     "port": {"regex": PORT_REGEX, "case_sensitive": False},
     "url": {"regex": URI_ONLY, "case_sensitive": True},
@@ -59,6 +60,7 @@ SUPPORTED_TYPES: dict[str, SupportedType] = {
 }
 
 
+# Retained for selector normalization and extensions importing the legacy list.
 CASE_INSENSITIVE_TYPES = [
     type_name for type_name, metadata in SUPPORTED_TYPES.items() if not metadata["case_sensitive"]
 ]
@@ -81,8 +83,9 @@ def add_supported_type(
         regex (str | None, optional): A regex pattern for validating the type. Defaults to None.
         namespace (str | None, optional): The namespace for the type. If None, adds to default namespace.
             Defaults to None.
-        case_insensitive (bool, optional): Ignore case for detection and normalization. Defaults to False.
-        priority (int, optional): Higher priorities win; registry insertion order breaks ties. Defaults to 0.
+        case_insensitive (bool, optional): Whether matching and selector normalization ignore case. Defaults to False.
+        priority (int, optional): Detection priority; higher values win, with registry insertion order breaking ties.
+            Defaults to 0. Negative values are allowed.
 
     Returns:
         None

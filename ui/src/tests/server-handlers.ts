@@ -16,8 +16,8 @@ export const MOCK_RESPONSES = {
     sha256: '[a-z]{4,64}'
   },
   '/api/v2/lookup/types_detection': {
-    ip: { regex: '^[0-9\\.]+$', case_sensitive: true },
-    sha256: { regex: '[a-z]{4,64}', case_sensitive: false }
+    ip: { regex: '^[0-9\\.]+$', case_sensitive: false, priority: 10 },
+    sha256: { regex: '[a-z]{4,64}', case_sensitive: true }
   },
   '/api/v1/configs': {
     configuration: {

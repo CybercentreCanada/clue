@@ -21,7 +21,21 @@ CORS(lookup_api, origins=config.ui.cors_origins, supports_credentials=True)
 def get_types_detection(**kwargs) -> dict[str, SupportedType]:
     """Return detection metadata for types exposed by accessible plugins.
 
+    Variables:
+    None
+
+    Arguments:
+    None
+
+    Result Example:
+    {
+        "ipv4": {"regex": "<ipv4 regex>", "case_sensitive": True, "priority": 10},
+        "domain": {"regex": "<domain regex>", "case_sensitive": False},
+        "ip": {"regex": None, "case_sensitive": False}
+    }
+
     Higher priorities win. Omitted priorities default to zero; equal priorities
-    use registry insertion order. Null regexes disable automatic detection.
+    use the registry insertion order preserved in this response. Null regexes
+    indicate types that must be specified explicitly rather than auto-detected.
     """
     return ok(type_service.get_types_detection(kwargs["user"]), sort_keys=False)

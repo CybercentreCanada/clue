@@ -2,17 +2,6 @@
 
 Ce guide décrit comment configurer un environnement de développement pour l'API Clue.
 
-## Métadonnées de détection des types
-
-`GET /api/v2/lookup/types_detection/` renvoie les champs `regex`,
-`case_sensitive` et `priority` (facultatif, `0` par défaut) de chaque type accessible.
-La priorité la plus élevée gagne; l'ordre d'insertion départage les égalités.
-IPv4 et IPv6 ont la priorité `10`. Le point de terminaison V1 conserve sa réponse
-contenant uniquement les expressions régulières. Les extensions peuvent fournir
-`priority` à `add_supported_type`; `case_insensitive` contrôle la détection et la
-normalisation. La détection UI applique les indicateurs propres à chaque expression
-sans modifier la valeur du sélecteur.
-
 ## Prérequis
 
 Avant de commencer, assurez-vous d'avoir installé les éléments suivants sur votre système :

@@ -28,7 +28,7 @@ def get_types_regular_expressions(user: dict[str, Any]) -> dict[str, str | None]
 
 
 def _get_accessible_type_definitions(user: dict[str, Any]) -> dict[str, SupportedType]:
-    """Collect definitions exposed by plugins accessible to the user."""
+    """Collect definitions for types exposed by plugins accessible to the user."""
     all_types = all_supported_types(user)
 
     type_detection = {}
@@ -45,7 +45,7 @@ def _get_accessible_type_definitions(user: dict[str, Any]) -> dict[str, Supporte
 
 
 def get_types_detection(user: dict[str, Any]) -> dict[str, SupportedType]:
-    """Return metadata in registry order for deterministic priority ties."""
+    """Return V2 detection metadata in registry order for deterministic priority ties."""
     accessible_types = _get_accessible_type_definitions(user)
     return {
         type_name: metadata.copy() for type_name, metadata in SUPPORTED_TYPES.items() if type_name in accessible_types

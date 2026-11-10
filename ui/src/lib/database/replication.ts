@@ -35,50 +35,82 @@ interface EventStreamEntry extends DocumentsWithCheckpoint<SelectorDocType, Chec
   id: number;
 }
 
+const parseStreamEvent = (line: string): EventStreamEntry | null => {
+  try {
+    const event = JSON.parse(line);
+    const lastUpdated = event?.checkpoint?.last_updated ?? event?.checkpoint?.updated_at;
+    const checkpoint =
+      event?.checkpoint === null
+        ? null
+        : typeof event?.checkpoint?.id === 'string' && Number.isFinite(lastUpdated)
+          ? { id: event.checkpoint.id, last_updated: lastUpdated }
+          : undefined;
+
+    if (!Number.isFinite(event?.id) || !Array.isArray(event.documents) || checkpoint === undefined) {
+      return null;
+    }
+
+    return { ...event, checkpoint };
+  } catch {
+    return null;
+  }
+};
+
 const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
   const stream$ = new Subject<EventStreamEntry | 'RESYNC'>();
   const MAX_RETRY_DELAY = 60000; // Cap at 60 seconds
+  const INITIAL_RETRY_DELAY = 1000;
 
   const loggedEvents: number[] = [];
-
   let currentXhr: XMLHttpRequest | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
-  const isClosed = () => closed || collection.closed;
 
-  collection.onClose.push(() => {
-    closed = true;
-    if (retryTimer !== null) {
-      clearTimeout(retryTimer);
-      retryTimer = null;
+  const isClosed = () => closed || collection.closed;
+  const getToken = () => {
+    try {
+      return config.getToken?.();
+    } catch {
+      return undefined;
     }
-    currentXhr?.abort();
-  });
+  };
 
   const reportHttpFailure = async (error: ClueReplicationError): Promise<boolean> => {
-    if (!config.onReplicationError) {
-      // eslint-disable-next-line no-console
-      console.error(error);
-      return false;
-    }
     try {
+      if (!config.onReplicationError) {
+        // eslint-disable-next-line no-console
+        console.error(error);
+        return false;
+      }
+
       return (await config.onReplicationError(error)) === true;
-    } catch (recoveryError) {
-      // eslint-disable-next-line no-console
-      console.error('Replication recovery failed', recoveryError);
+    } catch {
       return false;
     }
   };
 
-  const connect = (timeout = 1000, recoveredToken?: string) => {
+  const emitResyncIfNeeded = () => {
+    if (!isClosed() && collection.synced) {
+      stream$.next('RESYNC');
+    }
+  };
+
+  const connect = (timeout = INITIAL_RETRY_DELAY, token = getToken()) => {
     if (isClosed()) {
       return;
     }
 
     let lastProcessedIndex = 0;
     let done = false;
-    const _xhr = new XMLHttpRequest();
-    currentXhr = _xhr;
+    const xhr = new XMLHttpRequest();
+    currentXhr = xhr;
+
+    const fullUrl = (config.baseURL ?? '') + joinAllUri(uri(), collection.name, 'stream');
+    xhr.open('GET', fullUrl, true);
+    xhr.setRequestHeader('Accept', 'text/event-stream');
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
 
     const reconnect = () => {
       if (isClosed()) {
@@ -92,58 +124,26 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
 
       retryTimer = setTimeout(() => {
         retryTimer = null;
-        // Exponential increase
         connect(Math.min(timeout * 2, MAX_RETRY_DELAY));
       }, timeout);
-      if (collection.synced) {
-        stream$.next('RESYNC');
-      }
+      emitResyncIfNeeded();
     };
 
-    const fullUrl = (config.baseURL ?? '') + joinAllUri(uri(), collection.name, 'stream');
-    _xhr.open('GET', fullUrl, true);
-
-    _xhr.setRequestHeader('Accept', 'text/event-stream');
-
-    const token = (recoveredToken ?? config.getToken?.())?.trim();
-    if (token) {
-      _xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-    }
-
     const processLines = (flush = false) => {
-      if (done || isClosed() || _xhr.status < 200 || _xhr.status >= 300) {
+      if (done || isClosed() || xhr.status < 200 || xhr.status >= 300) {
         return;
       }
 
-      const lines = _xhr.responseText.slice(lastProcessedIndex).split('\n');
-      lastProcessedIndex = _xhr.responseText.length - (flush ? 0 : (lines.pop()?.length ?? 0));
+      const lines = xhr.responseText.slice(lastProcessedIndex).split('\n');
+      lastProcessedIndex = xhr.responseText.length - (flush ? 0 : (lines.pop()?.length ?? 0));
 
       for (const line of lines) {
-        if (!line.trim()) {
-          continue;
-        }
-        let event: EventStreamEntry;
-        try {
-          const parsed = JSON.parse(line);
-          const lastUpdated = parsed?.checkpoint?.last_updated ?? parsed?.checkpoint?.updated_at;
-          if (
-            !Number.isFinite(parsed?.id) ||
-            !Array.isArray(parsed.documents) ||
-            (parsed.checkpoint !== null && (typeof parsed.checkpoint?.id !== 'string' || !Number.isFinite(lastUpdated)))
-          ) {
-            throw new Error('Invalid replication stream event');
-          }
-          event = {
-            ...parsed,
-            checkpoint: parsed.checkpoint === null ? null : { id: parsed.checkpoint.id, last_updated: lastUpdated }
-          };
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Invalid replication stream event', error);
+        const event = line.trim() ? parseStreamEvent(line) : null;
+        if (!event) {
           continue;
         }
 
-        timeout = 1000;
+        timeout = INITIAL_RETRY_DELAY;
         if (loggedEvents.includes(event.id)) {
           continue;
         }
@@ -161,22 +161,23 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
       if (done || isClosed()) {
         return;
       }
-      processLines(true);
+
+      if (xhr.status < 400) {
+        processLines(true);
+      }
       done = true;
 
-      if (_xhr.status >= 400) {
-        const error = new ClueReplicationError(_xhr.status, fullUrl, collection.name);
-        if (_xhr.status >= 500) {
+      if (xhr.status >= 400) {
+        const error = new ClueReplicationError(xhr.status, fullUrl, collection.name);
+        if (xhr.status >= 500) {
           void reportHttpFailure(error);
           reconnect();
-        } else if (_xhr.status === 401) {
+        } else if (xhr.status === 401) {
           if (await reportHttpFailure(error)) {
-            const refreshedToken = config.getToken?.()?.trim();
+            const refreshedToken = getToken()?.trim();
             if (refreshedToken && refreshedToken !== token && !isClosed()) {
-              connect(1000, refreshedToken);
-              if (collection.synced) {
-                stream$.next('RESYNC');
-              }
+              connect(INITIAL_RETRY_DELAY, refreshedToken);
+              emitResyncIfNeeded();
             }
           }
         } else {
@@ -184,15 +185,25 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
         }
         return;
       }
+
       reconnect();
     };
 
-    _xhr.onload = () => void handleEnd();
-    _xhr.onerror = () => void handleEnd();
-    _xhr.onprogress = () => processLines();
+    xhr.onload = () => void handleEnd();
+    xhr.onerror = () => void handleEnd();
+    xhr.onprogress = () => processLines();
 
-    _xhr.send();
+    xhr.send();
   };
+
+  collection.onClose.push(() => {
+    closed = true;
+    if (retryTimer !== null) {
+      clearTimeout(retryTimer);
+      retryTimer = null;
+    }
+    currentXhr?.abort();
+  });
 
   connect();
 

@@ -5,4 +5,6 @@ import type { TypesDetectionV2Response } from 'lib/types/lookup';
 
 export const uri = () => joinUri(parentUri(), 'types_detection');
 
-export const get = (config?: AxiosRequestConfig): Promise<TypesDetectionV2Response> => hget(uri(), null, config);
+export const get = (config?: AxiosRequestConfig): Promise<TypesDetectionV2Response> => {
+  return hget(uri(), null, config);
+};

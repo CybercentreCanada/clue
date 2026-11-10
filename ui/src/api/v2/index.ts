@@ -1,5 +1,7 @@
 import * as lookup from 'api/v2/lookup';
 
-export const uri = () => '/api/v2';
+export const uri = () => {
+  return '/api/v2';
+};
 
 export { lookup };

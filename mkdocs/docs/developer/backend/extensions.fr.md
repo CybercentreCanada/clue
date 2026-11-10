@@ -241,12 +241,31 @@ add_supported_type("email", r"^[\w\.-]+@[\w\.-]+\.\w+$")
 
 # Ajouter un type avec un espace de noms personnalisé
 add_supported_type("custom_id", r"^\d{5}$", namespace="my-extension")
+
+# Privilégier ce détecteur insensible à la casse
+add_supported_type("ticket_id", r"^ticket-\d+$", case_insensitive=True, priority=100)
 ```
 
 **Paramètres :**
 - `type` (str) : Le nom du type à enregistrer
 - `regex` (str | None) : Un modèle regex pour valider les valeurs de ce type (optionnel)
 - `namespace` (str | None) : Un espace de noms pour regrouper le type (optionnel)
+- `case_insensitive` (bool) : Ignorer la casse pendant la détection et convertir les valeurs des sélecteurs en minuscules (par défaut : `False`)
+- `priority` (int) : Les valeurs plus élevées sont prioritaires lors de la détection automatique (par défaut : `0`; les valeurs négatives sont permises). En cas d'égalité, l'ordre d'insertion dans le registre est utilisé. IPv4 et IPv6 ont une priorité de `10`.
+
+`SUPPORTED_TYPES` associe chaque nom de type à un dictionnaire typé contenant `regex`, `case_sensitive` et une `priority` optionnelle. Une priorité absente équivaut à `0`. Les types avec `regex=None` restent pris en charge mais ne sont pas détectés automatiquement.
+
+`GET /api/v2/lookup/types_detection/` retourne ces métadonnées pour les types exposés par les plugins accessibles à l'utilisateur, dans l'ordre d'insertion du registre. L'interface utilise `case_sensitive` et la priorité de chaque type. Le point de terminaison V1 conserve sa réponse contenant uniquement les expressions régulières pour assurer la rétrocompatibilité :
+
+```json
+{
+  "ipv4": {"regex": "<regex ipv4>", "case_sensitive": true, "priority": 10},
+  "domain": {"regex": "<regex domaine>", "case_sensitive": false},
+  "ip": {"regex": null, "case_sensitive": false}
+}
+```
+
+Ce dictionnaire est retourné dans l'enveloppe standard `api_response`.
 
 **Types avec espace de noms :**
 
@@ -661,7 +680,9 @@ Enregistrer un type de données personnalisé.
 def add_supported_type(
     type: str,
     regex: str | None = None,
-    namespace: str | None = None
+    namespace: str | None = None,
+    case_insensitive: bool = False,
+    priority: int = 0,
 ) -> None
 ```
 
@@ -669,6 +690,8 @@ def add_supported_type(
 - `type` : Nom du type
 - `regex` : Modèle regex de validation (optionnel)
 - `namespace` : Espace de noms du type (optionnel)
+- `case_insensitive` : Ignorer la casse et convertir les valeurs des sélecteurs en minuscules (par défaut : `False`)
+- `priority` : Priorité de détection automatique (par défaut : `0`; les valeurs plus élevées sont prioritaires, les égalités utilisent l'ordre d'insertion du registre)
 
 ## Ressources supplémentaires
 

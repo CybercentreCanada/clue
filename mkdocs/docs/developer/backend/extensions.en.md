@@ -245,12 +245,31 @@ add_supported_type("email", r"^[\w\.-]+@[\w\.-]+\.\w+$")
 
 # Add a type with a custom namespace
 add_supported_type("custom_id", r"^\d{5}$", namespace="my-extension")
+
+# Prefer this case-insensitive detector over lower-priority matches
+add_supported_type("ticket_id", r"^ticket-\d+$", case_insensitive=True, priority=100)
 ```
 
 **Parameters:**
 - `type` (str): The name of the type to register
 - `regex` (str | None): A regex pattern for validating values of this type (optional)
 - `namespace` (str | None): A namespace to group the type under (optional)
+- `case_insensitive` (bool): Ignore case during detection and lowercase selector values (default: `False`)
+- `priority` (int): Higher values win automated detection (default: `0`; negative values are allowed). Equal priorities use registry insertion order. IPv4 and IPv6 have priority `10`.
+
+`SUPPORTED_TYPES` maps type names to typed metadata dictionaries containing `regex`, `case_sensitive`, and an optional `priority`. An omitted priority means `0`. Types with `regex=None` remain supported but are not auto-detected.
+
+`GET /api/v2/lookup/types_detection/` returns this metadata for types exposed by plugins accessible to the user, in registry insertion order. The UI uses each type's `case_sensitive` flag and priority. The V1 endpoint retains its original regex-only response for backwards compatibility:
+
+```json
+{
+  "ipv4": {"regex": "<ipv4 regex>", "case_sensitive": true, "priority": 10},
+  "domain": {"regex": "<domain regex>", "case_sensitive": false},
+  "ip": {"regex": null, "case_sensitive": false}
+}
+```
+
+This mapping is returned inside the standard `api_response` envelope.
 
 **Namespaced Types:**
 
@@ -665,7 +684,9 @@ Register a custom data type.
 def add_supported_type(
     type: str,
     regex: str | None = None,
-    namespace: str | None = None
+    namespace: str | None = None,
+    case_insensitive: bool = False,
+    priority: int = 0,
 ) -> None
 ```
 
@@ -673,6 +694,8 @@ def add_supported_type(
 - `type`: Type name
 - `regex`: Validation regex pattern (optional)
 - `namespace`: Type namespace (optional)
+- `case_insensitive`: Whether detection ignores case and selector values are lowercased (default: `False`)
+- `priority`: Automated detection priority (default: `0`; higher values win, ties use registry insertion order)
 
 ## Additional Resources
 

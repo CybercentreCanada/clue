@@ -45,8 +45,8 @@ const api = {
   actions,
   fetchers,
   sync,
-  v2,
-  _static
+  _static,
+  v2
 };
 
 /**
@@ -61,13 +61,13 @@ export const uri = () => {
 /**
  * Format/Adapt the specified URI to an Clue API uri.
  *
- * Ensure it starts with '/api/v1' and doesn't end with a '/'.
+ * Preserve explicitly rooted API paths; default unversioned paths to V1.
  *
  * @param _uri - the uri to format.
  * @returns `string` - properly formatted clue uri.
  */
 const format = (_uri: string, baseURL?: string): string => {
-  const path = /^\/api\/v\d+(?:\/|$)/.test(_uri) ? _uri : `${uri()}/${_uri.replace(/\/$/, '')}`.replace('//', '/');
+  const path = _uri.startsWith('/api') ? _uri : `${uri()}/${_uri.replace(/\/$/, '')}`.replace('//', '/');
 
   return baseURL ? baseURL + path : path;
 };

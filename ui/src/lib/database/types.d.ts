@@ -68,9 +68,23 @@ export interface DatabaseConfig {
   getToken?: () => string;
 
   /**
-   * Recover from stream HTTP failures. For 401, return true only after updating
-   * getToken to a different, nonempty token. Otherwise stream retries stop.
-   * Other 4xx responses are terminal; network and 5xx failures use backoff.
+   * Handle an HTTP error from the selector replication stream. For an expired-token (401) response,
+   * return `true` only after refreshing the token returned by `getToken`; replication resumes when that
+   * token is nonempty and differs from the token rejected by the server. Returning `false`, throwing,
+   * or leaving the token unchanged stops stream retries for that connection. Other 4xx responses are
+   * terminal, while network and 5xx failures retry with exponential backoff regardless of this callback's result.
+   *
+   * @example
+   * ```ts
+   * {
+   *   getToken: () => accessToken,
+   *   onReplicationError: async error => {
+   *     if (error.status !== 401) return false;
+   *     accessToken = await refreshAccessToken();
+   *     return true;
+   *   }
+   * }
+   * ```
    */
   onReplicationError?: (error: ClueReplicationError) => boolean | Promise<boolean>;
 }

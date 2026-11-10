@@ -50,6 +50,7 @@ def _make_api_response(
     payload = ClueResponse(response=data, error_message=err, warning=warnings, status_code=status_code).model_dump(
         mode="json", by_alias=True, exclude_none=True
     )
+    # Keep existing endpoint serialization unchanged unless ordering is explicitly requested.
     resp = make_response(
         payload if sort_keys is None else current_app.json.dumps(payload, sort_keys=sort_keys), status_code
     )

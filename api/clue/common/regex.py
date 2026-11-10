@@ -5,6 +5,7 @@ DOMAIN_REGEX = (
 )
 DOMAIN_ONLY_REGEX = f"^{DOMAIN_REGEX}$"
 DOMAIN_EXCLUDED_NORM_CHARS = "./?@#"
+# Accept either case in hosts without lowercasing email local parts or URI paths.
 CASE_INSENSITIVE_DOMAIN_REGEX = (
     r"(?:(?=[a-zA-Z0-9-]{1,63}\.)"
     r"(?:xn--[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?|[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)"
