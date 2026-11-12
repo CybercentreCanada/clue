@@ -1,0 +1,23 @@
+.github/workflows/lint-plugin.yml
+  s_7e3947cd2b7698::t_78de7b66923779 16-17
+.github/workflows/build-plugin.yml
+  s_7e3947cd2b7698::t_78de7b66923779 55,58-59
+.github/workflows/test-plugin.yml
+  s_7e3947cd2b7698::t_78de7b66923779 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "ce882b1cb12eb47de3455874c59b8240e6709415",
+  "prompts": {},
+  "sessions": {
+    "s_7e3947cd2b7698": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e2f96c221ffeiAn7mzTkfTlkC7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
