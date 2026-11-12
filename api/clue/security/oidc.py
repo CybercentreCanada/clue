@@ -16,7 +16,6 @@ from authlib.oidc.core import CodeIDToken, UserInfo
 
 from clue.common.exceptions import AuthenticationException
 from clue.common.logging import get_logger
-from clue.common.str_utils import default_string_value
 from clue.config import config
 from clue.models.config import OAuthProvider
 from clue.security.utils import PROVIDER_TOKEN_SIGNING_ALGORITHMS
@@ -273,10 +272,6 @@ def provider_client_kwargs(name: str, provider: OAuthProvider) -> dict[str, Any]
     issuer = raw_provider.pop("iss", None)
     if issuer:
         raw_provider["issuer"] = issuer
-
-    client_id = default_string_value(provider.client_id, env_name=f"{name.upper()}_CLIENT_ID")
-    if client_id:
-        raw_provider["client_id"] = client_id
 
     # PKCE (RFC 7636) binds the authorization code to this transaction's session-stored verifier, for every provider.
     # default_timeout bounds the token-endpoint requests Authlib makes for login and refresh.

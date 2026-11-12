@@ -109,7 +109,7 @@ def _get_oauth_client(oauth_provider: str) -> tuple[ClueOAuth2App, dict[str, str
 
     oauth_provider_config = config.auth.oauth.providers[oauth_provider]
 
-    # The client ID is resolved (config or env) when the provider is registered; see oidc.provider_client_kwargs.
+    # The client ID is resolved from config or <PROVIDER>_CLIENT_ID when the configuration loads (OAuth.prepare_model).
     if not provider.client_id:
         logger.critical("client id not set! Cannot complete oauth")
         raise ClueValueError(

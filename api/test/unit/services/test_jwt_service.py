@@ -925,3 +925,32 @@ def test_protected_endpoint_returns_401_without_traceback_for_invalid_bearer_tok
 
     assert response.status_code == 401
     assert "Traceback" not in response.get_data(as_text=True)
+
+
+@pytest.mark.parametrize("env_client_id, expected", [("env-client", "env-client"), (None, "clue")])
+def test_env_client_id_is_shared_by_login_and_bearer_audience(monkeypatch, env_client_id, expected):
+    from clue.security.oidc import provider_client_kwargs
+
+    monkeypatch.delenv("KEYCLOAK_CLIENT_ID", raising=False)
+    if env_client_id:
+        monkeypatch.setenv("KEYCLOAK_CLIENT_ID", env_client_id)
+    oauth = OAuth.model_validate(
+        {
+            "providers": {
+                "keycloak": {
+                    "client_id": None,
+                    "audience": None,
+                    "client_secret": "secret",
+                    "authorize_url": "https://idp/authorize",
+                    "access_token_url": "https://idp/token",
+                    "api_base_url": None,
+                    "jwks_uri": "https://idp/jwks",
+                    "scope": "openid",
+                }
+            }
+        }
+    )
+    monkeypatch.setattr(jwt_service.config.auth.oauth, "providers", oauth.providers)
+
+    assert jwt_service.get_audience("keycloak") == expected
+    assert provider_client_kwargs("keycloak", oauth.providers["keycloak"]).get("client_id") == env_client_id

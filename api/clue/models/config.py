@@ -147,26 +147,24 @@ class OAuth(BaseModel):
         cls,  # noqa: ANN102
         oauth_data: dict[str, dict[str, dict | OAuthProvider]],  # noqa: ANN102
     ) -> dict[str, dict[str, dict | OAuthProvider]]:
-        """Validates the oauth data, and adds the client secret if it's not already there.
+        """Validates the oauth data, and adds the client ID and secret from the environment if not already there.
+
+        Resolving them here means login, bearer-token audience checks and service accounts share the same values.
 
         Args:
             oauth_data (dict[str, dict[str, dict | OAuthProvider]]): The data to validate.
 
         Returns:
-            dict[str, dict[str, dict | OAuthProvider]]: The validated data with the client secrets.
+            dict[str, dict[str, dict | OAuthProvider]]: The validated data with the client IDs and secrets.
         """
         if "providers" in oauth_data and isinstance(oauth_data["providers"], dict):
             for name, provider in oauth_data["providers"].items():
-                if isinstance(provider, OAuthProvider):
-                    provider.client_secret = default_string_value(
-                        provider.client_secret,
-                        env_name=f"{name.upper()}_CLIENT_SECRET",
-                    )
-                elif isinstance(provider, dict):
-                    provider["client_secret"] = default_string_value(
-                        provider.get("client_secret", None),
-                        env_name=f"{name.upper()}_CLIENT_SECRET",
-                    )
+                for field in ("client_id", "client_secret"):
+                    env_name = f"{name.upper()}_{field.upper()}"
+                    if isinstance(provider, OAuthProvider):
+                        setattr(provider, field, default_string_value(getattr(provider, field), env_name=env_name))
+                    elif isinstance(provider, dict):
+                        provider[field] = default_string_value(provider.get(field, None), env_name=env_name)
 
         return oauth_data
 
