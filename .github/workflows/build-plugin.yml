@@ -42,6 +42,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BUILD_SHA }}
+      - name: Resolve build context
+        id: build-context
+        env:
+          BUILD_REF: ${{ env.BUILD_REF }}
+        run: |
+          branch=""
+          if [[ "$BUILD_REF" == refs/heads/* ]]; then
+            branch="${BUILD_REF#refs/heads/}"
+            branch="$(printf '%s' "$branch" | sed -E 's/[^A-Za-z0-9_.-]+/-/g')"
+          fi
+          {
+            printf 'branch=%s\n' "$branch"
+            printf 'commit=%s\n' "$(git rev-parse HEAD)"
+            printf 'short_sha=%s\n' "$(git rev-parse --short=7 HEAD)"
+          } >> "$GITHUB_OUTPUT"
       - name: Extract Plugin Medata
         id: plugin-metadata
         run: |
@@ -70,8 +85,10 @@ jobs:
             type=raw,event=branch,value=latest,enable=${{ env.BUILD_REF == format('refs/heads/{0}', 'main') }}
             type=raw,value=latest,enable=${{ startsWith(env.BUILD_REF, 'refs/tags') }}
             type=semver,pattern={{version}}
-            type=raw,value=${{steps.plugin-metadata.outputs.version}}_{{branch}}
-            type=raw,value=${{steps.plugin-metadata.outputs.version}}_{{branch}}_{{sha}}
+            type=raw,value=${{steps.plugin-metadata.outputs.version}}_${{ steps.build-context.outputs.branch }}
+            type=raw,value=${{steps.plugin-metadata.outputs.version}}_${{ steps.build-context.outputs.branch }}_${{ steps.build-context.outputs.short_sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ steps.build-context.outputs.commit }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -90,7 +107,7 @@ jobs:
             base_plugin_version=${{steps.plugin-metadata.outputs.base-plugin-tag}}
             version=${{ steps.plugin-metadata.outputs.version }}
             branch=${{ env.BUILD_REF }}
-            commit=${{ env.BUILD_SHA }}
+            commit=${{ steps.build-context.outputs.commit }}
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v2
         with:
