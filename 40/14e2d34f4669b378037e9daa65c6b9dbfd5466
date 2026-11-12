@@ -1,0 +1,21 @@
+.github/workflows/build-plugin.yml
+  s_8b4c22e863a548::t_5292e7fe66f635 55-59
+  s_8b4c22e863a548::t_c4bd6e9df29ba9 45-52,54,88-91,110
+  s_8b4c22e863a548::t_bce44dbf316f19 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "4014e2d34f4669b378037e9daa65c6b9dbfd5466",
+  "prompts": {},
+  "sessions": {
+    "s_8b4c22e863a548": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e2fd755f7fferieWVD480yTrrq",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
