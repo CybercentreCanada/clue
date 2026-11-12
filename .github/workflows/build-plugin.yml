@@ -42,8 +42,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ env.BUILD_SHA }}
-      - name: Install yq
-        run: sudo snap install yq
       - name: Extract Plugin Medata
         id: plugin-metadata
         run: |

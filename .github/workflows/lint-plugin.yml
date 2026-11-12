@@ -31,9 +31,6 @@ jobs:
       - name: Run Mypy
         run: mypy ${{ inputs.plugin-path }}
 
-      - name: Install yq
-        run: sudo snap install yq
-
       - name: Check for manifest file with correct properties
         run: |
           echo "Validating manifest.yml"
