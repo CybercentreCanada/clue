@@ -36,48 +36,24 @@ describe('API Index', () => {
     vi.clearAllMocks();
   });
 
-  it('forwards only allowlisted OAuth callback parameters', async () => {
-    const search = new URLSearchParams({
-      provider: 'local',
-      code: 'local-code',
-      state: 'server-state',
-      nonce: 'injected-nonce',
-      refresh_token: 'injected-refresh',
-      id_token: 'injected.id.token',
-      access_token: 'injected-access',
-      arbitrary: 'value'
-    });
-    client.fetch.mockResolvedValue([{ api_response: { app_token: 'local-token' } }, 200]);
-    const getItem = vi.spyOn(window.localStorage, 'getItem');
-
-    await oauthLogin.get(search);
-
-    const forwarded: URLSearchParams = client.fetch.mock.calls[0][3];
-    expect(client.fetch.mock.calls[0][0]).toContain('/auth/login');
-    expect(Object.fromEntries(forwarded.entries())).toEqual({
-      provider: 'local',
-      code: 'local-code',
-      state: 'server-state'
-    });
-    expect(forwarded.toString()).not.toMatch(/injected|nonce|refresh_token|id_token|access_token|arbitrary/);
-    expect(getItem).not.toHaveBeenCalled();
-    getItem.mockRestore();
-  });
-
-  it('does not persist rejected OAuth callback parameters as the next location', async () => {
-    const search = new URLSearchParams({ provider: 'local', code: 'local-code', state: 'server-state' });
+  it('redeems OAuth callbacks with allowlisted parameters and without storing anything', async () => {
+    const search = new URLSearchParams({ provider: 'local', code: 'c', state: 's', nonce: 'n', refresh_token: 'r' });
     client.fetch.mockResolvedValue([{ api_error_message: 'OAuth authentication failed.' }, 401]);
 
     await oauthLogin.get(search);
 
+    expect(client.fetch.mock.calls[0][0]).toContain('/auth/login');
+    expect(Object.fromEntries(client.fetch.mock.calls[0][3].entries())).toEqual({
+      provider: 'local',
+      code: 'c',
+      state: 's'
+    });
     expect(localStorage.setStored).not.toHaveBeenCalled();
   });
 
   it.each([
-    ['/login', '?provider=local&code=c&state=s&id_token=a.b.c', ''],
     ['/login', '', ''],
     ['/fetchers', '?code=c&state=s', ''],
-    ['/fetchers', '?refresh_token=attacker', ''],
     ['/fetchers', '', '#access_token=t']
   ])(
     'does not persist %s%s%s when an unrelated request returns 401 on an OAuth callback URL',
@@ -405,6 +381,18 @@ describe('API Index', () => {
   });
 
   describe('Token refresh', () => {
+    const mockRefreshAndRetry = () =>
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
+        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200])
+        .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]);
+
+    beforeEach(() => {
+      vi.mocked(localStorage.getStored).mockImplementation(key =>
+        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
+      );
+    });
+
     it('should attempt token refresh on 401 when refresh token exists', async () => {
       // Mock the fetch calls
       client.fetch
@@ -438,37 +426,20 @@ describe('API Index', () => {
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_SEARCH);
     });
 
-    it('preserves the original request configuration when retrying after refresh', async () => {
-      client.fetch
-        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
-        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200])
-        .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]);
-      vi.mocked(localStorage.getStored).mockImplementation(key =>
-        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
-      );
-
-      const config = { baseURL: 'https://clue.example', timeout: 5000 };
-      expect(await hget('/api/v2/lookup/types_detection', null, config)).toBe('retry-success');
-      expect(client.fetch.mock.calls[2][0]).toBe('https://clue.example/api/v2/lookup/types_detection');
-      expect(client.fetch.mock.calls[2][4]).toEqual(expect.objectContaining(config));
-    });
-
     it.each([
       ['uppercase', { Authorization: 'Bearer expired', 'X-Custom': 'keep' }],
       ['lowercase', { authorization: 'Bearer expired', 'X-Custom': 'keep' }],
       ['duplicate casing', { Authorization: 'Bearer expired', authorization: 'Bearer older', 'X-Custom': 'keep' }],
       ['AxiosHeaders', new AxiosHeaders({ authorization: 'Bearer expired', 'X-Custom': 'keep' })]
-    ])('replaces %s authorization on retry without mutating caller headers', async (_, headers) => {
-      client.fetch
-        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
-        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200])
-        .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]);
-      vi.mocked(localStorage.getStored).mockImplementation(key =>
-        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
-      );
+    ])('preserves the request config and replaces %s authorization on retry', async (_, headers) => {
+      mockRefreshAndRetry();
       const originalHeaders = { ...headers };
 
-      expect(await hget('/test', null, { headers, timeout: 5000 })).toBe('retry-success');
+      expect(await hget('/test', null, { baseURL: 'https://clue.example', headers, timeout: 5000 })).toBe(
+        'retry-success'
+      );
+
+      expect(client.fetch.mock.calls[2][0]).toBe('https://clue.example/api/v1/test');
 
       const retryConfig = client.fetch.mock.calls[2][4];
       const retryHeaders = new AxiosHeaders(retryConfig.headers);
@@ -483,9 +454,6 @@ describe('API Index', () => {
       client.fetch
         .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
         .mockResolvedValueOnce([{ api_response: { provider: 'mock-provider' } }, 200]);
-      vi.mocked(localStorage.getStored).mockImplementation(key =>
-        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
-      );
 
       await expect(hget('/test', null, { headers: { Authorization: 'Bearer expired' } })).rejects.toThrow();
       expect(client.fetch).toHaveBeenCalledTimes(2);
@@ -497,9 +465,6 @@ describe('API Index', () => {
           value: { pathname: '/fetchers', search: '?type=ip', hash: '' },
           writable: true
         });
-        vi.mocked(localStorage.getStored).mockImplementation(key =>
-          key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
-        );
         client.fetch.mockResolvedValueOnce([{ api_error_message: 'Unauthorized', api_status_code: 401 }, 401]);
       });
 

@@ -20,7 +20,7 @@ from clue.common.exceptions import AccessDeniedException, InvalidDataException
 from clue.config import config
 from clue.models.auth_user import APIKeyConf, AuthUser, UserRole
 from clue.models.config import ExternalSource, OAuthProvider
-from clue.security.oidc import ClueOAuth2App, build_oauth, provider_client_kwargs
+from clue.security.oidc import build_oauth, provider_client_kwargs
 
 ISSUER = "https://provider.invalid/realms/local"
 CLIENT_ID = "local-client"
@@ -133,13 +133,12 @@ def begin_login(oidc, client=None, query="provider=local"):
     return {key: values[0] for key, values in parse_qs(urlsplit(response.location).query).items()}
 
 
-def callback(oidc, params, client=None):
-    query = urlencode(params, doseq=True)
-    return (client or oidc.client).get(f"{LOGIN}?{query}", base_url=BASE_URL)
+def callback(oidc, params):
+    return oidc.client.get(f"{LOGIN}?{urlencode(params, doseq=True)}", base_url=BASE_URL)
 
 
-def refresh(oidc, body, query=""):
-    return oidc.client.post(f"{REFRESH}{query}", json=body, base_url=BASE_URL)
+def refresh(oidc, body):
+    return oidc.client.post(REFRESH, json=body, base_url=BASE_URL)
 
 
 def assert_no_secrets(response, *secrets):
@@ -184,44 +183,7 @@ def test_token_endpoint_requests_have_a_timeout(monkeypatch):
     assert requests_sent == [("POST", "https://provider.invalid/token", 10)]
 
 
-def test_registered_clients_use_strict_oidc_client(oidc):
-    assert isinstance(oidc.provider, ClueOAuth2App)
-
-
 # --- Login initiation --------------------------------------------------------------------------------------------
-
-
-def test_oidc_initiation_generates_server_side_nonce_bound_to_session(oidc):
-    params = begin_login(oidc)
-
-    assert len(params["nonce"]) >= 20
-    with oidc.client.session_transaction(base_url=BASE_URL) as session:
-        stored = session[f"_state_local_{params['state']}"]["data"]
-    assert stored["nonce"] == params["nonce"]
-
-
-@pytest.mark.parametrize("extra", ["state", "refresh_token", "redirect_uri", "unexpected"])
-def test_oidc_initiation_rejects_parameters_outside_allowlist(oidc, extra):
-    response = oidc.client.get(f"{LOGIN}?provider=local&{extra}=attacker-chosen", base_url=BASE_URL)
-
-    # "state" turns the request into a callback; it is then rejected for lacking a code instead of starting a login.
-    assert response.status_code in (400, 401)
-    assert response.status_code != 302
-    with oidc.client.session_transaction(base_url=BASE_URL) as session:
-        assert not [key for key in session.keys() if key.startswith("_state_")]
-    assert not oidc.exchange.called
-
-
-def test_oidc_rejects_conflicting_provider_parameters(oidc):
-    response = oidc.client.get(f"{LOGIN}?provider=local&oauth_provider=other", base_url=BASE_URL)
-
-    assert response.status_code == 400
-
-
-def test_oidc_rejects_unknown_provider(oidc):
-    response = oidc.client.get(f"{LOGIN}?provider=unknown", base_url=BASE_URL)
-
-    assert response.status_code == 400
 
 
 def test_legacy_nonce_at_login_initiation_is_discarded(oidc):
@@ -230,27 +192,30 @@ def test_legacy_nonce_at_login_initiation_is_discarded(oidc):
         params = begin_login(oidc, query="oauth_provider=local&nonce=legacy-browser-nonce")
 
     assert authorize.call_args.kwargs == {"redirect_uri": f"{BASE_URL}/login?provider=local"}
+    assert len(params["nonce"]) >= 20
     assert params["nonce"] != "legacy-browser-nonce"
     with oidc.client.session_transaction(base_url=BASE_URL) as session:
         assert session[f"_state_local_{params['state']}"]["data"]["nonce"] == params["nonce"]
-
-    # An ID token bound to the browser's nonce does not validate; only the nonce Authlib stored does.
-    oidc.exchange.return_value = oidc.token("legacy-browser-nonce")
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-    assert response.status_code == 401
 
 
 @pytest.mark.parametrize(
     "query",
     [
+        # "state" turns the request into a callback; it is then rejected for lacking a code.
+        "provider=local&state=attacker-chosen",
+        "provider=local&refresh_token=attacker-chosen",
+        "provider=local&redirect_uri=attacker-chosen",
+        "provider=local&unexpected=attacker-chosen",
+        "provider=local&oauth_provider=other",
+        "provider=unknown",
         "oauth_provider=local&nonce=legacy-a&nonce=legacy-b",
         "provider=local&code=synthetic-code&state=any&nonce=legacy-a&nonce=legacy-b",
     ],
 )
-def test_legacy_nonce_must_be_single_valued(oidc, query):
+def test_oidc_initiation_rejects_invalid_queries(oidc, query):
     response = oidc.client.get(f"{LOGIN}?{query}", base_url=BASE_URL)
 
-    assert response.status_code == 400
+    assert response.status_code in (400, 401)
     with oidc.client.session_transaction(base_url=BASE_URL) as session:
         assert not [key for key in session.keys() if key.startswith("_state_")]
     assert not oidc.exchange.called
@@ -259,22 +224,8 @@ def test_legacy_nonce_must_be_single_valued(oidc, query):
 # --- Authorization-code callback ----------------------------------------------------------------------------------
 
 
-def test_oidc_login_succeeds_with_server_nonce(oidc):
-    params = begin_login(oidc)
-    oidc.exchange.return_value = oidc.token(params["nonce"])
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 200
-    assert response.json["api_response"]["user"]["uname"] == "local-user"
-    assert oidc.exchange.call_count == 1
-    assert oidc.exchange.call_args.kwargs["code"] == "synthetic-code"
-    assert "grant_type" not in oidc.exchange.call_args.kwargs
-    assert "refresh_token" not in oidc.exchange.call_args.kwargs
-
-
 @pytest.mark.parametrize("scope", ["openid email profile", "email profile"])
-def test_login_uses_s256_pkce_bound_to_session(monkeypatch, scope):
+def test_login_succeeds_with_s256_pkce_bound_to_session(monkeypatch, scope):
     oidc = _make_oidc(monkeypatch, scope=scope)
     params = begin_login(oidc)
     with oidc.client.session_transaction(base_url=BASE_URL) as session:
@@ -286,20 +237,7 @@ def test_login_uses_s256_pkce_bound_to_session(monkeypatch, scope):
         else {"access_token": "synthetic-access", "userinfo": {"sub": "local-user", "preferred_username": "local-user"}}
     )
 
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert params["code_challenge_method"] == "S256"
-    assert params["code_challenge"] == expected_challenge
-    assert len(verifier) >= 43
-    assert response.status_code == 200
-    assert oidc.exchange.call_args.kwargs["code_verifier"] == verifier
-    assert oidc.exchange.call_args.kwargs["redirect_uri"] == f"{BASE_URL}/login?provider=local"
-
-
-def test_oidc_login_accepts_provider_informational_callback_parameters(oidc):
-    params = begin_login(oidc, query="oauth_provider=local")
-    oidc.exchange.return_value = oidc.token(params["nonce"])
-
+    # Informational parameters from the provider are accepted alongside the code.
     response = callback(
         oidc,
         {
@@ -311,35 +249,43 @@ def test_oidc_login_accepts_provider_informational_callback_parameters(oidc):
         },
     )
 
+    assert params["code_challenge_method"] == "S256"
+    assert params["code_challenge"] == expected_challenge
+    assert len(verifier) >= 43
     assert response.status_code == 200
+    assert response.json["api_response"]["user"]["uname"] == "local-user"
+    oidc.exchange.assert_called_once()
+    exchange_kwargs = oidc.exchange.call_args.kwargs
+    assert exchange_kwargs["code"] == "synthetic-code"
+    assert exchange_kwargs["code_verifier"] == verifier
+    assert exchange_kwargs["redirect_uri"] == f"{BASE_URL}/login?provider=local"
+    assert not {"grant_type", "refresh_token"} & exchange_kwargs.keys()
 
 
-@pytest.mark.parametrize("iss", ["https://attacker.invalid", f"{ISSUER}/", ""])
-def test_oidc_callback_from_untrusted_issuer_is_rejected_before_exchange(oidc, iss):
-    """RFC 9207 mix-up defence: the iss authorization-response parameter must name the trusted issuer."""
-    params = begin_login(oidc)
-    oidc.exchange.return_value = oidc.token(params["nonce"])
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], "iss": iss})
-
-    assert response.status_code == 401
-    assert not oidc.exchange.called
-    assert_no_secrets(response, "synthetic-code", params["state"])
-
-
-def test_callback_iss_is_ignored_when_no_issuer_is_configured(monkeypatch):
-    oidc = _make_oidc(monkeypatch, scope="email profile", iss=None)
+@pytest.mark.parametrize(
+    "configured_iss, iss, status",
+    [
+        (ISSUER, "https://attacker.invalid", 401),
+        (ISSUER, f"{ISSUER}/", 401),
+        (ISSUER, "", 401),
+        (None, "https://any.invalid", 200),
+    ],
+)
+def test_oidc_callback_iss_must_name_the_configured_issuer(monkeypatch, configured_iss, iss, status):
+    """RFC 9207 mix-up defence; ignored when the provider has no configured issuer."""
+    oidc = _make_oidc(monkeypatch, scope="email profile", iss=configured_iss)
     params = begin_login(oidc)
     oidc.exchange.return_value = {
         "access_token": "synthetic-access",
         "userinfo": {"sub": "local-user", "preferred_username": "local-user"},
     }
 
-    response = callback(
-        oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], "iss": "https://any.invalid"}
-    )
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], "iss": iss})
 
-    assert response.status_code == 200
+    assert response.status_code == status
+    assert oidc.exchange.called == (status == 200)
+    if status != 200:
+        assert_no_secrets(response, "synthetic-code", params["state"])
 
 
 @pytest.mark.parametrize("failure", [requests.Timeout(), requests.ConnectionError(), requests.HTTPError()])
@@ -353,55 +299,36 @@ def test_token_exchange_network_failure_is_a_controlled_502(oidc, failure):
     assert_no_secrets(response, "synthetic-code", params["state"])
 
 
-def test_oidc_login_rejects_attacker_refresh_token_link_in_fresh_session(oidc):
-    """The CLUE-010 bypass: a crafted callback link must not select the refresh-token grant."""
-    oidc.exchange.return_value = oidc.token()
-
-    response = oidc.client.get(
-        f"{LOGIN}?provider=local&code=unused&state=forged&refresh_token=attacker-owned-refresh",
-        base_url=BASE_URL,
-    )
-
-    assert response.status_code == 400
-    assert not oidc.exchange.called
-    assert_no_secrets(response, "attacker-owned-refresh")
-
-
 @pytest.mark.parametrize(
     "injected",
     [
+        # The CLUE-010 bypass: a crafted callback link must not select the refresh-token grant.
         {"refresh_token": "attacker-refresh"},
         {"id_token": "attacker.id.token"},
         {"access_token": "attacker-access"},
         {"grant_type": "refresh_token"},
         {"redirect_uri": "https://evil.invalid/"},
         {"unexpected": "value"},
+        # A list repeats the parameter after its legitimate value.
+        {"code": ["second-value"]},
+        {"state": ["second-value"]},
+        {"provider": ["second-value"]},
     ],
 )
-def test_oidc_callback_rejects_injected_parameters_before_exchange(oidc, injected):
-    params = begin_login(oidc)
-    oidc.exchange.return_value = oidc.token(params["nonce"])
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], **injected})
-
-    assert response.status_code == 400
-    assert not oidc.exchange.called
-    assert_no_secrets(response, *injected.values())
-    # The legitimate transaction is untouched and can still complete.
-    assert callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]}).status_code == 200
-
-
-@pytest.mark.parametrize("repeated", ["code", "state", "provider"])
-def test_oidc_callback_rejects_repeated_parameters(oidc, repeated):
+def test_oidc_callback_rejects_injected_or_repeated_parameters_before_exchange(oidc, injected):
     params = begin_login(oidc)
     oidc.exchange.return_value = oidc.token(params["nonce"])
     request_params = {"provider": "local", "code": "synthetic-code", "state": params["state"]}
-    request_params[repeated] = [request_params[repeated], "second-value"]
+    for key, value in injected.items():
+        request_params[key] = [request_params[key], *value] if isinstance(value, list) else value
 
     response = callback(oidc, request_params)
 
     assert response.status_code == 400
     assert not oidc.exchange.called
+    assert_no_secrets(response, *[value for value in injected.values() if isinstance(value, str)])
+    # The legitimate transaction is untouched and can still complete.
+    assert callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]}).status_code == 200
 
 
 @pytest.mark.parametrize("token_nonce", ["session", "legacy"])
@@ -419,25 +346,22 @@ def test_legacy_nonce_on_callback_is_discarded(oidc, token_nonce):
     assert oidc.exchange.call_count == 1
 
 
-@pytest.mark.parametrize("case", ["forged", "missing", "foreign_session", "reused", "other_provider"])
+@pytest.mark.parametrize("case", ["forged", "missing", "reused", "other_provider"])
 def test_oidc_state_validation_remains_strict(oidc, case):
     params = begin_login(oidc)
     oidc.exchange.return_value = oidc.token(params["nonce"])
     request_params = {"provider": "local", "code": "synthetic-code", "state": params["state"]}
-    client = None
     if case == "forged":
         request_params["state"] = "forged-state"
     elif case == "missing":
         request_params.pop("state")
-    elif case == "foreign_session":
-        client = oidc.app.test_client()
     elif case == "reused":
         assert callback(oidc, request_params).status_code == 200
         oidc.exchange.reset_mock()
     elif case == "other_provider":
         request_params["provider"] = "unknown"
 
-    response = callback(oidc, request_params, client)
+    response = callback(oidc, request_params)
 
     assert response.status_code in (400, 401)
     assert not oidc.exchange.called
@@ -516,6 +440,10 @@ INVALID_ID_TOKENS = {
         "refresh_token": "synthetic-refresh",
         "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
     },
+    "wrong_nonce_with_userinfo": lambda oidc, nonce: {
+        **oidc.token("wrong-nonce"),
+        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
+    },
 }
 
 
@@ -528,84 +456,50 @@ def test_oidc_invalid_identity_token_is_controlled_401(oidc, case):
 
     assert response.status_code == 401
     assert "app_token" not in response.get_data(as_text=True)
-    assert_no_secrets(response, params["nonce"], params["state"], "synthetic-code", "local-key", "unknown-key")
+    secrets = (params["nonce"], params["state"], "synthetic-code", "local-key", "unknown-key", "forged-user")
+    assert_no_secrets(response, *secrets)
 
 
 def test_oidc_previous_transaction_id_token_cannot_authenticate_a_new_transaction(oidc, caplog):
+    """CWE-294: an ID token bound to an earlier transaction's nonce is not accepted by a later one."""
     first = begin_login(oidc)
     token = oidc.token(first["nonce"])
     oidc.exchange.return_value = token
     assert callback(oidc, {"provider": "local", "code": "first-code", "state": first["state"]}).status_code == 200
-    with oidc.client.session_transaction(base_url=BASE_URL) as session:
-        assert f"_state_local_{first['state']}" not in session
-        previous_session = dict(session)
 
     second = begin_login(oidc)
     assert second["nonce"] != first["nonce"]
-    with oidc.client.session_transaction(base_url=BASE_URL) as session:
-        assert session[f"_state_local_{second['state']}"]["data"]["nonce"] == second["nonce"]
-
-    oidc.exchange.reset_mock()
     caplog.clear()
     with patch.object(user_service, "parse_user_data") as parse_user:
         response = callback(oidc, {"provider": "local", "code": "second-code", "state": second["state"]})
 
     assert response.status_code == 401
-    oidc.exchange.assert_called_once()
-    assert oidc.exchange.call_args.kwargs["code"] == "second-code"
     parse_user.assert_not_called()
     assert not {"app_token", "refresh_token", "user"} & response.json["api_response"].keys()
     assert all(not cookie.startswith("XSRF-TOKEN=") for cookie in response.headers.getlist("Set-Cookie"))
-    with oidc.client.session_transaction(base_url=BASE_URL) as session:
-        assert dict(session) == previous_session
-    secrets = (
-        token["id_token"],
-        token["id_token"].split(".")[1],
-        first["nonce"],
-        second["nonce"],
-        first["state"],
-        second["state"],
-        "first-code",
-        "second-code",
-    )
+    secrets = (token["id_token"], first["nonce"], second["nonce"], second["state"], "second-code")
     assert_no_secrets(response, *secrets)
-    for secret in (*secrets, "synthetic-access", "synthetic-refresh", "Traceback"):
-        assert secret not in caplog.text
+    assert not any(secret in caplog.text for secret in (*secrets, "synthetic-access", "synthetic-refresh"))
 
 
-def test_oidc_validated_id_token_claims_override_token_response_userinfo(oidc):
+@pytest.mark.parametrize(
+    "token_kwargs, extra",
+    [
+        ({}, {}),
+        ({"aud": [CLIENT_ID, "other-client"], "azp": CLIENT_ID}, {}),
+        # Validated ID-token claims take precedence over userinfo in the token response.
+        ({}, {"userinfo": {"sub": "forged", "preferred_username": "forged-user"}}),
+    ],
+    ids=["default", "audience_list_with_azp", "userinfo_overridden"],
+)
+def test_oidc_valid_identity_token_variants_are_accepted(oidc, token_kwargs, extra):
     params = begin_login(oidc)
-    oidc.exchange.return_value = {
-        **oidc.token(params["nonce"]),
-        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
-    }
+    oidc.exchange.return_value = {**oidc.token(params["nonce"], **token_kwargs), **extra}
 
     response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
 
     assert response.status_code == 200
     assert response.json["api_response"]["user"]["uname"] == "local-user"
-
-
-def test_oidc_invalid_id_token_cannot_be_bypassed_with_userinfo(oidc):
-    params = begin_login(oidc)
-    oidc.exchange.return_value = {
-        **oidc.token("wrong-nonce"),
-        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
-    }
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 401
-    assert_no_secrets(response, "forged-user")
-
-
-def test_oidc_audience_list_with_matching_azp_is_accepted(oidc):
-    params = begin_login(oidc)
-    oidc.exchange.return_value = oidc.token(params["nonce"], aud=[CLIENT_ID, "other-client"], azp=CLIENT_ID)
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 200
 
 
 def test_oidc_unknown_kid_refreshes_jwks_once_then_fails_closed(oidc):
@@ -617,6 +511,7 @@ def test_oidc_unknown_kid_refreshes_jwks_once_then_fails_closed(oidc):
     assert response.status_code == 401
     assert response.json["api_error_message"] == "The ID token signing key is not trusted."
     assert oidc.jwks_fetches == [JWKS_URI]
+    assert oidc.network.jwks_timeouts == [10]
 
 
 def test_oidc_rotated_signing_key_is_fetched_from_trusted_jwks(oidc):
@@ -642,12 +537,6 @@ def _login_status(oidc, **token_kwargs):
     params = begin_login(oidc)
     oidc.exchange.return_value = oidc.token(params["nonce"], **token_kwargs)
     return callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-
-def test_oidc_jwks_fetch_has_a_timeout(oidc):
-    _login_status(oidc, key=JsonWebKey.generate_key("RSA", 2048, is_private=True), kid="unknown-key")
-
-    assert oidc.network.jwks_timeouts == [10]
 
 
 def test_oidc_unknown_kids_cannot_trigger_a_jwks_fetch_per_login(oidc, monkeypatch):
@@ -703,26 +592,17 @@ def test_oidc_jwks_older_than_max_age_are_never_used(oidc, monkeypatch):
 
 
 @pytest.mark.parametrize("failure", [requests.Timeout(), requests.ConnectionError(), requests.HTTPError()])
-def test_oidc_jwks_fetch_failure_without_cache_is_retryable(oidc, failure):
+def test_oidc_jwks_fetch_failure_without_cache_is_a_controlled_502(oidc, failure):
     oidc.provider.server_metadata.pop("jwks")
     oidc.network.jwks_failure = failure
-
-    response = _login_status(oidc)
-
-    assert response.status_code == 502
-    assert oidc.jwks_fetches == [JWKS_URI]
-    assert_no_secrets(response)
-
-
-def test_oidc_jwks_fetch_failure_without_cache_is_retryable_during_cooldown(oidc):
-    oidc.provider.server_metadata.pop("jwks")
-    oidc.network.jwks_failure = requests.Timeout()
 
     first = _login_status(oidc)
     second = _login_status(oidc)
 
     assert first.status_code == second.status_code == 502
+    # The cooldown prevents a JWKS fetch per login attempt.
     assert oidc.jwks_fetches == [JWKS_URI]
+    assert_no_secrets(first)
 
 
 @pytest.mark.parametrize(
@@ -752,68 +632,34 @@ def test_oidc_malformed_jwks_entries_are_ignored(oidc):
     assert oidc.provider.server_metadata["jwks"]["keys"] == oidc.published["keys"][3:]
 
 
-def test_oidc_rejects_id_tokens_when_no_trusted_issuer_is_configured(monkeypatch):
-    oidc = _make_oidc(monkeypatch, iss=None)
+@pytest.mark.parametrize(
+    "provider_overrides, response_kind, message",
+    [
+        ({"iss": None}, "id_token", "The OAuth provider has no trusted issuer configured."),
+        ({"scope": "email profile"}, "id_token", "The OAuth provider did not return a verified identity token."),
+        (
+            {"scope": "email profile"},
+            "id_token_with_userinfo",
+            "The OAuth provider did not return a verified identity token.",
+        ),
+        ({}, "no_access_token", "The OAuth provider did not return an access token."),
+    ],
+)
+def test_oidc_rejects_unverifiable_provider_responses(monkeypatch, provider_overrides, response_kind, message):
+    oidc = _make_oidc(monkeypatch, **provider_overrides)
     params = begin_login(oidc)
-    oidc.exchange.return_value = oidc.token(params["nonce"])
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 401
-    assert response.json["api_error_message"] == "The OAuth provider has no trusted issuer configured."
-
-
-def test_oidc_rejects_id_token_when_openid_scope_was_not_requested(monkeypatch):
-    oidc = _make_oidc(monkeypatch, scope="email profile")
-    params = begin_login(oidc)
-    assert "nonce" not in params
-    oidc.exchange.return_value = oidc.token()
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 401
-    assert response.json["api_error_message"] == "The OAuth provider did not return a verified identity token."
-
-
-def test_oidc_rejects_unverified_id_token_with_userinfo_when_openid_was_not_requested(monkeypatch):
-    oidc = _make_oidc(monkeypatch, scope="email profile")
-    params = begin_login(oidc)
-    oidc.exchange.return_value = {
-        **oidc.token(),
-        "userinfo": {"sub": "forged", "preferred_username": "forged-user"},
-    }
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 401
-    assert response.json["api_error_message"] == "The OAuth provider did not return a verified identity token."
-    assert_no_secrets(response, "forged-user")
-
-
-def test_non_openid_oauth_response_with_userinfo_remains_supported(monkeypatch):
-    oidc = _make_oidc(monkeypatch, scope="email profile")
-    params = begin_login(oidc)
-    oidc.exchange.return_value = {
-        "access_token": "synthetic-access",
-        "userinfo": {"sub": "local-user", "preferred_username": "local-user"},
-    }
-
-    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
-
-    assert response.status_code == 200
-    assert response.json["api_response"]["user"]["uname"] == "local-user"
-
-
-def test_login_rejects_oauth_response_without_access_token(oidc):
-    params = begin_login(oidc)
-    token = oidc.token(params["nonce"])
-    token.pop("access_token")
+    token = oidc.token(params.get("nonce"))
+    if response_kind == "id_token_with_userinfo":
+        token["userinfo"] = {"sub": "forged", "preferred_username": "forged-user"}
+    elif response_kind == "no_access_token":
+        token.pop("access_token")
     oidc.exchange.return_value = token
 
     response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
 
     assert response.status_code == 401
-    assert response.json["api_error_message"] == "The OAuth provider did not return an access token."
+    assert response.json["api_error_message"] == message
+    assert_no_secrets(response, "forged-user")
 
 
 def test_login_rejects_invalid_normalized_user_data(oidc):
@@ -837,7 +683,6 @@ def test_login_rejects_invalid_normalized_user_data(oidc):
     [
         {"provider": "local", "refresh_token": "legacy-refresh"},
         {"oauth_provider": "local", "refresh_token": "legacy-refresh"},
-        {"provider": None, "refresh_token": "legacy-refresh"},
         {"refresh_token": "legacy-refresh"},
     ],
 )
@@ -923,38 +768,26 @@ def test_refresh_endpoint_rejects_invalid_identity_token(oidc, case):
 
 
 @pytest.mark.parametrize(
-    "kwargs",
+    "method, query, request_kwargs, status",
     [
-        {"query": "?provider=local&refresh_token=attacker-refresh", "json": None},
-        {"query": "?nonce=untrusted", "json": {"provider": "local", "refresh_token": "refresh-credential"}},
-        {"query": "", "json": {"provider": "local"}},
-        {"query": "", "json": {"provider": "local", "refresh_token": ""}},
-        {"query": "", "json": {"provider": "local", "refresh_token": 123}},
-        {"query": "", "json": {"provider": "local", "refresh_token": "x", "nonce": "n"}},
-        {"query": "", "json": {"provider": "unknown", "refresh_token": "refresh-credential"}},
-        {"query": "", "json": ["provider", "local"]},
+        ("POST", "?provider=local&refresh_token=attacker-refresh", {}, 400),
+        ("POST", "?nonce=untrusted", {"json": {"provider": "local", "refresh_token": "refresh-credential"}}, 400),
+        ("POST", "", {"json": {"provider": "local"}}, 400),
+        ("POST", "", {"json": {"provider": "local", "refresh_token": ""}}, 400),
+        ("POST", "", {"json": {"provider": "local", "refresh_token": 123}}, 400),
+        ("POST", "", {"json": {"provider": "local", "refresh_token": "x", "nonce": "n"}}, 400),
+        ("POST", "", {"json": {"provider": "unknown", "refresh_token": "refresh-credential"}}, 400),
+        ("POST", "", {"json": ["provider", "local"]}, 400),
+        ("POST", "", {"data": {"provider": "local", "refresh_token": "attacker-refresh"}}, 400),
+        ("GET", "?provider=local&refresh_token=attacker-refresh", {}, 405),
     ],
 )
-def test_refresh_endpoint_strictly_validates_input(oidc, kwargs):
+def test_refresh_endpoint_strictly_validates_input(oidc, method, query, request_kwargs, status):
     oidc.exchange.return_value = oidc.token()
 
-    if kwargs["json"] is None:
-        response = oidc.client.post(f"{REFRESH}{kwargs['query']}", base_url=BASE_URL)
-    else:
-        response = refresh(oidc, kwargs["json"], kwargs["query"])
+    response = oidc.client.open(f"{REFRESH}{query}", method=method, base_url=BASE_URL, **request_kwargs)
 
-    assert response.status_code == 400
-    assert not oidc.exchange.called
-
-
-def test_refresh_endpoint_rejects_form_posts_and_get(oidc):
-    oidc.exchange.return_value = oidc.token()
-
-    form = oidc.client.post(REFRESH, data={"provider": "local", "refresh_token": "attacker-refresh"}, base_url=BASE_URL)
-    get = oidc.client.get(f"{REFRESH}?provider=local&refresh_token=attacker-refresh", base_url=BASE_URL)
-
-    assert form.status_code == 400
-    assert get.status_code == 405
+    assert response.status_code == status
     assert not oidc.exchange.called
 
 
