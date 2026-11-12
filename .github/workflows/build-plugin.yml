@@ -52,10 +52,11 @@ jobs:
             branch="${BUILD_REF#refs/heads/}"
             branch="$(printf '%s' "$branch" | sed -E 's/[^A-Za-z0-9_.-]+/-/g')"
           fi
+          commit="$(git rev-parse HEAD)"
           {
             printf 'branch=%s\n' "$branch"
-            printf 'commit=%s\n' "$(git rev-parse HEAD)"
-            printf 'short_sha=%s\n' "$(git rev-parse --short=7 HEAD)"
+            printf 'commit=%s\n' "$commit"
+            printf 'short_sha=%s\n' "${commit:0:7}"
           } >> "$GITHUB_OUTPUT"
       - name: Extract Plugin Medata
         id: plugin-metadata
