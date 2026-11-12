@@ -4,7 +4,7 @@ import type { AxiosRequestConfig } from 'axios';
 import { last } from 'lodash-es';
 import type { DocumentsWithCheckpoint, ReplicationPullHandlerResult } from 'rxdb';
 import { replicateRxCollection } from 'rxdb/plugins/replication';
-import { Subject } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { ClueReplicationError } from './errors';
 import { REPLICATORS } from './globals';
 import type { Checkpoint } from './sync';
@@ -12,9 +12,18 @@ import type { DatabaseConfig, SelectorCollection, SelectorDocType } from './type
 
 const DEFAULT_PULL_BATCH_SIZE = 250;
 
+const getToken = (config: DatabaseConfig): string | undefined => {
+  const token = config.getToken?.();
+  if (config.getToken && !token) {
+    throw new Error('getToken must return a token when configured');
+  }
+
+  return token;
+};
+
 const buildRequestConfig = (config: DatabaseConfig): AxiosRequestConfig => {
   const headers: AxiosRequestConfig['headers'] = {};
-  const token = config.getToken?.();
+  const token = getToken(config);
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
@@ -62,12 +71,13 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
   const INITIAL_RETRY_DELAY = 1000;
 
   const loggedEvents: number[] = [];
+  let started = false;
   let currentXhr: XMLHttpRequest | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let closed = false;
 
   const isClosed = () => closed || collection.closed;
-  const getToken = () => {
+  const getStreamToken = () => {
     try {
       return config.getToken?.();
     } catch {
@@ -95,7 +105,7 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
     }
   };
 
-  const connect = (timeout = INITIAL_RETRY_DELAY, token = getToken()) => {
+  const connect = (timeout = INITIAL_RETRY_DELAY, token = getStreamToken()) => {
     if (isClosed()) {
       return;
     }
@@ -174,7 +184,7 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
           reconnect();
         } else if (xhr.status === 401) {
           if (await reportHttpFailure(error)) {
-            const refreshedToken = getToken()?.trim();
+            const refreshedToken = getStreamToken()?.trim();
             if (refreshedToken && refreshedToken !== token && !isClosed()) {
               connect(INITIAL_RETRY_DELAY, refreshedToken);
               emitResyncIfNeeded();
@@ -205,9 +215,16 @@ const stream = (collection: SelectorCollection, config: DatabaseConfig) => {
     currentXhr?.abort();
   });
 
-  connect();
+  return new Observable<EventStreamEntry | 'RESYNC'>(subscriber => {
+    const subscription = stream$.subscribe(subscriber);
 
-  return stream$;
+    if (!started) {
+      started = true;
+      connect();
+    }
+
+    return subscription;
+  });
 };
 
 export const replicateSelectorCollection = async (
@@ -215,6 +232,7 @@ export const replicateSelectorCollection = async (
   collection: SelectorCollection,
   config: DatabaseConfig
 ) => {
+  getToken(config);
   const pullBatchSize = config.pullBatchSize ?? DEFAULT_PULL_BATCH_SIZE;
 
   collection.onClose.push(() => {
@@ -265,7 +283,7 @@ export const replicateSelectorCollection = async (
                 }
         };
       },
-      stream$: pullStream$.asObservable()
+      stream$: pullStream$
     }
   });
 
