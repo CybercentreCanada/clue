@@ -1,0 +1,22 @@
+mkdocs/docs/releases/ui.md
+  s_302a66f1992c45::t_91dfacefcc13fd 3-13
+mkdocs/docs/releases/api.md
+  s_302a66f1992c45::t_91dfacefcc13fd 3,5,8-15
+  s_302a66f1992c45::t_aaceeff27a7e7f 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "ae011ea7804ed1d487c7c6b846bd94a64ade00b5",
+  "prompts": {},
+  "sessions": {
+    "s_302a66f1992c45": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e2f410f47ffetPbHO689cDXARw",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
