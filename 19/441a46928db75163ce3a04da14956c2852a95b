@@ -1,0 +1,19 @@
+.github/workflows/build-plugin.yml
+  s_9c65548690a013::t_27c9de740f8204 45-59,88-91,110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "19441a46928db75163ce3a04da14956c2852a95b",
+  "prompts": {},
+  "sessions": {
+    "s_9c65548690a013": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e2fd89054ffepupbAxi6NQ7GId",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
