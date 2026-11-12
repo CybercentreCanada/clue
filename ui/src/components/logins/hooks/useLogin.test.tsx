@@ -73,30 +73,16 @@ describe('useLogin', () => {
     expect(stored(StorageKey.NEXT_SEARCH)).toBeNull();
   });
 
-  it('forwards only allowlisted callback parameters when redeeming an OAuth code', async () => {
+  it('removes the OAuth callback from the URL before redeeming the code', async () => {
     mocks.location.search = '?type=ip&code=c&state=s&session_state=x&provider=keycloak';
     mocks.location.hash = '#section';
-    mocks.searchParams = new URLSearchParams({
-      provider: 'keycloak',
-      code: 'c',
-      state: 's',
-      type: 'ip',
-      session_state: 'x',
-      nonce: 'injected-nonce',
-      refresh_token: 'injected-refresh'
-    });
+    mocks.searchParams = new URLSearchParams({ provider: 'keycloak', code: 'c', state: 's', type: 'ip' });
     mocks.loginGet.mockResolvedValue(credential);
     const { result } = renderHook(() => useLogin());
 
     await act(() => result.current.doOAuth());
 
-    const forwarded: URLSearchParams = mocks.loginGet.mock.calls[0][0];
-    expect(Object.fromEntries(forwarded.entries())).toEqual({
-      provider: 'keycloak',
-      code: 'c',
-      state: 's',
-      session_state: 'x'
-    });
+    expect(mocks.loginGet).toHaveBeenCalledWith(mocks.searchParams);
     expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login?type=ip#section', { replace: true });
     expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
   });

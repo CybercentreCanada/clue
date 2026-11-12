@@ -109,20 +109,16 @@ def _get_oauth_client(oauth_provider: str) -> tuple[ClueOAuth2App, dict[str, str
 
     oauth_provider_config = config.auth.oauth.providers[oauth_provider]
 
-    # Without this step, the provider will try and send the client_id and/or secret *twice*, leading to an error.
-    kwargs: dict[str, str] = {}
+    # The client ID is resolved (config or env) when the provider is registered; see oidc.provider_client_kwargs.
     if not provider.client_id:
-        client_id = default_string_value(
-            oauth_provider_config.client_id, env_name=f"{oauth_provider.upper()}_CLIENT_ID"
+        logger.critical("client id not set! Cannot complete oauth")
+        raise ClueValueError(
+            f"No client ID configured for OAuth provider '{oauth_provider}' "
+            f"(set it in config or {oauth_provider.upper()}_CLIENT_ID)."
         )
-        if not client_id:
-            logger.critical("client id not set! Cannot complete oauth")
-            raise ClueValueError(
-                f"No client ID configured for OAuth provider '{oauth_provider}' "
-                f"(set it in config or {oauth_provider.upper()}_CLIENT_ID)."
-            )
-        kwargs["client_id"] = client_id
 
+    # Without this step, the provider will try and send the client_secret *twice*, leading to an error.
+    kwargs: dict[str, str] = {}
     if not provider.client_secret:
         client_secret = default_string_value(
             oauth_provider_config.client_secret, env_name=f"{oauth_provider.upper()}_CLIENT_SECRET"

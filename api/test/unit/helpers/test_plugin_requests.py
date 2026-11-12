@@ -1,5 +1,3 @@
-from socket import SHUT_RDWR
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -78,13 +76,6 @@ def success(url: str) -> Response:
     response = Response()
     response.status_code = 200
     response.url = url
-    return response
-
-
-def streamed_response(url: str, chunks: list[bytes]) -> Response:
-    response = success(url)
-    response.iter_content = Mock(return_value=iter(chunks))
-    response.close = Mock()
     return response
 
 
@@ -203,91 +194,6 @@ def test_redirect_hops_shrink_connect_and_read_timeouts_together(monkeypatch):
     assert get.call_count == 2
     assert get.call_args_list[0].kwargs["timeout"] == (2.0, 6.0)
     assert get.call_args_list[1].kwargs["timeout"] == pytest.approx((1.0, 3.0))
-
-
-def test_total_timeout_covers_a_slow_single_response_body(monkeypatch):
-    now = [0.0]
-    monkeypatch.setattr("clue.helper.plugin_requests.monotonic", lambda: now[0])
-    start_url = "http://plugin.example/types/"
-    response = success(start_url)
-    response.close = Mock()
-
-    def slow_body(chunk_size):
-        assert chunk_size == 64 * 1024
-        yield b"first"
-        now[0] += 0.6
-        yield b"second"
-        now[0] += 0.6
-        yield b"third"
-
-    response.iter_content = slow_body
-    get = Mock(return_value=response)
-
-    with pytest.raises(Timeout, match="total timeout"):
-        request_with_safe_redirects(get, start_url, timeout=1.0)
-
-    get.assert_called_once()
-    assert get.call_args.kwargs["stream"] is True
-    response.close.assert_called_once()
-
-
-def test_total_timeout_interrupts_a_blocked_stream_read(monkeypatch):
-    now = [0.0]
-    monkeypatch.setattr("clue.helper.plugin_requests.monotonic", lambda: now[0])
-    start_url = "http://plugin.example/types/"
-    response = success(start_url)
-    response.close = Mock()
-    sock = Mock()
-    response.raw = SimpleNamespace(_connection=SimpleNamespace(sock=sock))
-    timers = []
-
-    class FakeTimer:
-        def __init__(self, interval, function, args):
-            self.interval = interval
-            self.function = function
-            self.args = args
-            self.cancelled = False
-            timers.append(self)
-
-        def start(self):
-            pass
-
-        def cancel(self):
-            self.cancelled = True
-
-        def fire(self):
-            now[0] += self.interval
-            self.function(*self.args)
-
-    monkeypatch.setattr("clue.helper.plugin_requests.Timer", FakeTimer)
-
-    def blocked_body(chunk_size):
-        assert chunk_size == 64 * 1024
-        yield b"first"
-        timers[0].fire()
-        raise ConnectionError("Read interrupted at deadline")
-
-    response.iter_content = blocked_body
-    get = Mock(return_value=response)
-
-    with pytest.raises(Timeout, match="total timeout"):
-        request_with_safe_redirects(get, start_url, timeout=1.0)
-
-    assert timers[0].interval == 1.0
-    assert timers[0].cancelled
-    sock.shutdown.assert_called_once_with(SHUT_RDWR)
-    response.close.assert_called_once()
-
-
-def test_successful_streamed_response_remains_readable():
-    start_url = "http://plugin.example/types/"
-    response = streamed_response(start_url, [b'{"api_response":', b'{"ok": true}}'])
-
-    result = request_with_safe_redirects(Mock(return_value=response), start_url, timeout=1.0)
-
-    assert result.content == b'{"api_response":{"ok": true}}'
-    assert result.json() == {"api_response": {"ok": True}}
-    response.close.assert_called_once()
 
 
 def test_rejects_malformed_redirect_url():

@@ -1,6 +1,4 @@
 from collections.abc import Callable
-from socket import SHUT_RDWR
-from threading import Timer
 from time import monotonic
 from typing import Any, TypeAlias
 from urllib.parse import quote, urljoin, urlsplit
@@ -215,7 +213,7 @@ def request_with_safe_redirects(
     Raises:
         ConnectionError: If a redirect is unsafe or the redirect limit is
             exceeded.
-        Timeout: If the total timeout budget expires during a request or redirect.
+        Timeout: If the total timeout budget expires between redirect hops.
     """
     # Disable requests' automatic redirects to validate every target ourselves.
     kwargs["allow_redirects"] = False
@@ -223,9 +221,6 @@ def request_with_safe_redirects(
     budget = _timeout_budget(timeout)
     # Reuse one deadline so a chain cannot receive a fresh timeout per hop.
     deadline = monotonic() + budget if budget is not None else None
-    if deadline is not None:
-        # Stream the body so its time is included in the same budget.
-        kwargs["stream"] = True
 
     for redirect_count in range(6):
         if deadline is not None and redirect_count > 0:
@@ -237,70 +232,12 @@ def request_with_safe_redirects(
 
         response = request_method(url, **kwargs)
         if response.status_code not in {301, 302, 303, 307, 308}:
-            if deadline is not None:
-                _consume_response(response, deadline)
             return response
 
         next_method, next_url = _next_redirect(response, url, request_method, get_method, kwargs, redirect_count)
         # A redirect status without Location is not actionable; return it intact.
         if next_url == url and not response.headers.get("Location"):
-            if deadline is not None:
-                _consume_response(response, deadline)
             return response
         request_method, url = next_method, next_url
 
     raise ConnectionError("Plugin exceeded the redirect limit")
-
-
-def _response_socket(response: Response) -> Any | None:
-    """Return the socket used by a streamed Requests response, when available."""
-    raw = getattr(response, "raw", None)
-    connection = getattr(raw, "_connection", None)
-    sock = getattr(connection, "sock", None)
-    if sock is not None:
-        return sock
-
-    original_response = getattr(raw, "_original_response", None)
-    file_pointer = getattr(original_response, "fp", None)
-    raw_file = getattr(file_pointer, "raw", None)
-    return getattr(raw_file, "_sock", None)
-
-
-def _interrupt_response(response: Response, sock: Any) -> None:
-    """Interrupt a blocking read when the overall request deadline expires."""
-    try:
-        sock.shutdown(SHUT_RDWR)
-    except OSError:
-        pass
-
-
-def _consume_response(response: Response, deadline: float) -> None:
-    """Buffer a streamed response body while enforcing the request deadline."""
-    content = bytearray()
-    sock = _response_socket(response)
-    timer = None
-    if sock is not None:
-        timer = Timer(max(0.0, deadline - monotonic()), _interrupt_response, args=(response, sock))
-        timer.daemon = True
-        timer.start()
-
-    def raise_if_expired() -> None:
-        if monotonic() >= deadline:
-            raise Timeout("Plugin request exceeded its total timeout")
-
-    try:
-        raise_if_expired()
-        for chunk in response.iter_content(chunk_size=64 * 1024):
-            raise_if_expired()
-            content.extend(chunk)
-        raise_if_expired()
-        response._content = bytes(content)
-        setattr(response, "_content_consumed", True)
-    except Exception as error:
-        if monotonic() >= deadline:
-            raise Timeout("Plugin request exceeded its total timeout") from error
-        raise
-    finally:
-        if timer is not None:
-            timer.cancel()
-        response.close()
