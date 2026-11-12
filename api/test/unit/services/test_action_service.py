@@ -399,7 +399,7 @@ def test_action_obo_access_token_parses_authorization_header(authorization, expe
         result = get_obo_access_token(plugin, user)
 
     assert result == (expected_token, "obo-token")
-    check_obo.assert_called_once_with(plugin, expected_token, "test-user")
+    check_obo.assert_called_once_with(plugin, expected_token, "test-user", cache_user="test-user")
 
 
 def test_action_obo_access_token_rejects_invalid_token():
@@ -586,7 +586,7 @@ def test_execute_and_status_refresh_metadata_and_do_one_obo_check_each(cached_ap
                 assert action_service.get_action_status("test", "test_action", "task-123", user).outcome == "success"
 
     assert check_obo.call_count == 3
-    check_obo.assert_called_with(plugin, "access-token", "test-user")
+    check_obo.assert_called_with(plugin, "access-token", "test-user", cache_user="test-user")
     assert [entry.args[0] for entry in get.call_args_list] == [
         "http://plugin/actions/",
         "http://plugin/actions/",
@@ -721,7 +721,7 @@ def test_previous_action_metadata_does_not_bypass_obo_failure(cached_app, metada
         else:
             result = action_service.get_action_status("test", "test_action", "task-123", user)
         assert result.outcome == "failure"
-        check_obo.assert_called_once_with(plugin, "access-token", "test-user")
+        check_obo.assert_called_once_with(plugin, "access-token", "test-user", cache_user="test-user")
         assert get.call_count == 1
         post.assert_not_called()
 

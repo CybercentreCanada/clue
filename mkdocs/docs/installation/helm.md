@@ -75,6 +75,9 @@ core API. Here's what that would look like:
   "my_plugin": "some_api_key"
 }
 ```
+Requests using a key must send `X-USERID` and `X-CLASSIFICATION`. The classification is capped at the clearance of
+that user in the identity provider, which requires a service account and the provider's `admin_api_url`. See the
+backend configuration documentation for details.
 If you don't need any API Keys, you can simply insert an empty json object `{}`.
 
 Here's the command to create those secrets using kubectl:

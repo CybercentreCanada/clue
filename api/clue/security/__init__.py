@@ -139,7 +139,10 @@ class api_login(object):  # noqa: N801
                 user = result.user.model_dump(mode="python")
 
                 ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-                logger.info(f"Logged in as {user['uname']} from {ip}")
+                logger.info(
+                    f"Logged in as {user['uname']} "
+                    f"{'using API key ' + result.user.apikey + ' ' if result.user.apikey else ''}from {ip}"
+                )
 
                 # If auditing is enabled, write this successful access to the audit logs
                 if self.audit:

@@ -256,6 +256,17 @@ api:
 
 ##### Authentication Configuration
 
+API key requests must send the `X-USERID` and `X-CLASSIFICATION` headers, and may send `X-USERNAME` and `X-EMAIL`.
+Clue caps `X-CLASSIFICATION` at the current clearance of the user named in `X-USERID`: using the service account, it
+reads that user's groups from the provider's `admin_api_url` and maps them through `classification_map`, the same way
+as when the user logs in. A classification above the user's clearance is lowered to it rather than rejected. Requests
+are rejected when the classification is invalid, or the user doesn't exist or is disabled. If the clearance can't be
+verified (lookup not configured, or the identity provider unreachable), requests fail with a server error. API key
+credentials are never forwarded to external sources.
+
+This requires an enabled `service_account`, and its provider must set `admin_api_url` and `classification_map`. In
+Keycloak, give the service account the `view-users` and `query-groups` roles of the `realm-management` client.
+
 ```yaml
 auth:
   # API Key authentication
@@ -382,6 +393,7 @@ auth:
         access_token_url: "https://auth.example.com/realms/clue/protocol/openid-connect/token"
         authorize_url: "https://auth.example.com/realms/clue/protocol/openid-connect/auth"
         api_base_url: "https://auth.example.com/realms/clue/protocol/openid-connect"
+        admin_api_url: "https://auth.example.com/admin/realms/clue" # Used to cap API key X-CLASSIFICATION headers
 
         # User management
         auto_create: true # Auto-create users

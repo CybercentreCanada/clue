@@ -398,18 +398,22 @@ def test_get_obo_access_token_returns_caller_and_obo_tokens(app, plugin, user):
         result = get_obo_access_token(plugin, user)
 
     assert result == ("access-token", "obo-token")
-    check_obo.assert_called_once_with(plugin, "access-token", "test-user")
+    check_obo.assert_called_once_with(plugin, "access-token", "test-user", cache_user="test-user")
 
 
 def test_get_obo_access_token_strips_basic_scheme(app, plugin, user):
+    user = {**user, "apikey": "test-key"}
+
     with (
         app.test_request_context(headers={"Authorization": "Basic api-key-credentials"}),
         patch("clue.helper.obo.auth_service.check_obo", return_value=(None, None)) as check_obo,
     ):
         result = get_obo_access_token(plugin, user)
 
-    assert result == ("api-key-credentials", None)
-    check_obo.assert_called_once_with(plugin, "api-key-credentials", "test-user")
+    assert result == (None, None)
+    check_obo.assert_called_once_with(
+        plugin, "api-key-credentials", "test-user", cache_user="apikey:test-key:test-user"
+    )
 
 
 def test_get_obo_access_token_rejects_invalid_token(app, plugin, user):

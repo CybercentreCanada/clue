@@ -84,6 +84,12 @@ class OAuthProvider(BaseModel):
     access_token_url: str = Field(description="URL to get access token")
     authorize_url: str | None = Field(description="URL used to authorize access to a resource")
     api_base_url: str | None = Field(description="Base URL for downloading the user's and groups info")
+    admin_api_url: str | None = Field(
+        default=None,
+        description="Keycloak admin REST URL of the realm (for example https://keycloak/admin/realms/clue). When this "
+        "provider is the service account's provider, Clue looks up the groups of the user named in X-USERID there, "
+        "and maps them through classification_map to cap the X-CLASSIFICATION of API key requests.",
+    )
     audience: str | None = Field(
         description="The audience to validate against. Only must be set if audience is different than the client id."
     )

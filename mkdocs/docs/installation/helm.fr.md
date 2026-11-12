@@ -73,6 +73,9 @@ l'API principale. Voici à quoi cela ressemblerait :
   "my_plugin": "some_api_key"
 }
 ```
+Les requêtes utilisant une clé doivent envoyer `X-USERID` et `X-CLASSIFICATION`. La classification est limitée à
+l'habilitation de cet utilisateur dans le fournisseur d'identité, ce qui nécessite un compte de service et
+l'`admin_api_url` du fournisseur. Consultez la documentation de configuration du backend pour plus de détails.
 Si vous n'avez pas besoin de clés API, vous pouvez simplement insérer un objet json vide `{}`.
 
 Voici la commande pour créer ces secrets en utilisant kubectl :

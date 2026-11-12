@@ -262,6 +262,19 @@ api:
 
 ##### Configuration de l'authentification
 
+Les requêtes par clé API doivent envoyer les en-têtes `X-USERID` et `X-CLASSIFICATION`, et peuvent envoyer
+`X-USERNAME` et `X-EMAIL`. Clue limite `X-CLASSIFICATION` à l'habilitation actuelle de l'utilisateur indiqué dans
+`X-USERID` : au moyen du compte de service, il lit les groupes de cet utilisateur dans l'`admin_api_url` du fournisseur
+et les associe au moyen de `classification_map`, comme lors de la connexion de l'utilisateur. Une classification
+supérieure à l'habilitation de l'utilisateur est abaissée à celle-ci plutôt que refusée. Les requêtes sont refusées
+lorsque la classification est invalide, ou que l'utilisateur
+n'existe pas ou est désactivé. Si l'habilitation ne peut pas être vérifiée (recherche non configurée ou fournisseur
+d'identité injoignable), les requêtes échouent avec une erreur serveur. Les identifiants des clés API ne sont jamais
+transmis aux sources externes.
+
+Cela nécessite un `service_account` activé, dont le fournisseur définit `admin_api_url` et `classification_map`. Dans
+Keycloak, accordez au compte de service les rôles `view-users` et `query-groups` du client `realm-management`.
+
 ```yaml
 auth:
   # Authentification par clé API
@@ -388,6 +401,7 @@ auth:
         access_token_url: "https://auth.example.com/realms/clue/protocol/openid-connect/token"
         authorize_url: "https://auth.example.com/realms/clue/protocol/openid-connect/auth"
         api_base_url: "https://auth.example.com/realms/clue/protocol/openid-connect"
+        admin_api_url: "https://auth.example.com/admin/realms/clue" # Sert à limiter X-CLASSIFICATION des clés API
 
         # Gestion des utilisateurs
         auto_create: true # Créer automatiquement les utilisateurs

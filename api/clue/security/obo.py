@@ -64,7 +64,9 @@ def try_validate_expiry(obo_access_token: str):
     return obo_access_token
 
 
-def get_obo_token(service: str, access_token: str, user: str, force_refresh: bool = False):  # noqa: C901
+def get_obo_token(  # noqa: C901
+    service: str, access_token: str, user: str, force_refresh: bool = False, cache_user: Optional[str] = None
+):
     """Gets an On-Behalf-Of token from either the Redis cache or from the provided authentication plugin.
 
     Args:
@@ -72,6 +74,7 @@ def get_obo_token(service: str, access_token: str, user: str, force_refresh: boo
         access_token (str): The access token we want to use for the exchange.
         user (str): The name of the user.
         force_refresh (bool, optional): Allows to skip the Redis cache and get a new token. Defaults to False.
+        cache_user (str, optional): Identity used to scope the token cache. Defaults to ``user``.
 
     Raises:
         InvalidDataException: Raised whenever an invalid OBO target is provided.
@@ -86,11 +89,13 @@ def get_obo_token(service: str, access_token: str, user: str, force_refresh: boo
     if service == "test-obo":
         return access_token
 
+    cache_user = cache_user or user
+
     try:
         obo_access_token: str | None = None
 
         if not force_refresh:
-            obo_access_token = _get_token_raw(service, user)
+            obo_access_token = _get_token_raw(service, cache_user)
 
         if obo_access_token is not None:
             obo_access_token = try_validate_expiry(obo_access_token)
@@ -111,7 +116,7 @@ def get_obo_token(service: str, access_token: str, user: str, force_refresh: boo
             obo_access_token = extension_get_obo_token(service, access_token, user)
 
             if obo_access_token:
-                service_token_store = _get_obo_token_store(service, user)
+                service_token_store = _get_obo_token_store(service, cache_user)
                 service_token_store.pop_all()
                 service_token_store.add(obo_access_token)
             else:

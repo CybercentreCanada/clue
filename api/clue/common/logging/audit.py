@@ -120,6 +120,9 @@ def audit(args, kwargs, user, func, impersonator=None):
         + ["%s='%s'" % (k, v) for k, v in json_blob.items() if k in AUDIT_KW_TARGET]
     )
 
+    if not impersonator and user.get("apikey"):
+        impersonator = f"apikey:{user['apikey']}"
+
     if impersonator:
         audit_user = f"{impersonator} on behalf of {user['uname']}"
     else:

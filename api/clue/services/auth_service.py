@@ -15,7 +15,7 @@ from clue.common.exceptions import (
     InvalidDataException,
 )
 from clue.common.logging import get_logger
-from clue.config import config, get_redis
+from clue.config import CLASSIFICATION, config, get_redis
 from clue.models.auth_user import AuthResult, AuthUser, Privilege, UserRole
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.set import ExpiringSet
@@ -156,8 +156,9 @@ def bearer_auth(data: str) -> AuthResult:
 
         logger.debug("User successfully authenticated using JWT.")
 
+        oauth_provider = jwt_service.get_provider(data)
         try:
-            cur_user = user_service.parse_user_data(jwt_data, jwt_service.get_provider(data))
+            cur_user = user_service.parse_user_data(jwt_data, oauth_provider)
         except ValidationError as e:
             raise AuthenticationException("The token contains invalid user information.", cause=e) from e
 
@@ -197,8 +198,6 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
 
         uname = request.headers.get("X-USERID", None)
         classification = request.headers.get("X-CLASSIFICATION", None)
-        user_name = request.headers.get("X-USERNAME", None)
-        email = request.headers.get("X-EMAIL", None)
         if not uname or not classification:
             raise AccessDeniedException(
                 "You must also provide X-USERID and X-CLASSIFICATION headers along with your API key."
@@ -207,15 +206,47 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
         return AuthResult(
             user=AuthUser(
                 uname=uname,
-                name=user_name,
-                classification=classification,
-                email=email,
+                name=request.headers.get("X-USERNAME", None),
+                email=request.headers.get("X-EMAIL", None),
+                classification=_get_impersonated_classification(name, uname, classification),
                 roles={UserRole.USER, *config_apikey.roles},
+                apikey=name,
             ),
             privileges=config_apikey.privileges,
         )
     else:
         raise AccessDeniedException("You must provide your API key in the proper format in the Authorization header.")
+
+
+def _get_impersonated_classification(key_name: str, uname: str, classification: str) -> str:
+    """Cap the classification asserted by an API key at the current clearance of the user it acts for.
+
+    A classification at or below the user's clearance is used as is. A higher one is lowered to what both the request
+    and the user's clearance allow.
+
+    Raises:
+        AccessDeniedException: If the classification is invalid or the user is unknown.
+        ClueRuntimeError: If the user's clearance can't be verified.
+    """
+    if not CLASSIFICATION.is_valid(classification):
+        raise AccessDeniedException("The X-CLASSIFICATION header contains an invalid classification.")
+
+    normalized = CLASSIFICATION.normalize_classification(classification, skip_auto_select=True)
+    clearance = user_service.get_user_clearance(uname)
+
+    if CLASSIFICATION.is_accessible(clearance, normalized, ignore_invalid=True):
+        return normalized
+
+    capped = CLASSIFICATION.intersect_user_classification(normalized, clearance)
+    logger.warning(
+        "API key %s asserted classification %s above the clearance %s of user %s; capped to %s",
+        key_name,
+        normalized,
+        clearance,
+        uname,
+        capped,
+    )
+    return capped
 
 
 def validate_userpass(username: str, password: str) -> tuple[Optional[dict[str, Any]], Optional[list[str]]]:
@@ -283,13 +314,16 @@ def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
 
 
 # TODO: sa-clue support
-def check_obo(source: ExternalSource, access_token: str | None, username: str) -> tuple[Optional[str], Optional[str]]:
+def check_obo(
+    source: ExternalSource, access_token: str | None, username: str, cache_user: str | None = None
+) -> tuple[Optional[str], Optional[str]]:
     """Checks whether a token's audience matches the source, and if it doesn't, tries to get an OBO token for the source
 
     Args:
         source (ExternalSource): The source for which we want an access token.
         access_token (str): The access token to verify.
         username (str): The name of the user.
+        cache_user (str | None): Identity used to scope cached OBO tokens. Defaults to ``username``.
 
     Returns:
         tuple[Optional[str], Optional[str]]: A tuple with either the valid access token in the first arg, or the error
@@ -310,7 +344,7 @@ def check_obo(source: ExternalSource, access_token: str | None, username: str) -
 
         # Check if this is a standard clue token
         if jwt_service.get_audience(jwt_service.get_provider(access_token)) in audience:
-            obo_access_token = get_obo_token(source.obo_target, access_token, username)
+            obo_access_token = get_obo_token(source.obo_target, access_token, username, cache_user=cache_user)
             if not obo_access_token:
                 return None, "An error occurred when OBOing token"
 

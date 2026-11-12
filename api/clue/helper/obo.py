@@ -13,7 +13,10 @@ logger = get_logger(__file__)
 def get_obo_access_token(
     source: ExternalSource, user: dict[str, Any], access_token: Optional[str] = None
 ) -> tuple[Optional[str], Optional[str]]:
-    """Get the caller access token and an OBO token for an external source when needed."""
+    """Get the caller access token and an OBO token for an external source when needed.
+
+    API key credentials are never returned, so they are not forwarded to external sources.
+    """
     if access_token is None and has_request_context():
         auth_header = request.headers.get("Authorization", type=str)
         if auth_header:
@@ -23,9 +26,16 @@ def get_obo_access_token(
     if not access_token:
         return None, None
 
-    obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"])
+    apikey = user.get("apikey", None)
+    # Scope cached OBO tokens to the API key, so a key cannot reuse a token cached for an interactive user.
+    cache_user = f"apikey:{apikey}:{user['uname']}" if apikey else user["uname"]
+
+    obo_access_token, error = auth_service.check_obo(source, access_token, user["uname"], cache_user=cache_user)
     if error:
         logger.error("%s: %s", source.name, error)
         raise AuthenticationException("Invalid token provided for this enrichment.")
+
+    if apikey:
+        return None, obo_access_token
 
     return access_token, obo_access_token

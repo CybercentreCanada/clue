@@ -1,10 +1,13 @@
 from typing import Any
+from urllib.parse import quote
 
+import requests
 from elasticapm.traces import capture_span
 from flask import current_app, request
 
 from clue.common.exceptions import (
     AccessDeniedException,
+    ClueRuntimeError,
     ClueValueError,
     InvalidDataException,
 )
@@ -14,6 +17,7 @@ from clue.helper.oauth import parse_profile
 from clue.models.auth_user import AuthUser
 from clue.models.config import ExternalSource
 from clue.remote.datatypes.user_quota_tracker import UserQuotaTracker
+from clue.services import jwt_service
 
 logger = get_logger(__file__)
 
@@ -95,6 +99,83 @@ def get_dynamic_classification(user_data: dict[str, Any], oauth_provider: str):
 
 
 QUOTA_TRACKERS: dict[str, UserQuotaTracker] = {}
+
+CLEARANCE_UNAVAILABLE = "Unable to verify the clearance of the user in X-USERID. Retry later."
+
+
+def get_user_clearance(uname: str) -> str:
+    """Look up the current clearance of a user in the identity provider, using Clue's service account.
+
+    The user's groups are read from the admin API of the service account's provider, then mapped through the
+    provider's classification_map, the same way as when the user logs in.
+
+    Raises:
+        AccessDeniedException: If no enabled user has this username.
+        ClueRuntimeError: If the lookup isn't configured, or the identity provider can't be reached.
+    """
+    accounts = config.auth.service_account.accounts if config.auth.service_account.enabled else []
+    provider_name = accounts[0].provider if accounts else ""
+    provider = config.auth.oauth.providers.get(provider_name)
+    if provider is None or not provider.admin_api_url or not provider.classification_map:
+        logger.error(
+            "Cannot verify API key classifications: enable a service account whose OAuth provider sets admin_api_url "
+            "and classification_map"
+        )
+        raise ClueRuntimeError(CLEARANCE_UNAVAILABLE)
+
+    admin_api_url = provider.admin_api_url.rstrip("/")
+    headers = {"Authorization": f"Bearer {_fetch_sa_token()}"}
+    users = [
+        user
+        for user in _get_admin_api(f"{admin_api_url}/users", headers, {"username": uname, "exact": "true"})
+        if str(user.get("username", "")).lower() == uname.lower()
+    ]
+    if len(users) != 1 or not users[0].get("enabled", False):
+        logger.warning("No enabled user %s was found in the identity provider", uname)
+        raise AccessDeniedException("X-USERID does not match an active user.")
+
+    groups = _get_admin_api(f"{admin_api_url}/users/{quote(str(users[0]['id']), safe='')}/groups", headers)
+
+    # Keycloak token group claims contain either the group name or its full path, depending on the mapper.
+    user_data: dict[str, Any] = {
+        "classification": CLASSIFICATION.UNRESTRICTED,
+        "groups": [value for group in groups for value in (group.get("name"), group.get("path")) if value],
+    }
+    get_dynamic_classification(user_data, provider_name)
+
+    return user_data["classification"]
+
+
+def _fetch_sa_token() -> str:
+    """Get a service account token for the identity provider's admin API, failing closed on any error."""
+    try:
+        sa_token = jwt_service.fetch_sa_token()
+    except Exception as e:
+        logger.exception("Failed to get a service account token to look up a user clearance")
+        raise ClueRuntimeError(CLEARANCE_UNAVAILABLE) from e
+
+    if not sa_token:
+        logger.error("Cannot verify API key classifications: the service account did not return a token")
+        raise ClueRuntimeError(CLEARANCE_UNAVAILABLE)
+
+    return sa_token
+
+
+def _get_admin_api(url: str, headers: dict[str, str], params: dict[str, str] | None = None) -> list[dict[str, Any]]:
+    """GET a list from the identity provider's admin API, failing closed on any error."""
+    try:
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        result = response.json()
+    except Exception as e:
+        logger.exception("Failed to look up a user clearance in the identity provider")
+        raise ClueRuntimeError(CLEARANCE_UNAVAILABLE) from e
+
+    if not isinstance(result, list):
+        logger.error("The identity provider returned an unexpected response while looking up a user clearance")
+        raise ClueRuntimeError(CLEARANCE_UNAVAILABLE)
+
+    return result
 
 
 def check_quota(source: ExternalSource, user: dict[str, Any]) -> str | None:

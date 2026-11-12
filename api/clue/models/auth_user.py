@@ -52,6 +52,7 @@ class AuthUser(BaseModel):
     groups: list[str] = Field(default_factory=list)
     roles: set[UserRole] = Field(default_factory=lambda: {UserRole.USER})
     avatar: str | None = None
+    apikey: str | None = Field(default=None, description="Name of the API key that authenticated the request.")
 
 
 class AuthResult(BaseModel):
