@@ -1,5 +1,16 @@
 # Clue UI Release Notes
 
+## `1.5.0`
+
+- **Priority-Aware Type Detection** *(new feature)*: Type guessing now uses API v2 metadata to honor detection priorities and case sensitivity without modifying the input. Higher priorities win, with registry order breaking ties; added `SupportedType` and `TypesDetectionV2Response` exports ([#117](https://github.com/CybercentreCanada/clue/pull/117)). **Compatibility:** Requires an API exposing `/api/v2/lookup/types_detection/`, introduced in Clue API 1.7.0.
+- **Configurable Replication Batches** *(new feature)*: Added the `DatabaseConfig.pullBatchSize` option to control how many selector documents are fetched per replication pull, retaining the default of 250.
+- **Replication Error Recovery** *(improvement)*: Added the exported `ClueReplicationError` class and `DatabaseConfig.onReplicationError` callback for handling stream HTTP failures. A 401 response resumes only after the callback refreshes the token; other 4xx responses stop retries, while network and server failures use exponential backoff ([#116](https://github.com/CybercentreCanada/clue/pull/116)).
+- **Replication Stream Stability** *(bugfix)*: Preserved incomplete stream lines until more data arrives, skipped malformed events, accepted legacy checkpoint timestamps, and cancelled retry timers when collections close ([#116](https://github.com/CybercentreCanada/clue/pull/116)).
+- **Markdown Sanitization** *(security fix)*: Sanitized raw HTML in rendered Markdown to prevent cross-site scripting while retaining supported Markdown formatting ([#97](https://github.com/CybercentreCanada/clue/pull/97)).
+- **Async Task URL Encoding** *(security fix)*: Encoded task IDs in action and fetcher status URLs so opaque identifiers cannot alter the request path ([#103](https://github.com/CybercentreCanada/clue/pull/103)).
+- **User Role Model** *(technical update)*: Aligned `ClueUser` with API role-based authentication by making `roles` required and removing the legacy `type` field ([#93](https://github.com/CybercentreCanada/clue/pull/93)).
+- **Dependency Updates** *(technical update)*: Updated UI dependencies, including Axios, DOMPurify, React Router, Vite, and Vitest ([#75](https://github.com/CybercentreCanada/clue/pull/75), [#100](https://github.com/CybercentreCanada/clue/pull/100), [#111](https://github.com/CybercentreCanada/clue/pull/111), [#114](https://github.com/CybercentreCanada/clue/pull/114)).
+
 ## `1.4.4`
 
 - **Replication Authentication Guard** *(bugfix)*: Prevented replication from starting when a configured token is missing or falsey.
