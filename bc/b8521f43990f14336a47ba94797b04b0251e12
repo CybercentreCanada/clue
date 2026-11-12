@@ -1,0 +1,19 @@
+.github/workflows/pr-title-check.yml
+  s_667299fda6bcea::t_d2df0f1cce2f0d 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "bcb8521f43990f14336a47ba94797b04b0251e12",
+  "prompts": {},
+  "sessions": {
+    "s_667299fda6bcea": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e2ff90420ffeoV4QeeKRnvgCrH",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
