@@ -9,13 +9,14 @@ from typing import Any, Optional
 
 import jwt
 import requests
+from jwt.algorithms import requires_cryptography
 from jwt.api_jwk import PyJWK
 
 from clue.common.exceptions import ClueKeyError, ClueValueError
 from clue.common.logging import get_logger
 from clue.config import cache, config
 from clue.models.jwks import JWKSSnapshot
-from clue.security.utils import PROVIDER_TOKEN_SIGNING_ALGORITHMS, decode_jwt_payload
+from clue.security.utils import decode_jwt_payload
 
 logger = get_logger(__file__)
 
@@ -385,9 +386,8 @@ def _signing_algorithms(access_token: str, key: str | PyJWK, algorithms: Optiona
     else:
         candidates = algorithms or [jwt.get_unverified_header(access_token).get("alg")]
 
-    allowed = [
-        alg for alg in candidates if alg in PROVIDER_TOKEN_SIGNING_ALGORITHMS and (not algorithms or alg in algorithms)
-    ]
+    # requires_cryptography holds exactly pyjwt's asymmetric algorithms (no HS* or "none").
+    allowed = [alg for alg in candidates if alg in requires_cryptography and (not algorithms or alg in algorithms)]
     if not allowed:
         raise jwt.InvalidAlgorithmError("The token signing algorithm is not allowed.")
     return allowed

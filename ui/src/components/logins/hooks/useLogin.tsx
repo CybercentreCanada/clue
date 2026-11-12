@@ -1,5 +1,5 @@
 import api from 'api';
-import type { LoginResponse, PostLoginBody } from 'api/auth/login';
+import type { LoginResponse } from 'api/auth/login';
 import useAppUser from 'commons/components/app/hooks/useAppUser';
 import LoginErrorModal from 'components/elements/display/modals/LoginErrorModal';
 import useMyApi from 'components/hooks/useMyApi';
@@ -79,21 +79,6 @@ const useLogin = () => {
     [setUser, get, location.pathname, navigate, remove, showErrorMessage, t, showModal]
   );
 
-  // Generic login flow.
-  const doLogin = useCallback(
-    async (loginData: PostLoginBody) => {
-      // Provide the login data to the API for the server to authenticate
-      const userCredential = await dispatchApi(api.auth.login.post(loginData));
-
-      if (!userCredential) {
-        showErrorMessage(t('user.login.failed'));
-      } else if (saveLoginCredential(userCredential)) {
-        getUser(userCredential);
-      }
-    },
-    [dispatchApi, getUser, showErrorMessage, t]
-  );
-
   // OAuth login flow. api.auth.login.get forwards only allowlisted callback parameters to the API.
   const doOAuth = useCallback(async () => {
     navigate(`${location.pathname}${removeOAuthCallbackParams(location.search)}${location.hash}`, { replace: true });
@@ -106,11 +91,10 @@ const useLogin = () => {
   // login service.
   return useMemo(
     () => ({
-      doLogin,
       doOAuth,
       getUser
     }),
-    [doLogin, doOAuth, getUser]
+    [doOAuth, getUser]
   );
 };
 

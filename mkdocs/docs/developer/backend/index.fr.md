@@ -278,6 +278,10 @@ auth:
     enabled: false # Activer l'authentification OAuth
     gravatar_enabled: false # Activer Gravatar pour les avatars d'utilisateur
     jwks_refresh_cooldown_seconds: 60 # Intervalle minimal entre les tentatives JWKS (au moins 1 seconde)
+    jwks_refresh_after_seconds: 3600 # Âge après lequel les clés de signature des jetons d'identité sont récupérées de nouveau
+    jwks_max_age_seconds: 43200 # Âge maximal des clés en cache si le fournisseur est injoignable (>= jwks_refresh_after_seconds)
+    provider_timeout_seconds: 10 # Délai d'expiration des requêtes vers les points de terminaison de jetons et JWKS
+    id_token_leeway_seconds: 120 # Décalage d'horloge toléré lors de la validation des jetons d'identité
     other_audiences: [] # Audiences JWT supplémentaires à accepter
     providers: {} # Configurations des fournisseurs OAuth
 

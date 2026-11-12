@@ -136,6 +136,29 @@ class OAuth(BaseModel):
         ge=1,
         description="Minimum interval between outbound JWKS refresh attempts and bearer-key revalidation interval",
     )
+    jwks_refresh_after_seconds: int = Field(
+        default=3600,
+        ge=1,
+        description="Age after which cached ID-token signing keys are refetched, so withdrawn keys stop being trusted",
+    )
+    jwks_max_age_seconds: int = Field(
+        default=43200,
+        ge=1,
+        description=(
+            "Maximum time ID-token signing keys are trusted after their last successful fetch, even if the provider "
+            "is unreachable. Must be at least jwks_refresh_after_seconds"
+        ),
+    )
+    provider_timeout_seconds: float = Field(
+        default=10,
+        gt=0,
+        description="Timeout for every request to the OAuth provider (token and JWKS endpoints)",
+    )
+    id_token_leeway_seconds: int = Field(
+        default=120,
+        ge=0,
+        description="Clock skew tolerated when validating ID token time-based claims (exp, iat)",
+    )
     providers: dict[str, OAuthProvider] = Field(default={}, description="OAuth provider configuration")
     other_audiences: list[str] | None = Field(
         default=None, description="What other audiences in JWT tokens should Clue accept?"
@@ -167,6 +190,13 @@ class OAuth(BaseModel):
                         provider[field] = default_string_value(provider.get(field, None), env_name=env_name)
 
         return oauth_data
+
+    @model_validator(mode="after")
+    def validate_jwks_ages(self) -> "OAuth":
+        """Cached keys are returned unchecked until they need a refresh, so that must happen before they expire."""
+        if self.jwks_refresh_after_seconds > self.jwks_max_age_seconds:
+            raise ValueError("jwks_refresh_after_seconds must not exceed jwks_max_age_seconds")
+        return self
 
 
 class ServiceAccountCreds(BaseModel):

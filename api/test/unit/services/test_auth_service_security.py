@@ -13,13 +13,14 @@ from flask import Flask
 from pydantic import ValidationError
 
 import clue.api.v1.auth as auth_api
+import clue.helper.oauth_login as oauth_login
 import clue.security.oidc as oidc_module
 import clue.services.auth_service as auth_service
 import clue.services.user_service as user_service
 from clue.common.exceptions import AccessDeniedException, InvalidDataException
 from clue.config import config
 from clue.models.auth_user import APIKeyConf, AuthUser, UserRole
-from clue.models.config import ExternalSource, OAuthProvider
+from clue.models.config import ExternalSource, OAuth, OAuthProvider
 from clue.security.oidc import build_oauth, provider_client_kwargs
 
 ISSUER = "https://provider.invalid/realms/local"
@@ -61,12 +62,7 @@ def _make_oidc(monkeypatch, **provider_overrides):
     monkeypatch.setattr(
         config.auth,
         "oauth",
-        SimpleNamespace(
-            enabled=True,
-            gravatar_enabled=False,
-            jwks_refresh_cooldown_seconds=60,
-            providers={"local": provider_config},
-        ),
+        OAuth(enabled=True, jwks_refresh_cooldown_seconds=60, providers={"local": provider_config}),
     )
     monkeypatch.setattr(config.api, "frontend_url", BASE_URL)
 
@@ -158,6 +154,24 @@ def test_registration_maps_configured_iss_to_trusted_issuer_metadata():
     assert "auto_create" not in kwargs
     assert kwargs["client_id"] == CLIENT_ID
     assert kwargs["client_kwargs"] == {"code_challenge_method": "S256", "default_timeout": 10}
+
+
+def test_registration_uses_the_configured_provider_timeout(monkeypatch):
+    monkeypatch.setattr(config.auth.oauth, "provider_timeout_seconds", 3)
+
+    assert provider_client_kwargs("local", _provider_config())["client_kwargs"]["default_timeout"] == 3
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"jwks_refresh_after_seconds": 7200, "jwks_max_age_seconds": 3600},
+        {"jwks_max_age_seconds": 60},
+    ],
+)
+def test_jwks_refresh_interval_cannot_exceed_max_age(overrides):
+    with pytest.raises(ValidationError):
+        OAuth(**overrides)
 
 
 def test_token_endpoint_requests_have_a_timeout(monkeypatch):
@@ -559,7 +573,7 @@ def test_oidc_cached_jwks_are_refreshed_after_the_refresh_interval(oidc, monkeyp
 
     # The provider withdrew the key: once the cache is refreshed it is no longer trusted.
     oidc.published["keys"] = []
-    clock.now += oidc_module.JWKS_REFRESH_AFTER_SECONDS + 1
+    clock.now += config.auth.oauth.jwks_refresh_after_seconds + 1
 
     assert _login_status(oidc).status_code == 401
     assert oidc.jwks_fetches == [JWKS_URI]
@@ -572,7 +586,7 @@ def test_oidc_failed_jwks_refresh_keeps_keys_within_max_age(oidc, monkeypatch, f
     clock = _clock(monkeypatch)
     assert _login_status(oidc).status_code == 200
     oidc.network.jwks_failure = failure
-    clock.now += oidc_module.JWKS_REFRESH_AFTER_SECONDS + 1
+    clock.now += config.auth.oauth.jwks_refresh_after_seconds + 1
 
     assert _login_status(oidc).status_code == 200
     assert oidc.jwks_fetches == [JWKS_URI]
@@ -582,13 +596,26 @@ def test_oidc_jwks_older_than_max_age_are_never_used(oidc, monkeypatch):
     clock = _clock(monkeypatch)
     assert _login_status(oidc).status_code == 200
     oidc.network.jwks_failure = requests.ConnectionError()
-    clock.now += oidc_module.JWKS_MAX_AGE_SECONDS
+    clock.now += config.auth.oauth.jwks_max_age_seconds
 
     response = _login_status(oidc)
 
     assert response.status_code == 502
     assert response.json["api_error_message"] == "The OAuth provider could not be reached. Try again later."
     assert_no_secrets(response)
+
+
+def test_oidc_jwks_ages_are_configurable(oidc, monkeypatch):
+    clock = _clock(monkeypatch)
+    monkeypatch.setattr(config.auth.oauth, "jwks_refresh_after_seconds", 100)
+    monkeypatch.setattr(config.auth.oauth, "jwks_max_age_seconds", 200)
+    assert _login_status(oidc).status_code == 200
+    oidc.network.jwks_failure = requests.ConnectionError()
+
+    clock.now += 101
+    assert _login_status(oidc).status_code == 200
+    clock.now += 100
+    assert _login_status(oidc).status_code == 502
 
 
 @pytest.mark.parametrize("failure", [requests.Timeout(), requests.ConnectionError(), requests.HTTPError()])
@@ -668,7 +695,7 @@ def test_login_rejects_invalid_normalized_user_data(oidc):
     with pytest.raises(ValidationError) as validation_error:
         AuthUser.model_validate({})
 
-    with patch.object(auth_api.user_service, "parse_user_data", side_effect=validation_error.value):
+    with patch.object(oauth_login.user_service, "parse_user_data", side_effect=validation_error.value):
         response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
 
     assert response.status_code == 401
@@ -679,42 +706,22 @@ def test_login_rejects_invalid_normalized_user_data(oidc):
 
 
 @pytest.mark.parametrize(
-    "body",
-    [
-        {"provider": "local", "refresh_token": "legacy-refresh"},
-        {"oauth_provider": "local", "refresh_token": "legacy-refresh"},
-        {"refresh_token": "legacy-refresh"},
-    ],
-)
-def test_legacy_refresh_post_to_login_gets_401_without_exchange(oidc, body):
-    """UIs released before CLUE-010 refresh through the login endpoint; they must clear their credentials instead."""
-    oidc.exchange.return_value = oidc.token()
-
-    response = oidc.client.post(LOGIN, json=body, base_url=BASE_URL)
-
-    assert response.status_code == 401
-    assert response.json["api_error_message"] == auth_api.LEGACY_REFRESH_ERROR
-    assert not oidc.exchange.called
-    assert_no_secrets(response, "legacy-refresh")
-
-
-@pytest.mark.parametrize(
     "request_kwargs",
     [
+        {"json": {"provider": "local", "refresh_token": "legacy-refresh"}},
         {"json": {"provider": "local", "code": "synthetic-code", "state": "forged"}},
-        {"json": {"provider": "local", "refresh_token": "attacker-refresh", "grant_type": "refresh_token"}},
-        {"json": {"provider": "local", "refresh_token": "attacker-refresh", "nonce": "attacker-nonce"}},
-        {"json": {"refresh_token": "attacker-refresh"}, "query_string": {"provider": "local"}},
-        {"data": {"provider": "local", "refresh_token": "attacker-refresh"}},
+        {"data": {"provider": "local", "refresh_token": "legacy-refresh"}},
+        {"query_string": {"provider": "local"}},
     ],
 )
-def test_login_endpoint_rejects_other_refresh_and_oauth_posts(oidc, request_kwargs):
+def test_login_endpoint_rejects_post(oidc, request_kwargs):
     oidc.exchange.return_value = oidc.token()
 
     response = oidc.client.post(LOGIN, base_url=BASE_URL, **request_kwargs)
 
-    assert response.status_code == 400
+    assert response.status_code == 405
     assert not oidc.exchange.called
+    assert_no_secrets(response, "legacy-refresh")
 
 
 def test_refresh_endpoint_exchanges_refresh_token_and_validates_identity(oidc):

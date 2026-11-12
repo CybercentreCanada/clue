@@ -11,14 +11,14 @@ from typing import Any, Callable, Mapping
 
 import requests
 from authlib.integrations.flask_client import FlaskOAuth2App, OAuth
-from authlib.jose import JsonWebKey, JsonWebToken
+from authlib.jose import JsonWebKey, JsonWebSignature, JsonWebToken
+from authlib.jose.rfc7518.jws_algs import HMACAlgorithm, NoneAlgorithm
 from authlib.oidc.core import CodeIDToken, UserInfo
 
 from clue.common.exceptions import AuthenticationException
 from clue.common.logging import get_logger
 from clue.config import config
 from clue.models.config import OAuthProvider
-from clue.security.utils import PROVIDER_TOKEN_SIGNING_ALGORITHMS
 
 logger = get_logger(__file__)
 
@@ -35,17 +35,6 @@ CLUE_ONLY_PROVIDER_FIELDS = (
     "user_groups_name_field",
     "app_provider",
 )
-
-ID_TOKEN_SIGNING_ALGORITHMS = PROVIDER_TOKEN_SIGNING_ALGORITHMS
-
-DEFAULT_LEEWAY_SECONDS = 120
-
-# Timeout for every request to the provider (token endpoint and JWKS), so a slow provider cannot hang a worker.
-PROVIDER_HTTP_TIMEOUT_SECONDS = 10
-# Cached signing keys are refreshed once older than this, so keys the provider withdrew stop being trusted.
-JWKS_REFRESH_AFTER_SECONDS = 3600  # 1h
-# Keys are never trusted longer than this after their last successful fetch, even if the provider is unreachable.
-JWKS_MAX_AGE_SECONDS = 43200  # 12h
 
 
 def _is_valid_jwk(jwk: Any) -> bool:
@@ -80,7 +69,7 @@ class ClueOAuth2App(FlaskOAuth2App):
     def _usable_jwk_set(self, *, upstream_unavailable: bool = False) -> dict[str, Any]:
         """The cached JWKS if it is still within its maximum age; never stale keys."""
         age = self._jwks_age(time.monotonic())
-        if age is None or age >= JWKS_MAX_AGE_SECONDS:
+        if age is None or age >= config.auth.oauth.jwks_max_age_seconds:
             if upstream_unavailable:
                 raise requests.RequestException("The OAuth provider's signing keys are unavailable.")
             raise AuthenticationException("The ID token signing keys are unavailable.")
@@ -88,7 +77,9 @@ class ClueOAuth2App(FlaskOAuth2App):
 
     def _download_jwk_set(self, uri: str) -> dict[str, Any]:
         with self.client_cls(**self.client_kwargs) as session:
-            response = session.request("GET", uri, withhold_token=True, timeout=PROVIDER_HTTP_TIMEOUT_SECONDS)
+            response = session.request(
+                "GET", uri, withhold_token=True, timeout=config.auth.oauth.provider_timeout_seconds
+            )
             response.raise_for_status()
             payload = response.json()
 
@@ -106,11 +97,11 @@ class ClueOAuth2App(FlaskOAuth2App):
         Unlike Authlib's default, cached keys expire, outbound fetches have a timeout, are serialized and rate-limited
         by ``jwks_refresh_cooldown_seconds`` (an unknown ``kid`` cannot trigger a request per login). A failed refresh
         may use still-valid cached keys; if none remain, the upstream failure is returned for retry. Keys older than
-        ``JWKS_MAX_AGE_SECONDS`` are never used.
+        ``jwks_max_age_seconds`` are never used.
         """
         metadata = self.load_server_metadata()
         age = self._jwks_age(time.monotonic())
-        if not force and age is not None and age < JWKS_REFRESH_AFTER_SECONDS:
+        if not force and age is not None and age < config.auth.oauth.jwks_refresh_after_seconds:
             return metadata["jwks"]
 
         # Nonblocking: concurrent logins use the known keys instead of queueing behind a slow provider.
@@ -187,17 +178,24 @@ class ClueOAuth2App(FlaskOAuth2App):
             raise AuthenticationException("The OAuth callback was issued by an untrusted authorization server.")
 
     def _signing_algorithms(self) -> list[str]:
+        # Asymmetric algorithms only: symmetric or "none" algorithms must never verify a provider-issued token.
+        supported = [
+            name
+            for name, algorithm in JsonWebSignature.ALGORITHMS_REGISTRY.items()
+            if not isinstance(algorithm, (HMACAlgorithm, NoneAlgorithm))
+        ]
+
         advertised = self.load_server_metadata().get("id_token_signing_alg_values_supported")
         if not advertised:
-            return list(ID_TOKEN_SIGNING_ALGORITHMS)
+            return supported
 
-        algorithms = [alg for alg in ID_TOKEN_SIGNING_ALGORITHMS if alg in advertised]
+        algorithms = [alg for alg in supported if alg in advertised]
         if not algorithms:
             raise AuthenticationException("The OAuth provider advertises no supported signing algorithm.")
         return algorithms
 
     def _validate_id_token(
-        self, token: Mapping[str, Any], nonce: str | None, require_nonce: bool, leeway: int
+        self, token: Mapping[str, Any], nonce: str | None, require_nonce: bool, leeway: int | None
     ) -> UserInfo:
         if not self.client_id:
             raise AuthenticationException("The OAuth provider has no client ID configured.")
@@ -227,7 +225,7 @@ class ClueOAuth2App(FlaskOAuth2App):
             claims_params=claims_params,
         )
         # Unlike Authlib's default, a signed "nonce_supported" claim never disables nonce validation.
-        claims.validate(leeway=leeway)
+        claims.validate(leeway=config.auth.oauth.id_token_leeway_seconds if leeway is None else leeway)
         return UserInfo(claims)
 
     def parse_id_token(
@@ -236,7 +234,7 @@ class ClueOAuth2App(FlaskOAuth2App):
         nonce: str | None,
         claims_options: Any = None,  # noqa: ARG002
         claims_cls: Any = None,  # noqa: ARG002
-        leeway: int = DEFAULT_LEEWAY_SECONDS,
+        leeway: int | None = None,
     ) -> UserInfo | None:
         """Validate an ID token from a browser authorization-code callback.
 
@@ -247,7 +245,7 @@ class ClueOAuth2App(FlaskOAuth2App):
             return None
         return self._validate_id_token(token, nonce=nonce, require_nonce=True, leeway=leeway)
 
-    def parse_refreshed_id_token(self, token: Mapping[str, Any], leeway: int = DEFAULT_LEEWAY_SECONDS) -> UserInfo:
+    def parse_refreshed_id_token(self, token: Mapping[str, Any], leeway: int | None = None) -> UserInfo:
         """Validate an ID token returned by a refresh-token grant.
 
         A refresh grant has no authorization request and therefore no nonce, so the nonce is not compared. Signature,
@@ -277,7 +275,7 @@ def provider_client_kwargs(name: str, provider: OAuthProvider) -> dict[str, Any]
     # default_timeout bounds the token-endpoint requests Authlib makes for login and refresh.
     raw_provider["client_kwargs"] = {
         "code_challenge_method": "S256",
-        "default_timeout": PROVIDER_HTTP_TIMEOUT_SECONDS,
+        "default_timeout": config.auth.oauth.provider_timeout_seconds,
     }
 
     raw_provider["name"] = name
