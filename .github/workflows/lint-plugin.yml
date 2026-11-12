@@ -9,12 +9,17 @@ on:
 
 jobs:
   lint-and-format:
+    # Keep PR-controlled code out of privileged workflow_run jobs.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.event != 'pull_request'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
