@@ -1,0 +1,43 @@
+.github/workflows/crtsh-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/example-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/malware-bazaar-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/howler-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/test-plugin.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 14-15,25
+  s_7e3947cd2b7698::t_b74937c326a9af 12-13
+.github/workflows/misp-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/lint-plugin.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 14-15,22
+  s_7e3947cd2b7698::t_b74937c326a9af 12-13
+.github/workflows/port-lookup-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/virustotal-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/assemblyline-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+plugins/setup/templates/template-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+.github/workflows/ripe-asn-names-plugin-workflow.yml
+  s_7e3947cd2b7698::t_4bd0f5cf20d828 26-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "b5794c5bd5a6ab3e1d1ca6f6839bb63b0fdc3b02",
+  "prompts": {},
+  "sessions": {
+    "s_7e3947cd2b7698": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e2f96c221ffeiAn7mzTkfTlkC7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
