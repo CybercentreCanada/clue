@@ -1,0 +1,23 @@
+ui/src/lib/database/replication.ts
+  s_3140d78caa5dd6::t_ab08312fce4313 60,209-217
+  s_3140d78caa5dd6::t_787994d392197d 80-111,114-123,126,135-136,139,142-145,147-148,150-154,156-159,161-166,170-172,175-187
+ui/src/lib/database/replication.test.ts
+  s_3140d78caa5dd6::t_e9340762213ff6 614-615,630
+  s_3140d78caa5dd6::t_758be14cb72d02 508-577,619-624,644,647,650,677-765,809-823
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "52fc66aae0bc58940dc66b57b1584fad1846ee66",
+  "prompts": {},
+  "sessions": {
+    "s_3140d78caa5dd6": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3011d91cffeRs0w159tU3Fn9A",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
