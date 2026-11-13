@@ -106,4 +106,26 @@ describe('useLogin', () => {
     expect(mocks.navigate).toHaveBeenNthCalledWith(1, '/login?type=ip', { replace: true });
     expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
   });
+
+  it.each(['#access_token=t', '#id_token=a.b.c&refresh_token=r', '#ACCESS_TOKEN=t', '#section&token=t'])(
+    'clears credential fragment %s while preserving a denied callback for the API',
+    async hash => {
+      mocks.location.search = '?type=ip&provider=keycloak&state=s&error=access_denied';
+      mocks.location.hash = hash;
+      mocks.searchParams = new URLSearchParams(mocks.location.search);
+      const error = new Error('Authentication failed.');
+      mocks.loginGet.mockRejectedValue(error);
+      const { result } = renderHook(() => useLogin());
+
+      await act(async () => {
+        await expect(result.current.doOAuth()).rejects.toBe(error);
+      });
+
+      expect(mocks.navigate).toHaveBeenCalledWith('/login?type=ip', { replace: true });
+      expect(mocks.loginGet).toHaveBeenCalledWith(mocks.searchParams);
+      expect(mocks.loginGet.mock.calls[0][0].get('error')).toBe('access_denied');
+      expect(mocks.navigate.mock.invocationCallOrder[0]).toBeLessThan(mocks.loginGet.mock.invocationCallOrder[0]);
+      expect(mocks.saveLoginCredential).not.toHaveBeenCalled();
+    }
+  );
 });

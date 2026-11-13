@@ -2,8 +2,9 @@ import { Button, CircularProgress, Stack } from '@mui/material';
 import api from 'api';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
-import { OAUTH_SENSITIVE_PARAMS } from 'utils/oauth';
+import { OAUTH_SENSITIVE_PARAMS, removeOAuthCallbackFragment } from 'utils/oauth';
 import useLogin from '../hooks/useLogin';
 
 type OAuthLoginProps = {
@@ -12,6 +13,7 @@ type OAuthLoginProps = {
 
 const OAuthLogin = ({ providers }: OAuthLoginProps) => {
   const [searchParams] = useSearchParams();
+  const { hash } = useLocation();
   const { t } = useTranslation();
   const { doOAuth } = useLogin();
 
@@ -20,7 +22,7 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
   const codeRedemption = useRef<Promise<void>>();
 
   useEffect(() => {
-    if (OAUTH_SENSITIVE_PARAMS.some(param => searchParams.has(param))) {
+    if (OAUTH_SENSITIVE_PARAMS.some(param => searchParams.has(param)) || removeOAuthCallbackFragment(hash) !== hash) {
       setButtonLoading(true);
 
       if (!codeRedemption.current) {
@@ -32,7 +34,7 @@ const OAuthLogin = ({ providers }: OAuthLoginProps) => {
         setButtonLoading(false);
       });
     }
-  }, [doOAuth, searchParams]);
+  }, [doOAuth, searchParams, hash]);
 
   return (
     <Stack spacing={1}>

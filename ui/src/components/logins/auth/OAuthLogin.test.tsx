@@ -2,10 +2,11 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OAuthLogin from './OAuthLogin';
 
-const mocks = vi.hoisted(() => ({ doOAuth: vi.fn(), searchParams: new URLSearchParams() }));
+const mocks = vi.hoisted(() => ({ doOAuth: vi.fn(), searchParams: new URLSearchParams(), location: { hash: '' } }));
 
 vi.mock('../hooks/useLogin', () => ({ default: () => ({ doOAuth: mocks.doOAuth }) }));
 vi.mock('react-router-dom', () => ({ useSearchParams: () => [mocks.searchParams] }));
+vi.mock('react-router', () => ({ useLocation: () => mocks.location }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
 // Only the click's side effects matter; jsdom cannot follow the link.
@@ -22,6 +23,7 @@ describe('OAuthLogin', () => {
     window.localStorage.clear();
     window.sessionStorage.clear();
     mocks.searchParams = new URLSearchParams();
+    mocks.location.hash = '';
     document.addEventListener('click', preventNavigation);
   });
 
@@ -64,5 +66,22 @@ describe('OAuthLogin', () => {
     await renderLogin(['keycloak']);
 
     expect(mocks.doOAuth).toHaveBeenCalledOnce();
+  });
+
+  it('cleans up credentials present only in the fragment', async () => {
+    mocks.location.hash = '#access_token=t';
+    mocks.doOAuth.mockResolvedValueOnce(undefined);
+
+    await renderLogin(['keycloak']);
+
+    expect(mocks.doOAuth).toHaveBeenCalledOnce();
+  });
+
+  it('does not redeem a benign anchor without callback parameters', async () => {
+    mocks.location.hash = '#section';
+
+    await renderLogin(['keycloak']);
+
+    expect(mocks.doOAuth).not.toHaveBeenCalled();
   });
 });

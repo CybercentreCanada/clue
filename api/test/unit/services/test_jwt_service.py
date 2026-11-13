@@ -77,6 +77,45 @@ def test_get_jwk_refreshes_the_cache_for_an_unknown_key(service):
     fetch.assert_called_once_with("https://idp/jwks", timeout=10)
 
 
+def test_bearer_jwks_requests_use_configured_provider_timeout(service, monkeypatch):
+    monkeypatch.setattr(service.config.auth.oauth, "provider_timeout_seconds", 3)
+    with patch.object(service.requests, "get", return_value=Mock(json=lambda: {"keys": [key("known")]})) as fetch:
+        assert service.get_jwk(token("known")).key_id == "known"
+
+    fetch.assert_called_once_with("https://idp/jwks", timeout=3)
+
+
+@pytest.mark.parametrize("refresh_token", [None, "cached-refresh"])
+def test_service_account_requests_use_configured_provider_timeout(service, monkeypatch, refresh_token):
+    monkeypatch.setattr(service.config.auth.oauth, "provider_timeout_seconds", 3)
+    monkeypatch.setattr(
+        service.config.auth.oauth,
+        "providers",
+        {
+            "provider": SimpleNamespace(
+                access_token_url="https://idp/token", client_id="client", client_secret="secret", scope="openid"
+            )
+        },
+    )
+    monkeypatch.setattr(service.config.auth.service_account, "enabled", True)
+    monkeypatch.setattr(
+        service.config.auth.service_account,
+        "accounts",
+        [SimpleNamespace(provider="provider", username="service-user", password="password")],
+    )
+    with (
+        patch.object(service.cache, "get", return_value=refresh_token),
+        patch.object(
+            service.requests, "post", return_value=Mock(json=lambda: {"access_token": "issued-token"})
+        ) as fetch,
+    ):
+        assert service.fetch_sa_token() == "issued-token"
+
+    assert fetch.call_args.args == ("https://idp/token",)
+    assert fetch.call_args.kwargs["timeout"] == 3
+    assert fetch.call_args.kwargs["data"]["grant_type"] == ("refresh_token" if refresh_token else "password")
+
+
 @pytest.mark.parametrize("lookup,error", [("get_jwk", "ClueKeyError"), ("get_provider", "ClueValueError")])
 def test_unknown_kids_fetch_at_most_once_without_eviction(service, lookup, error):
     seed_cache(service)

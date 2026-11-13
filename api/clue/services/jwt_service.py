@@ -193,7 +193,7 @@ def _fetch_provider_jwks(jwks_uri: str) -> list[dict[str, Any]]:
         ValueError: The payload is not a JSON object with a `keys` list, or every entry in a non-empty
             `keys` list is malformed.
     """
-    response = requests.get(jwks_uri, timeout=10)
+    response = requests.get(jwks_uri, timeout=config.auth.oauth.provider_timeout_seconds)
     response.raise_for_status()
     payload = response.json()
     if not isinstance(payload, dict) or not isinstance(payload.get("keys"), list):
@@ -492,7 +492,7 @@ def fetch_sa_token() -> Optional[str]:
                 "refresh_token": refresh_token,
                 "scope": provider.scope,
             },
-            timeout=30,
+            timeout=config.auth.oauth.provider_timeout_seconds,
         ).json()
     else:
         sa_jwt = requests.post(
@@ -505,7 +505,7 @@ def fetch_sa_token() -> Optional[str]:
                 "password": service_account.password,
                 "scope": provider.scope,
             },
-            timeout=30,
+            timeout=config.auth.oauth.provider_timeout_seconds,
         ).json()
 
     if "error" in sa_jwt:

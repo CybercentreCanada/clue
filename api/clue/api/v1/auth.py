@@ -4,7 +4,7 @@ import requests
 from authlib.integrations.base_client import OAuthError
 from authlib.jose.errors import JoseError
 from authlib.oidc.core import UserInfo
-from flask import request
+from flask import abort, request
 from pydantic import ValidationError
 
 from clue.api import (
@@ -98,6 +98,10 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
                 }
             }
     """
+    # Flask also dispatches HEAD to GET routes; it must not consume an OAuth transaction.
+    if request.method != "GET":
+        abort(405, valid_methods=["GET"])
+
     try:
         args = request.args
         oauth_provider = provider_name_from_args(args)

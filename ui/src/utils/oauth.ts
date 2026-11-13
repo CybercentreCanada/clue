@@ -71,6 +71,8 @@ const hasSensitiveParams = (raw: string): boolean => {
   return keys.some(key => (OAUTH_SENSITIVE_PARAMS as readonly string[]).includes(key));
 };
 
+export const removeOAuthCallbackFragment = (hash: string): string => (hasSensitiveParams(hash) ? '' : hash);
+
 /**
  * Return a same-origin `pathname + search` post-login destination, or `null` when the destination is unsafe: not a
  * local absolute path, an authentication route, or a URL carrying OAuth callback data or credentials.

@@ -200,6 +200,30 @@ def test_token_endpoint_requests_have_a_timeout(monkeypatch):
 # --- Login initiation --------------------------------------------------------------------------------------------
 
 
+def test_head_does_not_initiate_oauth(oidc):
+    with patch.object(oidc.provider, "authorize_redirect") as authorize:
+        response = oidc.client.head(f"{LOGIN}?provider=local", base_url=BASE_URL)
+
+    assert response.status_code == 405
+    authorize.assert_not_called()
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert not any(key.startswith("_state_local_") for key in session)
+
+
+def test_head_does_not_redeem_oauth_or_consume_callback_state(oidc):
+    params = begin_login(oidc)
+    oidc.exchange.return_value = oidc.token(params["nonce"])
+    query = {"provider": "local", "code": "synthetic-code", "state": params["state"]}
+
+    response = oidc.client.head(f"{LOGIN}?{urlencode(query)}", base_url=BASE_URL)
+
+    assert response.status_code == 405
+    oidc.exchange.assert_not_called()
+    with oidc.client.session_transaction(base_url=BASE_URL) as session:
+        assert f"_state_local_{params['state']}" in session
+    assert callback(oidc, query).status_code == 200
+
+
 def test_legacy_nonce_at_login_initiation_is_discarded(oidc):
     """UIs released before CLUE-010 add their own nonce to the login link; it must never become the session nonce."""
     with patch.object(oidc.provider, "authorize_redirect", wraps=oidc.provider.authorize_redirect) as authorize:
