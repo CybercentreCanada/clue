@@ -23,6 +23,13 @@ on:
       - plugins/ripe_asn_names/**
       - .github/workflows/ripe-asn-names-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
+      - api/**
+      - "!api/LICENSE"
+      - "!api/README.md"
+      - "!api/docs/**"
+      - "!api/build_scripts/generate_classes.py"
+      - plugins/base/**
+      - .github/workflows/base-plugin-workflow.yml
   workflow_dispatch: {}
   workflow_run:
     workflows:
