@@ -73,6 +73,9 @@ services:
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__CLIENT_ID: "clue"
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__CLIENT_SECRET: "09RhSF7tp0ShDdDMCszqI4zk8HMroTTZ"
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__JWKS_URI: "http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/certs"
+      # ID tokens keep the browser-facing issuer of the authorization request, even when the code is exchanged through
+      # the internal token URL above
+      AUTH__OAUTH__PROVIDERS__KEYCLOAK__ISS: "http://localhost:9100/realms/HogwartsMini"
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__SCOPE: "openid profile email"
       AUTH__OAUTH__PROVIDERS__KEYCLOAK__AUTO_CREATE: "true"
 

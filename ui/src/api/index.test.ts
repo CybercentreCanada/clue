@@ -1,9 +1,11 @@
+import { AxiosError, AxiosHeaders } from 'axios';
 import { StorageKey } from 'lib/utils/constants';
 import AxiosClient from 'rest/AxiosClient';
 import { URLSearchParams } from 'url';
 import * as localStorage from 'utils/localStorage';
 import * as xsrf from 'utils/xsrf';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import * as oauthLogin from './auth/login';
 import api, { hdelete, hget, hpatch, hpost, hput, joinAllUri, joinParams, joinUri, setHeaders, uri } from './index';
 
 interface MockAxiosClientType {
@@ -33,6 +35,39 @@ describe('API Index', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
+
+  it('redeems OAuth callbacks with allowlisted parameters and without storing anything', async () => {
+    const search = new URLSearchParams({ provider: 'local', code: 'c', state: 's', nonce: 'n', refresh_token: 'r' });
+    client.fetch.mockResolvedValue([{ api_error_message: 'OAuth authentication failed.' }, 401]);
+
+    await oauthLogin.get(search);
+
+    expect(client.fetch.mock.calls[0][0]).toContain('/auth/login');
+    expect(Object.fromEntries(client.fetch.mock.calls[0][3].entries())).toEqual({
+      provider: 'local',
+      code: 'c',
+      state: 's'
+    });
+    expect(localStorage.setStored).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['/login', '', ''],
+    ['/fetchers', '?code=c&state=s', ''],
+    ['/fetchers', '', '#access_token=t']
+  ])(
+    'does not persist %s%s%s when an unrelated request returns 401 on an OAuth callback URL',
+    async (pathname, search, hash) => {
+      Object.defineProperty(global, 'location', { value: { pathname, search, hash }, writable: true });
+      vi.mocked(localStorage.getStored).mockReturnValue(null);
+      client.fetch.mockResolvedValue([{ api_error_message: 'Unauthorized' }, 401]);
+
+      await hget('/configs');
+
+      expect(localStorage.setStored).not.toHaveBeenCalledWith(StorageKey.NEXT_LOCATION, expect.anything());
+      expect(localStorage.setStored).not.toHaveBeenCalledWith(StorageKey.NEXT_SEARCH, expect.anything());
+    }
+  );
 
   describe('joinParams', () => {
     it('should return original URI when no search params provided', () => {
@@ -346,11 +381,23 @@ describe('API Index', () => {
   });
 
   describe('Token refresh', () => {
+    const mockRefreshAndRetry = () =>
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
+        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200])
+        .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]);
+
+    beforeEach(() => {
+      vi.mocked(localStorage.getStored).mockImplementation(key =>
+        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
+      );
+    });
+
     it('should attempt token refresh on 401 when refresh token exists', async () => {
       // Mock the fetch calls
       client.fetch
         .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401]) // First call fails
-        .mockResolvedValueOnce([{ api_response: { access_token: 'new-token' } }, 200]) // Refresh succeeds
+        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200]) // Refresh succeeds
         .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]); // Retry succeeds
 
       // Mock localStorage for refresh scenario
@@ -369,9 +416,103 @@ describe('API Index', () => {
 
       expect(result).toBe('retry-success');
       expect(client.fetch).toHaveBeenCalledTimes(3);
-      expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({ access_token: 'new-token' });
+      expect(client.fetch.mock.calls[1][0]).toBe('/api/v1/auth/refresh');
+      expect(client.fetch.mock.calls[1][1]).toBe('post');
+      expect(client.fetch.mock.calls[1][2]).toEqual({ provider: 'mock-provider', refresh_token: 'mock-refresh-token' });
+      expect(client.fetch.mock.calls[1][3]).toBeUndefined();
+      expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({ app_token: 'new-token' });
+      expect(localStorage.saveLoginCredential).not.toHaveBeenCalledWith({});
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_LOCATION);
       expect(localStorage.removeStored).toHaveBeenCalledWith(StorageKey.NEXT_SEARCH);
+    });
+
+    it.each([
+      ['uppercase', { Authorization: 'Bearer expired', 'X-Custom': 'keep' }],
+      ['lowercase', { authorization: 'Bearer expired', 'X-Custom': 'keep' }],
+      ['duplicate casing', { Authorization: 'Bearer expired', authorization: 'Bearer older', 'X-Custom': 'keep' }],
+      ['AxiosHeaders', new AxiosHeaders({ authorization: 'Bearer expired', 'X-Custom': 'keep' })]
+    ])('preserves the request config and replaces %s authorization on retry', async (_, headers) => {
+      mockRefreshAndRetry();
+      const originalHeaders = { ...headers };
+
+      expect(await hget('/test', null, { baseURL: 'https://clue.example', headers, timeout: 5000 })).toBe(
+        'retry-success'
+      );
+
+      expect(client.fetch.mock.calls[2][0]).toBe('https://clue.example/api/v1/test');
+
+      const retryConfig = client.fetch.mock.calls[2][4];
+      const retryHeaders = new AxiosHeaders(retryConfig.headers);
+      expect(retryHeaders.get('Authorization')).toBe('Bearer new-token');
+      expect(Object.keys(retryConfig.headers).filter(key => key.toLowerCase() === 'authorization')).toHaveLength(1);
+      expect(retryHeaders.get('X-Custom')).toBe('keep');
+      expect(retryConfig.timeout).toBe(5000);
+      expect({ ...headers }).toEqual(originalHeaders);
+    });
+
+    it('does not retry when the refresh response has no access token', async () => {
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
+        .mockResolvedValueOnce([{ api_response: { provider: 'mock-provider' } }, 200]);
+
+      await expect(hget('/test', null, { headers: { Authorization: 'Bearer expired' } })).rejects.toThrow();
+      expect(client.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    describe('when the refresh fails', () => {
+      beforeEach(() => {
+        Object.defineProperty(global, 'location', {
+          value: { pathname: '/fetchers', search: '?type=ip', hash: '' },
+          writable: true
+        });
+        client.fetch.mockResolvedValueOnce([{ api_error_message: 'Unauthorized', api_status_code: 401 }, 401]);
+      });
+
+      it.each([
+        [
+          'rejected as unauthenticated (401)',
+          [{ api_error_message: 'Authentication failed.', api_status_code: 401 }, 401]
+        ],
+        [
+          'rejected as invalid (400)',
+          [{ api_error_message: 'Invalid token refresh request.', api_status_code: 400 }, 400]
+        ]
+      ])('clears the stored credentials and keeps the page for the next login when %s', async (_, refreshResult) => {
+        client.fetch.mockResolvedValueOnce(refreshResult);
+
+        const result = await hget('/test');
+
+        expect(result).toBeUndefined();
+        expect(client.fetch).toHaveBeenCalledTimes(2);
+        expect(localStorage.saveLoginCredential).toHaveBeenCalledWith({});
+        expect(localStorage.setStored).toHaveBeenCalledWith(StorageKey.NEXT_LOCATION, '/fetchers');
+        expect(localStorage.setStored).toHaveBeenCalledWith(StorageKey.NEXT_SEARCH, '?type=ip');
+      });
+
+      it.each([
+        [
+          'a server error (503)',
+          () => client.fetch.mockResolvedValueOnce([{ api_error_message: 'Unavailable', api_status_code: 503 }, 503])
+        ],
+        [
+          'an unexpected status (403)',
+          () => client.fetch.mockResolvedValueOnce([{ api_error_message: 'Forbidden', api_status_code: 403 }, 403])
+        ],
+        ['a network failure', () => client.fetch.mockRejectedValueOnce(new AxiosError('Network Error', 'ERR_NETWORK'))],
+        ['a timeout', () => client.fetch.mockRejectedValueOnce(new AxiosError('timeout exceeded', 'ECONNABORTED'))],
+        ['a rejection that is not an Error', () => client.fetch.mockRejectedValueOnce({ api_status_code: 400 })]
+      ])('keeps the stored credentials and propagates %s', async (_, failRefresh) => {
+        failRefresh();
+
+        const outcome = await hget('/test').then(
+          () => 'resolved',
+          () => 'rejected'
+        );
+
+        expect(outcome).toBe('rejected');
+        expect(client.fetch).toHaveBeenCalledTimes(2);
+        expect(localStorage.saveLoginCredential).not.toHaveBeenCalled();
+      });
     });
   });
 });

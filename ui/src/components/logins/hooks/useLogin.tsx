@@ -1,5 +1,5 @@
 import api from 'api';
-import type { LoginResponse, PostLoginBody } from 'api/auth/login';
+import type { LoginResponse } from 'api/auth/login';
 import useAppUser from 'commons/components/app/hooks/useAppUser';
 import LoginErrorModal from 'components/elements/display/modals/LoginErrorModal';
 import useMyApi from 'components/hooks/useMyApi';
@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
 import { saveLoginCredential } from 'utils/localStorage';
+import { getSafeRedirectDestination, removeOAuthCallbackFragment, removeOAuthCallbackParams } from 'utils/oauth';
 
 const useLogin = () => {
   const navigate = useNavigate();
@@ -46,13 +47,20 @@ const useLogin = () => {
         if (user) {
           setUser(user);
 
-          // Either navigate to the original URL, or just the home page
-          if (get(StorageKey.NEXT_LOCATION)) {
-            navigate(get<string>(StorageKey.NEXT_LOCATION) + (get<string>(StorageKey.NEXT_SEARCH) ?? ''));
-            remove(StorageKey.NEXT_LOCATION);
-            remove(StorageKey.NEXT_SEARCH);
+          // Either navigate to the original URL, or just the home page. Persisted destinations are revalidated
+          // because older versions could have stored OAuth callback URLs.
+          const destination = getSafeRedirectDestination(
+            get<string>(StorageKey.NEXT_LOCATION),
+            get<string>(StorageKey.NEXT_SEARCH)
+          );
+          remove(StorageKey.NEXT_LOCATION);
+          remove(StorageKey.NEXT_SEARCH);
+
+          // Replace the history entry so an OAuth callback URL is not kept in the browser history.
+          if (destination) {
+            navigate(destination, { replace: location.pathname === '/login' });
           } else if (location.pathname === '/login') {
-            navigate('/');
+            navigate('/', { replace: true });
           }
           // If the user is null but there's no exception?
         } else {
@@ -71,37 +79,25 @@ const useLogin = () => {
     [setUser, get, location.pathname, navigate, remove, showErrorMessage, t, showModal]
   );
 
-  // Generic login flow.
-  const doLogin = useCallback(
-    async (loginData: PostLoginBody) => {
-      // Provide the login data to the API for the server to authenticate
-      const userCredential = await dispatchApi(api.auth.login.post(loginData));
-
-      if (!userCredential) {
-        showErrorMessage(t('user.login.failed'));
-      } else if (saveLoginCredential(userCredential)) {
-        getUser(userCredential);
-      }
-    },
-    [dispatchApi, getUser, showErrorMessage, t]
-  );
-
-  // OAuth login flow.
+  // OAuth login flow. api.auth.login.get forwards only allowlisted callback parameters to the API.
   const doOAuth = useCallback(async () => {
+    navigate(
+      `${location.pathname}${removeOAuthCallbackParams(location.search)}${removeOAuthCallbackFragment(location.hash)}`,
+      { replace: true }
+    );
     const userCredential = await dispatchApi(api.auth.login.get(searchParams));
     if (saveLoginCredential(userCredential)) {
       getUser(userCredential);
     }
-  }, [dispatchApi, searchParams, getUser]);
+  }, [dispatchApi, searchParams, getUser, navigate, location.pathname, location.search, location.hash]);
 
   // login service.
   return useMemo(
     () => ({
-      doLogin,
       doOAuth,
       getUser
     }),
-    [doLogin, doOAuth, getUser]
+    [doOAuth, getUser]
   );
 };
 

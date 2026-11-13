@@ -88,7 +88,13 @@ class OAuthProvider(BaseModel):
         description="The audience to validate against. Only must be set if audience is different than the client id."
     )
     scope: str = Field(description="The scope to validate against")
-    iss: str | None = Field(description="Optional issuer field for JWT validation", default=None)
+    iss: str | None = Field(
+        description=(
+            "Trusted issuer that ID tokens must exactly match. Required for OIDC login (scope containing openid); "
+            "ID tokens are rejected when it is not set."
+        ),
+        default=None,
+    )
     jwks_uri: str = Field(description="URL used to verify if a returned JWKS token is valid")
 
     @field_validator("role_map", mode="before")
@@ -126,7 +132,32 @@ class OAuth(BaseModel):
     enabled: bool = Field(description="Enable use of OAuth?", default=False)
     gravatar_enabled: bool = Field(description="Enable gravatar?", default=False)
     jwks_refresh_cooldown_seconds: int = Field(
-        default=60, ge=1, description="Minimum interval in seconds between outbound JWKS refresh attempts"
+        default=60,
+        ge=1,
+        description="Minimum interval between outbound JWKS refresh attempts and bearer-key revalidation interval",
+    )
+    jwks_refresh_after_seconds: int = Field(
+        default=3600,
+        ge=1,
+        description="Age after which cached ID-token signing keys are refetched, so withdrawn keys stop being trusted",
+    )
+    jwks_max_age_seconds: int = Field(
+        default=43200,
+        ge=1,
+        description=(
+            "Maximum time ID-token signing keys are trusted after their last successful fetch, even if the provider "
+            "is unreachable. Must be at least jwks_refresh_after_seconds"
+        ),
+    )
+    provider_timeout_seconds: float = Field(
+        default=10,
+        gt=0,
+        description="Timeout for every request to the OAuth provider (token and JWKS endpoints)",
+    )
+    id_token_leeway_seconds: int = Field(
+        default=120,
+        ge=0,
+        description="Clock skew tolerated when validating ID token time-based claims (exp, iat)",
     )
     providers: dict[str, OAuthProvider] = Field(default={}, description="OAuth provider configuration")
     other_audiences: list[str] | None = Field(
@@ -139,28 +170,33 @@ class OAuth(BaseModel):
         cls,  # noqa: ANN102
         oauth_data: dict[str, dict[str, dict | OAuthProvider]],  # noqa: ANN102
     ) -> dict[str, dict[str, dict | OAuthProvider]]:
-        """Validates the oauth data, and adds the client secret if it's not already there.
+        """Validates the oauth data, and adds the client ID and secret from the environment if not already there.
+
+        Resolving them here means login, bearer-token audience checks and service accounts share the same values.
 
         Args:
             oauth_data (dict[str, dict[str, dict | OAuthProvider]]): The data to validate.
 
         Returns:
-            dict[str, dict[str, dict | OAuthProvider]]: The validated data with the client secrets.
+            dict[str, dict[str, dict | OAuthProvider]]: The validated data with the client IDs and secrets.
         """
         if "providers" in oauth_data and isinstance(oauth_data["providers"], dict):
             for name, provider in oauth_data["providers"].items():
-                if isinstance(provider, OAuthProvider):
-                    provider.client_secret = default_string_value(
-                        provider.client_secret,
-                        env_name=f"{name.upper()}_CLIENT_SECRET",
-                    )
-                elif isinstance(provider, dict):
-                    provider["client_secret"] = default_string_value(
-                        provider.get("client_secret", None),
-                        env_name=f"{name.upper()}_CLIENT_SECRET",
-                    )
+                for field in ("client_id", "client_secret"):
+                    env_name = f"{name.upper()}_{field.upper()}"
+                    if isinstance(provider, OAuthProvider):
+                        setattr(provider, field, default_string_value(getattr(provider, field), env_name=env_name))
+                    elif isinstance(provider, dict):
+                        provider[field] = default_string_value(provider.get(field, None), env_name=env_name)
 
         return oauth_data
+
+    @model_validator(mode="after")
+    def validate_jwks_ages(self) -> "OAuth":
+        """Cached keys are returned unchecked until they need a refresh, so that must happen before they expire."""
+        if self.jwks_refresh_after_seconds > self.jwks_max_age_seconds:
+            raise ValueError("jwks_refresh_after_seconds must not exceed jwks_max_age_seconds")
+        return self
 
 
 class ServiceAccountCreds(BaseModel):

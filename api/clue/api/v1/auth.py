@@ -1,35 +1,44 @@
-from typing import Any, Optional
-from urllib.parse import urlencode
+from typing import Any
 
+import requests
 from authlib.integrations.base_client import OAuthError
-from flask import current_app, request
+from authlib.jose.errors import JoseError
+from authlib.oidc.core import UserInfo
+from flask import abort, request
 from pydantic import ValidationError
 
-import clue.services.user_service as user_service
 from clue.api import (
+    bad_gateway,
     bad_request,
     forbidden,
     internal_error,
     make_subapi_blueprint,
-    ok,
     unauthorized,
 )
 from clue.common.exceptions import (
     AccessDeniedException,
     AuthenticationException,
     ClueException,
-    ClueValueError,
     InvalidDataException,
 )
 from clue.common.logging import get_logger
-from clue.common.str_utils import default_string_value
 from clue.common.swagger import generate_swagger_docs
-from clue.config import config
-from clue.models.auth_user import Privilege
-from clue.security.utils import generate_random_secret
-
-logger = get_logger(__file__)
-
+from clue.constants.oauth import (
+    LEGACY_IGNORED_LOGIN_PARAMS,
+    OAUTH_CALLBACK_MARKERS,
+    OAUTH_CALLBACK_PARAMS,
+    OAUTH_PROVIDER_PARAMS,
+)
+from clue.helper.oauth_login import (
+    authenticated_response,
+    client_ip,
+    ensure_single_valued,
+    get_oauth_client,
+    oauth_redirect_uri,
+    provider_name_from_args,
+    requests_openid,
+)
+from clue.models.auth_user import RefreshRequest
 
 SUB_API = "auth"
 auth_api = make_subapi_blueprint(SUB_API, api_version=1)
@@ -40,25 +49,34 @@ logger = get_logger(__file__)
 
 # noinspection PyBroadException,PyPropertyAccess
 @generate_swagger_docs()
-@auth_api.route("/login", methods=["GET", "POST"])
+@auth_api.route("/login", methods=["GET"])
 def login(**_) -> dict[str, Any]:  # noqa: C901
-    """Authenticate a user through an OAuth provider.
+    """Authenticate a user through an OAuth provider (browser authorization-code flow).
 
-    The initial request redirects the user to the selected OAuth provider.
-    The callback exchanges the authorization code, validates the returned user,
-    and returns the provider-issued access token as the application token.
+    The initial request redirects the user to the selected OAuth provider. The callback exchanges the authorization
+    code bound to this browser session's ``state``, validates the returned ID token against the session-bound nonce,
+    trusted issuer and client ID, and returns the provider-issued access token as the application token.
+
+    Only the parameters listed below are accepted. Requests containing any other parameter (for example
+    ``refresh_token``, ``id_token`` or ``access_token``) or a repeated parameter are rejected with a 400 before any
+    token exchange. Only GET is allowed; token refresh is handled by ``POST /api/v1/auth/refresh``.
 
     Args:
         provider: The OAuth provider to use for authentication.
         oauth_provider: Alternative name for ``provider``.
-        code: The authorization code returned by the OAuth provider.
-        refresh_token: An OAuth refresh token used to obtain a new access token.
-        nonce: Optional nonce used during the OAuth authorization flow.
+        nonce: Deprecated and ignored. Still sent by UIs released before this change; never used for validation.
+        code: The authorization code returned by the OAuth provider (callback only).
+        state: The state returned by the OAuth provider (callback only).
+        session_state: Provider session state, accepted and ignored (callback only).
+        iss: Authorization server issuer identifier (RFC 9207). When present it must equal the provider's configured
+            trusted issuer, otherwise the callback is rejected before the code exchange (callback only).
+        error: OAuth error returned by the provider (callback only).
+        error_description: OAuth error description returned by the provider (callback only).
+        error_uri: OAuth error URI returned by the provider (callback only).
 
     Returns:
-        A Clue API response containing the access token, refresh token, user
-        information, and granted privileges. An initial authentication request
-        returns the provider's authorization redirect response.
+        A Clue API response containing the access token, refresh token, user information, and granted privileges.
+        An initial authentication request returns the provider's authorization redirect response.
 
     Example:
         A successful authentication returns a response containing the provider
@@ -80,166 +98,134 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
                 }
             }
     """
-    data: dict[str, Any]
-    if request.is_json and len(request.data) > 0:
-        data = request.json  # type: ignore
-    else:
-        data = request.values
-
-    # Get the ip the request came from - used in logging later
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-
-    # Get the data from the request
-    # TODO: Figure out how to fix this inconsistency
-    oauth_provider = data.get("provider", data.get("oauth_provider", None))
-    user = data.get("user", None)
-    data.get("password", None)
-    data.get("apikey", None)
-
-    # These variables are what will eventually be returned, if authentication is successful
-    logged_in_uname = None
-    access_token = None
-    refresh_token = data.get("refresh_token", None)
-    priv: Optional[list[Privilege]] = []
+    # Flask also dispatches HEAD to GET routes; it must not consume an OAuth transaction.
+    if request.method != "GET":
+        abort(405, valid_methods=["GET"])
 
     try:
-        # First, we'll try oauth
-        if oauth_provider:
-            if not config.auth.oauth.enabled:
-                raise InvalidDataException("OAuth is disabled.")
-
-            oauth = current_app.extensions.get("authlib.integrations.flask_client")
-            if not oauth:
-                logger.critical("Authlib integration missing!")
-                raise ClueValueError()
-
-            provider = oauth.create_client(oauth_provider)
-
-            if not provider:
-                logger.critical("OAuth client failed to create!")
-                raise ClueValueError()
-
-            # This means that they want to start the oauth process, so we'll redirect them to their chosen provider
-            if "code" not in request.args and not refresh_token:
-                # The redirect URI must only come from trusted configuration, never from request headers
-                if not config.api.frontend_url:
-                    raise ClueValueError("api.frontend_url not set! Cannot start OAuth")
-
-                redirect_uri = f"{config.api.frontend_url.rstrip('/')}/login?{urlencode({'provider': oauth_provider})}"
-                return provider.authorize_redirect(redirect_uri=redirect_uri, nonce=request.args.get("nonce", None))
-
-            # At this point we know the code exists, so we're good to use that to exchange for an JSON Web Token with
-            # user data in it. token_data contains the access token, expiry, refresh token, and id token,
-            # in JWT format: https://jwt.io/
-
-            oauth_provider_config = config.auth.oauth.providers[oauth_provider]
-
-            # We need to figure out what information the provider already has, and provide whatever it doesn't.
-            # Without this step, the provider will try and send the client_id and/or secret *twice*, leading to an
-            # error.
-            kwargs = {}
-
-            # Does the provider have the client id? If not provide it
-            if not provider.client_id:
-                kwargs["client_id"] = default_string_value(
-                    oauth_provider_config.client_id,
-                    env_name=f"{oauth_provider.upper()}_CLIENT_ID",
-                )
-
-                if not kwargs["client_id"]:
-                    logger.critical("client id not set! Cannot complete oauth")
-                    raise ClueValueError()
-
-            # Does the provider have the client secret? If not provide it
-            if not provider.client_secret:
-                kwargs["client_secret"] = default_string_value(
-                    oauth_provider_config.client_secret,
-                    env_name=f"{oauth_provider.upper()}_CLIENT_SECRET",
-                )
-
-                if not kwargs["client_secret"]:
-                    logger.critical("client secret not set! Cannot complete oauth")
-                    raise ClueValueError()
-
-            if refresh_token is not None:
-                token_data = provider.fetch_access_token(
-                    refresh_token=refresh_token,
-                    grant_type="refresh_token",
-                    **kwargs,
-                )
-            else:
-                # Finally, ask for the access token with whatever info the provider needs
-                token_data = provider.authorize_access_token(**kwargs)
-
-            access_token = token_data.get("access_token", None)
-            refresh_token = token_data.get("refresh_token", None)
-
-            if not access_token:
-                raise AuthenticationException("The OAuth provider did not return an access token.")
-
-            # Get a useful dict of user data from the web token
-            try:
-                cur_user = user_service.parse_user_data(token_data, oauth_provider)
-            except ValidationError as e:
-                raise AuthenticationException("The OAuth provider returned invalid user information.") from e
-
-            logged_in_uname = cur_user.uname
-
-            priv = [Privilege.READ, Privilege.WRITE]
-
-        # No oauth provider was specified, so we fall back to user/pass or user/apikey
-        # elif user and (password or apikey):
-        #     if password and apikey:
-        #         raise InvalidDataException("Cannot specify password and API key.")
-
-        #     user_data, priv = auth_service.basic_auth(
-        #         f"{user}:{password or apikey}",
-        #         is_base64=False,
-        #         # No need to validate for api keys if we know they provided a password, and vice versa
-        #         skip_apikey=bool(password),
-        #         skip_password=bool(apikey),
-        #     )
-
-        #     if not user_data:
-        #         raise AuthenticationException("User does not exist, or authentication was invalid")
-
-        #     logged_in_uname = user_data["uname"]
-
-        else:
+        args = request.args
+        oauth_provider = provider_name_from_args(args)
+        if not oauth_provider:
             raise AuthenticationException("Not enough information to proceed with authentication")
 
-    # For sanity's sake, we throw exceptions throughout the authentication code and simply catch the exceptions here to
-    # return the corresponding HTTP Code to the user
-    except (OAuthError, AuthenticationException) as err:
-        logger.warning(f"Authentication failure. (U:{user} - IP:{ip}) [{err}]")
+        is_callback = bool(OAUTH_CALLBACK_MARKERS & args.keys())
+        allowed = OAUTH_CALLBACK_PARAMS if is_callback else OAUTH_PROVIDER_PARAMS
+        ensure_single_valued(args, allowed | LEGACY_IGNORED_LOGIN_PARAMS)
+        if is_callback and ("state" not in args or not ({"code", "error"} & args.keys())):
+            raise AuthenticationException("The OAuth callback is missing its state or authorization code.")
+
+        provider, kwargs = get_oauth_client(oauth_provider)
+
+        if not is_callback:
+            # Authlib generates the state and nonce and binds them to this browser session.
+            return provider.authorize_redirect(redirect_uri=oauth_redirect_uri(oauth_provider))
+
+        # Authlib rejects missing, forged, foreign-session and replayed state before exchanging the code, then
+        # validates the ID token with ClueOAuth2App.parse_id_token against the session-bound nonce.
+        provider.validate_callback_issuer(args.get("iss"))
+        token_data = provider.authorize_access_token(**kwargs)
+        if "id_token" in token_data or requests_openid(provider):
+            # Authlib replaces raw JSON userinfo with UserInfo only after parse_id_token succeeds.
+            identity_data = token_data.get("userinfo")
+            if "id_token" not in token_data or not isinstance(identity_data, UserInfo):
+                raise AuthenticationException("The OAuth provider did not return a verified identity token.")
+        else:
+            identity_data = token_data.get("userinfo", token_data)
+
+        return authenticated_response(oauth_provider, token_data, identity_data)
+    except (OAuthError, JoseError) as err:
+        # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text.
+        logger.warning(
+            "OAuth/OIDC validation failure. (IP:%s) [%s: %s]",
+            client_ip(),
+            type(err).__name__,
+            getattr(err, "error", None),
+        )
+        return unauthorized(err="Authentication failed.")
+    except AuthenticationException as err:
+        logger.warning(f"Authentication failure. (IP:{client_ip()}) [{err}]")
         return unauthorized(err=str(err))
-
     except AccessDeniedException as err:
-        logger.warning(f"Authorization failure. (U:{user} - IP:{ip}) [{err}]")
+        logger.warning(f"Authorization failure. (IP:{client_ip()}) [{err}]")
         return forbidden(err=err.message)
-
     except InvalidDataException as err:
         return bad_request(err=err.message or str(err))
-
+    except requests.RequestException as err:
+        logger.warning("OAuth provider request failed. (IP:%s) [%s]", client_ip(), type(err).__name__)
+        return bad_gateway(err="The OAuth provider could not be reached. Try again later.")
     except ClueException:
-        logger.exception(f"Internal Authentication Error. (U:{user} - IP:{ip})")
-        return internal_error(
-            err="Unhandled exception occured while Authenticating. Contact your administrator.",
+        logger.exception(f"Internal Authentication Error. (IP:{client_ip()})")
+        return internal_error(err="Unhandled exception occured while Authenticating. Contact your administrator.")
+
+
+@generate_swagger_docs()
+@auth_api.route("/refresh", methods=["POST"])
+def refresh(**_) -> dict[str, Any]:  # noqa: C901
+    """Exchange an OAuth refresh token for a new access token.
+
+    The request must be a JSON body containing exactly ``provider`` and ``refresh_token``; query parameters and form
+    bodies are rejected so the refresh grant can never be selected from a browser navigation or OAuth callback URL.
+    A returned ID token is validated for signature, trusted issuer, client ID audience and expiry.
+
+    Args:
+        provider: The OAuth provider that issued the refresh token.
+        refresh_token: The OAuth refresh token.
+
+    Returns:
+        The same response as a successful ``/api/v1/auth/login`` callback.
+
+    Example:
+        A successful refresh returns the login response body with the new provider tokens::
+
+            {"app_token": "<OAuth access token>", "refresh_token": "<OAuth refresh token>", "provider": "keycloak", ...}
+    """
+    try:
+        if request.args:
+            raise InvalidDataException("Token refresh does not accept query parameters.")
+
+        if not request.is_json:
+            raise InvalidDataException("Token refresh requires a JSON body.")
+
+        try:
+            body = RefreshRequest.model_validate(request.get_json(silent=True))
+        except ValidationError as e:
+            raise InvalidDataException("Invalid token refresh request.") from e
+
+        provider, kwargs = get_oauth_client(body.provider)
+
+        token_data = provider.fetch_access_token(
+            refresh_token=body.refresh_token,
+            grant_type="refresh_token",
+            **kwargs,
         )
+        if "id_token" in token_data:
+            identity_data = provider.parse_refreshed_id_token(token_data)
+        elif requests_openid(provider):
+            raise AuthenticationException("The OAuth provider did not return a verified identity token.")
+        else:
+            identity_data = token_data.get("userinfo", token_data)
 
-    logger.info(f"Login successful. (U:{logged_in_uname} - IP:{ip})")
-
-    xsrf_token = generate_random_secret()
-
-    # Generate the token this user can use to authenticate from now on
-
-    return ok(
-        {
-            "app_token": access_token,
-            "provider": oauth_provider,
-            "refresh_token": refresh_token,
-            "privileges": priv,
-            "user": cur_user.model_dump(mode="json"),
-        },
-        cookies={"XSRF-TOKEN": xsrf_token},
-    )
+        return authenticated_response(body.provider, token_data, identity_data)
+    except (OAuthError, JoseError) as err:
+        # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text.
+        logger.warning(
+            "OAuth/OIDC validation failure. (IP:%s) [%s: %s]",
+            client_ip(),
+            type(err).__name__,
+            getattr(err, "error", None),
+        )
+        return unauthorized(err="Authentication failed.")
+    except AuthenticationException as err:
+        logger.warning(f"Authentication failure. (IP:{client_ip()}) [{err}]")
+        return unauthorized(err=str(err))
+    except AccessDeniedException as err:
+        logger.warning(f"Authorization failure. (IP:{client_ip()}) [{err}]")
+        return forbidden(err=err.message)
+    except InvalidDataException as err:
+        return bad_request(err=err.message or str(err))
+    except requests.RequestException as err:
+        logger.warning("OAuth provider request failed. (IP:%s) [%s]", client_ip(), type(err).__name__)
+        return bad_gateway(err="The OAuth provider could not be reached. Try again later.")
+    except ClueException:
+        logger.exception(f"Internal Authentication Error. (IP:{client_ip()})")
+        return internal_error(err="Unhandled exception occured while Authenticating. Contact your administrator.")

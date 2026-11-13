@@ -272,6 +272,10 @@ auth:
     enabled: false # Enable OAuth authentication
     gravatar_enabled: false # Enable Gravatar for user avatars
     jwks_refresh_cooldown_seconds: 60 # Minimum interval between JWKS fetch attempts (at least 1 second)
+    jwks_refresh_after_seconds: 3600 # Age after which cached ID-token signing keys are refetched
+    jwks_max_age_seconds: 43200 # Maximum age of cached signing keys when the provider is unreachable (>= jwks_refresh_after_seconds)
+    provider_timeout_seconds: 10 # Timeout for requests to the provider's token and JWKS endpoints
+    id_token_leeway_seconds: 120 # Clock skew tolerated when validating ID tokens
     other_audiences: [] # Additional JWT audiences to accept
     providers: {} # OAuth provider configurations
 
@@ -378,6 +382,7 @@ auth:
         client_secret: "your-client-secret" # OAuth client secret
         audience: "clue-api" # JWT audience
         scope: "openid profile email groups" # OAuth scopes
+        iss: "https://auth.example.com/realms/clue" # Trusted ID token issuer (required with openid)
         jwks_uri: "https://auth.example.com/realms/clue/protocol/openid-connect/certs"
         access_token_url: "https://auth.example.com/realms/clue/protocol/openid-connect/token"
         authorize_url: "https://auth.example.com/realms/clue/protocol/openid-connect/auth"

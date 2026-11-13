@@ -377,6 +377,7 @@ auth:
         client_secret: "your-client-secret"     # OAuth client secret
         audience: "clue-api"                     # JWT audience
         scope: "openid profile email groups"    # OAuth scopes
+        iss: "https://auth.example.com/realms/clue" # Trusted ID token issuer (required with openid)
         jwks_uri: "https://auth.example.com/realms/clue/protocol/openid-connect/certs"
         access_token_url: "https://auth.example.com/realms/clue/protocol/openid-connect/token"
         authorize_url: "https://auth.example.com/realms/clue/protocol/openid-connect/auth"
@@ -400,6 +401,22 @@ auth:
         uid_regex: "^(.+)@example\\.com$"       # Extract username from email
         uid_format: "{0}"                        # Username format string
 ```
+
+**OIDC login and token validation**:
+
+- `iss` is **required** for any provider whose `scope` includes `openid`. It must exactly match the `iss` claim of the provider's ID tokens (for Keycloak, `https://<host>/realms/<realm>`); ID tokens are rejected when it is missing.
+- ID tokens must be signed by a key published at `jwks_uri` with an asymmetric algorithm, come from the configured `iss`, list `client_id` in `aud` (`azp` alone is never sufficient), and carry valid `sub`, `exp` and `iat` claims.
+- ID-token signing keys are cached for `auth.oauth.jwks_refresh_after_seconds` (one hour by default), then refetched. For bearer access tokens, JWKS are revalidated after each `auth.oauth.jwks_refresh_cooldown_seconds` interval (60 seconds by default), including lookups for known `kid` values; a successfully fetched JWKS is authoritative, so removed keys are no longer trusted. If a provider can't be reached, its cached keys may still be used, but never more than `auth.oauth.jwks_max_age_seconds` (12 hours by default) after their last successful fetch. Requests to token and JWKS endpoints time out after `auth.oauth.provider_timeout_seconds` (10 seconds by default). If the provider can't be reached during login or token refresh, Clue returns a 502.
+- Every provider uses PKCE (`S256`) for the authorization-code flow. If the callback carries an `iss` parameter (RFC 9207), it must equal the configured `iss`, otherwise the callback is rejected before the code is exchanged.
+- Bearer access tokens are verified only with the algorithm of their JWKS key (the `alg` the provider declares, or the default for the key type). Symmetric and `none` algorithms are never accepted, and `exp` is required. Malformed or invalid tokens get a 401.
+- The browser login endpoint (`GET /api/v1/auth/login`) only performs the authorization-code flow. Authlib generates `state` and the nonce and binds them to the user's session at login initiation; on the callback, missing, forged, foreign-session or replayed `state` is rejected before the code is exchanged, and the ID token nonce must match. A signed `nonce_supported=false` claim does not disable this check.
+- The callback only accepts `provider`/`oauth_provider`, `code`, `state`, `session_state`, `iss`, `error`, `error_description` and `error_uri`, and login initiation only accepts `provider`/`oauth_provider`. Any other or repeated parameter, including `refresh_token`, `id_token` or `access_token`, is rejected with a 400 before any token exchange. The only exception is the transitional `nonce` described below.
+- The login endpoint only performs OAuth work for `GET`; `HEAD` and `POST` get a 405 before login initiation or token exchange. Flask's automatic `OPTIONS` response remains available. Token refresh uses `POST /api/v1/auth/refresh` with a JSON body containing exactly `provider` and `refresh_token`; query parameters and form bodies are rejected. Refreshed ID tokens are validated like login ID tokens, except for the nonce, which only exists for an authorization request.
+- Before processing a callback, the UI replaces its URL to remove callback query parameters and credential-bearing fragments, including on failed logins. Benign anchors are preserved, and the original callback parameters (including `error=access_denied`) are still forwarded to the API.
+- `auth.oauth.provider_timeout_seconds` also applies to bearer JWKS downloads and both initial and refreshed service-account token requests.
+- **Upgrading from a UI loaded before this change** (transitional; this compatibility handling will be removed in a later release). Such a UI must be reloaded after the upgrade:
+  - It refreshes by posting to `/api/v1/auth/login`, which now gets a 405, so its refresh fails. Reload open Clue pages after upgrading to load the current UI.
+  - It adds its own `nonce` to the login link and to the callback. That single parameter is still accepted so the user can sign in, but it is discarded: it never reaches Authlib, the session or ID-token validation, which only use the nonce Authlib generated for the browser session. A repeated `nonce` is rejected with a 400.
 
 #### Classification Configuration (`classification.yml`)
 

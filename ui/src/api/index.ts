@@ -1,12 +1,13 @@
 import * as actions from 'api/actions';
 import * as auth from 'api/auth';
+import type { LoginResponse } from 'api/auth/login';
 import * as configs from 'api/configs';
 import * as fetchers from 'api/fetchers';
 import * as lookup from 'api/lookup';
 import * as _static from 'api/static';
 import * as sync from 'api/sync';
 import * as v2 from 'api/v2';
-import type { AxiosRequestConfig, RawAxiosRequestHeaders } from 'axios';
+import { AxiosHeaders, type AxiosRequestConfig, type RawAxiosRequestHeaders } from 'axios';
 import type { ClueResponse } from 'lib/types/network';
 import { StorageKey } from 'lib/utils/constants';
 import AxiosClient from 'rest/AxiosClient';
@@ -18,12 +19,20 @@ import {
   saveLoginCredential,
   setStored as setLocalStored
 } from 'utils/localStorage';
+import { isSafeRedirectDestination } from 'utils/oauth';
 import getXSRFCookie from 'utils/xsrf';
 
 /**
  * Concrete Rest HTTP client implementation.
  */
 const client = new AxiosClient();
+
+/**
+ * Whether a token refresh failed because the API rejected the stored refresh credentials as invalid (400). Network,
+ * timeout and server failures are transient: the stored credentials may still be valid.
+ */
+const isInvalidRefresh = (error: unknown): boolean =>
+  error instanceof Error && (error.cause as ClueResponse<unknown>)?.api_status_code === 400;
 
 /**
  * Expose V1 routes at the root and versioned routes in their own sections.
@@ -165,24 +174,42 @@ export const hfetch = async <R>(
   }
 
   if (statusCode === 401) {
-    if (!getLocalStored(StorageKey.NEXT_LOCATION)) {
+    const isAuthRequest = _uri.includes('/auth/login') || _uri.includes('/auth/refresh');
+
+    // Never remember an OAuth callback (or any URL carrying OAuth data) as the post-login destination.
+    if (
+      !isAuthRequest &&
+      !getLocalStored(StorageKey.NEXT_LOCATION) &&
+      isSafeRedirectDestination(window.location.pathname, window.location.search, window.location.hash)
+    ) {
       setLocalStored(StorageKey.NEXT_LOCATION, window.location.pathname);
       setLocalStored(StorageKey.NEXT_SEARCH, window.location.search);
     }
 
-    if (!_uri.includes('/auth/login') && getLocalStored(StorageKey.REFRESH_TOKEN)) {
+    if (!isAuthRequest && getLocalStored(StorageKey.REFRESH_TOKEN)) {
       //Refresh access token if possible
       //And re-execute the previous api call (seamless)
       const refreshToken: string = getLocalStored(StorageKey.REFRESH_TOKEN);
       const provider: string = getLocalStored(StorageKey.PROVIDER);
-      const refreshResponse = await api.auth.login.post({
-        refresh_token: refreshToken,
-        provider: provider
-      });
+      // A 401 resolves empty once the refresh request has cleared the stored credentials, and a 400 means they are
+      // unusable: both fall through to a fresh login below. Any other failure is re-thrown and keeps them for a retry.
+      const refreshResponse = await api.auth.refresh
+        .post({ refresh_token: refreshToken, provider: provider })
+        .catch((error: unknown): LoginResponse => {
+          if (isInvalidRefresh(error)) {
+            return null;
+          }
+          throw error;
+        });
 
       if (refreshResponse) {
+        if (typeof refreshResponse.app_token !== 'string' || !refreshResponse.app_token.trim()) {
+          throw new Error('Token refresh returned no access token.');
+        }
         saveLoginCredential(refreshResponse);
-        const result = await hfetch<R>(_uri, method, body, searchParams);
+        const headers = new AxiosHeaders(axiosConfig?.headers);
+        headers.set('Authorization', `Bearer ${refreshResponse.app_token}`, true);
+        const result = await hfetch<R>(_uri, method, body, searchParams, { ...axiosConfig, headers });
 
         removeLocalStored(StorageKey.NEXT_LOCATION);
         removeLocalStored(StorageKey.NEXT_SEARCH);

@@ -1,11 +1,9 @@
 from typing import Any
 
 from elasticapm.traces import capture_span
-from flask import current_app, request
 
 from clue.common.exceptions import (
     AccessDeniedException,
-    ClueValueError,
     InvalidDataException,
 )
 from clue.common.logging import get_logger
@@ -38,17 +36,6 @@ def parse_user_data(
     """
     if not data or not oauth_provider:
         raise InvalidDataException("Both the JWT and OAuth provider must be supplied")
-
-    oauth = current_app.extensions.get("authlib.integrations.flask_client")
-    if not oauth:
-        logger.critical("Authlib integration missing!")
-        raise ClueValueError()
-    provider = oauth.create_client(oauth_provider)
-
-    if "id_token" in data:
-        data = provider.parse_id_token(
-            data, nonce=request.args.get("nonce", data.get("userinfo", {}).get("nonce", None))
-        )
 
     oauth_provider_config = config.auth.oauth.providers[oauth_provider]
 
