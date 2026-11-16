@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/$PLUGIN_NAME/**
       - .github/workflows/$PLUGIN_NAME-plugin-workflow.yml
@@ -16,9 +13,6 @@ on:
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/$PLUGIN_NAME/**
       - .github/workflows/$PLUGIN_NAME-plugin-workflow.yml

@@ -4,30 +4,45 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - "mcp/**"
       - .github/workflows/mcp-workflow.yml
+      - .github/workflows/release-validation.yml
+      - scripts/validate_release.py
     tags:
-      - v*
+      - mcp-v*
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - "mcp/**"
       - .github/workflows/mcp-workflow.yml
-  workflow_dispatch: {}
+      - .github/workflows/release-validation.yml
+      - scripts/validate_release.py
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish stable artifacts from a verified native component tag
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
+  release_validation:
+    uses: ./.github/workflows/release-validation.yml
+    with:
+      component: mcp
+      component_dir: mcp
+      tag_prefix: mcp-v
+      allow_main_preview: true
+      publish_release: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+    permissions:
+      contents: read
+
   formatting:
     name: Validate Clue MCP Code Quality
 
@@ -38,6 +53,8 @@ jobs:
     steps:
       - name: Checkout current ref
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
@@ -188,12 +205,14 @@ jobs:
             git fetch --depth=1 origin "$BASE_SHA"
             git diff --name-only "$(git merge-base "$BASE_SHA" "$HEAD_SHA")..$HEAD_SHA"
             git diff "$(git merge-base "$BASE_SHA" "$HEAD_SHA")..$HEAD_SHA" > diff.txt
+          else
+            rm -f diff.txt
           fi
           poetry run coverage_report
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GIT_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -208,13 +227,15 @@ jobs:
         run: exit 1
 
   build_docker_image:
-    if: github.event_name != 'pull_request'
+    if: needs.release_validation.outputs.channel == 'preview' || needs.release_validation.outputs.channel == 'stable'
 
     runs-on: ubuntu-latest
 
     name: Build and Publish Clue MCP Docker Image
 
-    needs: test
+    needs:
+      - release_validation
+      - test
 
     defaults:
       run:
@@ -226,16 +247,11 @@ jobs:
       attestations: write
 
     steps:
-      - name: Checkout current ref
+      - name: Checkout validated revision
         uses: actions/checkout@v4
-
-      - name: Install Poetry
-        uses: abatilo/actions-poetry@v4
-
-      - name: Extract Clue MCP version
-        id: version
-        run: |
-          echo "version=$(poetry version -s)" >> "$GITHUB_OUTPUT"
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
 
       - name: Set up chainctl with howler identity
         uses: chainguard-dev/setup-chainctl@main
@@ -253,13 +269,11 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: cccs/clue-mcp
+          flavor: latest=${{ needs.release_validation.outputs.channel == 'stable' }}
           tags: |
-            type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-            type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
-            type=semver,pattern={{version}}
-            type=raw,value=${{steps.version.outputs.version}}_{{branch}}
-            type=raw,value=${{steps.version.outputs.version}}_{{branch}}_{{sha}}
+            type=raw,value=${{ needs.release_validation.outputs.version }},enable=${{ needs.release_validation.outputs.channel == 'stable' }}
+            type=raw,value=nightly,enable=${{ needs.release_validation.outputs.channel == 'preview' }}
+            type=sha,format=short
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -279,7 +293,7 @@ jobs:
           secret-files: |
             pip_ca=/etc/ssl/certs/ca-certificates.crt
           build-args: |
-            version=${{ steps.version.outputs.version }}
+            version=${{ needs.release_validation.outputs.version }}
             branch=${{ github.ref }}
             commit=${{ github.sha }}
 

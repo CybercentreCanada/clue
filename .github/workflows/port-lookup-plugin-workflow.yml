@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/port_lookup/**
       - .github/workflows/port_lookup-plugin-workflow.yml
@@ -16,9 +13,6 @@ on:
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/port_lookup/**
       - .github/workflows/port_lookup-plugin-workflow.yml

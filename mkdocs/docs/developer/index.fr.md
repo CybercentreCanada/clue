@@ -15,7 +15,7 @@ c'est actuellement l'approche recommandée.
 **Note : Seuls les plugins Python sont actuellement pris en charge de cette manière !**
 
 La première étape consiste à créer un dossier pour votre application dans le
-[répertoire plugins](https://github.com/CybercentreCanada/clue/tree/develop/plugins). Vous pouvez utiliser les
+[répertoire plugins](https://github.com/CybercentreCanada/clue/tree/main/plugins). Vous pouvez utiliser les
 scripts de configuration du makefile pour ce faire, ou copier un plugin existant selon vos préférences.
 
 Une fois que vous avez terminé le développement des fonctionnalités principales, il est **fortement recommandé**

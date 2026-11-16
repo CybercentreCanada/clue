@@ -61,7 +61,7 @@ jobs:
       - name: Extract Plugin Medata
         id: plugin-metadata
         run: |
-          BASE_PLUGIN_TAG=$(yq '.base-plugin-tag // "${{env.BUILD_REF == 'refs/heads/develop' && 'nightly' || 'latest'}}"' '${{inputs.plugin-path}}/manifest.yml')
+          BASE_PLUGIN_TAG=$(yq '.base-plugin-tag // "latest"' '${{inputs.plugin-path}}/manifest.yml')
           PLUGIN_VERSION=$(yq '.version // "0.0.1"' '${{inputs.plugin-path}}/manifest.yml')
           PLUGIN_NAME=$(yq '.name' '${{inputs.plugin-path}}/manifest.yml')
           echo "base-plugin-tag=$BASE_PLUGIN_TAG" >> $GITHUB_OUTPUT
@@ -82,7 +82,6 @@ jobs:
         with:
           images: cccs/clue-plugin-${{steps.plugin-metadata.outputs.name}}
           tags: |
-            type=raw,event=branch,value=nightly,enable=${{ env.BUILD_REF == format('refs/heads/{0}', 'develop') }}
             type=raw,event=branch,value=latest,enable=${{ env.BUILD_REF == format('refs/heads/{0}', 'main') }}
             type=raw,value=latest,enable=${{ startsWith(env.BUILD_REF, 'refs/tags') }}
             type=semver,pattern={{version}}

@@ -8,7 +8,7 @@ cd "$ui_dir"
 
 diff_base=HEAD
 if [[ -z "$(git status --porcelain)" ]]; then
-  diff_base=develop...HEAD
+  diff_base=main...HEAD
 fi
 
 get_changed_test_files() {

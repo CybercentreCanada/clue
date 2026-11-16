@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - "api/**"
       - "!api/LICENSE"
@@ -14,14 +11,13 @@ on:
       - "!api/docs/**"
       - "!api/build_scripts/generate_classes.py"
       - .github/workflows/api-workflow.yml
+      - .github/workflows/release-validation.yml
+      - scripts/validate_release.py
     tags:
-      - v*
+      - api-v*
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - "api/**"
       - "!api/LICENSE"
@@ -29,14 +25,33 @@ on:
       - "!api/docs/**"
       - "!api/build_scripts/generate_classes.py"
       - .github/workflows/api-workflow.yml
+      - .github/workflows/release-validation.yml
+      - scripts/validate_release.py
       - "!api/plugin/**"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish stable artifacts from a verified native component tag
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
+  release_validation:
+    uses: ./.github/workflows/release-validation.yml
+    with:
+      component: api
+      component_dir: api
+      tag_prefix: api-v
+      allow_main_preview: true
+      publish_release: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+    permissions:
+      contents: read
+
   formatting:
     name: Validate Clue API Code Quality
 
@@ -45,13 +60,10 @@ jobs:
       run:
         working-directory: api
     steps:
-      - name: Checkout develop
-        uses: actions/checkout@v4
-        with:
-          ref: develop
-
       - name: Checkout current ref
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
@@ -86,11 +98,6 @@ jobs:
       - name: Run type checking
         run: poetry run type_check
 
-      - name: "Update poetry version"
-        run: poetry run python build_scripts/set_version.py
-        env:
-          BRANCH: ${{ github.ref }}
-          BUILD_ID: ${{ github.run_number }}
   test:
     runs-on: ubuntu-latest
 
@@ -105,11 +112,17 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
+      - name: Get base depth of PR
+        if: github.event_name == 'pull_request'
+        id: base-depth
+        working-directory: .
+        run: echo "base-depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
+
       - name: Checkout current ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: ${{ steps.base-depth.outputs.base-depth || 1 }}
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -185,14 +198,20 @@ jobs:
       - name: Coverage Results
         if: steps.tests.outcome == 'success'
         run: |
-          git diff --name-only $(git merge-base $BASE_SHA $HEAD_SHA)..$HEAD_SHA
-          git diff $(git merge-base $BASE_SHA $HEAD_SHA)..$HEAD_SHA > diff.txt
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            git fetch --depth=1 origin "$BASE_SHA"
+            merge_base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
+            git diff --name-only "$merge_base..$HEAD_SHA"
+            git diff "$merge_base..$HEAD_SHA" > diff.txt
+          else
+            rm -f diff.txt
+          fi
           poetry run coverage_report
           cat coverage-results.md >> "$GITHUB_STEP_SUMMARY"
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
+          GIT_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - name: Add Coverage PR Comment
         uses: marocchino/sticky-pull-request-comment@v2
@@ -209,7 +228,7 @@ jobs:
           exit 1
 
       - name: Save coverage for GitHub Code Quality
-        if: steps.tests.outcome == 'success' && matrix.python-version == '3.12' && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'))
+        if: steps.tests.outcome == 'success' && matrix.python-version == '3.12' && (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: actions/upload-artifact@v4
         with:
           name: code-coverage-api
@@ -220,7 +239,7 @@ jobs:
   upload_coverage:
     name: Upload API coverage to GitHub Code Quality
     needs: test
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -286,97 +305,73 @@ jobs:
             commit=${{ github.sha }}
 
   push_to_pypi:
-    if: github.event_name != 'pull_request'
-
+    if: needs.release_validation.outputs.channel == 'stable'
     runs-on: ubuntu-latest
-
-    name: Build Clue API Python Package
-
+    name: Build and publish stable Clue API Python Package
+    permissions:
+      contents: read
     needs:
+      - release_validation
       - formatting
       - test
-
     defaults:
       run:
         working-directory: ./api
-
     steps:
-      - name: Checkout develop
+      - name: Checkout validated revision
         uses: actions/checkout@v4
         with:
-          ref: develop
-      - name: Checkout current ref
-        uses: actions/checkout@v4
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install Poetry
-        uses: abatilo/actions-poetry@v4
-      - uses: actions/cache@v4
-        name: Define a cache for the virtual environment based on the dependencies lock file
-        with:
-          path: ./api/.venv
-          key: venv-${{ hashFiles('api/poetry.lock') }}
-      - name: Install Dependencies
-        run: |
-          poetry install
-      - name: "Update poetry version"
-        run: |
-          poetry run python build_scripts/set_version.py
+        run: python3 -m pip install poetry
+      - name: Install dependencies
+        run: poetry install --no-interaction
+      - name: Build package
+        run: poetry build
+      - name: Publish stable package to PyPI
         env:
-          BRANCH: ${{ github.ref }}
-          BUILD_ID: ${{ github.run_number }}
-      - name: Build Package
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
-          poetry install
-          poetry build
-      - name: Configure Poetry for PyPI
-        run: poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
-      - name: Publish the package to PyPI
-        if: github.event_name != 'pull_request'
-        run: |
+          poetry config pypi-token.pypi "$PYPI_TOKEN"
           poetry publish
 
   push_to_registry:
-    if: github.event_name != 'pull_request'
-
+    if: needs.release_validation.outputs.channel == 'preview' || needs.release_validation.outputs.channel == 'stable'
     runs-on: ubuntu-latest
-
     name: Build Clue API Docker Image
-
     needs:
+      - release_validation
       - formatting
       - test
-
     defaults:
       run:
         working-directory: ./api
-
     permissions:
       id-token: write
       contents: read
       attestations: write
-
     steps:
-      - name: Checkout develop
+      - name: Checkout validated revision
         uses: actions/checkout@v4
         with:
-          ref: develop
-      - name: Checkout current ref
-        uses: actions/checkout@v4
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install Poetry
-        uses: abatilo/actions-poetry@v4
-      - uses: actions/cache@v4
-        name: Define a cache for the virtual environment based on the dependencies lock file
-        with:
-          path: ./api/.venv
-          key: venv-${{ hashFiles('api/poetry.lock') }}
+        run: python3 -m pip install poetry
       - name: Install Dependencies and Build
         run: |
           cp -r ../docs .
-          poetry install
+          poetry install --no-interaction
           poetry build
-      - name: Extract Clue API version
-        id: version
-        run: |
-          echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -384,23 +379,21 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v6
         with:
           images: cccs/clue-api
+          flavor: latest=${{ needs.release_validation.outputs.channel == 'stable' }}
           tags: |
-            type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-            type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
-            type=semver,pattern={{version}}
-            type=raw,value=${{steps.version.outputs.version}}_{{branch}}
-            type=raw,value=${{steps.version.outputs.version}}_{{branch}}_{{sha}}
+            type=raw,value=${{ needs.release_validation.outputs.version }},enable=${{ needs.release_validation.outputs.channel == 'stable' }}
+            type=raw,value=nightly,enable=${{ needs.release_validation.outputs.channel == 'preview' }}
+            type=sha,format=short
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Build and push API Docker image
         id: push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: api
           file: api/Dockerfile
@@ -408,7 +401,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            version=${{ steps.meta.outputs.version }}
+            version=${{ needs.release_validation.outputs.version }}
             branch=${{ github.ref }}
             commit=${{ github.sha }}
       - name: Generate artifact attestation

@@ -1,0 +1,100 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/v17.3.0/schemas/config.json",
+  "always-update": true,
+  "bootstrap-sha": "5cfe0d03278cae572ca545ea03e8369856cbd72d",
+  "changelog-sections": [
+    {
+      "section": "Features",
+      "type": "feat"
+    },
+    {
+      "section": "Bug Fixes",
+      "type": "fix"
+    },
+    {
+      "section": "Performance Improvements",
+      "type": "perf"
+    },
+    {
+      "hidden": true,
+      "section": "Dependencies",
+      "type": "deps"
+    },
+    {
+      "section": "Reverts",
+      "type": "revert"
+    },
+    {
+      "section": "Documentation",
+      "type": "docs"
+    },
+    {
+      "hidden": true,
+      "section": "Styles",
+      "type": "style"
+    },
+    {
+      "hidden": true,
+      "section": "Miscellaneous Chores",
+      "type": "chore"
+    },
+    {
+      "section": "Code Refactoring",
+      "type": "refactor"
+    },
+    {
+      "section": "Tests",
+      "type": "test"
+    },
+    {
+      "section": "Tests",
+      "type": "tests"
+    },
+    {
+      "hidden": true,
+      "section": "Build System",
+      "type": "build"
+    },
+    {
+      "hidden": true,
+      "section": "Continuous Integration",
+      "type": "ci"
+    },
+    {
+      "section": "Infrastructure",
+      "type": "infra"
+    },
+    {
+      "section": "Improvements",
+      "type": "improvement"
+    },
+    {
+      "hidden": true,
+      "section": "Releases",
+      "type": "release"
+    }
+  ],
+  "packages": {
+    "api": {
+      "changelog-path": "CHANGELOG.md",
+      "component": "api",
+      "package-name": "clue-api",
+      "release-type": "python"
+    },
+    "mcp": {
+      "changelog-path": "CHANGELOG.md",
+      "component": "mcp",
+      "package-name": "clue-mcp",
+      "release-type": "python"
+    },
+    "ui": {
+      "changelog-path": "CHANGELOG.md",
+      "component": "ui",
+      "package-name": "@cccsaurora/clue-ui",
+      "release-type": "node"
+    }
+  },
+  "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
+  "separate-pull-requests": true,
+  "tag-separator": "-"
+}

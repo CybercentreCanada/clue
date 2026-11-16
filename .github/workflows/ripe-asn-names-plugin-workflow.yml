@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/ripe_asn_names/**
       - .github/workflows/ripe-asn-names-plugin-workflow.yml
@@ -16,9 +13,6 @@ on:
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/ripe_asn_names/**
       - .github/workflows/ripe-asn-names-plugin-workflow.yml

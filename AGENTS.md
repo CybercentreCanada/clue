@@ -12,8 +12,8 @@
   (`pnpm build-lib`). Code under `ui/src/lib/` is the exported library surface.
 - `ui/src/commons/` is vendored shared UI code; avoid reformatting or refactoring it beyond what a task needs.
 - `mcp/` is the Clue MCP server (`clue_mcp`).
-- `mkdocs/` is the MkDocs documentation site (English and French, `*.fr.md`). Release notes live in
-  `mkdocs/docs/releases/`.
+- `mkdocs/` is the MkDocs documentation site (English and French, `*.fr.md`). Release notes are generated into
+  `api/CHANGELOG.md`, `ui/CHANGELOG.md`, and `mcp/CHANGELOG.md`; `mkdocs/docs/releases/` is a historical archive.
 - `helm/` and `demo/` hold deployment charts and a local demo stack.
 
 ## Toolchains And Setup
@@ -30,7 +30,13 @@
 
 - Use Conventional Commits (`feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`, ...). The
   `commit-msg` hook validates this and lowercases the summary; PR titles are checked by `pr-title-check.yml`.
-- Scopes are optional and free-form; common ones are `api`, `ui`, `mcp`, `plugin`, `ci`, or a plugin name.
+- Scopes are optional and free-form; common ones are `api`, `ui`, `mcp`, `plugin`, `ci`, a plugin name, or `main`
+  (used by Release Please PR titles).
+- All work targets `main`; there are no `develop`, `rc/*`, or `patch/*` branches. Release Please creates independent
+  release PRs for `api`, `ui`, and `mcp` from `main`, bumps their versions, generates each package's `CHANGELOG.md`, and
+  tags `<component>-vX.Y.Z`. Do not manually bump versions, create tags, or write release notes. The files in
+  `mkdocs/docs/releases/` are a read-only archive; keep each package's baseline note and archive link in its local
+  changelog. See `mkdocs/docs/developer/releases.md`.
 
 ## API Development And Validation
 
