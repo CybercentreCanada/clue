@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { TuiSearchRequest } from '..';
 import TuiSearchModel from '../models/TuiSearchModel';
 import { isMatcher, isSeparator, isSorter, TuiSearchOperator, TuiSearchTerm } from '../models/TuiSearchTerms';

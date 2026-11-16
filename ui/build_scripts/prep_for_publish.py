@@ -45,7 +45,7 @@ if "pnpm" in package_json:
 
 exports: list[Path] = []
 for path in lib_path.rglob("**"):
-    if path == lib_path:
+    if path == lib_path or not path.is_dir():
         continue
 
     exports.append(path.relative_to(lib_path))

@@ -24,6 +24,10 @@ const config = ({ mode }) => {
         }
       }
     ],
+    resolve: {
+      // Multiple copies of react-router each create their own router context, breaking hooks like useLocation()
+      dedupe: ['react-router']
+    },
     build: {
       sourcemap: false,
       minify: useMinify

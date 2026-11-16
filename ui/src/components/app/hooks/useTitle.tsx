@@ -1,7 +1,7 @@
 import useMySitemap from 'components/hooks/useMySitemap';
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router';
 
 const useTitle = () => {
   const { t } = useTranslation();

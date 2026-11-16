@@ -1,6 +1,6 @@
 import { Components, PaletteMode, PaletteOptions, Theme } from '@mui/material';
 import { ReactElement, ReactNode } from 'react';
-import { To } from 'react-router-dom';
+import { To } from 'react-router';
 import { GravatarD } from '../display/AppAvatar';
 import { AppUserValidatedProp } from './AppUserService';
 

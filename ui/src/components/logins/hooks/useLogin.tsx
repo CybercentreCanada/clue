@@ -10,8 +10,7 @@ import { StorageKey } from 'lib/utils/constants';
 import type { ClueUser } from 'models/entities/ClueUser';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { saveLoginCredential } from 'utils/localStorage';
 
 const useLogin = () => {

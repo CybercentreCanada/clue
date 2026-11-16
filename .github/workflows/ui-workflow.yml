@@ -59,6 +59,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
       - name: Install Node v24
         uses: actions/setup-node@v4
         with:

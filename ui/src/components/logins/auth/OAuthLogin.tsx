@@ -4,7 +4,7 @@ import { useMyLocalStorageItem } from 'lib/hooks/useMyLocalStorage';
 import { StorageKey } from 'lib/utils/constants';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import useLogin from '../hooks/useLogin';
 
 type OAuthLoginProps = {

@@ -98,6 +98,10 @@ const config = ({ mode }) => {
       })
       // { ...iconsMaterialPlugin(), enforce: 'pre', apply: 'build' }
     ],
+    resolve: {
+      // Multiple copies of react-router each create their own router context, breaking hooks like useLocation()
+      dedupe: ['react-router']
+    },
     publicDir: 'src/locales',
     build: {
       copyPublicDir: true,

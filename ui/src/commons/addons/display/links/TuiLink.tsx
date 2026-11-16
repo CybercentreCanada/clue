@@ -1,6 +1,6 @@
 import { Link as MuiLink, LinkProps as MuiLinkProps } from '@mui/material';
 import { FC, memo } from 'react';
-import { Link, LinkProps } from 'react-router-dom';
+import { Link, LinkProps } from 'react-router';
 
 export type TuiLinkProps = { route?: string; noDecoration?: boolean } & MuiLinkProps & Omit<LinkProps, 'to'>;
 

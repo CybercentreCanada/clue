@@ -3,7 +3,7 @@ import { IconButton, styled, useMediaQuery, useTheme } from '@mui/material';
 import useAppConfigs from 'commons/components/app/hooks/useAppConfigs';
 import useAppLeftNav from 'commons/components/app/hooks/useAppLeftNav';
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import useAppLogo from '../app/hooks/useAppLogo';
 
 const StyledTitle = styled('div')({
