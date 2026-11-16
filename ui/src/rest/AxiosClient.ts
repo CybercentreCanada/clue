@@ -61,7 +61,7 @@ export default class AxiosClient {
       method,
       withCredentials: true,
       data: JSON.stringify(body),
-      ...(axiosConfig ?? {})
+      ...axiosConfig
     };
 
     try {

@@ -37,7 +37,7 @@ export default function TuiSearchFavourites({
   const provider = clientProvider || localProvider;
   const saveEnabled = inputValue && !provider.options.some(o => o.name === inputValue);
 
-  const onSelect = (event: SyntheticEvent, value: TuiSearchFavouriteOption) => {
+  const onSelect = (_event: SyntheticEvent, value: TuiSearchFavouriteOption) => {
     if (typeof value === 'string' && saveEnabled) {
       onSaveClick(null, value);
     } else if (value) {
@@ -56,7 +56,7 @@ export default function TuiSearchFavourites({
     }
   };
 
-  const onSaveClick = async (event, value?: string) => {
+  const onSaveClick = async (_event, value?: string) => {
     const success = await provider.onSave(value || inputValue, model.rebuild());
     enqueueSnackbar(
       <div>
@@ -109,7 +109,6 @@ export default function TuiSearchFavourites({
         multiple={false}
         inputValue={inputValue}
         value={selectedValue}
-        placeholder={t('tui.search.favourite.title')}
         options={provider.options}
         getOptionDisabled={() => false}
         getOptionLabel={(option: TuiSearchFavouriteOption) => {

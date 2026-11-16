@@ -49,6 +49,7 @@ const BundleLine: FC<{
 
   // We'll generate colors based on a hash of the bundle ID
   const color = useMemo(
+    // oxlint-disable-next-line import/namespace -- colour scheme is chosen at runtime
     () => (d3[`interpolate${colorScheme}`] ?? d3.interpolateSpectral)(cyrb53(JSON.stringify(bundle))),
     [bundle, colorScheme]
   );

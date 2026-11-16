@@ -82,7 +82,7 @@ const Tree: FC<{
     () => ({
       ...DEFAULT_OPTIONS,
       ...options,
-      ...(graph?.metadata.display?.visualization?.config ?? {})
+      ...graph?.metadata.display?.visualization?.config
     }),
     [graph?.metadata.display?.visualization?.config, options]
   );

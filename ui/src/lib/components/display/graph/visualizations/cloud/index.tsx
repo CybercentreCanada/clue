@@ -76,6 +76,7 @@ const Cloud: FC<{
   const colors = useMemo(
     () =>
       d3.scaleOrdinal(
+        // oxlint-disable-next-line import/namespace -- colour scheme is chosen at runtime
         Object.keys(clouds).map(cloud => (d3[`interpolate${colorScheme}`] ?? d3.interpolateSpectral)(cyrb53(cloud)))
       ),
     [clouds, colorScheme]

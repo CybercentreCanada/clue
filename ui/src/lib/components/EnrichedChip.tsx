@@ -102,7 +102,7 @@ const EnrichedChip: FC<EnrichmentProps & ChipProps> = React.memo(
         sx={{
           height: otherProps.size === 'medium' ? '40px' : 'unset',
           '& .MuiChip-label': { overflow: 'visible' },
-          ...(otherProps.sx ?? {})
+          ...otherProps.sx
         }}
         label={
           <Stack direction="row" spacing={1} alignItems="center">

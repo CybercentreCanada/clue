@@ -16,7 +16,7 @@ export default function TuiSearchPagination({
   ...paginationProps
 }: TuiSearchPaginationProps) {
   const onPageChange = useCallback(
-    (event, nextPage) => {
+    (_event, nextPage) => {
       onChange(nextPage === 1 ? 0 : (nextPage - 1) * limit);
     },
     [limit, onChange]

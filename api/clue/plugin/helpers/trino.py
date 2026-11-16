@@ -66,7 +66,7 @@ def get_trino_connection(
             port=int(os.environ.get("TRINO_PORT", "443")),
             user=get_username(jwt_token, claims=username_claims),
             auth=JWTAuthentication(jwt_token),
-            source=source or f"clue-{os.environ["APP_NAME"]}",
+            source=source or f"clue-{os.environ['APP_NAME']}",
             max_attempts=max_attempts,
             request_timeout=request_timeout,
             http_session=session,

@@ -192,7 +192,7 @@ describe('OpinionIcon - tooltip interactions', () => {
   it('calls showInfo on mouse-over when tooltip is enabled', async () => {
     const user = userEvent.setup();
     renderOpinionIcon([baseAnnotation('malicious')]);
-    const span = screen.getByStyle ? screen.getByRole('generic') : document.querySelector('span[style]');
+    const span = document.querySelector('span[style]');
     await user.hover(span);
     expect(mockShowInfo).toHaveBeenCalledWith('opinion', expect.anything(), selector, expect.anything());
   });

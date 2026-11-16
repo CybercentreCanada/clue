@@ -133,7 +133,7 @@ export default function useTuiSearchParams() {
   );
 
   const equal = useCallback(
-    (request: TuiSearchRequest, equalsWhenEmpty: boolean = false) => {
+    (request: TuiSearchRequest, _equalsWhenEmpty: boolean = false) => {
       const current = params.toString();
       const compare = serialize(request).toString();
       return current === compare || current.length === 0;

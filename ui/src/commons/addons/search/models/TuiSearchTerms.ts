@@ -261,15 +261,15 @@ export default class TuiSearchTerms {
     return this._terms ? this._terms.filter(t => isSorter(t)) : [];
   }
 
-  public count(type: string = null): number {
+  public count(_type: string = null): number {
     return this._terms ? this._terms.length : 0;
   }
 
-  public countMatchers(type: string = null): number {
+  public countMatchers(_type: string = null): number {
     return this.matchers().length;
   }
 
-  public countSorters(type: string = null): number {
+  public countSorters(_type: string = null): number {
     return this.sorters().length;
   }
 

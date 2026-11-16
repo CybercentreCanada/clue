@@ -19,7 +19,7 @@ def main():
     result = subprocess.check_output(prep_command(f'find {path} -type f -name "*.py"')).decode().strip().split("\n")
 
     mypy = subprocess.Popen(
-        prep_command(f'python -m mypy {" ".join(f for f in result if not f.startswith("test_"))}'),
+        prep_command(f"python -m mypy {' '.join(f for f in result if not f.startswith('test_'))}"),
         stdout=subprocess.PIPE,
     )
 

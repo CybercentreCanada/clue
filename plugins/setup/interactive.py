@@ -42,7 +42,7 @@ class CustomTestClient(FlaskClient):
 
         if "CLUE_ACCESS_TOKEN" in os.environ:
             info("Clue access token in env, setting Authorization header")
-            headers["Authorization"] = f"Bearer {os.environ["CLUE_ACCESS_TOKEN"]}"
+            headers["Authorization"] = f"Bearer {os.environ['CLUE_ACCESS_TOKEN']}"
         else:
             warn("Missing access token, skipping authorization header.")
 
@@ -224,7 +224,7 @@ def main():  # noqa: C901
         print("\nAvailable functions:")
 
         for i in range(len(functions)):
-            print(f"{i + 1}) {' '.join(word.capitalize() for word in functions[i][0].split("_"))}")
+            print(f"{i + 1}) {' '.join(word.capitalize() for word in functions[i][0].split('_'))}")
         print(f"{len(functions) + 1}) Quit")
 
         action = input("\nEnter a selection: ")

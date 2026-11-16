@@ -171,7 +171,7 @@ export default class TuiSearchItems<T> {
   public search(...values: string[]): TuiSearchItems<T> {
     const model = new TuiSearchModel();
     model.filters().withSeparator('or');
-    values.forEach((v, i) => {
+    values.forEach((v, _i) => {
       model.filters().like('*', v, true);
     });
     return this.apply(model);

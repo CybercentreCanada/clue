@@ -6,7 +6,6 @@ import { fileURLToPath } from 'node:url';
 import { extname, relative, resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import dts from 'vite-plugin-dts';
-import eslint from 'vite-plugin-eslint';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { configDefaults } from 'vitest/config';
 
@@ -56,7 +55,6 @@ const config = ({ mode }) => {
 
   return defineConfig({
     plugins: [
-      eslint(),
       react(),
       tsconfigPaths(),
       dts({

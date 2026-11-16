@@ -75,6 +75,21 @@ You can also run tests with a prettier terminal UI using this command:
 pnpm test-ui
 ```
 
+### Formatting, Linting and Type Checking
+
+The UI uses [oxfmt](https://oxc.rs/docs/guide/usage/formatter) for formatting and
+[oxlint](https://oxc.rs/docs/guide/usage/linter) for linting. CI runs all of the following:
+
+```bash
+pnpm tsc --noEmit         # type checking
+pnpm oxfmt src --check    # formatting
+pnpm oxlint src           # linting
+pnpm lint                 # fix lint and formatting issues automatically
+```
+
+Installing the repository's pre-commit hooks (`poetry run pre-commit install` from `api/`) runs these checks on
+staged UI files before each commit.
+
 ### Additional scripts
 
 For more launch options, see the "scripts" section of the package.json file.

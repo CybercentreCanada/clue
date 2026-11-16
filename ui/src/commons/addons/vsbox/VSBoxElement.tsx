@@ -7,7 +7,7 @@ type VSBoxElementProps = Omit<BoxProps, 'children'> & {
   eid: number | string;
   children: ReactElement;
 };
-const VSBoxElement = ({ focus, eid, children }: VSBoxElementProps) => {
+const VSBoxElement = ({ focus, eid: _eid, children }: VSBoxElementProps) => {
   const {
     state: { header, content, scrollTop }
   } = useVsBox();

@@ -84,7 +84,7 @@ export const TuiQueryStore: FC<TuiQueryStoreProps> = ({ disableGlobal, q, state,
   );
 
   const onSelectionChange = useCallback(
-    (event: SyntheticEvent, values: TuiQueryItem[], reason: AutocompleteChangeReason) => {
+    (_event: SyntheticEvent, values: TuiQueryItem[], _reason: AutocompleteChangeReason) => {
       const item = values[0];
       if (state.has('qid')) {
         state.append('sep', 'AND');
@@ -97,7 +97,7 @@ export const TuiQueryStore: FC<TuiQueryStoreProps> = ({ disableGlobal, q, state,
   );
 
   const onGlobalToggle = useCallback(
-    (event: SyntheticEvent, checked: boolean) => {
+    (_event: SyntheticEvent, checked: boolean) => {
       setGlobal(checked);
     },
     [setGlobal]

@@ -1,6 +1,7 @@
 // Import necessary types and test utilities
 import type { AxiosRequestConfig } from 'axios';
 import { ApiType } from 'lib/types/config';
+import type { ClassificationDefinition } from 'lib/utils/classificationParser';
 import { describe, expect, it, vi } from 'vitest';
 import exampleClassification from '../../tests/models/classification.example.json';
 import { get, uri } from './index';
@@ -46,7 +47,7 @@ describe('Configs API', () => {
           apps: []
         }
       },
-      c12nDef: exampleClassification
+      c12nDef: exampleClassification as unknown as ClassificationDefinition
     };
 
     it('should call hget with correct parameters when no config provided', async () => {

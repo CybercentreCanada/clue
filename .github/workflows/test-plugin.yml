@@ -55,7 +55,7 @@ jobs:
         if: steps.check-tests.outputs.run_tests == 'true'
         run: python -m pip install poetry
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         if: steps.check-tests.outputs.run_tests == 'true'
         name: Define a cache for the virtual environment based on the dependencies lock file
         with:

@@ -27,7 +27,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install Ruff
-        run: pip install ruff mypy
+        run: pip install "ruff>=0.15.7,<0.16" mypy
 
       - name: Run Ruff format
         run: ruff format ${{ inputs.plugin-path }} --diff

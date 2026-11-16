@@ -113,11 +113,10 @@ jobs:
             api/dev/keycloak/keycloak-realm.json >> "$GITHUB_ENV"
 
       - name: Spin up full test dependencies
-        uses: hoverkraft-tech/compose-action@v2.6.0
+        uses: ./.github/actions/compose
         with:
-          compose-file: "mcp/docker-compose.yml"
-          compose-flags: "--profile full"
-          up-flags: "-d"
+          compose-file: mcp/docker-compose.yml
+          profile: full
           services: |
             clue-api
             mongodb

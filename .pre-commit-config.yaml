@@ -1,36 +1,92 @@
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.8.0
+    rev: v0.15.7
     hooks:
       # Run the linter.
       - id: ruff
+        name: Ruff Linting
         args: [--fix, --output-format=concise]
       # Run the formatter.
       - id: ruff-format
+        name: Ruff Formatting
+
+  - repo: https://github.com/oxc-project/mirrors-oxfmt
+    rev: v0.78.0
+    hooks:
+      - id: oxfmt
+        name: Run oxfmt
+        files: ^ui/
+        language_version: system
+
   - repo: local
     hooks:
       - id: poetry-check-api
-        name: poetry-check-api
-        entry: api/build_scripts/check_poetry.sh
+        name: Poetry Check (API)
+        entry: hooks/check_poetry.sh
+        args: [api]
         language: script
         stages: [pre-commit]
         files: ^api/.*\.(toml|lock)
-      - id: lint-staged
-        name: lint-staged
-        entry: ui/build_scripts/lint_staged.sh
+        pass_filenames: false
+      - id: poetry-check-mcp
+        name: Poetry Check (MCP Server)
+        entry: hooks/check_poetry.sh
+        args: [mcp]
+        language: script
+        stages: [pre-commit]
+        files: ^mcp/.*\.(toml|lock)
+        pass_filenames: false
+      - id: poetry-check-mkdocs
+        name: Poetry Check (Docs)
+        entry: hooks/check_poetry.sh
+        args: [mkdocs]
+        language: script
+        stages: [pre-commit]
+        files: ^mkdocs/.*\.(toml|lock)
+        pass_filenames: false
+      - id: oxlint
+        name: Run oxlint
+        entry: hooks/oxlint.sh
         language: script
         stages: [pre-commit]
         files: ^ui/.*
+      - id: tsc
+        name: Typescript Checks
+        entry: hooks/tsc.sh
+        language: script
+        stages: [pre-commit]
+        files: ^ui/.*\.(ts|tsx)
+        pass_filenames: false
       - id: bad-ui-imports
-        name: bad-ui-imports
-        entry: ui/build_scripts/find_bad_imports.py
+        name: Check for bad UI imports
+        entry: hooks/find_bad_imports.py
         language: python
         stages: [pre-commit]
         files: ^ui/.*
+        pass_filenames: false
       - id: check-translation
-        name: check-translation
-        entry: ui/build_scripts/check_translation.py
+        name: Check for Mismatched Translations
+        entry: hooks/check_translation.py
         language: python
         stages: [pre-commit]
         files: ^ui/.*
+        pass_filenames: false
+      - id: duplicate-test-files
+        name: Check for Duplicate Test Modules
+        entry: hooks/find_duplicate_test_files.py
+        language: python
+        stages: [pre-commit]
+        always_run: true
+        pass_filenames: false
+      - id: check-commit-msg
+        name: Validate Commit Message
+        entry: hooks/commit_msg.py
+        language: python
+        stages: [commit-msg]
+        additional_dependencies: ["conventional-pre-commit", "rich"]
+        verbose: true

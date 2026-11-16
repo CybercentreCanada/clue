@@ -101,7 +101,7 @@ const ProfileSection: FC<{
         <TableCell style={{ whiteSpace: 'nowrap' }}>{t('page.settings.profile.table.roles')}</TableCell>
         <TableCell width="100%" colSpan={2}>
           <Grid container direction="row" spacing={1}>
-            {config?.lookups?.roles?.map((r: string) => (
+            {(config as { lookups?: { roles?: string[] } })?.lookups?.roles?.map((r: string) => (
               <Grid item key={r}>
                 <Chip
                   label={r.toLocaleLowerCase()}

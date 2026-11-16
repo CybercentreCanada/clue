@@ -74,7 +74,7 @@ class Classification(object):
 
             if self.dynamic_groups_type not in ["email", "group", "all"]:
                 raise InvalidDefinition(
-                    f'Invalid dynamic group type "{self.dynamic_groups_type}". ' "Valid types are: email | group | all"
+                    f'Invalid dynamic group type "{self.dynamic_groups_type}". Valid types are: email | group | all'
                 )
 
             for x in classification_definition["levels"]:
@@ -83,7 +83,7 @@ class Classification(object):
 
                 if short_name in ["INV", "NULL"] or name in [self.INVALID_CLASSIFICATION, self.NULL_CLASSIFICATION]:
                     raise InvalidDefinition(
-                        "You cannot use reserved words NULL, INVALID or INV in your " "classification definition."
+                        "You cannot use reserved words NULL, INVALID or INV in your classification definition."
                     )
 
                 lvl = int(x["lvl"])
@@ -221,14 +221,14 @@ class Classification(object):
             return self.levels_map[self.levels_aliases[lvl]], remain
         else:
             raise InvalidClassification(
-                "Classification level '%s' was not found in " "your classification definition." % lvl
+                "Classification level '%s' was not found in your classification definition." % lvl
             )
 
     def _get_c12n_level_text(self, lvl_idx: int, long_format: bool = True) -> str:
         text = self.levels_map.get(str(lvl_idx), None)
         if not text:
             raise InvalidClassification(
-                "Classification level number '%s' was not " "found in your classification definition." % lvl_idx
+                "Classification level number '%s' was not found in your classification definition." % lvl_idx
             )
         if long_format:
             return self.levels_map_stl[text]
@@ -333,7 +333,7 @@ class Classification(object):
             if limited_to_group is not None:
                 if len(g1_set) > 1 or (len(g1_set) == 1 and g1_set != set([limited_to_group])):
                     raise InvalidClassification(
-                        f"Subgroup {subgroup} is limited to group " f"{limited_to_group} (found: {', '.join(g1_set)})"
+                        f"Subgroup {subgroup} is limited to group {limited_to_group} (found: {', '.join(g1_set)})"
                     )
 
         # Do auto select

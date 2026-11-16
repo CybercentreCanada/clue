@@ -88,7 +88,7 @@ def plugin_with_custom_type():
                     confidence=0.9,
                     summary="Test annotation with non-serializable raw data",
                 )
-            ]
+            ],
         )
 
     plugin = CluePlugin(
@@ -138,6 +138,7 @@ def test_custom_type_response(plugin_with_custom_type):
 
         assert response.status_code != 422
 
+
 def test_single_lookup_with_non_serializable_response(plugin_with_non_serializable_response):
     """Test that single lookup with non-serializable raw_data returns 500 error."""
     plugin = plugin_with_non_serializable_response
@@ -162,9 +163,9 @@ def test_single_lookup_with_non_serializable_response(plugin_with_non_serializab
         assert error_msg is not None
         assert len(error_msg) > 0
         # Should contain some indication of serialization failure
-        assert any(
-            keyword in error_msg.lower() for keyword in ["serializ", "error", "convert", "json", "response"]
-        ), f"Error message should mention serialization issue, got: {error_msg}"
+        assert any(keyword in error_msg.lower() for keyword in ["serializ", "error", "convert", "json", "response"]), (
+            f"Error message should mention serialization issue, got: {error_msg}"
+        )
 
 
 def test_single_lookup_serialization_error_logging(plugin_with_non_serializable_response, caplog):
@@ -188,9 +189,9 @@ def test_single_lookup_serialization_error_logging(plugin_with_non_serializable_
 
     # Verify the log contains details about the serialization issue
     log_messages = " ".join([record.message for record in error_logs])
-    assert any(
-        keyword in log_messages.lower() for keyword in ["serializ", "error", "exception", "dump", "json"]
-    ), f"Error logs should mention serialization issue, got: {log_messages}"
+    assert any(keyword in log_messages.lower() for keyword in ["serializ", "error", "exception", "dump", "json"]), (
+        f"Error logs should mention serialization issue, got: {log_messages}"
+    )
 
 
 def test_bulk_lookup_with_non_serializable_response(plugin_with_non_serializable_response):
@@ -220,9 +221,9 @@ def test_bulk_lookup_with_non_serializable_response(plugin_with_non_serializable
         # Verify error message indicates serialization issue
         error_msg = data["api_error_message"]
         assert error_msg is not None
-        assert any(
-            keyword in error_msg.lower() for keyword in ["serializ", "error", "convert", "json", "response"]
-        ), f"Error message should mention serialization issue, got: {error_msg}"
+        assert any(keyword in error_msg.lower() for keyword in ["serializ", "error", "convert", "json", "response"]), (
+            f"Error message should mention serialization issue, got: {error_msg}"
+        )
 
 
 def test_bulk_lookup_serialization_error_logging(plugin_with_non_serializable_response, caplog):
@@ -246,9 +247,9 @@ def test_bulk_lookup_serialization_error_logging(plugin_with_non_serializable_re
     assert len(error_logs) > 0, "Expected error logging for bulk serialization failure"
 
     log_messages = " ".join([record.message for record in error_logs])
-    assert any(
-        keyword in log_messages.lower() for keyword in ["serializ", "error", "exception"]
-    ), f"Error logs should mention serialization issue, got: {log_messages}"
+    assert any(keyword in log_messages.lower() for keyword in ["serializ", "error", "exception"]), (
+        f"Error logs should mention serialization issue, got: {log_messages}"
+    )
 
 
 def test_custom_non_serializable_object(plugin_with_custom_non_serializable):

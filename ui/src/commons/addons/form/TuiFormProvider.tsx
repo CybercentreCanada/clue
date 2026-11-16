@@ -1,7 +1,5 @@
 import { createContext, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
-const EMPTY_LIST = [];
-
 export type TuiFormEffect = (form?: TuiForm) => TuiForm;
 
 export type TuiFormField = {
