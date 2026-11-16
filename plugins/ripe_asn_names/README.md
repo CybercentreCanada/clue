@@ -54,4 +54,4 @@ poetry run python -m pytest ../plugins/ripe_asn_names -c ../plugins/pytest.ini
 
 ### 0.0.1
 
-- Initial release of RIPE ASN name enrichment.
+- Initial release of RIPE ASN name enrichment using a local dataset snapshot downloaded at image build time. Rebuild the image to refresh the dataset ([#118](https://github.com/CybercentreCanada/clue/pull/118)).
