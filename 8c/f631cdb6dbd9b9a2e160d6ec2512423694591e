@@ -1,0 +1,82 @@
+ui/src/commons/components/app/AppConfigs.ts
+  s_44b35a00094030::t_16dacf4af426be 3
+ui/src/components/app/hooks/useTitle.tsx
+  s_44b35a00094030::t_16dacf4af426be 4
+.github/workflows/ui-workflow.yml
+  h_f221159cc9f457 62-65
+ui/src/components/routes/Documentation.tsx
+  s_44b35a00094030::t_16dacf4af426be 9
+ui/vite.config.ts
+  s_44b35a00094030::t_1062bf50041719 27-30
+ui/src/commons/addons/display/links/TuiLink.tsx
+  s_44b35a00094030::t_16dacf4af426be 3
+ui/src/commons/addons/search/hooks/useTuiSearchParams.tsx
+  s_44b35a00094030::t_23073a7a5c42ca 2
+ui/src/components/logins/hooks/useLogin.tsx
+  s_44b35a00094030::t_5a2dc9869e9826 13
+ui/src/lib/components/display/markdown/index.test.tsx
+  s_44b35a00094030::t_16dacf4af426be 3
+ui/src/commons/components/topnav/AppName.tsx
+  s_44b35a00094030::t_16dacf4af426be 6
+ui/src/lib/components/display/markdown/index.tsx
+  s_44b35a00094030::t_16dacf4af426be 6
+ui/vite.lib.config.ts
+  s_44b35a00094030::t_b678bba9999879 101-104
+ui/src/components/logins/auth/OAuthLogin.tsx
+  s_44b35a00094030::t_16dacf4af426be 7
+ui/src/commons/addons/search/TuiSearchFavourites.tsx
+  s_44b35a00094030::t_ec111895ab9ee0 6
+ui/package.json
+  s_44b35a00094030::t_21bfb834d186ac 93
+ui/src/commons/components/topnav/UserProfile.tsx
+  s_44b35a00094030::t_16dacf4af426be 24
+ui/src/commons/components/breadcrumbs/BreadcrumbLinkItem.tsx
+  s_44b35a00094030::t_16dacf4af426be 5
+ui/src/commons/addons/display/chips/TuiChip.tsx
+  s_44b35a00094030::t_16dacf4af426be 3
+ui/src/components/app/App.tsx
+  s_44b35a00094030::t_41df735681d24f 51
+ui/src/components/routes/PluginDashboard.tsx
+  s_44b35a00094030::t_16dacf4af426be 28
+ui/src/commons/components/leftnav/LeftNavItem.tsx
+  s_44b35a00094030::t_16dacf4af426be 5
+ui/build_scripts/prep_for_publish.py
+  s_5825f8f9f41fe4::t_6ca5b1bb445d3e 48
+ui/src/commons/addons/display/buttons/TuiButton.tsx
+  s_44b35a00094030::t_16dacf4af426be 13
+ui/src/commons/components/display/AppToc.tsx
+  s_44b35a00094030::t_16dacf4af426be 7
+ui/src/commons/components/app/hooks/useAppSitemap.tsx
+  s_44b35a00094030::t_16dacf4af426be 3
+ui/src/commons/addons/display/buttons/TuiIconButton.tsx
+  s_44b35a00094030::t_16dacf4af426be 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "8cf631cdb6dbd9b9a2e160d6ec2512423694591e",
+  "prompts": {},
+  "humans": {
+    "h_f221159cc9f457": {
+      "author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  },
+  "sessions": {
+    "s_44b35a00094030": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1a16f047ffel4pmmEwMTUwxzG",
+        "model": "us.anthropic.claude-opus-5-5"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    },
+    "s_5825f8f9f41fe4": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1a17651dffenIGYpuLJTMSR9z",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
