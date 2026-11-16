@@ -1,0 +1,42 @@
+plugins/howler/README.md
+  s_afe8ddc59f198c::t_35ad966cc583e4 7
+  s_afe8ddc59f198c::t_93166da1106bae 4-6,8-9
+mkdocs/docs/releases/mcp.md
+  s_afe8ddc59f198c::t_93166da1106bae 1-7
+plugins/misp/README.md
+  s_afe8ddc59f198c::t_93166da1106bae 16-33
+mkdocs/docs/releases/api.md
+  s_afe8ddc59f198c::t_5845cec3e3feae 15
+plugins/assemblyline/README.md
+  s_afe8ddc59f198c::t_93166da1106bae 25-27,29-31
+  s_afe8ddc59f198c::t_35ad966cc583e4 28
+mkdocs/docs/releases/ui.md
+  s_afe8ddc59f198c::t_5845cec3e3feae 7,12
+plugins/howler/manifest.yml
+  s_afe8ddc59f198c::t_35ad966cc583e4 3
+plugins/ripe_asn_names/README.md
+  s_afe8ddc59f198c::t_93166da1106bae 57
+plugins/assemblyline/manifest.yml
+  s_afe8ddc59f198c::t_35ad966cc583e4 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "4c326e8bc0e76a165cdc6bdd0d6861d7b6777596",
+  "prompts": {},
+  "humans": {
+    "h_f221159cc9f457": {
+      "author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  },
+  "sessions": {
+    "s_afe8ddc59f198c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e1a7f198cffe9Pe3PBdrF7INcT",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
