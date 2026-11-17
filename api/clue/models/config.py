@@ -193,9 +193,11 @@ class OAuth(BaseModel):
 
     @model_validator(mode="after")
     def validate_jwks_ages(self) -> "OAuth":
-        """Cached keys are returned unchecked until they need a refresh, so that must happen before they expire."""
+        """Cached keys must be refreshable before they expire, or authentication fails while the provider is healthy."""
         if self.jwks_refresh_after_seconds > self.jwks_max_age_seconds:
             raise ValueError("jwks_refresh_after_seconds must not exceed jwks_max_age_seconds")
+        if self.jwks_refresh_cooldown_seconds > self.jwks_max_age_seconds:
+            raise ValueError("jwks_refresh_cooldown_seconds must not exceed jwks_max_age_seconds")
         return self
 
 

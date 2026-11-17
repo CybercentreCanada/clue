@@ -13,8 +13,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('api', () => ({ default: { auth: { login: { get: mocks.loginGet } } } }));
-vi.mock('react-router', () => ({ useNavigate: () => mocks.navigate, useLocation: () => mocks.location }));
-vi.mock('react-router-dom', () => ({ useSearchParams: () => [mocks.searchParams] }));
+vi.mock('react-router', () => ({
+  useNavigate: () => mocks.navigate,
+  useLocation: () => mocks.location,
+  useSearchParams: () => [mocks.searchParams]
+}));
 vi.mock('commons/components/app/hooks/useAppUser', () => ({ default: () => ({ setUser: mocks.setUser }) }));
 vi.mock('components/hooks/useMyApi', () => ({ default: () => ({ dispatchApi: (call: Promise<any>) => call }) }));
 vi.mock('components/hooks/useMyModal', () => ({ default: () => ({ showModal: vi.fn() }) }));

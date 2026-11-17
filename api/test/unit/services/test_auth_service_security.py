@@ -167,6 +167,7 @@ def test_registration_uses_the_configured_provider_timeout(monkeypatch):
     [
         {"jwks_refresh_after_seconds": 7200, "jwks_max_age_seconds": 3600},
         {"jwks_max_age_seconds": 60},
+        {"jwks_refresh_after_seconds": 3600, "jwks_max_age_seconds": 3600, "jwks_refresh_cooldown_seconds": 7200},
     ],
 )
 def test_jwks_refresh_interval_cannot_exceed_max_age(overrides):

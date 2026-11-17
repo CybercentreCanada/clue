@@ -388,21 +388,15 @@ describe('API Index', () => {
         .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]);
 
     beforeEach(() => {
-      vi.mocked(localStorage.getStored).mockImplementation(key =>
-        key === StorageKey.REFRESH_TOKEN ? 'mock-refresh-token' : key === StorageKey.PROVIDER ? 'mock-provider' : null
-      );
-    });
-
-    it('should attempt token refresh on 401 when refresh token exists', async () => {
-      // Mock the fetch calls
-      client.fetch
-        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401]) // First call fails
-        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200]) // Refresh succeeds
-        .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]); // Retry succeeds
-
-      // Mock localStorage for refresh scenario
+      let appToken: string = null;
+      vi.mocked(localStorage.saveLoginCredential).mockImplementation(response => {
+        appToken = response?.app_token ?? null;
+        return !!appToken;
+      });
       vi.mocked(localStorage.getStored).mockImplementation(key => {
         switch (key) {
+          case StorageKey.APP_TOKEN:
+            return appToken;
           case StorageKey.REFRESH_TOKEN:
             return 'mock-refresh-token';
           case StorageKey.PROVIDER:
@@ -411,6 +405,18 @@ describe('API Index', () => {
             return null;
         }
       });
+    });
+
+    afterEach(() => {
+      vi.mocked(localStorage.saveLoginCredential).mockReset();
+    });
+
+    it('should attempt token refresh on 401 when refresh token exists', async () => {
+      // Mock the fetch calls
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401]) // First call fails
+        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200]) // Refresh succeeds
+        .mockResolvedValueOnce([{ api_response: 'retry-success' }, 200]); // Retry succeeds
 
       const result = await hget('/test');
 
@@ -450,7 +456,7 @@ describe('API Index', () => {
       expect({ ...headers }).toEqual(originalHeaders);
     });
 
-    it('replays a request at most once when the refreshed token is also rejected', async () => {
+    it('replays a request at most once and keeps the post-login destination when the refreshed token is rejected', async () => {
       client.fetch
         .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
         .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200])
@@ -459,6 +465,8 @@ describe('API Index', () => {
       expect(await hget('/test')).toBeUndefined();
       expect(client.fetch).toHaveBeenCalledTimes(3);
       expect(localStorage.saveLoginCredential).toHaveBeenLastCalledWith({});
+      expect(localStorage.removeStored).not.toHaveBeenCalledWith(StorageKey.NEXT_LOCATION);
+      expect(localStorage.removeStored).not.toHaveBeenCalledWith(StorageKey.NEXT_SEARCH);
     });
 
     it('does not retry when the refresh response has no access token', async () => {

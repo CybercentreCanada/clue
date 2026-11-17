@@ -5,6 +5,7 @@ from authlib.integrations.base_client import OAuthError
 from authlib.jose.errors import JoseError
 from authlib.oidc.core import UserInfo
 from flask import abort, request
+from joserfc.errors import JoseError as JoserfcError
 from pydantic import ValidationError
 
 from clue.api import (
@@ -127,7 +128,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
             identity_data = token_data.get("userinfo", token_data)
 
         return authenticated_response(oauth_provider, token_data, identity_data)
-    except (OAuthError, JoseError) as err:
+    except (OAuthError, JoseError, JoserfcError) as err:
         # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text.
         logger.warning(
             "OAuth/OIDC validation failure. (IP:%s) [%s: %s]",
@@ -200,7 +201,7 @@ def refresh(**_) -> dict[str, Any]:  # noqa: C901
             identity_data = token_data.get("userinfo", token_data)
 
         return authenticated_response(body.provider, token_data, identity_data)
-    except (OAuthError, JoseError) as err:
+    except (OAuthError, JoseError, JoserfcError) as err:
         # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text.
         logger.warning(
             "OAuth/OIDC validation failure. (IP:%s) [%s: %s]",

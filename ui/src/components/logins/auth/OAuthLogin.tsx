@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router';
 import { hasSensitiveParams } from 'utils/oauth';
-import { useSearchParams } from 'react-router';
 import useLogin from '../hooks/useLogin';
 
 type OAuthLoginProps = {

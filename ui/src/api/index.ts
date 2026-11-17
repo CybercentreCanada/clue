@@ -144,8 +144,8 @@ const hfetchWithRefresh = async <R>(
     } as RawAxiosRequestHeaders
   };
 
-  // Set the token if it exists and hasn't already been set
-  if (authToken && !config.headers.Authorization) {
+  // Set the token if it exists and hasn't already been set (header names are case-insensitive)
+  if (authToken && !Object.keys(config.headers).some(key => key.toLowerCase() === 'authorization')) {
     config.headers.Authorization = `Bearer ${authToken}`;
   }
 
@@ -205,8 +205,11 @@ const hfetchWithRefresh = async <R>(
         headers.set('Authorization', `Bearer ${refreshResponse.app_token}`, true);
         const result = await hfetchWithRefresh<R>(_uri, method, body, searchParams, { ...axiosConfig, headers }, true);
 
-        removeLocalStored(StorageKey.NEXT_LOCATION);
-        removeLocalStored(StorageKey.NEXT_SEARCH);
+        // A rejected replay clears the credentials; keep the destination for the login that follows.
+        if (getLocalStored(StorageKey.APP_TOKEN)) {
+          removeLocalStored(StorageKey.NEXT_LOCATION);
+          removeLocalStored(StorageKey.NEXT_SEARCH);
+        }
 
         return result;
       }
