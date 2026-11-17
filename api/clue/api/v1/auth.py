@@ -23,12 +23,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger
 from clue.common.swagger import generate_swagger_docs
-from clue.constants.oauth import (
-    LEGACY_IGNORED_LOGIN_PARAMS,
-    OAUTH_CALLBACK_MARKERS,
-    OAUTH_CALLBACK_PARAMS,
-    OAUTH_PROVIDER_PARAMS,
-)
+from clue.constants.oauth import OAUTH_CALLBACK_MARKERS, OAUTH_CALLBACK_PARAMS, OAUTH_PROVIDER_PARAMS
 from clue.helper.oauth_login import (
     authenticated_response,
     client_ip,
@@ -64,7 +59,6 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
     Args:
         provider: The OAuth provider to use for authentication.
         oauth_provider: Alternative name for ``provider``.
-        nonce: Deprecated and ignored. Still sent by UIs released before this change; never used for validation.
         code: The authorization code returned by the OAuth provider (callback only).
         state: The state returned by the OAuth provider (callback only).
         session_state: Provider session state, accepted and ignored (callback only).
@@ -110,7 +104,7 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
 
         is_callback = bool(OAUTH_CALLBACK_MARKERS & args.keys())
         allowed = OAUTH_CALLBACK_PARAMS if is_callback else OAUTH_PROVIDER_PARAMS
-        ensure_single_valued(args, allowed | LEGACY_IGNORED_LOGIN_PARAMS)
+        ensure_single_valued(args, allowed)
         if is_callback and ("state" not in args or not ({"code", "error"} & args.keys())):
             raise AuthenticationException("The OAuth callback is missing its state or authorization code.")
 

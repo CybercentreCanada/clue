@@ -224,18 +224,6 @@ def test_head_does_not_redeem_oauth_or_consume_callback_state(oidc):
     assert callback(oidc, query).status_code == 200
 
 
-def test_legacy_nonce_at_login_initiation_is_discarded(oidc):
-    """UIs released before CLUE-010 add their own nonce to the login link; it must never become the session nonce."""
-    with patch.object(oidc.provider, "authorize_redirect", wraps=oidc.provider.authorize_redirect) as authorize:
-        params = begin_login(oidc, query="oauth_provider=local&nonce=legacy-browser-nonce")
-
-    assert authorize.call_args.kwargs == {"redirect_uri": f"{BASE_URL}/login?provider=local"}
-    assert len(params["nonce"]) >= 20
-    assert params["nonce"] != "legacy-browser-nonce"
-    with oidc.client.session_transaction(base_url=BASE_URL) as session:
-        assert session[f"_state_local_{params['state']}"]["data"]["nonce"] == params["nonce"]
-
-
 @pytest.mark.parametrize(
     "query",
     [
@@ -246,8 +234,8 @@ def test_legacy_nonce_at_login_initiation_is_discarded(oidc):
         "provider=local&unexpected=attacker-chosen",
         "provider=local&oauth_provider=other",
         "provider=unknown",
-        "oauth_provider=local&nonce=legacy-a&nonce=legacy-b",
-        "provider=local&code=synthetic-code&state=any&nonce=legacy-a&nonce=legacy-b",
+        "oauth_provider=local&nonce=browser-nonce",
+        "provider=local&code=synthetic-code&state=any&nonce=browser-nonce",
     ],
 )
 def test_oidc_initiation_rejects_invalid_queries(oidc, query):
@@ -369,19 +357,17 @@ def test_oidc_callback_rejects_injected_or_repeated_parameters_before_exchange(o
     assert callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]}).status_code == 200
 
 
-@pytest.mark.parametrize("token_nonce", ["session", "legacy"])
-def test_legacy_nonce_on_callback_is_discarded(oidc, token_nonce):
-    """UIs released before CLUE-010 also send their nonce on the callback; it is never compared to the ID token."""
+def test_browser_supplied_nonce_on_callback_is_rejected(oidc):
+    """The nonce is generated and checked on the server only; a browser-supplied one is rejected before exchange."""
     params = begin_login(oidc)
-    oidc.exchange.return_value = oidc.token(params["nonce"] if token_nonce == "session" else "legacy-browser-nonce")
+    oidc.exchange.return_value = oidc.token(params["nonce"])
 
     response = callback(
-        oidc,
-        {"provider": "local", "code": "synthetic-code", "state": params["state"], "nonce": "legacy-browser-nonce"},
+        oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"], "nonce": params["nonce"]}
     )
 
-    assert response.status_code == (200 if token_nonce == "session" else 401)
-    assert oidc.exchange.call_count == 1
+    assert response.status_code == 400
+    assert not oidc.exchange.called
 
 
 @pytest.mark.parametrize("case", ["forged", "missing", "reused", "other_provider"])
@@ -686,7 +672,6 @@ def test_oidc_malformed_jwks_entries_are_ignored(oidc):
 @pytest.mark.parametrize(
     "provider_overrides, response_kind, message",
     [
-        ({"iss": None}, "id_token", "The OAuth provider has no trusted issuer configured."),
         ({"scope": "email profile"}, "id_token", "The OAuth provider did not return a verified identity token."),
         (
             {"scope": "email profile"},
@@ -711,6 +696,22 @@ def test_oidc_rejects_unverifiable_provider_responses(monkeypatch, provider_over
     assert response.status_code == 401
     assert response.json["api_error_message"] == message
     assert_no_secrets(response, "forged-user")
+
+
+@pytest.mark.parametrize("missing", ["iss", "jwks_uri", "client_id"])
+def test_oidc_missing_provider_configuration_is_a_server_error(monkeypatch, missing):
+    oidc = _make_oidc(monkeypatch, **({"iss": None} if missing == "iss" else {}))
+    params = begin_login(oidc)
+    oidc.exchange.return_value = oidc.token(params["nonce"])
+    if missing == "jwks_uri":
+        oidc.provider.server_metadata.pop("jwks", None)
+        oidc.provider.server_metadata.pop("jwks_uri", None)
+    elif missing == "client_id":
+        monkeypatch.setattr(oidc.provider, "client_id", None)
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == 500
 
 
 def test_login_rejects_invalid_normalized_user_data(oidc):

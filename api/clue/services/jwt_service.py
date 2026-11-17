@@ -26,9 +26,6 @@ _jwks_refresh_lock = Lock()
 _last_jwks_refresh_time: float | None = None
 # Last successfully fetched JWKS. Kept outside SimpleCache so cache pressure can never lock out known keys.
 _pinned_jwks: JWKSSnapshot | None = None
-# Keys whose provider was last fetched longer ago than this are never served, from the cache or the pin.
-MAX_PINNED_JWKS_STALE_SECONDS = 12 * 60 * 60
-JWKS_CACHE_TIMEOUT_SECONDS = 60 * 60 * 12
 
 
 def get_jwk(access_token: str) -> PyJWK:
@@ -98,12 +95,14 @@ def _fresh_only(snapshot: JWKSSnapshot, now: float | None = None) -> JWKSSnapsho
         now: Reference monotonic time. Defaults to `time.monotonic()` when omitted.
 
     Returns:
-        A new snapshot containing only providers fetched less than `MAX_PINNED_JWKS_STALE_SECONDS` before
+        A new snapshot containing only providers fetched less than `auth.oauth.jwks_max_age_seconds` before
         `now`, and the keys they own. Providers missing from `snapshot.timestamps` are treated as expired.
     """
     now = time.monotonic() if now is None else now
     fresh_providers = {
-        name for name, fetched_at in snapshot.timestamps.items() if now - fetched_at < MAX_PINNED_JWKS_STALE_SECONDS
+        name
+        for name, fetched_at in snapshot.timestamps.items()
+        if now - fetched_at < config.auth.oauth.jwks_max_age_seconds
     }
     jwks = {kid: jwk for kid, jwk in snapshot.jwks.items() if snapshot.providers.get(kid) in fresh_providers}
     return JWKSSnapshot(
@@ -244,7 +243,7 @@ def _carry_over_failed_providers(fresh: JWKSSnapshot, failed: Iterable[str]) -> 
     """Adds each failed provider's pinned keys, with their original fetch times, to a fresh snapshot.
 
     Expiry is not checked here: the caller runs `_fresh_only` on the result, so carried-over providers
-    cannot outlive `MAX_PINNED_JWKS_STALE_SECONDS` however many partial refreshes happen.
+    cannot outlive `auth.oauth.jwks_max_age_seconds` however many partial refreshes happen.
 
     Args:
         fresh: Snapshot of the providers that were fetched successfully. Its entries win on a `kid` clash.
@@ -320,7 +319,8 @@ def _get_jwks_snapshot(refresh: bool) -> JWKSSnapshot:
         result = _fresh_only(_carry_over_failed_providers(fetched, failures), now=time.monotonic())
         # One assignment publishes keys and timestamps together, so readers never see mismatched generations.
         _pinned_jwks = result
-        cache.set("get_jwks", result, timeout=JWKS_CACHE_TIMEOUT_SECONDS)
+        # Keys older than the max age are filtered out on read, so keeping the entry longer would be useless.
+        cache.set("get_jwks", result, timeout=config.auth.oauth.jwks_max_age_seconds)
         return result
     finally:
         _jwks_refresh_lock.release()

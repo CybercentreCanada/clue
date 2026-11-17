@@ -15,7 +15,7 @@ from authlib.jose import JsonWebKey, JsonWebSignature, JsonWebToken
 from authlib.jose.rfc7518.jws_algs import HMACAlgorithm, NoneAlgorithm
 from authlib.oidc.core import CodeIDToken, UserInfo
 
-from clue.common.exceptions import AuthenticationException
+from clue.common.exceptions import AuthenticationException, ClueRuntimeError
 from clue.common.logging import get_logger
 from clue.config import config
 from clue.models.config import OAuthProvider
@@ -121,7 +121,7 @@ class ClueOAuth2App(FlaskOAuth2App):
             uri = metadata.get("jwks_uri")
             if not uri:
                 logger.critical("OAuth provider %s has no jwks_uri configured; refusing ID tokens", self.name)
-                raise AuthenticationException("The ID token signing keys are unavailable.")
+                raise ClueRuntimeError("The OAuth provider has no jwks_uri configured.")
 
             try:
                 jwk_set = self._download_jwk_set(uri)
@@ -161,7 +161,7 @@ class ClueOAuth2App(FlaskOAuth2App):
         issuer = self.load_server_metadata().get("issuer")
         if not issuer or not isinstance(issuer, str):
             logger.critical("OAuth provider %s has no trusted issuer configured (iss); refusing ID tokens", self.name)
-            raise AuthenticationException("The OAuth provider has no trusted issuer configured.")
+            raise ClueRuntimeError("The OAuth provider has no trusted issuer configured.")
         return issuer
 
     def validate_callback_issuer(self, issuer: str | None) -> None:
@@ -198,7 +198,7 @@ class ClueOAuth2App(FlaskOAuth2App):
         self, token: Mapping[str, Any], nonce: str | None, require_nonce: bool, leeway: int | None
     ) -> UserInfo:
         if not self.client_id:
-            raise AuthenticationException("The OAuth provider has no client ID configured.")
+            raise ClueRuntimeError("The OAuth provider has no client ID configured.")
 
         if require_nonce and (not nonce or not isinstance(nonce, str)):
             raise AuthenticationException("The authorization transaction has no nonce.")

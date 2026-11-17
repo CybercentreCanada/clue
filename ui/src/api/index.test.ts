@@ -450,6 +450,17 @@ describe('API Index', () => {
       expect({ ...headers }).toEqual(originalHeaders);
     });
 
+    it('replays a request at most once when the refreshed token is also rejected', async () => {
+      client.fetch
+        .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])
+        .mockResolvedValueOnce([{ api_response: { app_token: 'new-token' } }, 200])
+        .mockResolvedValue([{ api_error_message: 'Unauthorized' }, 401]);
+
+      expect(await hget('/test')).toBeUndefined();
+      expect(client.fetch).toHaveBeenCalledTimes(3);
+      expect(localStorage.saveLoginCredential).toHaveBeenLastCalledWith({});
+    });
+
     it('does not retry when the refresh response has no access token', async () => {
       client.fetch
         .mockResolvedValueOnce([{ api_error_message: 'Unauthorized' }, 401])

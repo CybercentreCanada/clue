@@ -123,21 +123,15 @@ export const setHeaders = (ifMatch?: string): HeadersInit => {
 };
 
 /**
- * Generic fetch implementation for Clue API.
- *
- * This function will format the specified `url` with {@link format} before issuing the fetch.
- *
- * @param _uri - the uri to fetch.
- * @param method - the http method to use.
- * @param body - the body of the request.
- * @returns the `api_response` object of the returned {@link ClueResponse}.
+ * {@link hfetch} implementation; `retried` marks the single replay after a token refresh so it cannot loop.
  */
-export const hfetch = async <R>(
+const hfetchWithRefresh = async <R>(
   _uri: string,
   method: 'get' | 'post' | 'put' | 'delete' | 'patch' = 'get',
   body?: any,
   searchParams?: URLSearchParams,
-  axiosConfig?: AxiosRequestConfig
+  axiosConfig?: AxiosRequestConfig,
+  retried = false
 ): Promise<R> => {
   const authToken = getLocalStored(StorageKey.APP_TOKEN);
 
@@ -186,7 +180,7 @@ export const hfetch = async <R>(
       setLocalStored(StorageKey.NEXT_SEARCH, window.location.search);
     }
 
-    if (!isAuthRequest && getLocalStored(StorageKey.REFRESH_TOKEN)) {
+    if (!isAuthRequest && !retried && getLocalStored(StorageKey.REFRESH_TOKEN)) {
       //Refresh access token if possible
       //And re-execute the previous api call (seamless)
       const refreshToken: string = getLocalStored(StorageKey.REFRESH_TOKEN);
@@ -209,7 +203,7 @@ export const hfetch = async <R>(
         saveLoginCredential(refreshResponse);
         const headers = new AxiosHeaders(axiosConfig?.headers);
         headers.set('Authorization', `Bearer ${refreshResponse.app_token}`, true);
-        const result = await hfetch<R>(_uri, method, body, searchParams, { ...axiosConfig, headers });
+        const result = await hfetchWithRefresh<R>(_uri, method, body, searchParams, { ...axiosConfig, headers }, true);
 
         removeLocalStored(StorageKey.NEXT_LOCATION);
         removeLocalStored(StorageKey.NEXT_SEARCH);
@@ -231,6 +225,24 @@ export const hfetch = async <R>(
     }
   );
 };
+
+/**
+ * Generic fetch implementation for Clue API.
+ *
+ * This function will format the specified `url` with {@link format} before issuing the fetch.
+ *
+ * @param _uri - the uri to fetch.
+ * @param method - the http method to use.
+ * @param body - the body of the request.
+ * @returns the `api_response` object of the returned {@link ClueResponse}.
+ */
+export const hfetch = <R>(
+  _uri: string,
+  method: 'get' | 'post' | 'put' | 'delete' | 'patch' = 'get',
+  body?: any,
+  searchParams?: URLSearchParams,
+  axiosConfig?: AxiosRequestConfig
+): Promise<R> => hfetchWithRefresh<R>(_uri, method, body, searchParams, axiosConfig);
 
 /**
  * Perform an HTTP GET for the specified uri.

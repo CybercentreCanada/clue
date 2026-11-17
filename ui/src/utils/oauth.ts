@@ -66,7 +66,7 @@ export const buildOAuthCallbackParams = (search: URLSearchParams): URLSearchPara
   return params;
 };
 
-const hasSensitiveParams = (raw: string): boolean => {
+export const hasSensitiveParams = (raw: string): boolean => {
   const keys = Array.from(new URLSearchParams(raw.replace(/^[?#]/, '')).keys()).map(key => key.toLowerCase());
   return keys.some(key => (OAUTH_SENSITIVE_PARAMS as readonly string[]).includes(key));
 };

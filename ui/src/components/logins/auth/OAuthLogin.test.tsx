@@ -2,10 +2,9 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import OAuthLogin from './OAuthLogin';
 
-const mocks = vi.hoisted(() => ({ doOAuth: vi.fn(), searchParams: new URLSearchParams(), location: { hash: '' } }));
+const mocks = vi.hoisted(() => ({ doOAuth: vi.fn(), location: { search: '', hash: '' } }));
 
 vi.mock('../hooks/useLogin', () => ({ default: () => ({ doOAuth: mocks.doOAuth }) }));
-vi.mock('react-router-dom', () => ({ useSearchParams: () => [mocks.searchParams] }));
 vi.mock('react-router', () => ({ useLocation: () => mocks.location }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
@@ -22,7 +21,7 @@ describe('OAuthLogin', () => {
   beforeEach(() => {
     window.localStorage.clear();
     window.sessionStorage.clear();
-    mocks.searchParams = new URLSearchParams();
+    mocks.location.search = '';
     mocks.location.hash = '';
     document.addEventListener('click', preventNavigation);
   });
@@ -60,7 +59,7 @@ describe('OAuthLogin', () => {
   });
 
   it('redeems provider error callbacks so their sensitive URL params are cleared', async () => {
-    mocks.searchParams = new URLSearchParams({ state: 'server-state', error: 'access_denied' });
+    mocks.location.search = '?state=server-state&error=access_denied';
     mocks.doOAuth.mockResolvedValueOnce(undefined);
 
     await renderLogin(['keycloak']);
@@ -68,17 +67,28 @@ describe('OAuthLogin', () => {
     expect(mocks.doOAuth).toHaveBeenCalledOnce();
   });
 
-  it('cleans up credentials present only in the fragment', async () => {
-    mocks.location.hash = '#access_token=t';
-    mocks.doOAuth.mockResolvedValueOnce(undefined);
+  it.each(['?ACCESS_TOKEN=t', '?Refresh_Token=r', '#access_token=t'])(
+    'cleans up credentials in %s regardless of key case',
+    async raw => {
+      if (raw.startsWith('?')) {
+        mocks.location.search = raw;
+      } else {
+        mocks.location.hash = raw;
+      }
+      mocks.doOAuth.mockResolvedValueOnce(undefined);
 
-    await renderLogin(['keycloak']);
+      await renderLogin(['keycloak']);
 
-    expect(mocks.doOAuth).toHaveBeenCalledOnce();
-  });
+      expect(mocks.doOAuth).toHaveBeenCalledOnce();
+    }
+  );
 
-  it('does not redeem a benign anchor without callback parameters', async () => {
-    mocks.location.hash = '#section';
+  it.each(['#section', '?provider=keycloak'])('does not redeem a URL without callback data (%s)', async raw => {
+    if (raw.startsWith('?')) {
+      mocks.location.search = raw;
+    } else {
+      mocks.location.hash = raw;
+    }
 
     await renderLogin(['keycloak']);
 

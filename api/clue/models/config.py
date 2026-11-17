@@ -145,8 +145,8 @@ class OAuth(BaseModel):
         default=43200,
         ge=1,
         description=(
-            "Maximum time ID-token signing keys are trusted after their last successful fetch, even if the provider "
-            "is unreachable. Must be at least jwks_refresh_after_seconds"
+            "Maximum time ID-token and bearer signing keys are trusted after their last successful fetch, even if the "
+            "provider is unreachable. Must be at least jwks_refresh_after_seconds"
         ),
     )
     provider_timeout_seconds: float = Field(

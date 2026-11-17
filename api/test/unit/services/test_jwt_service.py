@@ -471,12 +471,12 @@ def test_pinned_keys_older_than_max_stale_age_are_not_served(service, monkeypatc
 
     with patch.object(service.requests, "get", side_effect=requests.Timeout) as fetch:
         # Advance the clock and the cooldown together so the stale age alone decides the outcome.
-        fresh_now = 100.0 + service.MAX_PINNED_JWKS_STALE_SECONDS - 1
+        fresh_now = 100.0 + service.config.auth.oauth.jwks_max_age_seconds - 1
         monkeypatch.setattr(time, "monotonic", Mock(return_value=fresh_now))
         service._last_jwks_refresh_time = fresh_now
         assert service.get_jwk(token("known")).key_id == "known"
 
-        expired_now = 100.0 + service.MAX_PINNED_JWKS_STALE_SECONDS
+        expired_now = 100.0 + service.config.auth.oauth.jwks_max_age_seconds
         monkeypatch.setattr(time, "monotonic", Mock(return_value=expired_now))
         service._last_jwks_refresh_time = expired_now
         with pytest.raises(service.ClueKeyError):
@@ -526,7 +526,7 @@ def test_refresh_result_filters_stale_carried_over_keys_post_fetch(service, monk
             "provider-b": SimpleNamespace(jwks_uri="https://idp-b/jwks"),
         },
     )
-    limit = service.MAX_PINNED_JWKS_STALE_SECONDS
+    limit = service.config.auth.oauth.jwks_max_age_seconds
     service._pinned_jwks = snapshot({"key-b": key("key-b")}, {"key-b": "provider-b"}, fetched_at=100.0)
     clock = Mock(return_value=100.0 + limit - 1)  # provider B's key is 1 second from expiring
     monkeypatch.setattr(time, "monotonic", clock)
@@ -565,7 +565,7 @@ def test_keys_kept_through_a_partial_failure_still_expire(service, monkeypatch):
 
     with patch.object(service.requests, "get", side_effect=fetch_keys):
         # Provider A keeps succeeding, but provider B's keys keep their original age.
-        expired_now = 100.0 + service.MAX_PINNED_JWKS_STALE_SECONDS
+        expired_now = 100.0 + service.config.auth.oauth.jwks_max_age_seconds
         monkeypatch.setattr(time, "monotonic", Mock(return_value=expired_now - 1))
         assert service.get_jwk(token("key-b")).key_id == "key-b"
         service.cache.delete("get_jwks")
@@ -600,8 +600,12 @@ def test_malformed_key_entries_are_ignored(service):
     assert list(service.cache.get("get_jwks").jwks) == ["good"]
 
 
-def test_max_pinned_stale_age_is_twelve_hours():
-    assert jwt_service.MAX_PINNED_JWKS_STALE_SECONDS == 43200
+def test_fresh_only_honors_the_configured_max_age(service, monkeypatch):
+    monkeypatch.setattr(service.config.auth.oauth, "jwks_max_age_seconds", 60)
+    stale = snapshot({"old": key("old")}, {"old": "provider"}, fetched_at=0.0)
+
+    assert list(service._fresh_only(stale, now=59.0).jwks) == ["old"]
+    assert service._fresh_only(stale, now=60.0).jwks == {}
 
 
 @pytest.mark.parametrize(
@@ -642,7 +646,7 @@ def test_cache_hit_does_not_serve_keys_older_than_max_stale_age(service, monkeyp
             "provider-b": SimpleNamespace(jwks_uri="https://idp-b/jwks"),
         },
     )
-    limit = service.MAX_PINNED_JWKS_STALE_SECONDS
+    limit = service.config.auth.oauth.jwks_max_age_seconds
     service._pinned_jwks = snapshot(
         {"key-a": key("key-a"), "key-b": key("key-b")},
         {"key-a": "provider-a", "key-b": "provider-b"},
@@ -698,7 +702,7 @@ def test_fetch_failure_falls_back_to_unexpired_pinned_keys(service, failure):
 
 def test_fetch_failure_with_expired_pinned_keys_propagates(service, monkeypatch):
     service._pinned_jwks = snapshot({"known": key("known")}, {"known": "provider"})
-    monkeypatch.setattr(time, "monotonic", Mock(return_value=100.0 + service.MAX_PINNED_JWKS_STALE_SECONDS))
+    monkeypatch.setattr(time, "monotonic", Mock(return_value=100.0 + service.config.auth.oauth.jwks_max_age_seconds))
     with patch.object(service.requests, "get", side_effect=requests.Timeout):
         with pytest.raises(requests.Timeout):
             service.get_jwk(token("known"))
@@ -713,7 +717,7 @@ def test_fallback_snapshot_retains_authoritative_empty_keys_with_mixed_expired_p
             "provider-b": SimpleNamespace(jwks_uri="https://idp-b/jwks"),
         },
     )
-    expired_at = 100.0 - service.MAX_PINNED_JWKS_STALE_SECONDS - 1
+    expired_at = 100.0 - service.config.auth.oauth.jwks_max_age_seconds - 1
     service._pinned_jwks = JWKSSnapshot(
         {"key-b": key("key-b")},
         {"key-b": "provider-b"},
@@ -766,7 +770,7 @@ def test_fallback_keys_never_overwrite_a_fresh_cache_entry(service, monkeypatch)
 
 
 def test_snapshot_timestamp_concurrency_race(service, monkeypatch):
-    limit = service.MAX_PINNED_JWKS_STALE_SECONDS
+    limit = service.config.auth.oauth.jwks_max_age_seconds
     monkeypatch.setattr(service.config.auth.oauth, "jwks_refresh_cooldown_seconds", limit + 2)
     old_snapshot = snapshot({"old": key("old")}, {"old": "provider"}, fetched_at=0.0)
     service._pinned_jwks = old_snapshot
@@ -812,7 +816,7 @@ def test_snapshot_timestamp_concurrency_race(service, monkeypatch):
 
 
 def test_fresh_only_uses_only_the_snapshot_timestamps(service, monkeypatch):
-    limit = service.MAX_PINNED_JWKS_STALE_SECONDS
+    limit = service.config.auth.oauth.jwks_max_age_seconds
     stale = snapshot({"old": key("old")}, {"old": "provider"}, fetched_at=0.0)
     monkeypatch.setattr(service, "_pinned_jwks", snapshot({"new": key("new")}, {"new": "provider"}, fetched_at=500.0))
 
