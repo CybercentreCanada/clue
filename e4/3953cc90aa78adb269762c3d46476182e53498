@@ -1,0 +1,19 @@
+ui/src/lib/database/replication.test.ts
+  s_1906f46e8a2f91::t_7d71394fedd000 369,373
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "e43953cc90aa78adb269762c3d46476182e53498",
+  "prompts": {},
+  "sessions": {
+    "s_1906f46e8a2f91": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e15a91fcdffeGoqvvXZKDsGUSo",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
