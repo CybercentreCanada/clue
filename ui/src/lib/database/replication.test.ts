@@ -343,13 +343,11 @@ describe('replicateSelectorCollection', () => {
 
   describe('Stream', () => {
     let xhrInstances: any[];
-    let OriginalXHR: typeof XMLHttpRequest;
 
     beforeEach(() => {
       vi.clearAllTimers();
 
       xhrInstances = [];
-      OriginalXHR = globalThis.XMLHttpRequest;
 
       const MockXHR: any = vi.fn(function MockXHRConstructor() {
         const instance = {
@@ -368,11 +366,11 @@ describe('replicateSelectorCollection', () => {
         return instance;
       });
 
-      globalThis.XMLHttpRequest = MockXHR;
+      vi.stubGlobal('XMLHttpRequest', MockXHR);
     });
 
     afterEach(() => {
-      globalThis.XMLHttpRequest = OriginalXHR;
+      vi.unstubAllGlobals();
     });
 
     it('should not open a stream until replication starts', async () => {
