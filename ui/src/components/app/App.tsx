@@ -50,6 +50,7 @@ import type { FC, PropsWithChildren } from 'react';
 import { useCallback, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from 'react-router';
 import { getStored } from 'utils/localStorage';
+import { isSafeRedirectDestination } from 'utils/oauth';
 import AppContainer from './AppContainer';
 import LocalStorageProvider from './providers/LocalStorageProvider';
 import ModalProvider from './providers/ModalProvider';
@@ -112,8 +113,10 @@ const MyApp: FC = () => {
       clueSetReady(true);
     } else if (!get(StorageKey.APP_TOKEN) && !get(StorageKey.REFRESH_TOKEN)) {
       if (location.pathname !== '/login') {
-        set(StorageKey.NEXT_LOCATION, location.pathname);
-        set(StorageKey.NEXT_SEARCH, location.search);
+        if (isSafeRedirectDestination(location.pathname, location.search, location.hash)) {
+          set(StorageKey.NEXT_LOCATION, location.pathname);
+          set(StorageKey.NEXT_SEARCH, location.search);
+        }
         navigate('/login');
       }
     }

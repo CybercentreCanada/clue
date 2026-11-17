@@ -3297,9 +3297,9 @@ files = [
 cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and python_version < \"3.14\"", "cffi (>=2.0.0b0) ; platform_python_implementation != \"PyPy\" and python_version >= \"3.14\""]
 
 [extras]
-server = ["PyYAML", "Werkzeug", "apscheduler", "authlib", "bcrypt", "flasgger", "flask-cors", "passlib", "prometheus-client", "pyjwt", "pymongo", "pyroute2", "python-baseconv", "pytz"]
+server = ["PyYAML", "Werkzeug", "apscheduler", "authlib", "bcrypt", "flasgger", "flask-cors", "joserfc", "passlib", "prometheus-client", "pyjwt", "pymongo", "pyroute2", "python-baseconv", "pytz"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.12"
-content-hash = "075569df0d94c109b56754623cb4e98b52f638d4065f48ee281caa31a70f6991"
+content-hash = "d381bab783b91dfa97136364bfc54157facd6e4f98baefda2b52be89b71e3b33"
