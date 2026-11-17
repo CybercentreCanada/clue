@@ -1,4 +1,5 @@
 {
+  "chat.useAgentsMdFile": true,
   "[css]": {
     "editor.defaultFormatter": "oxc.oxc-vscode"
   },
@@ -47,6 +48,8 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
+    "source.fixAll.oxc": "never",
+    "source.format.oxc": "explicit",
     "source.organizeImports": "explicit",
     "source.unusedImports": "explicit"
   },
@@ -74,18 +77,6 @@
     "■",
     "■",
     "■"
-  ],
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
-  "eslint.workingDirectories": [
-    {
-      "changeProcessCWD": true,
-      "directory": "./ui"
-    }
   ],
   "files.exclude": {
     "**/.DS_Store": true,
@@ -126,7 +117,12 @@
   ],
   "mypy-type-checker.importStrategy": "fromEnvironment",
   "npm.packageManager": "pnpm",
-  "prettier.configPath": "ui/.prettierrc",
+  "oxc.configPath": "./ui/.oxlintrc.json",
+  "oxc.enable": true,
+  "oxc.fixKind": "all",
+  "oxc.path.oxfmt": "./ui/node_modules/.bin/oxfmt",
+  "oxc.path.oxlint": "./ui/node_modules/.bin/oxlint",
+  "oxc.path.tsgolint": "./ui/node_modules/.bin/tsgolint",
   "python.analysis.autoFormatStrings": true,
   "python.analysis.autoImportCompletions": true,
   "python.analysis.completeFunctionParens": true,

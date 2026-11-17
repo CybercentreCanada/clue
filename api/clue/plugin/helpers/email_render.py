@@ -352,7 +352,7 @@ def render(email_path: str, cart_buffer: io.BytesIO, mode: str = "simplified") -
         # There is only 1 rendered image
         with open(f"{tmp_dir}/{previews[0]}", "rb") as f:  # type: ignore
             return ImageResult(
-                image=f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode("utf-8")}",
+                image=f"data:image/jpeg;base64,{base64.b64encode(f.read()).decode('utf-8')}",
                 alt=f"Rendering of {email_path}",
             )
 

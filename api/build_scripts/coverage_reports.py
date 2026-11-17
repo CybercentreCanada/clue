@@ -27,8 +27,9 @@ def generate_badge(title, percentage, color):
 def main():
     print(f"Running on branch {os.environ.get('GIT_BRANCH', 'unknown')}")
 
-    develop = "develop" in os.environ.get("GIT_BRANCH", "unknown")
-    rc_or_main = any(x in os.environ.get("GIT_BRANCH", "unknown") for x in ["patch", "rc", "main", "master", "sync"])
+    diff_exists = (Path(__file__).parents[1] / "diff.txt").exists()
+
+    print("Has Diff:", diff_exists)
 
     try:
         report_result = subprocess.check_output(shlex.split("coverage report --data-file=.coverage")).decode()
@@ -40,7 +41,7 @@ def main():
         diff_report_result: str | None = None
         diff_result: str | None = None
         diff_failed = False
-        if not develop and not rc_or_main:
+        if diff_exists:
             diff_proc = subprocess.run(
                 shlex.split(
                     "diff-cover coverage.xml --diff-file=diff.txt --format markdown:diff-cover-report.md "
@@ -58,7 +59,7 @@ def main():
 
         diff_percentage = "NA%"
         diff_percentage_int = 0
-        if not develop and not rc_or_main:
+        if diff_exists:
             if diff_report_result:
                 try:
                     diff_percentage = (
@@ -77,7 +78,7 @@ def main():
                 diff_result += "\n</details>"
 
         diff_color = get_color(diff_percentage_int)
-        badge = generate_badge("Diff Coverage", diff_percentage, diff_color) if (not develop and not rc_or_main) else ""
+        badge = generate_badge("Diff Coverage", diff_percentage, diff_color) if diff_exists else ""
 
         newline = "\n"
         markdown_output = textwrap.dedent(
@@ -85,15 +86,15 @@ def main():
         ![Static Badge](https://img.shields.io/badge/Build%20(Python%20{platform.python_version()})-passing-brightgreen)
 
         # Clue API - Coverage Results
-        {generate_badge('Total Coverage', total_percentage, total_color)} {badge}
+        {generate_badge("Total Coverage", total_percentage, total_color)} {badge}
 
-{newline.join([(' ' * 8) + line for line in diff_result.splitlines()]) if diff_result else ''}
+{newline.join([(" " * 8) + line for line in diff_result.splitlines()]) if diff_result else ""}
 
         ## Full Coverage Report
         <details>
             <summary>Expand</summary>
 
-{newline.join([(' ' * 12) + line for line in report_result.splitlines()])}
+{newline.join([(" " * 12) + line for line in report_result.splitlines()])}
         </details>
         """
         ).strip()

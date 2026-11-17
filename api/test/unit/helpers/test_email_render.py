@@ -114,7 +114,7 @@ def test_process_eml_simplified_mode_with_overflow(mock_imgkit, mock_image, mock
     mock_image.new = Image.new
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        result = process_eml(SAMPLE_EMAIL, tmp_dir, mode="simplified")
+        process_eml(SAMPLE_EMAIL, tmp_dir, mode="simplified")
 
         # Check that truncation banner was included in the HTML
         calls = mock_imgkit.from_string.call_args_list
@@ -160,7 +160,7 @@ def test_process_eml_decompression_bomb_handling(mock_imgkit, mock_image, mock_r
     mock_image.DecompressionBombError = Image.DecompressionBombError
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        result = process_eml(SAMPLE_EMAIL, tmp_dir, mode="simplified")
+        process_eml(SAMPLE_EMAIL, tmp_dir, mode="simplified")
 
         # Verify placeholder HTML was created
         calls = mock_imgkit.from_string.call_args_list

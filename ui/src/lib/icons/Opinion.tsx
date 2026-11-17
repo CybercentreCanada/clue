@@ -157,7 +157,7 @@ const OpinionIcon: FC<
           }
           style={{
             zIndex: 2,
-            ...(otherProps.style ?? {})
+            ...otherProps.style
           }}
         />
       </CountBadge>

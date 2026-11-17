@@ -627,26 +627,31 @@ poetry run pre-commit install
 
 ### Stratégie de branche
 
-Le projet Clue suit un modèle de branchement Git flow pour assurer des versions stables et un développement organisé :
+Le projet Clue utilise un développement basé sur le tronc (`main`) :
 
-#### Branches principales
+- **`main`** : La seule branche de longue durée. Toutes les pull requests ciblent `main`, et chaque version est créée à
+  partir de celle-ci. Les commits directs vers `main` sont restreints.
+- **Branches de fonctionnalités** : Branches de courte durée créées à partir de `main` pour des fonctionnalités, des
+  corrections ou d'autres modifications. Utilisez des noms descriptifs comme `feature/add-oauth-provider` ou
+  `bugfix/fix-cache-expiry`.
 
-- **`main`** : Contient le code prêt pour la production. Toutes les versions sont étiquetées à partir de cette branche. Les commits directs vers `main` sont restreints.
-- **`develop`** : La branche d'intégration pour les nouvelles fonctionnalités et la branche de développement principale. Toutes les branches de fonctionnalités sont créées à partir de et fusionnées dans `develop`.
+Il n'y a pas de branches `develop`, de version candidate ou de correctif.
 
-#### Branches de support
+#### Processus de version
 
-- **Branches de fonctionnalités** : Créées à partir de `develop` pour de nouvelles fonctionnalités ou améliorations. Utilisez des noms descriptifs comme `feature/add-oauth-provider` ou `feature/improve-caching`.
-- **Branches de version** : Créées à partir de `develop` lors de la préparation d'une nouvelle version (par exemple, `release/v2.1.0`). Utilisées pour les tests finaux et les corrections de bugs mineurs.
-- **Branches de correctif** : Créées à partir de `main` pour les corrections de bugs critiques nécessitant un déploiement immédiat (par exemple, `hotfix/security-patch`).
+Les versions sont automatisées avec [Release Please](https://github.com/googleapis/release-please) :
 
-#### Flux de travail de développement
+1. **Développement** : Créer une branche de fonctionnalité à partir de `main` et ouvrir une pull request avec un titre
+   [Conventional Commits](https://www.conventionalcommits.org/) (par exemple, `fix(api): handle empty selectors`)
+2. **Intégration** : Fusionner la pull request approuvée dans `main`. Les fusions dans `main` publient des artefacts de
+   prévisualisation (images Docker `nightly` et un paquet npm UI `development`)
+3. **PR de version** : Release Please ouvre ou met à jour une PR de version pour chaque paquet concerné (`api`, `ui`,
+   `mcp`) avec l'incrément de version et l'entrée `CHANGELOG.md` générée
+4. **Version de production** : La fusion d'une PR de version crée l'étiquette `<component>-vX.Y.Z`, publie la version
+   GitHub et publie les artefacts stables
 
-1. **Développement de fonctionnalités** : Créer une branche de fonctionnalité à partir de `develop`
-2. **Intégration** : Fusionner les fonctionnalités terminées dans `develop` via une pull request
-3. **Préparation de version** : Créer une branche de version à partir de `develop` lorsque prêt pour la version
-4. **Version de production** : Fusionner la branche de version dans `main` et `develop`, puis étiqueter la version
-5. **Correctifs** : Si des problèmes critiques sont trouvés en production, créer des branches de correctif à partir de `main`
+Ne modifiez pas manuellement les versions, ne créez pas d'étiquettes et n'écrivez pas de notes de version. Consultez le
+[guide de publication](https://cybercentrecanada.github.io/clue/fr/developer/releases/) pour plus de détails.
 
 ### Processus de pull request
 
@@ -654,11 +659,11 @@ Toutes les modifications de code doivent passer par le processus de pull request
 
 #### Pour les contributeurs avec accès en écriture
 
-1. **Créer une branche de fonctionnalité** : Créer une nouvelle branche à partir de `develop` avec un nom descriptif
+1. **Créer une branche de fonctionnalité** : Créer une nouvelle branche à partir de `main` avec un nom descriptif
 
    ```bash
-   git checkout develop
-   git pull origin develop
+   git checkout main
+   git pull origin main
    git checkout -b feature/nom-de-votre-fonctionnalité
    ```
 
@@ -672,8 +677,8 @@ Toutes les modifications de code doivent passer par le processus de pull request
 
    Notez que l'installation des hooks de pré-commit aidera également à gérer ces cas.
 
-4. **Ouvrir une pull request** : Créer une PR ciblant la branche `develop` avec :
-   - Titre clair et descriptif
+4. **Ouvrir une pull request** : Créer une PR ciblant la branche `main` avec :
+   - Titre clair et descriptif suivant [Conventional Commits](https://www.conventionalcommits.org/) (par exemple, `feat(ui): add graph export`)
    - Description détaillée des modifications
    - Référence à tous les problèmes connexes
    - Captures d'écran ou exemples si applicable
@@ -684,11 +689,11 @@ Toutes les modifications de code doivent passer par le processus de pull request
 
 2. **Cloner et configurer** : Cloner votre fork et configurer l'environnement de développement comme décrit dans ce guide
 
-3. **Créer une branche de fonctionnalité** : Créer une branche à partir de `develop` dans votre fork
+3. **Créer une branche de fonctionnalité** : Créer une branche à partir de `main` dans votre fork
 
 4. **Implémenter et tester** : Effectuer vos modifications et vous assurer que toutes les vérifications passent
 
-5. **Soumettre une pull request** : Ouvrir une PR de la branche de fonctionnalité de votre fork vers la branche `develop` du dépôt principal
+5. **Soumettre une pull request** : Ouvrir une PR de la branche de fonctionnalité de votre fork vers la branche `main` du dépôt principal
 
 #### Processus de révision
 
@@ -708,8 +713,8 @@ Toutes les modifications de code doivent passer par le processus de pull request
 
 #### Fusion et version
 
-- **Fusion vers Develop** : Une fois approuvée et toutes les vérifications passées, la PR est fusionnée dans `develop`
-- **Cycle de version** : Les fonctionnalités fusionnées dans `develop` seront incluses dans la prochaine version lorsque `develop` sera fusionné dans `main`
+- **Fusion vers Main** : Une fois approuvée et toutes les vérifications passées, la PR est fusionnée par squash dans `main`
+- **Cycle de version** : Release Please regroupe les modifications fusionnées dans une PR de version par paquet ; les modifications sont publiées lorsqu'un mainteneur fusionne cette PR de version
 - **Calendrier de version** : Les calendriers de version sont déterminés par les mainteneurs du projet en fonction de la disponibilité des fonctionnalités et de l'achèvement des tests. Il n'y a pas de durée garantie entre la fusion et la version.
 
 #### Meilleures pratiques

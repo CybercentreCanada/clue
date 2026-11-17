@@ -88,7 +88,7 @@ const ContextIcon: FC<
             <Icon
               icon={icon}
               fontSize={otherProps.fontSize ?? '1.25em'}
-              style={{ filter: 'drop-shadow(0px 0px 1px rgb(0 0 0 / 0.4))', ...(otherProps.style ?? {}) }}
+              style={{ filter: 'drop-shadow(0px 0px 1px rgb(0 0 0 / 0.4))', ...otherProps.style }}
               {...otherProps}
             />
           </span>
@@ -100,7 +100,7 @@ const ContextIcon: FC<
   if (additionalSize > 0 && showExtraIcon) {
     icons.push(
       <CountBadge key="extra" disabled={!counters} count={additionalSize}>
-        <Iconified icon="ic:baseline-newspaper" style={{ zIndex: 2, ...(otherProps.style ?? {}) }} />
+        <Iconified icon="ic:baseline-newspaper" style={{ zIndex: 2, ...otherProps.style }} />
       </CountBadge>
     );
   }

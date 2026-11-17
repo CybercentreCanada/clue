@@ -59,3 +59,5 @@ export function parseEvent(event: KeyboardEvent<HTMLElement>) {
     isArrowDown: isArrowDown(event.key)
   };
 }
+
+export type TuiKeyboardParsedEvent = ReturnType<typeof parseEvent>;

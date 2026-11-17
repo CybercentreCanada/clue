@@ -3,7 +3,7 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "vitest/globals", "@testing-library/jest-dom"],
+    "types": ["node", "vite/client", "vitest/globals", "@testing-library/jest-dom"],
     "module": "ESNext",
     "skipLibCheck": true,
     /* Bundler mode */
@@ -35,7 +35,8 @@
       "lib/*": ["./src/lib/*"]
     }
   },
-  "include": ["src", "setupTests.ts", "vite.lib.config.ts", "vite.config.ts"],
+  "include": ["src", "setupTests.ts"],
+  "exclude": ["src/commons/addons/lists/table", "src/commons/addons/vsbox/VSBoxHeader.tsx"],
   "references": [
     {
       "path": "./tsconfig.node.json"

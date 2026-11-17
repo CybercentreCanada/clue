@@ -41,7 +41,7 @@ const useMyHighlights = (graph: NestedDataset, onNodeSelectionChanged?: (nodeIds
       if (isSelected) {
         newHighlightedNodes = new Set<string>(event.ctrlKey ? [...highlightedNodes, nodeId] : [nodeId]);
       } else {
-        newHighlightedNodes = event.ctrlKey ? new Set<string>([...highlightedNodes]) : new Set<string>();
+        newHighlightedNodes = event.ctrlKey ? new Set<string>(highlightedNodes) : new Set<string>();
         newHighlightedNodes.delete(nodeId);
       }
       setHighlightedNodes(newHighlightedNodes);

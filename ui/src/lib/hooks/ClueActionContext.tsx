@@ -287,7 +287,7 @@ export const ClueActionProvider: FC<PropsWithChildren<ClueActionProps>> = ({
 
       if (!isNil(extraContext)) {
         context = {
-          ...(context ?? {}),
+          ...context,
           ...extraContext
         };
       }

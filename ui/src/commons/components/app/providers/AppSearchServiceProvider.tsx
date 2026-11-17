@@ -7,7 +7,7 @@ import useAppConfigs from '../hooks/useAppConfigs';
 const DEFAULT_CONTEXT: AppSearchServiceContextType = {
   provided: false,
   service: {
-    itemRenderer: (item: any) => <div />
+    itemRenderer: (_item: any) => <div />
   },
   state: {
     searching: false,
@@ -39,7 +39,7 @@ export default function AppSearchServiceProvider<T = any>({
       onEnter: (value: string) => {
         navigate(`${searchUri}?${params}=${encodeURIComponent(value)}`);
       },
-      itemRenderer: (item: any) => <div />
+      itemRenderer: (_item: any) => <div />
     };
   }, [preferences, navigate]);
 

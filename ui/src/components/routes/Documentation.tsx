@@ -6,7 +6,7 @@ import useMyApi from 'components/hooks/useMyApi';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Markdown from 'react-markdown';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 const Documentation = () => {
   const { dispatchApi } = useMyApi();

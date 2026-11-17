@@ -21,17 +21,17 @@ def header(title: str, subtitle: str | None):
 
 def warn(*messages: str):
     "Print error message"
-    print(f"[{colored("warn", "yellow")}]", *messages)
+    print(f"[{colored('warn', 'yellow')}]", *messages)
 
 
 def error(*messages: str):
     "Print error message"
-    print(f"[{colored("error", "red")}]", *messages)
+    print(f"[{colored('error', 'red')}]", *messages)
 
 
 def info(*messages: str):
     "Print info message"
-    print(f"[{colored("info", "cyan")}]", *messages)
+    print(f"[{colored('info', 'cyan')}]", *messages)
 
 
 def success(title: str, latency: float | None = None, skip_wait: bool = False):
@@ -53,8 +53,11 @@ def prep_command(cmd: str) -> list[str]:
 
 def confirm(prompt: str, default_yes: bool = False) -> bool:
     response = input(
-        f"{colored(prompt, 'blue')} [{f'{colored('Y', 'green')}/{colored('n', 'red')}' if default_yes else
-                                      f'{colored('y', 'green')}/{colored('N', 'red')}'}] "
+        f"{colored(prompt, 'blue')} [{
+            f'{colored("Y", "green")}/{colored("n", "red")}'
+            if default_yes
+            else f'{colored("y", "green")}/{colored("N", "red")}'
+        }] "
     )
 
     if response.lower() in ["y", "yes"] or not response and default_yes:

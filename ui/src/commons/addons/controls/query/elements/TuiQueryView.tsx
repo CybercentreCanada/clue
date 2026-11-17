@@ -88,7 +88,7 @@ export const TuiQueryView: FC<TuiQueryViewProps> = ({ q, state, store, onChange 
   return (
     <Stack direction="row" m={1} gap={1}>
       <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-        {items.map((i, position) => {
+        {items.map((i, _position) => {
           const item = store.items.find(si => si.id === i.item.value);
           return i.item.key === 'qid' ? (
             <Tooltip key={i.key} title={item?.value ?? ''}>

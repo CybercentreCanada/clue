@@ -43,7 +43,7 @@ const ActionForm: FC<{
   const formSchema = useMemo(
     () =>
       runningActionData?.action
-        ? { ...adaptSchema(runningActionData.action.params), ...(runningActionData.action.extra_schema ?? {}) }
+        ? { ...adaptSchema(runningActionData.action.params), ...runningActionData.action.extra_schema }
         : null,
     [runningActionData?.action]
   );

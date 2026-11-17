@@ -3,8 +3,7 @@ import { Alert, Autocomplete, Box, Button, TextField } from '@mui/material';
 import { useSnackbar } from 'notistack';
 import { SyntheticEvent, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { TuiSearchFavourite, TuiSearchFavouriteOption, TuiSearchFavouriteProvider } from '.';
 import TuiIconButton from '../display/buttons/TuiIconButton';
 import useTuiSearchFavourites from './hooks/useTuiSearchFavourites';
@@ -37,7 +36,7 @@ export default function TuiSearchFavourites({
   const provider = clientProvider || localProvider;
   const saveEnabled = inputValue && !provider.options.some(o => o.name === inputValue);
 
-  const onSelect = (event: SyntheticEvent, value: TuiSearchFavouriteOption) => {
+  const onSelect = (_event: SyntheticEvent, value: TuiSearchFavouriteOption) => {
     if (typeof value === 'string' && saveEnabled) {
       onSaveClick(null, value);
     } else if (value) {
@@ -56,7 +55,7 @@ export default function TuiSearchFavourites({
     }
   };
 
-  const onSaveClick = async (event, value?: string) => {
+  const onSaveClick = async (_event, value?: string) => {
     const success = await provider.onSave(value || inputValue, model.rebuild());
     enqueueSnackbar(
       <div>
@@ -109,7 +108,6 @@ export default function TuiSearchFavourites({
         multiple={false}
         inputValue={inputValue}
         value={selectedValue}
-        placeholder={t('tui.search.favourite.title')}
         options={provider.options}
         getOptionDisabled={() => false}
         getOptionLabel={(option: TuiSearchFavouriteOption) => {

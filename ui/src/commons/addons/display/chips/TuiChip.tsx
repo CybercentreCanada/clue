@@ -1,6 +1,6 @@
 import { Chip, ChipProps, styled } from '@mui/material';
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 const StyledLink = styled(Link)({
   display: 'inline-flex',

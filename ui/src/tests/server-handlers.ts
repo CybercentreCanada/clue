@@ -1,6 +1,7 @@
 import type { ActionResult } from 'lib/types/action';
 import type { FetcherJsonResult } from 'lib/types/fetcher';
 import type { Selector } from 'lib/types/lookup';
+import type { ClassificationDefinition } from 'lib/utils/classificationParser';
 import cloneDeep from 'lodash-es/cloneDeep';
 import set from 'lodash-es/set';
 import { http, HttpResponse } from 'msw';
@@ -33,7 +34,7 @@ export const MOCK_RESPONSES = {
         apps: []
       }
     },
-    c12nDef: classificationExample
+    c12nDef: classificationExample as unknown as ClassificationDefinition
   },
   '/api/v1/actions': {
     'example.action': actionExample

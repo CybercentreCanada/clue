@@ -13,7 +13,7 @@ const TuiListElement = <T,>({ position, item, onSelect: onClick, children }: Tui
   const elementEl = useRef<HTMLDivElement>();
 
   const onItemClick = useCallback(
-    event => {
+    _event => {
       if (onClick) {
         onClick(item, position);
       }

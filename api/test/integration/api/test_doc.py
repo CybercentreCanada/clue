@@ -43,9 +43,9 @@ def test_plugin_formatting(login_session):
 
             assert file_docstring is not None, f"The {plugin.name} plugin is missing its docstring!"
 
-            assert (
-                "Point of Contact:" in file_docstring
-            ), f"The {plugin.name} plugin is missing a Point of Contact for the plugin"
+            assert "Point of Contact:" in file_docstring, (
+                f"The {plugin.name} plugin is missing a Point of Contact for the plugin"
+            )
 
             assert "Team:" in file_docstring, f"The {plugin.name} plugin is missing the Team for the plugin"
 
@@ -87,9 +87,9 @@ def test_formatting(login_session):
                 ], f"Endpoint {api['function']} has incomplete or incorrectly ordered Google-style sections!"
                 continue
 
-            assert re.search(
-                r"\n *Variables:", description
-            ), f"Endpoint {api['function']} is missing a Variables: portion of the docstring!"
+            assert re.search(r"\n *Variables:", description), (
+                f"Endpoint {api['function']} is missing a Variables: portion of the docstring!"
+            )
 
             if len(matches) > 0:
                 desc_parts = [
@@ -99,8 +99,7 @@ def test_formatting(login_session):
                 ]
 
                 variables_err = (
-                    f"Endpoint {api['function']} is missing a properly formatted Variables: portion of "
-                    "the docstring!"
+                    f"Endpoint {api['function']} is missing a properly formatted Variables: portion of the docstring!"
                 )
 
                 if len(desc_parts) != len(matches) + 1:
@@ -108,9 +107,9 @@ def test_formatting(login_session):
                 elif any("=>" not in line for line in desc_parts[1:]):
                     warnings.warn(variables_err)
 
-            assert re.search(r"\n *Arguments:", description) or re.search(
-                r"\n *Optional Arguments:", description
-            ), f"Endpoint {api['function']} is missing an Arguments: portion of the docstring!"
+            assert re.search(r"\n *Arguments:", description) or re.search(r"\n *Optional Arguments:", description), (
+                f"Endpoint {api['function']} is missing an Arguments: portion of the docstring!"
+            )
 
             if (
                 "POST" not in api["methods"]
@@ -128,9 +127,9 @@ def test_formatting(login_session):
                     "PUT methods!"
                 )
 
-            assert re.search(
-                r"\n *Result Example:", description
-            ), f"Endpoint {api['function']} doesn't have a Result Example: portion!"
+            assert re.search(r"\n *Result Example:", description), (
+                f"Endpoint {api['function']} doesn't have a Result Example: portion!"
+            )
 
             headers = [line.strip() for line in description.splitlines() if line.endswith(":")]
 

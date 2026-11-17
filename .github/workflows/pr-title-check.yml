@@ -5,10 +5,6 @@ on:
     types: [opened, edited, synchronize, reopened]
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
-      - releases/*
 
 permissions:
   contents: read
@@ -31,6 +27,7 @@ jobs:
             fix
             perf
             tests
+            test
             docs
             deps
             refactor
@@ -40,9 +37,11 @@ jobs:
             revert
             style
             chore
+            release
+            improvement
 
           requireScope: false
-          subjectPattern: '^[a-z0-9.-_/ ]+$'
+          subjectPattern: '^[a-z0-9._/ -]+$'
           subjectPatternError: |
             The subject "{subject}" found in pull request title "{title}" must be lowercase and not be empty.
 

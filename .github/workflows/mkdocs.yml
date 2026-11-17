@@ -3,7 +3,6 @@ name: Clue Documentation Github Page
 on:
   push:
     branches:
-      - develop
       - main
   workflow_dispatch: {}
 

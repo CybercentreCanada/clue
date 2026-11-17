@@ -14,7 +14,7 @@ your plugin for compatibility, and currently is the recommended approach.
 **Note: Only python plugins are currently supported this way!**
 
 The first step is to create a folder for your application in the
-[plugins directory](https://github.com/CybercentreCanada/clue/tree/develop/plugins). You can use the
+[plugins directory](https://github.com/CybercentreCanada/clue/tree/main/plugins). You can use the
 makefile's setup scripts to do so, or copy an existing plugin depending on your preferences.
 
 Once you have finished development of the core features, it is **strongly recommended** that you write at least very

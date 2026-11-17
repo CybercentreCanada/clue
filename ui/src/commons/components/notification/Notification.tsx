@@ -59,7 +59,7 @@ export const Notification: FC<Props> = memo(
 
     const fetchFeed = useCallback(
       (url: string = ''): Promise<any> =>
-        new Promise(async (resolve, reject) => {
+        new Promise(async (resolve, _reject) => {
           const response: Response = (await fetch(url, { method: 'GET' }).catch(err =>
             // eslint-disable-next-line no-console
             console.error(`Notification Area: error caused by URL "${err}`)
@@ -84,7 +84,7 @@ export const Notification: FC<Props> = memo(
 
     const fetchFeeds = useCallback(
       (_urls: string[] = []): Promise<Feed[]> =>
-        new Promise(async (resolve, reject) => {
+        new Promise(async (resolve, _reject) => {
           if (!_urls || _urls.length === 0) {
             resolve([]);
             return [];

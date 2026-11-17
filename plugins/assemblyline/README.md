@@ -22,3 +22,10 @@ The plugin assumes that token provided by Clue will grant the following roles in
 - `submission_view`: Required to view submissions in Assemblyline.
 
 **Developer's Note**: Any extension of this plugin that requires additional roles should be discussed with the Clue team before implementation and documented for deployment references.
+
+## Changelog
+
+### 2.0.1
+
+- URL submissions now use the configured offline or online submission profile. Ensure `OFFLINE_SUBMISSION_PROFILE` and `ONLINE_SUBMISSION_PROFILE` exist in Assemblyline; they default to `static` and `static_with_internet`.
+- Safelisted indicators in service results can now produce benign opinions ([#90](https://github.com/CybercentreCanada/clue/pull/90)).

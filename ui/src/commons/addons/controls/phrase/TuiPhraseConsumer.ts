@@ -8,11 +8,11 @@ export default abstract class TuiPhraseConsumer<L extends TuiPhraseLexer> {
     this._buffer = [];
   }
 
-  public init(buffer: string[], lexer?: L): void {
+  public init(buffer: string[], _lexer?: L): void {
     this._buffer = [...buffer];
   }
 
-  public append(next: string, lexer?: L): void {
+  public append(next: string, _lexer?: L): void {
     this._buffer.push(next);
   }
 

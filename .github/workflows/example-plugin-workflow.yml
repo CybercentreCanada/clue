@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/example/**
       - .github/workflows/example-plugin-workflow.yml
@@ -16,13 +13,17 @@ on:
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - plugins/example/**
       - .github/workflows/example-plugin-workflow.yml
       - .github/workflows/*-plugin.yml
+      - api/**
+      - "!api/LICENSE"
+      - "!api/README.md"
+      - "!api/docs/**"
+      - "!api/build_scripts/generate_classes.py"
+      - plugins/base/**
+      - .github/workflows/base-plugin-workflow.yml
   workflow_dispatch: {}
   workflow_run:
     workflows:

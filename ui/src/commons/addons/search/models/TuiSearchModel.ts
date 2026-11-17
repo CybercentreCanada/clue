@@ -122,8 +122,8 @@ export default class TuiSearchModel {
   }
 
   public valid(): boolean {
-    const even = this._filters.terms().filter((t, i) => i % 2 === 0);
-    const odd = this._filters.terms().filter((t, i) => i % 2 === 1);
+    const even = this._filters.terms().filter((_t, i) => i % 2 === 0);
+    const odd = this._filters.terms().filter((_t, i) => i % 2 === 1);
     return (
       even.every(m => isMatcher(m)) && odd.every(s => isSeparator(s)) && this._sorters.terms().every(o => isSorter(o))
     );

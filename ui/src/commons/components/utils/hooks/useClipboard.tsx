@@ -18,7 +18,7 @@ export default function useClipboard() {
     }
   };
 
-  const copy = async (text: string, targetId = 'root') => {
+  const copy = async (text: string, _targetId = 'root') => {
     try {
       await navigator.clipboard.writeText(text);
       enqueueSnackbar(`${text} ${t('clipboard.success')}`, { variant: 'success', ...snackBarOptions });

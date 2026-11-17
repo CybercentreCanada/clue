@@ -76,6 +76,21 @@ commande :
 pnpm test-ui
 ```
 
+### Formatage, analyse statique et vérification des types
+
+L'interface utilise [oxfmt](https://oxc.rs/docs/guide/usage/formatter) pour le formatage et
+[oxlint](https://oxc.rs/docs/guide/usage/linter) pour l'analyse statique. La CI exécute toutes les commandes suivantes :
+
+```bash
+pnpm tsc --noEmit         # vérification des types
+pnpm oxfmt src --check    # formatage
+pnpm oxlint src           # analyse statique
+pnpm lint                 # corriger automatiquement le formatage et l'analyse statique
+```
+
+L'installation des hooks pre-commit du dépôt (`poetry run pre-commit install` depuis `api/`) exécute ces vérifications
+sur les fichiers de l'interface avant chaque commit.
+
 ### Scripts supplémentaires
 
 Pour plus d'options de lancement, consultez la section "scripts" du fichier package.json.

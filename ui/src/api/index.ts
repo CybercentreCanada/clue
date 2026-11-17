@@ -136,9 +136,9 @@ const hfetchWithRefresh = async <R>(
   const authToken = getLocalStored(StorageKey.APP_TOKEN);
 
   const config: AxiosRequestConfig = {
-    ...(axiosConfig ?? {}),
+    ...axiosConfig,
     headers: {
-      ...(axiosConfig?.headers ?? {}),
+      ...axiosConfig?.headers,
       'Content-Type': 'application/json',
       'X-XSRF-TOKEN': getXSRFCookie()
     } as RawAxiosRequestHeaders

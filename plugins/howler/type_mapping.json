@@ -105,13 +105,6 @@
         "related.hash",
         "user.hash"
     ],
-    "port": [
-        "destination.nat.port",
-        "destination.port",
-        "source.nat.port",
-        "source.port",
-        "url.port"
-    ],
     "sha256": [
         "container.image.hash.all",
         "email.attachments.file.hash.sha256",

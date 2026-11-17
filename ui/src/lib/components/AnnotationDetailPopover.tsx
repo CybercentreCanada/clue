@@ -36,9 +36,9 @@ const AnnotationDetailPopover: FC<
       anchorEl={anchorEl}
       onClose={onClose}
       slotProps={{
-        ...(otherProps.slotProps ?? {}),
+        ...otherProps.slotProps,
         paper: {
-          ...(otherProps.slotProps?.paper ?? {}),
+          ...otherProps.slotProps?.paper,
           sx: [
             {
               maxHeight: 'min(600px, 95vh)',

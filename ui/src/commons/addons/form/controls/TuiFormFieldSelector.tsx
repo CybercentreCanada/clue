@@ -13,7 +13,11 @@ type TuiFormFieldSelectorProps = {
 
 export default function TuiFormFieldSelector({ label, selections, options, onChange }: TuiFormFieldSelectorProps) {
   const _onChange = useCallback(
-    (event: SyntheticEvent<Element, Event>, value: TuiFormFieldSelectorOption[], reason: AutocompleteChangeReason) => {
+    (
+      _event: SyntheticEvent<Element, Event>,
+      value: TuiFormFieldSelectorOption[],
+      _reason: AutocompleteChangeReason
+    ) => {
       onChange(value);
     },
     [onChange]

@@ -1,3 +1,4 @@
+import type { ChipProps } from '@mui/material';
 import { Chip, useMediaQuery, useTheme } from '@mui/material';
 import useClueConfig from 'lib/hooks/useClueConfig';
 import type { FC } from 'react';
@@ -17,7 +18,7 @@ const Classification: FC = () => {
   }, [config.c12nDef?.UNRESTRICTED, isSm]);
 
   const color = useMemo(
-    () => config.c12nDef?.levels_styles_map?.[label.replace(/\/\/.+/, '')]?.color ?? 'default',
+    () => (config.c12nDef?.levels_styles_map?.[label.replace(/\/\/.+/, '')]?.color ?? 'default') as ChipProps['color'],
     [config.c12nDef?.levels_styles_map, label]
   );
 

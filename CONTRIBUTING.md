@@ -3,26 +3,30 @@
 
 ### Branch Strategy
 
-The Clue project follows a Git flow branching model to ensure stable releases and organized development:
+The Clue project uses trunk-based development on `main`:
 
-#### Main Branches
+- **`main`**: The only long-lived branch. All pull requests target `main`, and every release is cut from it. Direct
+  commits to `main` are restricted.
+- **Feature branches**: Short-lived branches created from `main` for features, fixes, or other changes. Use descriptive
+  names like `feature/add-oauth-provider` or `bugfix/fix-cache-expiry`.
 
-- **`main`**: Contains production-ready code. All releases are tagged from this branch. Direct commits to `main` are restricted.
-- **`develop`**: The integration branch for new features and the primary development branch. All feature branches are created from and merged back into `develop`.
+There are no `develop`, release-candidate, or patch branches.
 
-#### Supporting Branches
+#### Release Workflow
 
-- **Feature branches**: Created from `develop` for new features or enhancements. Use descriptive names like `feature/add-oauth-provider` or `feature/improve-caching`.
-- **Release branches**: Created from `develop` when preparing for a new release (e.g., `release/v2.1.0`). Used for final testing and minor bug fixes.
-- **Hotfix branches**: Created from `main` for critical bug fixes that need immediate deployment (e.g., `hotfix/security-patch`).
+Releases are automated with [Release Please](https://github.com/googleapis/release-please):
 
-#### Development Workflow
+1. **Development**: Create a feature branch from `main` and open a pull request with a
+   [Conventional Commits](https://www.conventionalcommits.org/) title (e.g. `fix(api): handle empty selectors`)
+2. **Integration**: Merge the approved pull request into `main`. Merges to `main` publish preview artifacts (`nightly`
+   Docker images and a `development` UI npm package)
+3. **Release PR**: Release Please opens or updates a release PR for each affected package (`api`, `ui`, `mcp`) with the
+   version bump and generated `CHANGELOG.md` entry
+4. **Production Release**: Merging a release PR tags `<component>-vX.Y.Z`, publishes the GitHub Release, and publishes
+   the stable artifacts
 
-1. **Feature Development**: Create a feature branch from `develop`
-2. **Integration**: Merge completed features into `develop` via pull request
-3. **Release Preparation**: Create a release branch from `develop` when ready for release
-4. **Production Release**: Merge release branch into both `main` and `develop`, then tag the release
-5. **Hotfixes**: If critical issues are found in production, create hotfix branches from `main`
+Do not manually bump versions, create tags, or write release notes. See the
+[release runbook](https://cybercentrecanada.github.io/clue/developer/releases/) for details.
 
 ### Pull Request Process
 
@@ -30,18 +34,18 @@ All code changes must go through the pull request process to ensure code quality
 
 #### For Contributors with Write Access
 
-1. **Create Feature Branch**: Create a new branch from `develop` with a descriptive name
+1. **Create Feature Branch**: Create a new branch from `main` with a descriptive name
 
    ```bash
-   git checkout develop
-   git pull origin develop
+   git checkout main
+   git pull origin main
    git checkout -b feature/your-feature-name
    ```
 
 2. **Implement Changes**: Make your changes, following the project's coding standards and including appropriate tests
 
-3. **Open Pull Request**: Create a PR targeting the `develop` branch with:
-   - Clear, descriptive title
+3. **Open Pull Request**: Create a PR targeting the `main` branch with:
+   - Clear, descriptive [Conventional Commits](https://www.conventionalcommits.org/) title (e.g. `feat(ui): add graph export`)
    - Detailed description of changes
    - Reference to any related issues
    - Screenshots or examples if applicable
@@ -52,11 +56,11 @@ All code changes must go through the pull request process to ensure code quality
 
 2. **Clone and Setup**: Clone your fork and set up the development environment as described in this guide
 
-3. **Create Feature Branch**: Create a branch from `develop` in your fork
+3. **Create Feature Branch**: Create a branch from `main` in your fork
 
 4. **Implement and Test**: Make your changes and ensure all checks pass
 
-5. **Submit Pull Request**: Open a PR from your fork's feature branch to the main repository's `develop` branch
+5. **Submit Pull Request**: Open a PR from your fork's feature branch to the main repository's `main` branch
 
 #### Review Process
 
@@ -77,8 +81,8 @@ All code changes must go through the pull request process to ensure code quality
 
 #### Merge and Release
 
-- **Merge to Develop**: Once approved and all checks pass, the PR is merged into `develop`
-- **Release Cycle**: Features merged into `develop` will be included in the next release when `develop` is merged into `main`
+- **Merge to Main**: Once approved and all checks pass, the PR is squash merged into `main`
+- **Release Cycle**: Release Please collects merged changes into a release PR per package; changes ship when a maintainer merges that release PR
 - **Release Timeline**: Release schedules are determined by the project maintainers based on feature readiness and testing completion. There's no guaranteed duration from merge to release.
 
 #### Best Practices

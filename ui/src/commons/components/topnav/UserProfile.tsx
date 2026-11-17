@@ -21,7 +21,7 @@ import useUser from 'commons/components/app/hooks/useAppUser';
 import ThemeSelection from 'commons/components/topnav/ThemeSelection';
 import { memo, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { AppBarUserMenuElement } from '../app/AppConfigs';
 import AppAvatar from '../display/AppAvatar';
 

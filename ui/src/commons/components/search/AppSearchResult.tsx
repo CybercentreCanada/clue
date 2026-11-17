@@ -27,7 +27,7 @@ const AppSearchResult = ({ ...menuProps }: AppSearchResultProps) => {
   const options = useMemo(
     () =>
       state.items?.reduce(
-        (_options, item, index) => ({
+        (_options, _item, index) => ({
           ..._options,
           [index]: { state, index, last: index === state.items.length - 1 }
         }),

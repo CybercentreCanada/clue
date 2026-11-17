@@ -9,7 +9,6 @@ const TargetIcon: FC<IconProps> = props => {
   return (
     <BaseIcon
       {...props}
-      {...props}
       style={{ fill: theme.palette.getContrastText(theme.palette.info.dark), ...props.style }}
       circleStyle={{ fill: theme.palette.info.dark, ...props.style }}
     >

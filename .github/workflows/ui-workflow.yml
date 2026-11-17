@@ -4,34 +4,49 @@ on:
   push:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - "ui/**"
       - "!ui/LICENSE"
       - "!ui/README.md"
       - .github/workflows/ui-workflow.yml
+      - .github/workflows/release-validation.yml
+      - scripts/validate_release.py
     tags:
-      - v*
+      - ui-v*
   pull_request:
     branches:
       - main
-      - develop
-      - rc/*
-      - patch/*
     paths:
       - "ui/**"
       - "!ui/LICENSE"
       - "!ui/README.md"
       - .github/workflows/ui-workflow.yml
-  workflow_dispatch: {}
+      - .github/workflows/release-validation.yml
+      - scripts/validate_release.py
+  workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Publish stable artifacts from a verified native component tag
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
+  release_validation:
+    uses: ./.github/workflows/release-validation.yml
+    with:
+      component: ui
+      component_dir: ui
+      tag_prefix: ui-v
+      allow_main_preview: true
+      publish_release: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
+    permissions:
+      contents: read
+
   formatting:
     name: Validate Clue UI Code Quality
 
@@ -42,18 +57,24 @@ jobs:
     steps:
       - name: Checkout current ref
         uses: actions/checkout@v4
-      - name: Install Node v20
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Install Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install Node v24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Install pnpm v10
+          node-version: 24
+      - name: Install pnpm v11
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
       - name: Get pnpm store path
         id: pnpm-cache-dir
         run: echo "PNPM_CACHE_DIR=$(pnpm store path)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Define a cache for node_modules
         with:
           path: |
@@ -65,12 +86,16 @@ jobs:
             ${{ runner.os }}-pnpm-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Run prettier formatting checks
-        run: |
-          pnpm run lint-validate
-      - name: Run eslint linter checks
-        run: |
-          npx eslint@8 src
+      - name: Check translations
+        run: python ../hooks/check_translation.py
+      - name: Check for banned imports
+        run: python ../hooks/find_bad_imports.py
+      - name: Run type checking
+        run: pnpm tsc --noEmit
+      - name: Run oxfmt formatting checks
+        run: pnpm oxfmt src --check
+      - name: Run oxlint linter checks
+        run: pnpm oxlint src
       - name: Run Unit Tests
         run: pnpm test
       - name: Report Coverage
@@ -80,13 +105,14 @@ jobs:
           json-final-path: ui/target/coverage/coverage-final.json
 
   push_to_npm:
-    if: github.event_name != 'pull_request'
+    if: needs.release_validation.outputs.channel == 'preview' || needs.release_validation.outputs.channel == 'stable'
 
     runs-on: ubuntu-latest
 
-    name: Publish Clue to NPM
+    name: Publish Clue UI to npm
 
     needs:
+      - release_validation
       - formatting
 
     defaults:
@@ -101,19 +127,19 @@ jobs:
     steps:
       - name: Checkout current ref
         uses: actions/checkout@v4
-      - name: Install Node v20
+      - name: Install Node v24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
-      - name: Install pnpm v10
+      - name: Install pnpm v11
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
       - name: Get pnpm store path
         id: pnpm-cache-dir
         run: echo "PNPM_CACHE_DIR=$(pnpm store path)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Define a cache for node_modules
         with:
           path: |
@@ -123,14 +149,37 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
-      - name: Set Package Version
-        run: |
-          python build_scripts/set_version.py
+      - name: Set UI npm publication version
+        id: npm-version
         env:
-          BRANCH: ${{ github.ref }}
-          BUILD_ID: ${{ github.run_number }}
+          CHANNEL: ${{ needs.release_validation.outputs.channel }}
+          NATIVE_VERSION: ${{ needs.release_validation.outputs.version }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'package.json';
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const stable = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
+          if (pkg.version !== process.env.NATIVE_VERSION || !stable.test(pkg.version)) {
+            throw new Error(`UI manifest ${pkg.version} does not match validated native version ${process.env.NATIVE_VERSION}`);
+          }
+          let version = pkg.version;
+          let npmTag = 'latest';
+          if (process.env.CHANNEL === 'preview') {
+            const [major, minor] = version.split('.').map(BigInt);
+            version = `${major}.${minor + 1n}.0-dev.${process.env.RUN_NUMBER}.${process.env.RUN_ATTEMPT}`;
+            pkg.version = version;
+            fs.writeFileSync(path, `${JSON.stringify(pkg, null, 2)}\n`, 'utf8');
+            npmTag = 'development';
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\nnpm_tag=${npmTag}\n`);
+          NODE
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Clean previous library build output
+        run: rm -rf dist
       - name: Build UI
         run: |
           pnpm build-lib
@@ -140,49 +189,36 @@ jobs:
           VITE_COMMIT_HASH: ${{ github.sha }}
           NODE_OPTIONS: --max-old-space-size=16384
 
-      - name: Check Package Version Type
-        id: version-check
+      - name: Verify built package version
+        env:
+          EXPECTED_VERSION: ${{ steps.npm-version.outputs.version }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION"
-
-          # Check for specific prerelease identifiers and set appropriate npm tag
-          if echo "$VERSION" | grep -qE '\-dev'; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "npm_tag=development" >> $GITHUB_OUTPUT
-            echo "Detected development version: $VERSION (will publish with --tag development)"
-          elif echo "$VERSION" | grep -qE '\-rc'; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "npm_tag=release-candidate" >> $GITHUB_OUTPUT
-            echo "Detected release candidate version: $VERSION (will publish with --tag release-candidate)"
-          elif echo "$VERSION" | grep -qE '\-patch'; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            echo "npm_tag=patch-prerelease" >> $GITHUB_OUTPUT
-            echo "Detected patch prerelease version: $VERSION (will publish with --tag patch-prerelease)"
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            echo "npm_tag=latest" >> $GITHUB_OUTPUT
-            echo "Detected standard release version: $VERSION (will publish with --tag latest)"
-          fi
-        working-directory: ui/dist
+          node <<'NODE'
+          const fs = require('node:fs');
+          const expected = process.env.EXPECTED_VERSION;
+          const actual = JSON.parse(fs.readFileSync('dist/package.json', 'utf8')).version;
+          if (actual !== expected) throw new Error(`Built package version ${actual} does not match ${expected}`);
+          NODE
 
       # Can't use latest currently: https://github.com/npm/cli/issues/9722
       # npm install -g npm@latest
       - name: Publish Built Package
         run: |
           npm install -g npm@11
-          npm publish --access public --tag ${{ steps.version-check.outputs.npm_tag }}
+          npm publish --access public --tag "$NPM_TAG"
         working-directory: ui/dist  # Publish from the built dist directory
-
+        env:
+          NPM_TAG: ${{ steps.npm-version.outputs.npm_tag }}
 
   push_to_registry:
-    if: github.event_name != 'pull_request'
+    if: needs.release_validation.outputs.channel == 'preview' || needs.release_validation.outputs.channel == 'stable'
 
     runs-on: ubuntu-latest
 
     name: Build Clue UI Docker Image
 
     needs:
+      - release_validation
       - formatting
 
     defaults:
@@ -195,21 +231,24 @@ jobs:
       attestations: write
 
     steps:
-      - name: Checkout current ref
+      - name: Checkout validated revision
         uses: actions/checkout@v4
-      - name: Install Node v20
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Install Node v24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
-      - name: Install pnpm v10
+      - name: Install pnpm v11
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 11
       - name: Get pnpm store path
         id: pnpm-cache-dir
         run: echo "PNPM_CACHE_DIR=$(pnpm store path)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         name: Define a cache for node_modules
         with:
           path: |
@@ -219,12 +258,6 @@ jobs:
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
-      - name: Set Package Version
-        run: |
-          python build_scripts/set_version.py
-        env:
-          BRANCH: ${{ github.ref }}
-          BUILD_ID: ${{ github.run_number }}
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Build UI
@@ -239,29 +272,23 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Extract Clue UI version
-        id: version
-        run: |
-          python -c "import json;print('version='+json.load(open('package.json', 'r'))['version'].split('-')[0])" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v6
         with:
           images: cccs/clue-ui
+          flavor: latest=${{ needs.release_validation.outputs.channel == 'stable' }}
           tags: |
-            type=raw,event=branch,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
-            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags') }}
-            type=raw,event=branch,value=nightly,enable=${{ github.ref == format('refs/heads/{0}', 'develop') }}
-            type=semver,pattern={{version}}
-            type=raw,value=${{steps.version.outputs.version}}_{{branch}}
-            type=raw,value=${{steps.version.outputs.version}}_{{branch}}_{{sha}}
+            type=raw,value=${{ needs.release_validation.outputs.version }},enable=${{ needs.release_validation.outputs.channel == 'stable' }}
+            type=raw,value=nightly,enable=${{ needs.release_validation.outputs.channel == 'preview' }}
+            type=sha,format=short
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
       - name: Build and push UI Docker image
         id: push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: ui
           file: ui/Dockerfile
@@ -269,7 +296,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            version=${{ steps.meta.outputs.version }}
+            version=${{ needs.release_validation.outputs.version }}
             branch=${{ github.ref }}
             commit=${{ github.sha }}
       - name: Generate artifact attestation

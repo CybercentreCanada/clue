@@ -10,7 +10,7 @@ import {
   useTheme
 } from '@mui/material';
 import { ReactNode, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { isMuiButtonColor, MuiButtonColorType } from '.';
 
 export type TuiButtonProps = Omit<ButtonProps, 'color'> & {

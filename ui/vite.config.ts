@@ -1,7 +1,6 @@
 /// <reference types="vitest" />
 import react from '@vitejs/plugin-react-swc';
 import { defineConfig, loadEnv } from 'vite';
-import eslint from 'vite-plugin-eslint';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { configDefaults } from 'vitest/config';
 
@@ -11,30 +10,8 @@ const config = ({ mode }) => {
 
   const useMinify = !process.env.npm_package_version?.includes('dev');
 
-  const _eslint = [];
-
-  if (process.env.npm_lifecycle_event !== 'test') {
-    _eslint.push({
-      // default settings on build (i.e. fail on error)
-      ...eslint(),
-      apply: 'build'
-    });
-
-    _eslint.push({
-      // do not fail on serve (i.e. local development)
-      ...eslint({
-        failOnWarning: false,
-        failOnError: false,
-        cache: true
-      }),
-      apply: 'serve',
-      enforce: 'post'
-    });
-  }
-
   return defineConfig({
     plugins: [
-      ..._eslint,
       react(),
       tsconfigPaths(),
       {
@@ -47,6 +24,10 @@ const config = ({ mode }) => {
         }
       }
     ],
+    resolve: {
+      // Multiple copies of react-router each create their own router context, breaking hooks like useLocation()
+      dedupe: ['react-router']
+    },
     build: {
       sourcemap: false,
       minify: useMinify
