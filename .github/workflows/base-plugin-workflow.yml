@@ -39,17 +39,17 @@ jobs:
       - name: Checkout current ref
         uses: actions/checkout@v4
       - name: Run docker formatting checks (base)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: plugins/base/base.Dockerfile
           failure-threshold: warning
       - name: Run docker formatting checks (plugin)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: plugins/base/plugin.Dockerfile
           failure-threshold: warning
       - name: Run docker formatting checks (debian)
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: plugins/base/debian.Dockerfile
           failure-threshold: warning
