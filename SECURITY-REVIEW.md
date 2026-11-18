@@ -2,12 +2,13 @@
 
 ## Scope and result
 
-Read-only source verification on `main`, 2026-11-17. This review covers the
-plugin `/types/` cache path only; no live exploit or automated tests were run.
+Reverified on `main` at `24b3757` on 2026-11-18: the finding is still open.
+This review covers the plugin `/types/` cache path only. No runtime tests
+were run and no external systems were contacted.
 
 | # | Severity | File | Lines | Vulnerability | Confidence |
 |---|----------|------|-------|---------------|------------|
-| 1 | MEDIUM | [type_service.py](api/clue/services/type_service.py#L70) | 70-72, 109-113 | Plugin type-discovery responses share a URL-only Redis cache across authorization contexts | 9/10 |
+| 1 | 🟡 MEDIUM | [type_service.py](api/clue/services/type_service.py#L70) | 70-72, 109-113 | Plugin type-discovery responses share a URL-only Redis cache across authorization contexts | 10/10 |
 
 ## Evidence
 
@@ -39,15 +40,18 @@ do not reproduce arbitrary caller-specific authorization performed by a
 plugin.
 
 The shared-cache mechanism is source-verified. Actual disclosure depends on a
-plugin returning authorization-dependent type metadata and on cache use being
-enabled. This review does not demonstrate disclosure of enrichment records,
-credential theft, or unauthorized downstream operations.
+configured plugin whose response or access decision varies by caller, and on
+shared cache reads being enabled. The [stock plugin handler](api/clue/plugin/__init__.py#L854)
+returns configured types and classifications without using caller identity.
+This review does not demonstrate disclosure of enrichment records, credential
+theft, or unauthorized downstream operations.
 
 ## Recommended follow-up
 
-Add a focused two-authorization-context regression test. Partition the inner
-Redis cache by a non-reversible authorization-context identifier, or bypass
-both cache layers for authenticated discovery. Do not put raw credentials in
-Redis key names.
+Bypass both cache layers for caller-dependent discovery. If caching is
+necessary, scope both layers to the plugin URL and effective authorization
+context; use a keyed digest rather than raw credentials in cache keys.
+Invalidate legacy URL-only entries during rollout and add a focused regression
+test for cache isolation.
 
 No application code or configuration was changed as part of this review.
