@@ -130,6 +130,4 @@ def handle_500(e: InternalServerError):
         message = "".join(["\n"] + format_tb(exc_info()[2]) + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]).rstrip(
             "\n"
         )
-    log_with_traceback(trace, "Unhandled exception", is_exception=True)
-
     return internal_error(err=message)
