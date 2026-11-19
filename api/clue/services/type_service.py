@@ -85,7 +85,7 @@ def get_supported_types(
     cache_key = _get_cache_key(url, access_token, obo_access_token)
 
     # Do not refresh the TTL on hits so user access and plugin changes are re-validated once the cache expires
-    if not DISABLE_CACHE and (result := CACHE.get(cache_key, refresh_ttl=False)):
+    if not DISABLE_CACHE and (result := CACHE.get(cache_key, refresh_ttl=False)) is not None:
         logger.info("Cache hit for url %s", url)
         return result
 
