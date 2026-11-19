@@ -81,6 +81,23 @@ kubectl create secret generic flask-secret-key -n clue --from-literal=key=<gener
 kubectl create secret generic clue-apikeys -n clue --from-literal=data={}
 ```
 
+#### Secret facultatif pour les clés du cache des types de plugins
+
+L'API conserve les métadonnées des types de plugins séparément pour chaque contexte d'authentification. Par défaut,
+elle utilise SHA-256 pour les clés du cache. Pour mieux protéger les identifiants contre les tentatives de devinette
+si les clés Redis sont exposées, configurez le secret facultatif `clue-types-cache-hmac`. Sa valeur `key` doit
+contenir exactement 32 octets aléatoires encodés en 64 caractères hexadécimaux. Par exemple :
+
+```bash
+openssl rand -hex 32 | tr -d '\n' | kubectl create secret generic clue-types-cache-hmac -n clue --from-file=key=/dev/stdin
+```
+
+Ne stockez pas le secret dans Git et limitez l'accès au secret et à Redis. Toutes les répliques de l'API qui partagent
+Redis doivent utiliser le même secret. Si le secret est absent, Clue utilise SHA-256 ; aucune de ces méthodes ne
+chiffre les valeurs du cache. Après la création ou la rotation du secret, redémarrez les pods de l'API pour qu'ils
+reçoivent la nouvelle valeur. Une rotation entraîne des cache misses jusqu'au remplissage du cache. Un secret configuré
+avec un format invalide empêche le démarrage de l'API.
+
 ### 3. Création de votre fichier de valeurs spécifique au déploiement
 
 Afin d'avoir des valeurs spécifiques au déploiement, vous devrez créer un nouveau fichier
