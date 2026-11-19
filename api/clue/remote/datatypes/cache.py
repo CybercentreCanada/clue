@@ -29,7 +29,7 @@ class RedisCache(object):
         key_str = "-".join([str(x) for x in args])
         return get_id_from_data(key_str)
 
-    def get(self, key, ttl=None):
+    def get(self, key, ttl=None, refresh_ttl=True):
         # Get the key name
         cache_name = self._get_key(key)
 
@@ -39,7 +39,8 @@ class RedisCache(object):
             return item
 
         # Reset the cache while we're still using it
-        retry_call(self.c.expire, cache_name, ttl or self.ttl)
+        if refresh_ttl:
+            retry_call(self.c.expire, cache_name, ttl or self.ttl)
         return json.loads(item)
 
     def ready(self):
@@ -55,8 +56,7 @@ class RedisCache(object):
         cache_name = self._get_key(key)
 
         # Set the value and the expiry for the name
-        retry_call(self.c.set, cache_name, json.dumps(value))
-        retry_call(self.c.expire, cache_name, ttl or self.ttl)
+        retry_call(self.c.set, cache_name, json.dumps(value), ex=ttl or self.ttl)
 
 
 Cache = RedisCache

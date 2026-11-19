@@ -541,6 +541,8 @@ class UI(BaseModel):
 
 
 class API(BaseModel):
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     audit: bool = Field(description="Should API calls be audited and saved to a separate log file?", default=True)
     debug: bool = Field(description="Enable debugging?", default=False)
     discover_url: str | None = Field(description="Discover URL", default=None)
@@ -567,8 +569,18 @@ class API(BaseModel):
         description="Validate if the XSRF token matches the randomly generated token for the session", default=True
     )
     type_cache_hmac_secret: SecretStr | None = Field(
-        description="Secret use to encrypt the plugin cache.", default=None
+        description="Optional 32-byte hex secret for HMAC-based plugin type cache keys.", default=None
     )
+
+    @field_validator("type_cache_hmac_secret")
+    @classmethod
+    def validate_type_cache_hmac_secret(cls, secret: SecretStr | None) -> SecretStr | None:
+        """Validate the optional HMAC key without exposing it in errors."""
+        if secret is not None:
+            value = secret.get_secret_value()
+            if len(value) != 64 or any(char not in "0123456789abcdefABCDEF" for char in value):
+                raise ValueError("type_cache_hmac_secret must be exactly 32 bytes encoded as hexadecimal")
+        return secret
 
     @field_validator("frontend_url")
     @classmethod
@@ -689,6 +701,7 @@ class Config(BaseSettings):
         yaml_file_encoding="utf-8",
         strict=True,
         env_nested_delimiter="__",
+        hide_input_in_errors=True,
     )
 
     @model_validator(mode="after")

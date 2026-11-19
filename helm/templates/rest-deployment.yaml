@@ -85,6 +85,7 @@ spec:
             secretKeyRef:
               name: clue-types-cache-hmac
               key: key
+              optional: true
         {{- if .Values.redis.auth.enabled }}
         - name: CORE__REDIS__PASSWORD
           valueFrom:

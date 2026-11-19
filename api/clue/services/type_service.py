@@ -55,18 +55,17 @@ def get_types_detection(user: dict[str, Any]) -> dict[str, SupportedType]:
     }
 
 
-def _get_cach_hash(url: str, access_token: str | None, obo_access_token: str | None) -> str:
-    """Return user hash use inside of cach to recognize user access"""
+def _get_cache_key(url: str, access_token: str | None, obo_access_token: str | None) -> str:
+    """Return the cache key for a plugin's types, scoped to the credentials used to fetch them."""
     data = json.dumps([url, access_token, obo_access_token]).encode("utf-8")
     if config.api.type_cache_hmac_secret:
-        user_hash = hmac.new(
+        return hmac.new(
             bytes.fromhex(config.api.type_cache_hmac_secret.get_secret_value()),
             data,
             hashlib.sha256,
         ).hexdigest()
-    else:
-        user_hash = hashlib.sha256(data).hexdigest()
-    return user_hash
+
+    return hashlib.sha256(data).hexdigest()
 
 
 def get_supported_types(
@@ -77,14 +76,16 @@ def get_supported_types(
     Args:
         source_url (str): The url of the source.
         access_token (str | None, optional): An access token giving access to the source. Defaults to None.
+        obo_access_token (str | None, optional): An on-behalf-of access token for the source. Defaults to None.
 
     Returns:
-        Any: The supported types returned by the source.
+        dict[str, str] | None: The supported types returned by the source, or None if they could not be fetched.
     """
     url = f"{source_url}{'' if source_url.endswith('/') else '/'}types/"
-    user_hash = _get_cach_hash(url, access_token, obo_access_token)
+    cache_key = _get_cache_key(url, access_token, obo_access_token)
 
-    if not DISABLE_CACHE and (result := CACHE.get(user_hash)):
+    # Do not refresh the TTL on hits so user access and plugin changes are re-validated once the cache expires
+    if not DISABLE_CACHE and (result := CACHE.get(cache_key, refresh_ttl=False)):
         logger.info("Cache hit for url %s", url)
         return result
 
@@ -126,7 +127,7 @@ def get_supported_types(
         try:
             types_result = rsp.json()["api_response"]
             logger.debug("Setting cache result for url %s", url)
-            CACHE.set(user_hash, types_result)
+            CACHE.set(cache_key, types_result)
             return types_result
         except requests.exceptions.JSONDecodeError:
             logger.exception(f"Parsing error in OK response - unknown format\nRaw response: {rsp.text}")
