@@ -12,6 +12,7 @@ from pydantic import (
     ConfigDict,
     Field,
     HttpUrl,
+    SecretStr,
     TypeAdapter,
     ValidationInfo,
     field_validator,
@@ -564,6 +565,9 @@ class API(BaseModel):
     )
     validate_session_xsrf_token: bool = Field(
         description="Validate if the XSRF token matches the randomly generated token for the session", default=True
+    )
+    type_cache_hmac_secret: SecretStr | None = Field(
+        description="Secret use to encrypt the plugin cache.", default=None
     )
 
     @field_validator("frontend_url")
