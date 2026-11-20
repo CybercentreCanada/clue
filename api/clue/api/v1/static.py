@@ -5,7 +5,7 @@ from flask import request
 from flask_cors import CORS
 
 from clue.api import make_subapi_blueprint, not_found, ok
-from clue.common.logging import get_logger
+from clue.common.logging import get_logger, sanitize_log_value
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
 from clue.security import api_login
@@ -83,5 +83,5 @@ def serve_documentation_file(filename: str, **kwargs) -> dict[str, str]:
 
         return ok({"markdown": content})
 
-    logger.info("File %s does not exist", docs_path)
+    logger.info("File %s does not exist", sanitize_log_value(docs_path))
     return not_found(err="The file does not exist or is typed incorrectly.")
