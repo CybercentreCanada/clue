@@ -548,6 +548,12 @@ class API(BaseModel):
         default=None,
     )
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
+    maximum_timeout_request: float = Field(
+        description="Maximum requested timeout in seconds for upstream requests",
+        default=60.0,
+        gt=0,
+        allow_inf_nan=False,
+    )
     registration_allowed_origins: list[str] = Field(
         description="Exact URL origins permitted for runtime external source registration", default=[]
     )
@@ -555,12 +561,6 @@ class API(BaseModel):
     secret_key: str = Field(description="Flask secret key to store cookies, etc.", default_factory=lambda: uuid4().hex)
     session_duration: int = Field(
         description="Duration of the user session before the user has to login again", default=3600
-    )
-    maximum_timeout_request: float = Field(
-        description="Maximum requested timeout in seconds for upstream requests",
-        default=60.0,
-        gt=0,
-        allow_inf_nan=False,
     )
     validate_session_ip: bool = Field(
         description="Validate if the session IP matches the IP the session was created from", default=True
