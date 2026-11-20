@@ -36,6 +36,28 @@ def test_api_login_rejects_user_from_admin_endpoint():
     assert response.status_code == 403
 
 
+def test_api_login_role_denied_log_strips_newlines_from_path():
+    app = Flask(__name__)
+
+    # The logger is created when the decorator is applied, so the patch must wrap the endpoint definition
+    with patch("clue.common.logging.get_logger") as mock_get_logger:
+
+        @api_login(required_roles=[UserRole.ADMIN], audit=False)
+        def admin_endpoint(**kwargs):
+            return kwargs["user"]
+
+    with (
+        app.test_request_context(
+            "/admin%0a2026-01-01 INFO forged", headers={"Authorization": "Bearer token.value.signature"}
+        ),
+        patch("clue.security.auth_service.bearer_auth", return_value=_auth_result(UserRole.USER)),
+    ):
+        response = admin_endpoint()
+
+    assert response.status_code == 403
+    assert mock_get_logger.return_value.warning.call_args.args[3] == "/admin2026-01-01 INFO forged"
+
+
 def test_api_login_allows_admin_to_reach_endpoint():
     app = Flask(__name__)
 

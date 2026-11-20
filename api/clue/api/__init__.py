@@ -7,7 +7,7 @@ from prometheus_client import Counter
 from pydantic import BaseModel
 
 from clue.common.forge import APP_NAME
-from clue.common.logging import get_logger, log_with_traceback
+from clue.common.logging import get_logger, log_with_traceback, sanitize_log_value
 from clue.common.str_utils import safe_str
 from clue.models.network import ClueResponse
 
@@ -62,7 +62,7 @@ def _make_api_response(
             resp.set_cookie(k, v)
 
     RAW_API_COUNTER.labels(request.method, str(request.url_rule), status_code).inc()
-    logger.info("%s %s - %s", request.method, request.path, status_code)
+    logger.info("%s %s - %s", request.method, sanitize_log_value(request.path), status_code)
 
     return resp
 
