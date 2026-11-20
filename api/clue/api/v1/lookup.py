@@ -225,6 +225,9 @@ def enrich(type_name: str, value: str, **kwargs) -> dict[str, QueryResult]:
     # re-encode the type after being decoded going through flask/wsgi route
     value = urllib.parse.quote(value, safe="")
 
-    results = lookup_service.enrich(type_name, value, user)
+    try:
+        results = lookup_service.enrich(type_name, value, user)
+    except InvalidDataException as e:
+        return bad_request(err=str(e))
 
     return ok(results)

@@ -10,6 +10,7 @@ from requests import JSONDecodeError, exceptions
 
 from clue.common.exceptions import AuthenticationException, ClueException, ClueValueError, NotFoundException
 from clue.common.logging import get_logger
+from clue.common.timeouts import parse_timeout
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
 from clue.helper.obo import get_obo_access_token
@@ -183,7 +184,7 @@ def execute_action(plugin_id: str, action_id: str, user: dict[str, Any]) -> Acti
             get_method=requests.get,
             json=parameters,
             headers=headers,
-            timeout=request.args.get("max_timeout", plugin.default_timeout, type=float),
+            timeout=parse_timeout(plugin.default_timeout),
         )
 
         result = response.json()
@@ -229,7 +230,7 @@ def get_action_status(plugin_id: str, action_id: str, task_id: str, user: dict[s
 
     headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
-    timeout = request.args.get("max_timeout", plugin.default_timeout, type=float)
+    timeout = parse_timeout(plugin.default_timeout)
     metadata_started = monotonic()
     # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
     action = get_supported_actions(

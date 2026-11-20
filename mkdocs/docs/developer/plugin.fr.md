@@ -120,6 +120,13 @@ python plugins/setup/create.py
 
 ## Interaction avec l'API centrale
 
+L'API centrale limite le paramètre de requête `max_timeout` avec
+`api.maximum_timeout_request` (60 secondes par défaut). Les plugins limitent
+indépendamment les délais de recherche avec la variable d'environnement
+`MAX_REQUEST_TIMEOUT` (60 secondes par défaut); `MAX_TIMEOUT` reste la valeur
+par défaut en l'absence de délai demandé. Ces limites ne constituent pas une
+limite de temps totale pour l'ensemble de la requête.
+
 ### Initiation de la requête
 
 Diverses applications clientes peuvent faire des requêtes à l'API centrale, qui à son tour transmettra les requêtes à
