@@ -46,6 +46,10 @@ def plugin():
 
 
 class TestLookupErrors:
+    def test_invalid_timeout_returns_400(self, plugin):
+        response = plugin.app.test_client().get("/lookup/ipv4/1.2.3.4/?max_timeout=nan")
+        assert response.status_code == 400
+
     def test_token_error_returns_401(self, plugin):
         plugin.validate_token = _bad_token
         response = plugin.app.test_client().get("/lookup/ipv4/1.2.3.4/")
@@ -64,6 +68,10 @@ class TestLookupErrors:
 
 
 class TestBulkLookupErrors:
+    def test_invalid_timeout_returns_400(self, plugin):
+        response = plugin.app.test_client().post("/lookup/?max_timeout=inf", json=[])
+        assert response.status_code == 400
+
     def test_token_error_returns_401(self, plugin):
         plugin.validate_token = _bad_token
         response = plugin.app.test_client().post("/lookup/", json=[{"type": "ipv4", "value": "1.2.3.4"}])

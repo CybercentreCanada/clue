@@ -233,6 +233,33 @@ def test_query_result_rejects_unvalidated_item_classification(classified_result,
 
 
 @pytest.mark.parametrize("bulk", [False, True])
+def test_lookup_route_rejects_invalid_timeout(app, bulk):
+    from clue.api.v1.lookup import lookup_api
+
+    app.register_blueprint(lookup_api)
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+        app.test_client() as client,
+    ):
+        headers = {"Authorization": "Bearer test-token"}
+        if bulk:
+            response = client.post(
+                "/api/v1/lookup/enrich?max_timeout=nan",
+                headers=headers,
+                json=[{"type": "ipv4", "value": "127.0.0.1"}],
+            )
+        else:
+            response = client.get("/api/v1/lookup/enrich/ipv4/127.0.0.1/?max_timeout=nan", headers=headers)
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize("bulk", [False, True])
 @pytest.mark.parametrize("user", [None, {}, {"classification": "INVALID"}, {"classification": "NOT_A_CLASSIFICATION"}])
 def test_production_response_requires_valid_user_classification(source, user, bulk):
     source.production = True
