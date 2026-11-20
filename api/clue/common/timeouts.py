@@ -8,10 +8,8 @@ from clue.config import config
 
 def parse_timeout(timeout: float = 5.0, *, maximum: float | None = None) -> float:
     """Parse and cap the request timeout in seconds using the configured limit."""
-    # Cap the per-call maximum at the configured limit; use the configured limit if none is provided.
-    maximum = (
-        maximum if maximum and 0 < maximum <= config.api.maximum_timeout_request else config.api.maximum_timeout_request
-    )
+    # Use the caller's limit when provided; otherwise use the central API limit.
+    maximum = config.api.maximum_timeout_request if maximum is None else maximum
     user_timeout_request = request.args.get("max_timeout")
 
     try:
