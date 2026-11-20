@@ -125,5 +125,9 @@ def handle_500(e: InternalServerError):
     trace = exc_info()[2]
     log_with_traceback(trace, "Exception", is_exception=True)
 
-    message = "".join(["\n"] + format_tb(exc_info()[2]) + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]).rstrip("\n")
+    message = "An Internal Error has occurred."
+    if config.api.debug:
+        message = "".join(["\n"] + format_tb(exc_info()[2]) + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]).rstrip(
+            "\n"
+        )
     return internal_error(err=message)
