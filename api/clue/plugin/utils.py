@@ -1,3 +1,4 @@
+import math
 import os
 import time
 from datetime import datetime, timezone
@@ -5,11 +6,16 @@ from datetime import datetime, timezone
 from flask import request
 from pydantic import BaseModel
 
+from clue.common.exceptions import InvalidDataException
 from clue.common.logging import get_logger
+from clue.common.timeouts import parse_timeout
 
 # Default settings
 MAX_LIMIT = int(os.environ.get("MAX_LIMIT", 100))
 MAX_TIMEOUT = float(os.environ.get("MAX_TIMEOUT", 3))
+MAX_REQUEST_TIMEOUT = float(os.environ.get("MAX_REQUEST_TIMEOUT", 60))
+if not math.isfinite(MAX_REQUEST_TIMEOUT) or MAX_REQUEST_TIMEOUT <= 0:
+    raise ValueError("MAX_REQUEST_TIMEOUT must be a positive finite number.")
 
 logger = get_logger(__file__)
 
@@ -38,13 +44,16 @@ class Params(BaseModel):
     @classmethod
     def from_request(cls):
         "Create a Params object from flask's request object"
-        max_timeout = request.args.get("max_timeout", MAX_TIMEOUT)
+        max_timeout = parse_timeout(MAX_TIMEOUT, maximum=MAX_REQUEST_TIMEOUT)
+        now = time.time()
+        raw_deadline = request.args.get("deadline")
         try:
-            max_timeout = float(max_timeout)
-        except (ValueError, TypeError):
-            max_timeout = MAX_TIMEOUT
-
-        deadline = request.args.get("deadline", time.time() + max_timeout, type=float)
+            deadline = float(raw_deadline) if raw_deadline is not None else now + max_timeout
+        except ValueError as err:
+            raise InvalidDataException("deadline must be a finite number.", status_code=400) from err
+        if not math.isfinite(deadline):
+            raise InvalidDataException("deadline must be a finite number.", status_code=400)
+        deadline = min(deadline, now + max_timeout)
         current_time = datetime.now(timezone.utc)
         if deadline > 0 and current_time.timestamp() > deadline:
             logger.warning(

@@ -556,6 +556,12 @@ class API(BaseModel):
     session_duration: int = Field(
         description="Duration of the user session before the user has to login again", default=3600
     )
+    maximum_timeout_request: float = Field(
+        description="Maximum requested timeout in seconds for upstream requests",
+        default=60.0,
+        gt=0,
+        allow_inf_nan=False,
+    )
     validate_session_ip: bool = Field(
         description="Validate if the session IP matches the IP the session was created from", default=True
     )

@@ -16,6 +16,7 @@ from clue.common.exceptions import (
     NotFoundException,
 )
 from clue.common.logging import get_logger
+from clue.common.timeouts import parse_timeout
 from clue.config import CLASSIFICATION, config
 from clue.helper.headers import generate_headers
 from clue.helper.obo import get_obo_access_token
@@ -202,7 +203,7 @@ def run_fetcher(plugin_id: str, fetcher_id: str, user: dict[str, Any]) -> Fetche
             get_method=requests.get,
             json=parameters,
             headers=headers,
-            timeout=request.args.get("max_timeout", 60.0, type=float),
+            timeout=parse_timeout(60.0),
         )
 
         result = response.json()
@@ -253,7 +254,7 @@ def get_fetcher_status(plugin_id: str, fetcher_id: str, task_id: str, user: dict
 
     headers = generate_headers(obo_access_token=obo_access_token, access_token=access_token)
 
-    timeout = request.args.get("max_timeout", 60.0, type=float)
+    timeout = parse_timeout(60.0)
     metadata_started = monotonic()
     # Authorization metadata must stay fresh; include this lookup in the caller's timeout budget.
     fetcher = get_supported_fetchers(
