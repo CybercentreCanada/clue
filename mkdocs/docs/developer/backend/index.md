@@ -238,10 +238,12 @@ api:
   # Debugging and auditing
   debug: false # Enable Flask debug mode
   audit: true # Log API calls for auditing
-  maximum_timeout_request: 60.0 # Cap the max_timeout query parameter, in seconds
 
   # Service discovery
   discover_url: null # Optional service discovery URL
+
+  # Request limits
+  maximum_timeout_request: 60.0 # Cap the max_timeout query parameter, in seconds
 
   # Trusted UI origin used to build the OAuth redirect URI (required when OAuth is enabled).
   # Must be an http(s) origin served from the root (no path prefix, credentials, query or fragment).

@@ -244,10 +244,12 @@ api:
   # Débogage et audit
   debug: false # Activer le mode débogage Flask
   audit: true # Enregistrer les appels API pour l'audit
-  maximum_timeout_request: 60.0 # Limite du paramètre de requête max_timeout, en secondes
 
   # Découverte de service
   discover_url: null # URL de découverte de service optionnelle
+
+  # Limites de requête
+  maximum_timeout_request: 60.0 # Limite du paramètre de requête max_timeout, en secondes
 
   # Origine de confiance de l'interface, utilisée pour construire le redirect URI OAuth (requise lorsque OAuth est activé).
   # Doit être une origine http(s) servie à la racine (sans préfixe de chemin, identifiants, paramètres de requête ni fragment).
