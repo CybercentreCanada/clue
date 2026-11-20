@@ -751,7 +751,7 @@ class CluePlugin:
         # Log all API requests with method, path, status, and error (if any)
         self.logger.info(
             "%s %s - %s%s",
-            request.method,
+            sanitize_log_value(request.method),
             sanitize_log_value(request.path),
             status_code,
             f": {sanitize_log_value(err)}" if err else "",

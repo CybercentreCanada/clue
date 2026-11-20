@@ -28,8 +28,8 @@ LOG_LEVEL_MAP = {
 
 DEBUG = False
 
-# C0/C1 control characters (including CR/LF) and the unicode line/paragraph separators
-LOG_CONTROL_CHARS_REGEX = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+# C0/C1 control characters other than CR/LF, and the unicode line/paragraph separators
+LOG_CONTROL_CHARS_REGEX = re.compile(r"[\x00-\x09\x0b\x0c\x0e-\x1f\x7f-\x9f\u2028\u2029]")
 
 
 def sanitize_log_value(value: Any) -> str:
@@ -41,7 +41,9 @@ def sanitize_log_value(value: Any) -> str:
     Returns:
         str: The sanitized value.
     """
-    return LOG_CONTROL_CHARS_REGEX.sub("", str(value))
+    # Explicit newline replacement is also recognized by CodeQL's log-injection analysis.
+    value = str(value).replace("\r", "").replace("\n", "")
+    return LOG_CONTROL_CHARS_REGEX.sub("", value)
 
 
 def get_module_logger(name: str, level: int = logging.INFO) -> logging.Logger:
