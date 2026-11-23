@@ -5,7 +5,7 @@ import os
 import re
 import uuid
 from traceback import format_exception
-from typing import Optional, Self, Union
+from typing import Any, Optional, Self, Union
 
 from flask import request
 
@@ -27,6 +27,23 @@ LOG_LEVEL_MAP = {
 }
 
 DEBUG = False
+
+# C0/C1 control characters other than CR/LF, and the unicode line/paragraph separators
+LOG_CONTROL_CHARS_REGEX = re.compile(r"[\x00-\x09\x0b\x0c\x0e-\x1f\x7f-\x9f\u2028\u2029]")
+
+
+def sanitize_log_value(value: Any) -> str:
+    """Strip control characters (including CR/LF) from a value so it cannot forge log lines.
+
+    Args:
+        value (Any): The value to sanitize. Non-string values are converted using str().
+
+    Returns:
+        str: The sanitized value.
+    """
+    # Explicit newline replacement is also recognized by CodeQL's log-injection analysis.
+    value = str(value).replace("\r", "").replace("\n", "")
+    return LOG_CONTROL_CHARS_REGEX.sub("", value)
 
 
 def get_module_logger(name: str, level: int = logging.INFO) -> logging.Logger:
@@ -270,7 +287,7 @@ def dumb_log(log, msg, is_exception=False):
     if args:
         args = f"?{args}"
 
-    message = f"{msg} - {request.path}{args}"
+    message = f"{msg} - {sanitize_log_value(f'{request.path}{args}')}"
     if is_exception:
         log.exception(message)
     else:
@@ -294,7 +311,7 @@ def log_with_traceback(traceback, msg, is_exception=False, audit=False):
         try:
             message = (
                 f"{tb_user['uname']} [{tb_user['classification']}] :: {msg} - {tb_file}:{tb_function}:{tb_line_no}"
-                f"[{os.environ.get('CLUE_VERSION', '0.0.0.dev0')}] ({request.path}{args})"
+                f"[{os.environ.get('CLUE_VERSION', '0.0.0.dev0')}] ({sanitize_log_value(f'{request.path}{args}')})"
             )
             if is_exception:
                 log.exception(message)

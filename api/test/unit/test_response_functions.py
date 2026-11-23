@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from flask import Flask
 
@@ -82,3 +84,14 @@ def test_http_response_functions(request_context):
         service_unavailable_result = api.service_unavailable()
         assert service_unavailable_result.json["api_response"] == api.DEFAULT_DATA[False]
         assert service_unavailable_result.status_code == 503
+
+
+def test_response_logging_strips_newlines_from_path(request_context):
+    with (
+        request_context.test_request_context("/api/v1/missing%0a2026-01-01 INFO forged/"),
+        patch.object(api.logger, "info") as mock_info,
+    ):
+        api.not_found(err="missing")
+
+    logged_path = mock_info.call_args.args[2]
+    assert logged_path == "/api/v1/missing2026-01-01 INFO forged/"

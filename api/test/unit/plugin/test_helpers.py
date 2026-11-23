@@ -34,6 +34,18 @@ def plugin():
     )
 
 
+def test_response_log_sanitizes_method_path_and_error(plugin):
+    plugin.logger = MagicMock()
+    error = "bad\r\nerror"
+
+    with plugin.app.test_request_context("/lookup%0ainjected", environ_overrides={"REQUEST_METHOD": "GET\nINJECTED"}):
+        response = plugin.make_api_response({"ok": True}, err=error, status_code=400)
+
+    plugin.logger.info.assert_called_once_with("%s %s - %s%s", "GETINJECTED", "/lookupinjected", 400, ": baderror")
+    assert response.status_code == 400
+    assert response.get_json()["api_error_message"] == error
+
+
 # ---------------------------------------------------------------------------
 # _resolve_token
 # ---------------------------------------------------------------------------
