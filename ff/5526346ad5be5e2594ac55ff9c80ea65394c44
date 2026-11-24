@@ -1,0 +1,23 @@
+ui/src/lib/hooks/useAnnotations.test.tsx
+  s_d3c3024f903dc2::t_6c3e19c2eecc10 158
+  s_d3c3024f903dc2::t_c3653061faf1f9 112-113,115-157,159-164
+  s_d3c3024f903dc2::t_60ad0b62ae05eb 114
+ui/src/lib/hooks/useAnnotations.tsx
+  s_d3c3024f903dc2::t_b66d13cf3f8656 2,98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "ff5526346ad5be5e2594ac55ff9c80ea65394c44",
+  "prompts": {},
+  "sessions": {
+    "s_d3c3024f903dc2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df20b788fffeMCp1penVmknKMX",
+        "model": "us.anthropic.claude-sonnet-5-5"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
