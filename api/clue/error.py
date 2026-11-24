@@ -1,10 +1,10 @@
+import os
 from http.client import HTTPException
 from sys import exc_info
 from traceback import format_tb
 from typing import Union
-from uuid import uuid4
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from werkzeug.exceptions import BadRequest, Forbidden, InternalServerError, Unauthorized
 
 from clue.api import bad_request, forbidden, internal_error, not_found, unauthorized
@@ -13,7 +13,7 @@ from clue.common.exceptions import (
     AuthenticationException,
     ClueException,
 )
-from clue.common.logging import get_logger, log_with_traceback
+from clue.common.logging import get_logger, log_error, log_with_traceback
 from clue.common.logging.audit import AUDIT
 from clue.config import config
 
@@ -124,13 +124,18 @@ def handle_500(e: InternalServerError):
 
     oe = e.original_exception or e
 
-    error_id = uuid4().hex
-    trace = exc_info()[2]
-    log_with_traceback(trace, f"Exception [error_id={error_id}]", is_exception=True)
+    err_msg = f"An internal error has occurred ({oe.__class__.__name__})"
+    user = g.get("user") or {}
+    query = request.query_string.decode(errors="replace")
+    log_msg = (
+        f"{user.get('uname', '(None)')} :: {err_msg} "
+        f"[{os.environ.get('CLUE_VERSION', '0.0.0.dev0')}] ({request.path}{f'?{query}' if query else ''})"
+    )
+    err_id = log_error(logger, log_msg, exc_info=oe)
 
     if config.api.debug:
-        message = "".join(["\n"] + format_tb(trace) + [f"{oe.__class__.__name__}: {str(oe)}\n"]).rstrip("\n")
+        message = "".join(["\n"] + format_tb(oe.__traceback__) + [f"{oe.__class__.__name__}: {str(oe)}\n"]).rstrip("\n")
     else:
         # Exception messages may contain sensitive data, so only expose a reference to the server-side log entry
-        message = f"An internal error has occurred ({oe.__class__.__name__}). Reference: {error_id}"
+        message = f"{err_msg}. Error ID: {err_id}"
     return internal_error(err=message)

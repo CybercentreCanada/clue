@@ -5,6 +5,7 @@ from flask import Blueprint, Flask
 from pydantic import BaseModel
 
 import clue.api as api
+from clue.config import config
 
 
 @pytest.fixture(scope="module")
@@ -77,6 +78,11 @@ class TestMakeApiResponse:
     def test_envelope_contains_server_version(self):
         resp = api.ok()
         assert "api_server_version" in resp.json
+
+    def test_non_debug_internal_error_omits_server_version(self, monkeypatch):
+        monkeypatch.setattr(config.api, "debug", False)
+        assert "api_server_version" not in api.internal_error().json
+        assert "api_server_version" in api.ok().json
 
     def test_envelope_omits_error_when_none(self):
         # error_message defaults to "" (empty string), not None, so it is

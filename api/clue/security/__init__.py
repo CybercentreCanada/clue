@@ -3,7 +3,7 @@ from typing import Callable, Optional
 
 import requests
 from elasticapm.traces import set_user_context
-from flask import request
+from flask import g, request
 from jwt import ExpiredSignatureError
 from prometheus_client import Counter
 
@@ -174,6 +174,8 @@ class api_login(object):  # noqa: N801
 
             # Save user data in kwargs for future reference in the wrapped method
             kwargs["user"] = user
+            # Also expose it on the request context so error handlers can identify the user
+            g.user = user
 
             SUCCESSFUL_ATTEMPTS.inc()
             return func(*args, **kwargs)

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from clue.common.forge import APP_NAME
 from clue.common.logging import get_logger, log_with_traceback
 from clue.common.str_utils import safe_str
+from clue.config import config
 from clue.models.network import ClueResponse
 
 API_PREFIX = "/api"
@@ -48,7 +49,10 @@ def _make_api_response(
         ]
 
     payload = ClueResponse(response=data, error_message=err, warning=warnings, status_code=status_code).model_dump(
-        mode="json", by_alias=True, exclude_none=True
+        mode="json",
+        by_alias=True,
+        exclude_none=True,
+        exclude={"server_version"} if status_code == 500 and not config.api.debug else None,
     )
     # Keep existing endpoint serialization unchanged unless ordering is explicitly requested.
     resp = make_response(
