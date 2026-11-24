@@ -306,7 +306,13 @@ def log_with_traceback(traceback, msg, is_exception=False, audit=False):
         dumb_log(log, msg, is_exception=is_exception)
 
 
-def log_error(logger, msg, err=None, status_code=None, exc_info=False):
+def log_error(
+    logger: logging.Logger,
+    msg: str,
+    err: object = None,
+    status_code: Optional[int] = None,
+    exc_info: bool = False,
+) -> str:
     """Log a standard error string, with a unique id reference for logging."""
     err_id = str(uuid.uuid4())
     error = [msg]

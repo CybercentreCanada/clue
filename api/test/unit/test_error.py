@@ -37,8 +37,7 @@ def test_handle_500_hides_details_when_not_debug(monkeypatch):
     assert log_call.args[0] == (
         f"jdoe :: An internal error has occurred (ValueError) [1.2.3] (/api/v1/lookup?type=ip) :: {match.group(1)}"
     )
-    assert isinstance(log_call.kwargs["exc_info"], ValueError)
-    assert str(log_call.kwargs["exc_info"]) == "sensitive diagnostic"
+    assert log_call.kwargs["exc_info"] is True
 
 
 def test_handle_500_returns_traceback_when_debug(monkeypatch):

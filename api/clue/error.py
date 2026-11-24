@@ -131,7 +131,7 @@ def handle_500(e: InternalServerError):
         f"{user.get('uname', '(None)')} :: {err_msg} "
         f"[{os.environ.get('CLUE_VERSION', '0.0.0.dev0')}] ({request.path}{f'?{query}' if query else ''})"
     )
-    err_id = log_error(logger, log_msg, exc_info=oe)
+    err_id = log_error(logger, log_msg, exc_info=True)
 
     if config.api.debug:
         message = "".join(["\n"] + format_tb(oe.__traceback__) + [f"{oe.__class__.__name__}: {str(oe)}\n"]).rstrip("\n")
