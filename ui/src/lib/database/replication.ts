@@ -262,6 +262,7 @@ export const replicateSelectorCollection = async (
 
         const result = await api.sync.get<SelectorDocType>(
           collection.name,
+          pullBatchSize,
           id,
           minTimestamp,
           !lastCheckpoint,

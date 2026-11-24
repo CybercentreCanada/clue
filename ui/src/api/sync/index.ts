@@ -11,6 +11,7 @@ const uri = () => {
 
 const get = <T>(
   collection: string,
+  limit: number,
   id?: string,
   timestamp?: number,
   omitDeleted?: boolean,
@@ -18,7 +19,7 @@ const get = <T>(
 ): Promise<SyncResponse<T>> => {
   const params = new URLSearchParams();
 
-  params.set('limit', '250');
+  params.set('limit', String(limit));
 
   if (!isNil(id)) {
     params.set('id', id.toString());
