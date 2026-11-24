@@ -1,0 +1,26 @@
+ui/src/api/sync/index.ts
+  s_b12549cf37e5eb::t_e5dcda42f583d3 14,22
+ui/src/lib/database/replication.test.ts
+  s_b12549cf37e5eb::t_e5dcda42f583d3 231,248,263,285,332,334,337,340-341
+  s_b12549cf37e5eb::t_5694f9add343ed 1022,1033,1045,1062
+ui/src/lib/database/replication.ts
+  s_b12549cf37e5eb::t_e5dcda42f583d3 265
+ui/src/api/sync/index.test.ts
+  s_b12549cf37e5eb::t_3aef1b9f61f6af 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "de957f1b2bece860000496baf8171697543808bc",
+  "prompts": {},
+  "sessions": {
+    "s_b12549cf37e5eb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df1f0bc0affexCddw9UZ0C0ab9",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Matthew Rafuse <Matthew.Rafuse@cyber.gc.ca>"
+    }
+  }
+}
