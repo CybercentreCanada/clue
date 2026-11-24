@@ -90,7 +90,7 @@ class api_login(object):  # noqa: N801
         Returns:
             _type_: _description_
         """
-        from clue.common.logging import get_logger
+        from clue.common.logging import get_logger, sanitize_log_value
         from clue.common.logging.audit import audit
 
         logger = get_logger(__file__)
@@ -107,7 +107,7 @@ class api_login(object):  # noqa: N801
                 elif " " not in authorization or len(authorization.split(" ")) > 2:
                     raise InvalidDataException("Incorrectly formatted Authorization header")
 
-                logger.debug("Authenticating user for path %s", request.path)
+                logger.debug("Authenticating user for path %s", sanitize_log_value(request.path))
 
                 [auth_type, data] = authorization.split(" ")
 
@@ -131,16 +131,16 @@ class api_login(object):  # noqa: N801
                 if set(self.required_roles).isdisjoint(result.user.roles):
                     logger.warning(
                         "%s is missing one of the roles %s and cannot access %s",
-                        result.user.uname,
+                        sanitize_log_value(result.user.uname),
                         ", ".join(self.required_roles),
-                        request.path,
+                        sanitize_log_value(request.path),
                     )
                     raise AccessDeniedException("You do not have the required role to access this API.")
 
                 user = result.user.model_dump(mode="python")
 
                 ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-                logger.info(f"Logged in as {user['uname']} from {ip}")
+                logger.info(f"Logged in as {sanitize_log_value(user['uname'])} from {sanitize_log_value(ip)}")
 
                 # If auditing is enabled, write this successful access to the audit logs
                 if self.audit:

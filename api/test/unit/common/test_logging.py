@@ -1,3 +1,5 @@
+import io
+import json
 import logging
 import tempfile
 from unittest.mock import Mock, patch
@@ -14,7 +16,9 @@ from clue.common.logging import (
     init_logging,
     log_error,
     log_with_traceback,
+    sanitize_log_value,
 )
+from clue.common.logging.audit_formatter import AuditJsonFormatter
 from clue.common.logging.format import CLUE_JSON_FORMAT
 
 
@@ -538,3 +542,85 @@ class TestLogError:
 
         # Verify it's separated by " :: "
         assert " :: " in call_args[0]
+
+
+@pytest.fixture
+def audit_output():
+    """Capture audit logger output with the given formatter."""
+    from clue.common.logging import audit as audit_module
+
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    original_level = audit_module.AUDIT_LOG.level
+    audit_module.AUDIT_LOG.addHandler(handler)
+    audit_module.AUDIT_LOG.setLevel(logging.DEBUG)
+
+    yield handler, stream
+
+    audit_module.AUDIT_LOG.removeHandler(handler)
+    audit_module.AUDIT_LOG.setLevel(original_level)
+
+
+def test_sanitize_log_value_strips_control_characters():
+    assert sanitize_log_value("a\r\nb\x00c\x1bd\x85e\u2028f\u2029g\th") == "abcdefgh"
+    assert sanitize_log_value(None) == "None"
+
+
+def test_audit_json_output_cannot_be_forged(flask_app, audit_output):
+    from clue.common.logging import audit as audit_module
+
+    handler, stream = audit_output
+    handler.setFormatter(AuditJsonFormatter())
+    injection = 'x", "user": "admin"}\r\n{"forged": "line'
+
+    with (
+        flask_app.test_request_context("/api/v1/lookup/%0a%22forged%22/", query_string={"query": injection}),
+        patch.object(audit_module, "DEBUG", False),
+    ):
+        audit_module.audit(
+            [],
+            {},
+            {"uname": "goose\n", "classification": "TLP:CLEAR"},
+            test_sanitize_log_value_strips_control_characters,
+        )
+
+    lines = stream.getvalue().splitlines()
+    assert len(lines) == 1
+    record = json.loads(lines[0])
+    assert record["user"] == "goose"
+    assert record["path"] == '/api/v1/lookup/"forged"/'
+    assert "forged" not in record
+    assert 'query=\'x", "user": "admin"}{"forged": "line\'' in record["function"]
+
+
+def test_audit_plain_text_output_cannot_forge_lines(flask_app, audit_output):
+    from clue.common.logging import audit as audit_module
+
+    handler, stream = audit_output
+    handler.setFormatter(logging.Formatter("%(message)s"))
+
+    with (
+        flask_app.test_request_context("/api/v1/lookup/", query_string={"query": "a\r\nFAKE goose - admin()"}),
+        patch.object(audit_module, "DEBUG", True),
+    ):
+        audit_module.audit(
+            [], {}, {"uname": "goose", "classification": "TLP:CLEAR"}, test_audit_plain_text_output_cannot_forge_lines
+        )
+
+    assert stream.getvalue().splitlines() == [
+        "goose [TLP:CLEAR]- test_audit_plain_text_output_cannot_forge_lines(query='aFAKE goose - admin()')"
+    ]
+
+
+def test_audit_logger_sanitizes_records_logged_without_audit_fields(flask_app, audit_output):
+    """log_with_traceback(audit=True) logs to the audit logger without the audit extra fields."""
+    from clue.common.logging import audit as audit_module
+
+    handler, stream = audit_output
+    handler.setFormatter(AuditJsonFormatter())
+
+    audit_module.AUDIT_LOG.warning("Access Denied. [%s]", "bad\nreason")
+
+    record = json.loads(stream.getvalue())
+    assert record["message"] == "Access Denied. [badreason]"
+    assert record["path"] == "N/A"

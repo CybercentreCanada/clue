@@ -238,3 +238,18 @@ def test_config_requires_frontend_url_when_oauth_enabled():
 
 def test_config_does_not_require_frontend_url_when_oauth_disabled():
     Config.model_construct(api=API(), auth=Auth(oauth=OAuth(enabled=False))).validate_oauth_frontend_url()
+
+
+def test_type_cache_hmac_secret_is_optional_and_loads_from_environment(monkeypatch):
+    assert API().type_cache_hmac_secret is None
+    monkeypatch.setenv("API__TYPE_CACHE_HMAC_SECRET", "ab" * 32)
+    assert Config().api.type_cache_hmac_secret.get_secret_value() == "ab" * 32
+
+
+@pytest.mark.parametrize("secret", ["", "a" * 63, "a" * 66, "z" * 64, "a" * 62 + "  "])
+def test_type_cache_hmac_secret_rejects_invalid_values_without_exposing_them(monkeypatch, secret):
+    monkeypatch.setenv("API__TYPE_CACHE_HMAC_SECRET", secret)
+    with pytest.raises(ValidationError, match="type_cache_hmac_secret") as error:
+        Config()
+    if secret:
+        assert secret not in str(error.value)

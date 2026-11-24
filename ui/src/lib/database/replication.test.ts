@@ -228,6 +228,7 @@ describe('replicateSelectorCollection', () => {
 
       expect(api.sync.get).toHaveBeenCalledWith(
         'selectors',
+        250,
         null,
         0,
         true,
@@ -244,6 +245,7 @@ describe('replicateSelectorCollection', () => {
 
       expect(api.sync.get).toHaveBeenCalledWith(
         'selectors',
+        250,
         'abc-123',
         1700000000,
         false,
@@ -258,7 +260,7 @@ describe('replicateSelectorCollection', () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
       await capturedConfig.pull.handler(null);
 
-      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
+      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][5] as AxiosRequestConfig;
       expect(calledConfig.headers!.Authorization).toBe('Bearer pull-token');
     });
 
@@ -280,7 +282,7 @@ describe('replicateSelectorCollection', () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
       await capturedConfig.pull.handler(null);
 
-      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
+      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][5] as AxiosRequestConfig;
       expect(calledConfig.withCredentials).toBe(true);
     });
 
@@ -327,14 +329,16 @@ describe('replicateSelectorCollection', () => {
       expect(collection.synced).toBe(false);
     });
 
-    it('should use the configured pull batch size to determine when the collection is synced', async () => {
+    it('should use the configured pull batch size for the request limit and sync completion', async () => {
       const collection = buildMockCollection();
-      const docs = Array.from({ length: 100 }, (_, i) => buildSelectorDoc(`doc-${i}`));
+      const docs = Array.from({ length: 1000 }, (_, i) => buildSelectorDoc(`doc-${i}`));
       vi.mocked(api.sync.get).mockResolvedValueOnce(docs);
 
-      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig({ pullBatchSize: 100 }));
+      await replicateSelectorCollection(DUMMY_ID, collection, buildMockConfig({ pullBatchSize: 1000 }));
       await capturedConfig.pull.handler(null);
 
+      expect(capturedConfig.pull.batchSize).toBe(1000);
+      expect(api.sync.get).toHaveBeenCalledWith('selectors', 1000, null, 0, true, expect.any(Object));
       expect(collection.synced).toBe(false);
     });
   });
@@ -1015,7 +1019,7 @@ describe('replicateSelectorCollection', () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
       await capturedConfig.pull.handler(null);
 
-      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
+      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][5] as AxiosRequestConfig;
       expect(calledConfig.baseURL).toBe('https://custom.api.com');
     });
 
@@ -1026,7 +1030,7 @@ describe('replicateSelectorCollection', () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
       await capturedConfig.pull.handler(null);
 
-      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
+      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][5] as AxiosRequestConfig;
       expect(calledConfig.headers).toBeDefined();
       expect(calledConfig.headers!.Authorization).toBeUndefined();
     });
@@ -1038,7 +1042,7 @@ describe('replicateSelectorCollection', () => {
       await replicateSelectorCollection(DUMMY_ID, buildMockCollection(), config);
       await capturedConfig.pull.handler(null);
 
-      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
+      const calledConfig = vi.mocked(api.sync.get).mock.calls[0][5] as AxiosRequestConfig;
       expect(calledConfig.baseURL).toBe('http://localhost:5000');
     });
 
@@ -1055,7 +1059,7 @@ describe('replicateSelectorCollection', () => {
       await capturedConfig.pull.handler(null);
       await capturedConfig.push.handler([]);
 
-      const pullConfig = vi.mocked(api.sync.get).mock.calls[0][4] as AxiosRequestConfig;
+      const pullConfig = vi.mocked(api.sync.get).mock.calls[0][5] as AxiosRequestConfig;
       const pushConfig = vi.mocked(api.sync.post).mock.calls[0][2] as AxiosRequestConfig;
 
       expect(pullConfig.baseURL).toBe(pushConfig.baseURL);

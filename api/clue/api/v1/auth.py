@@ -21,7 +21,7 @@ from clue.common.exceptions import (
     ClueValueError,
     InvalidDataException,
 )
-from clue.common.logging import get_logger
+from clue.common.logging import get_logger, sanitize_log_value
 from clue.common.str_utils import default_string_value
 from clue.common.swagger import generate_swagger_docs
 from clue.config import config
@@ -87,12 +87,13 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
         data = request.values
 
     # Get the ip the request came from - used in logging later
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    ip = sanitize_log_value(request.headers.get("X-Forwarded-For", request.remote_addr))
 
     # Get the data from the request
     # TODO: Figure out how to fix this inconsistency
     oauth_provider = data.get("provider", data.get("oauth_provider", None))
     user = data.get("user", None)
+    log_user = sanitize_log_value(user)
     data.get("password", None)
     data.get("apikey", None)
 
@@ -211,23 +212,23 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
     # For sanity's sake, we throw exceptions throughout the authentication code and simply catch the exceptions here to
     # return the corresponding HTTP Code to the user
     except (OAuthError, AuthenticationException) as err:
-        logger.warning(f"Authentication failure. (U:{user} - IP:{ip}) [{err}]")
+        logger.warning(f"Authentication failure. (U:{log_user} - IP:{ip}) [{sanitize_log_value(err)}]")
         return unauthorized(err=str(err))
 
     except AccessDeniedException as err:
-        logger.warning(f"Authorization failure. (U:{user} - IP:{ip}) [{err}]")
+        logger.warning(f"Authorization failure. (U:{log_user} - IP:{ip}) [{sanitize_log_value(err)}]")
         return forbidden(err=err.message)
 
     except InvalidDataException as err:
         return bad_request(err=err.message or str(err))
 
     except ClueException:
-        logger.exception(f"Internal Authentication Error. (U:{user} - IP:{ip})")
+        logger.exception(f"Internal Authentication Error. (U:{log_user} - IP:{ip})")
         return internal_error(
             err="Unhandled exception occured while Authenticating. Contact your administrator.",
         )
 
-    logger.info(f"Login successful. (U:{logged_in_uname} - IP:{ip})")
+    logger.info(f"Login successful. (U:{sanitize_log_value(logged_in_uname)} - IP:{ip})")
 
     xsrf_token = generate_random_secret()
 

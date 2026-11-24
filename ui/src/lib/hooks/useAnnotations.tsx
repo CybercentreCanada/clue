@@ -1,4 +1,5 @@
 import type { Annotation, WithExtra } from 'lib/types/lookup';
+import escapeRegExp from 'lodash-es/escapeRegExp';
 import uniqBy from 'lodash-es/uniqBy';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { ClueDatabaseContext } from './ClueDatabaseContext';
@@ -94,7 +95,7 @@ const useAnnotations = (
           $or: [
             {
               // Use regex instead of exact value for case-insensitivity
-              value: { $regex: `^${value}$`, $options: 'i' }
+              value: { $regex: `^${escapeRegExp(value)}$`, $options: 'i' }
             },
             {
               value

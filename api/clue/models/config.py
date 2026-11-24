@@ -1,5 +1,6 @@
 # ruff: noqa: D101
 import os
+import re
 from email.utils import parseaddr
 from enum import Enum
 from pathlib import Path
@@ -13,6 +14,7 @@ from pydantic import (
     Field,
     HttpUrl,
     IPvAnyNetwork,
+    SecretStr,
     TypeAdapter,
     ValidationInfo,
     field_validator,
@@ -38,6 +40,7 @@ DEFAULT_USER_FIELDS = ["uname", "preferred_username", "upn"]
 DEFAULT_USER_NAME_FIELDS = ["name", "displayName"]
 APP_NAME = default_string_value(env_name="APP_NAME", default="clue").replace("-dev", "")  # type: ignore[union-attr]
 CLASSIFICATION = forge.get_classification()
+HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 
 logger = get_module_logger("clue.models.config")
 
@@ -563,6 +566,8 @@ class UI(BaseModel):
 
 
 class API(BaseModel):
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     audit: bool = Field(description="Should API calls be audited and saved to a separate log file?", default=True)
     debug: bool = Field(description="Enable debugging?", default=False)
     discover_url: str | None = Field(description="Discover URL", default=None)
@@ -571,6 +576,12 @@ class API(BaseModel):
         default=None,
     )
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
+    maximum_timeout_request: float = Field(
+        description="Maximum requested timeout in seconds for upstream requests",
+        default=60.0,
+        gt=0,
+        allow_inf_nan=False,
+    )
     registration_allowed_origins: list[str] = Field(
         description="Exact URL origins permitted for runtime external source registration", default=[]
     )
@@ -588,6 +599,17 @@ class API(BaseModel):
     validate_session_xsrf_token: bool = Field(
         description="Validate if the XSRF token matches the randomly generated token for the session", default=True
     )
+    type_cache_hmac_secret: SecretStr | None = Field(
+        description="Optional 32-byte hex secret for HMAC-based plugin type cache keys.", default=None
+    )
+
+    @field_validator("type_cache_hmac_secret")
+    @classmethod
+    def validate_type_cache_hmac_secret(cls, secret: SecretStr | None) -> SecretStr | None:
+        """Validate the optional HMAC key without exposing it in errors."""
+        if secret is not None and not HEX64.fullmatch(secret.get_secret_value()):
+            raise ValueError("type_cache_hmac_secret must be exactly 32 bytes encoded as hexadecimal")
+        return secret
 
     @field_validator("frontend_url")
     @classmethod
@@ -708,6 +730,7 @@ class Config(BaseSettings):
         yaml_file_encoding="utf-8",
         strict=True,
         env_nested_delimiter="__",
+        hide_input_in_errors=True,
     )
 
     @model_validator(mode="after")

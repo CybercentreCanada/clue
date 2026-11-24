@@ -1,3 +1,5 @@
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from unittest.mock import Mock, patch
 
 import pytest
@@ -233,6 +235,33 @@ def test_query_result_rejects_unvalidated_item_classification(classified_result,
 
 
 @pytest.mark.parametrize("bulk", [False, True])
+def test_lookup_route_rejects_invalid_timeout(app, bulk):
+    from clue.api.v1.lookup import lookup_api
+
+    app.register_blueprint(lookup_api)
+    auth_result = AuthResult(
+        user=AuthUser(uname="test-user", classification="TLP:CLEAR"),
+        privileges={Privilege.READ, Privilege.WRITE},
+    )
+    with (
+        patch("clue.security.auth_service.bearer_auth", return_value=auth_result),
+        patch.object(config.api, "audit", False),
+        patch.object(config.ui, "replication", False),
+        app.test_client() as client,
+    ):
+        headers = {"Authorization": "Bearer test-token"}
+        if bulk:
+            response = client.post(
+                "/api/v1/lookup/enrich?max_timeout=nan",
+                headers=headers,
+                json=[{"type": "ipv4", "value": "127.0.0.1"}],
+            )
+        else:
+            response = client.get("/api/v1/lookup/enrich/ipv4/127.0.0.1/?max_timeout=nan", headers=headers)
+    assert response.status_code == 400
+
+
+@pytest.mark.parametrize("bulk", [False, True])
 @pytest.mark.parametrize("user", [None, {}, {"classification": "INVALID"}, {"classification": "NOT_A_CLASSIFICATION"}])
 def test_production_response_requires_valid_user_classification(source, user, bulk):
     source.production = True
@@ -275,6 +304,71 @@ def test_query_external_filters_items_by_user_classification(app, source, classi
     assert result is not None
     assert result.error is None
     assert [item.classification for item in result.items] == ["TLP:CLEAR", "TLP:GREEN"]
+
+
+def test_query_external_reuses_one_client_regardless_of_timeout(app, source):
+    """Varying the user-supplied timeout must not grow the per-process session cache."""
+    response = Mock(status_code=200)
+    response.json.return_value = {"api_response": []}
+
+    with (
+        app.test_request_context(),
+        patch.dict(lookup_service.CLIENTS, clear=True),
+        patch.object(config.api, "audit", False),
+        patch(
+            "clue.services.lookup_service.type_service.get_supported_types",
+            return_value={"ipv4": "TLP:CLEAR"},
+        ),
+        patch("clue.services.lookup_service.user_service.check_quota", return_value=None),
+        patch("clue.services.lookup_service.user_service.release_quota"),
+        patch("clue.services.lookup_service.generate_headers", return_value={}),
+        patch("clue.services.lookup_service.request_with_safe_redirects", return_value=response) as mock_request,
+    ):
+        for timeout in (1.0, 1.0001, 2.5, 30.0):
+            lookup_service.query_external(
+                {"classification": "TLP:CLEAR"}, source, "ipv4", "127.0.0.1", 10, timeout, "token", None
+            )
+
+        assert len(lookup_service.CLIENTS) == 1
+        assert [call.kwargs["timeout"] for call in mock_request.call_args_list] == [
+            (1.0, 3.0),
+            (1.0001, 1.0001 * 3),
+            (2.5, 7.5),
+            (30.0, 90.0),
+        ]
+
+
+def test_get_client_does_not_share_cookies_between_requests():
+    """Plugin-set cookies must not leak from one user's request into another's on the shared session."""
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):  # noqa: N802
+            body = (self.headers.get("Cookie") or "").encode()
+            self.send_response(200)
+            self.send_header("Set-Cookie", "session=user-a; Path=/")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_port}/"
+
+    try:
+        with patch.dict(lookup_service.CLIENTS, clear=True):
+            client = lookup_service.get_client(url)
+            client.get(url, timeout=5)
+            second = client.get(url, timeout=5)
+
+            assert second.text == ""
+            assert len(client.cookies) == 0
+    finally:
+        server.shutdown()
+        server.server_close()
 
 
 @pytest.mark.parametrize("bulk", [False, True])

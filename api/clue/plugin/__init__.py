@@ -25,6 +25,7 @@ from clue.common.exceptions import (
     TimeoutException,
     UnprocessableException,
 )
+from clue.common.logging import sanitize_log_value
 from clue.common.logging.format import CLUE_DATE_FORMAT, CLUE_LOG_FORMAT
 from clue.models.actions import (
     Action,
@@ -748,7 +749,13 @@ class CluePlugin:
             data = data.model_dump(mode="json", exclude_none=True)
 
         # Log all API requests with method, path, status, and error (if any)
-        self.logger.info("%s %s - %s%s", request.method, request.path, status_code, f": {err}" if err else "")
+        self.logger.info(
+            "%s %s - %s%s",
+            sanitize_log_value(request.method),
+            sanitize_log_value(request.path),
+            status_code,
+            f": {sanitize_log_value(err)}" if err else "",
+        )
 
         return make_response(
             jsonify(
@@ -903,6 +910,8 @@ class CluePlugin:
 
         try:
             params = Params.from_request()
+        except InvalidDataException as e:
+            return self.make_api_response(None, str(e), 400)
         except RuntimeError as e:
             self.logger.exception("Error on params parsing.")
 
@@ -1001,6 +1010,8 @@ class CluePlugin:
 
         try:
             params = Params.from_request()
+        except InvalidDataException as e:
+            return self.make_api_response(None, str(e), 400)
         except RuntimeError as e:
             return self.make_api_response(None, str(e), 504)
 

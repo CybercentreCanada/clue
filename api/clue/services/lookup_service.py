@@ -5,7 +5,7 @@ import math
 import os
 import time
 from datetime import datetime, timedelta, timezone
-from hashlib import sha256
+from http.cookiejar import DefaultCookiePolicy
 from typing import Any, Optional
 
 from elasticapm.traces import Transaction, capture_span, execution_context
@@ -23,6 +23,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger, log_error
 from clue.common.logging.audit import audit
+from clue.common.timeouts import parse_timeout
 from clue.config import CLASSIFICATION as CLASSIFICATION
 from clue.config import DEBUG, config
 from clue.helper.headers import generate_headers
@@ -37,22 +38,22 @@ logger = get_logger(__file__)
 CLIENTS: dict[str, Session] = {}
 
 
-def get_client(base_url: str, timeout: float) -> Session:
+def get_client(base_url: str) -> Session:
     """Gets or creates a requests session for the provided base_url.
+
+    Sessions are shared across users, so they hold no credentials and reject any cookies set by the source.
 
     Args:
         base_url (str): The base url of the desired client.
-        timeout (float): The connection and network timeout to use (is multiplied by 3).
 
     Returns:
         Session: The requests Session instance matching the provided base_url.
     """
-    client_hash = sha256(base_url.encode())
-    client_hash.update(str(timeout).encode())
-    client_key = client_hash.hexdigest()
-
-    if client_key not in CLIENTS:
+    if base_url not in CLIENTS:
         session = Session()
+        # Sessions are shared across users, so never persist cookies set by plugins
+        session.cookies.set_policy(DefaultCookiePolicy(allowed_domains=[]))
+
         # Configure connection pool with HTTPAdapter
         pool_connections = math.floor(int(os.environ.get("EXECUTOR_THREADS", 32)) / 2)
 
@@ -66,9 +67,9 @@ def get_client(base_url: str, timeout: float) -> Session:
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
-        CLIENTS[client_key] = session
+        CLIENTS[base_url] = session
 
-    return CLIENTS[client_key]
+    return CLIENTS[base_url]
 
 
 def build_result(
@@ -130,23 +131,6 @@ class ParsedParams(BaseModel):
     include_raw: bool
     exclude_unset: bool
     no_cache: bool
-
-
-def parse_timeout(timeout: float = 5.0) -> float:
-    """Gets the max_timeout value from the request object, otherwise uses the provided timeout.
-
-    Args:
-        timeout (float, optional): The timeout to use if no max_timeout is provided in the request. Defaults to 5.0.
-
-    Returns:
-        float: The parsed max_timeout value.
-    """
-    try:
-        max_timeout = request.args.get("max_timeout", timeout, type=float)
-    except (ValueError, TypeError):
-        max_timeout = timeout
-
-    return max_timeout
 
 
 def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):
@@ -418,7 +402,7 @@ def query_external(
         try:
             with capture_span(url, "http"):
                 rsp = request_with_safe_redirects(
-                    get_client(source.url, timeout).get,
+                    get_client(source.url).get,
                     url,
                     params=generate_params(limit, timeout, no_annotation, include_raw, no_cache),
                     headers=generate_headers(obo_access_token=obo_access_token, access_token=access_token),
@@ -640,7 +624,7 @@ def bulk_query_external(  # noqa: C901
         rsp: Response | None = None
         try:
             with capture_span(url, "http"):
-                client = get_client(source.url, timeout)
+                client = get_client(source.url)
                 rsp = request_with_safe_redirects(
                     client.post,
                     url,
