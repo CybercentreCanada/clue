@@ -9,7 +9,7 @@ from pydantic import ValidationError
 import clue.services.user_service as user_service
 from clue.api import ok
 from clue.common.exceptions import AuthenticationException, ClueValueError, InvalidDataException
-from clue.common.logging import get_logger
+from clue.common.logging import get_logger, sanitize_log_value
 from clue.common.str_utils import default_string_value
 from clue.config import config
 from clue.constants.oauth import OAUTH_PROVIDER_PARAMS
@@ -99,7 +99,7 @@ def requests_openid(provider: ClueOAuth2App) -> bool:
 
 def client_ip() -> Optional[str]:
     """The client IP address, for logging."""
-    return request.headers.get("X-Forwarded-For", request.remote_addr)
+    return sanitize_log_value(request.headers.get("X-Forwarded-For", request.remote_addr))
 
 
 def authenticated_response(oauth_provider: str, token_data: Mapping[str, Any], identity_data: Mapping[str, Any]) -> Any:
@@ -113,7 +113,7 @@ def authenticated_response(oauth_provider: str, token_data: Mapping[str, Any], i
     except ValidationError as e:
         raise AuthenticationException("The OAuth provider returned invalid user information.") from e
 
-    logger.info(f"Login successful. (U:{cur_user.uname} - IP:{client_ip()})")
+    logger.info(f"Login successful. (U:{sanitize_log_value(cur_user.uname)} - IP:{client_ip()})")
 
     return ok(
         {

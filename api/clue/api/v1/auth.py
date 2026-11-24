@@ -22,7 +22,7 @@ from clue.common.exceptions import (
     ClueException,
     InvalidDataException,
 )
-from clue.common.logging import get_logger
+from clue.common.logging import get_logger, sanitize_log_value
 from clue.common.swagger import generate_swagger_docs
 from clue.constants.oauth import OAUTH_CALLBACK_MARKERS, OAUTH_CALLBACK_PARAMS, OAUTH_PROVIDER_PARAMS
 from clue.helper.oauth_login import (
@@ -138,10 +138,10 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
         )
         return unauthorized(err="Authentication failed.")
     except AuthenticationException as err:
-        logger.warning(f"Authentication failure. (IP:{client_ip()}) [{err}]")
+        logger.warning(f"Authentication failure. (IP:{client_ip()}) [{sanitize_log_value(err)}]")
         return unauthorized(err=str(err))
     except AccessDeniedException as err:
-        logger.warning(f"Authorization failure. (IP:{client_ip()}) [{err}]")
+        logger.warning(f"Authorization failure. (IP:{client_ip()}) [{sanitize_log_value(err)}]")
         return forbidden(err=err.message)
     except InvalidDataException as err:
         return bad_request(err=err.message or str(err))
@@ -211,10 +211,10 @@ def refresh(**_) -> dict[str, Any]:  # noqa: C901
         )
         return unauthorized(err="Authentication failed.")
     except AuthenticationException as err:
-        logger.warning(f"Authentication failure. (IP:{client_ip()}) [{err}]")
+        logger.warning(f"Authentication failure. (IP:{client_ip()}) [{sanitize_log_value(err)}]")
         return unauthorized(err=str(err))
     except AccessDeniedException as err:
-        logger.warning(f"Authorization failure. (IP:{client_ip()}) [{err}]")
+        logger.warning(f"Authorization failure. (IP:{client_ip()}) [{sanitize_log_value(err)}]")
         return forbidden(err=err.message)
     except InvalidDataException as err:
         return bad_request(err=err.message or str(err))

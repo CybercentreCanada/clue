@@ -1,11 +1,13 @@
 import logging
 import os
 import sys
+from typing import Any, Iterable
 
 from flask import request
 
+from clue.common.logging import sanitize_log_value
+from clue.common.logging.audit_formatter import AuditJsonFormatter, AuditSanitizeFilter
 from clue.common.logging.format import (
-    CLUE_AUDIT_FORMAT,
     CLUE_DATE_FORMAT,
     CLUE_ISO_DATE_FORMAT,
     CLUE_LOG_FORMAT,
@@ -54,8 +56,17 @@ AUDIT_KW_TARGET = [
     "value",
 ]
 
+
+def _get_audit_formatter() -> logging.Formatter:
+    if DEBUG:
+        return logging.Formatter(CLUE_LOG_FORMAT, CLUE_DATE_FORMAT)
+
+    return AuditJsonFormatter(datefmt=CLUE_ISO_DATE_FORMAT)
+
+
 AUDIT_LOG = logging.getLogger("clue.api.audit")
 AUDIT_LOG.propagate = False
+AUDIT_LOG.addFilter(AuditSanitizeFilter())
 
 if AUDIT:
     AUDIT_LOG.setLevel(logging.DEBUG)
@@ -68,22 +79,12 @@ if config.logging.log_to_file:
     # Setup a handler to emit logs to disk
     fh = logging.FileHandler(os.path.join(config.logging.log_directory, "clue_audit.log"))
     fh.setLevel(logging.DEBUG)
-    fh.setFormatter(
-        logging.Formatter(
-            CLUE_LOG_FORMAT if DEBUG else CLUE_AUDIT_FORMAT,
-            CLUE_DATE_FORMAT if DEBUG else CLUE_ISO_DATE_FORMAT,
-        )
-    )
+    fh.setFormatter(_get_audit_formatter())
     AUDIT_LOG.addHandler(fh)
 
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.INFO)
-ch.setFormatter(
-    logging.Formatter(
-        CLUE_LOG_FORMAT if DEBUG else CLUE_AUDIT_FORMAT,
-        CLUE_DATE_FORMAT if DEBUG else CLUE_ISO_DATE_FORMAT,
-    )
-)
+ch.setFormatter(_get_audit_formatter())
 AUDIT_LOG.addHandler(ch)
 
 #########################
@@ -104,20 +105,23 @@ def audit(args, kwargs, user, func, impersonator=None):
     except Exception:
         json_blob = {}
 
+    def format_params(items: Iterable[tuple[str, Any]]) -> list[str]:
+        return ["%s='%s'" % (k, sanitize_log_value(v)) for k, v in items if k in AUDIT_KW_TARGET]
+
     try:
-        req_args = ["%s='%s'" % (k, v) for k, v in request.args.items() if k in AUDIT_KW_TARGET]
+        req_args = format_params(request.args.items())
         method = request.method
-        path = request.path
+        path = sanitize_log_value(request.path)
     except RuntimeError:
         req_args = []
         method = "N/A"
         path = "N/A"
 
     params_list = (
-        list(args)
-        + ["%s='%s'" % (k, v) for k, v in kwargs.items() if k in AUDIT_KW_TARGET]
+        [sanitize_log_value(arg) for arg in args]
+        + format_params(kwargs.items())
         + req_args
-        + ["%s='%s'" % (k, v) for k, v in json_blob.items() if k in AUDIT_KW_TARGET]
+        + format_params(json_blob.items())
     )
 
     if impersonator:

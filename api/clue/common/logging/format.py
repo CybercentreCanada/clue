@@ -1,5 +1,3 @@
-import json
-
 from clue.common.str_utils import default_string_value
 
 hostname = "unknownhost"
@@ -26,17 +24,3 @@ CLUE_JSON_FORMAT = (
     f'"message": %(message)s}}'
 )
 CLUE_ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S%z"
-CLUE_AUDIT_FORMAT = json.dumps(
-    {
-        "date": "%(asctime)s",
-        "type": "audit",
-        "app_name": APP_NAME,
-        "api": f"{APP_NAME}.api.audit",
-        "severity": "%(levelname)s",
-        "user": "%(user)s",
-        "classification": "%(classification)s",
-        "function": "%(function)s",
-        "method": "%(method)s",
-        "path": "%(path)s",
-    }
-).replace('"msg"', "%(message)s")
