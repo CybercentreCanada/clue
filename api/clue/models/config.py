@@ -216,17 +216,14 @@ class APIKeyLockout(BaseModel):
     max_failures_per_ip: int = Field(
         default=10, ge=1, description="Failed API key attempts allowed per client IP before it is locked out"
     )
-    max_failures_per_key: int = Field(
-        default=50,
-        ge=1,
-        description="Failed API key attempts allowed per submitted key name before that name is locked out for "
-        "window_seconds",
-    )
     window_seconds: int = Field(
-        default=900, ge=1, description="How long failed attempts are remembered, and the initial lockout duration"
+        default=900, ge=1, description="Window in which failed attempts are counted, and the first lockout duration"
     )
     max_lockout_seconds: int = Field(
-        default=86400, ge=1, description="Upper bound for the exponentially growing per-IP lockout duration"
+        default=86400,
+        ge=1,
+        description="Upper bound for the lockout duration, which doubles with each repeated lockout of the same IP. "
+        "Repeated lockouts are forgotten after this long without a new one.",
     )
     trusted_proxies: list[IPvAnyNetwork] = Field(
         default=[],

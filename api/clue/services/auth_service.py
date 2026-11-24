@@ -171,32 +171,32 @@ def bearer_auth(data: str) -> AuthResult:
         raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
-# Atomically checks and updates both failure counters so concurrent requests can't slip past the limit.
-# KEYS: client IP counter, key name counter. ARGV: IP limit, key limit, window, max lockout, failed (0/1).
-# Every attempt made while locked out counts against the IP the same way, right secret or not, so the counters
-# can't be used to test guesses. The IP lockout doubles on each of those attempts. The key name lockout is a fixed
-# window that is only counted from IPs that aren't locked out and that blocked attempts don't extend.
+# Atomically checks and updates the client IP's lockout state so concurrent requests can't slip past the limit.
+# KEYS: lockout flag, failure counter, lockout counter. ARGV: max failures, window, max lockout, failed (0/1).
+# While locked out, attempts are neither checked nor counted, so a lockout can't be extended (by retries or
+# otherwise) and can't be used to test guesses. Each repeated lockout of the same IP doubles in length.
 _APIKEY_LOCKOUT_SCRIPT = """
-local ip_limit, key_limit = tonumber(ARGV[1]), tonumber(ARGV[2])
-local window, max_lockout = tonumber(ARGV[3]), tonumber(ARGV[4])
-local ip_count = tonumber(redis.call('GET', KEYS[1]) or '0')
-local key_count = tonumber(redis.call('GET', KEYS[2]) or '0')
-local blocked = ip_count >= ip_limit or key_count >= key_limit
-
-if blocked or ARGV[5] == '1' then
-    ip_count = redis.call('INCR', KEYS[1])
-    local excess = math.min(math.max(ip_count - ip_limit, 0), 32)
-    redis.call('EXPIRE', KEYS[1], math.floor(math.min(window * 2 ^ excess, max_lockout)))
+if redis.call('EXISTS', KEYS[1]) == 1 then
+    return 1
 end
 
-if not blocked and ARGV[5] == '1' then
-    key_count = redis.call('INCR', KEYS[2])
-    if key_count == 1 or key_count >= key_limit then
+if ARGV[4] == '1' then
+    local max_failures, window, max_lockout = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
+    local failures = redis.call('INCR', KEYS[2])
+    if failures == 1 then
         redis.call('EXPIRE', KEYS[2], window)
+    end
+
+    if failures >= max_failures then
+        redis.call('DEL', KEYS[2])
+        local lockouts = redis.call('INCR', KEYS[3])
+        local duration = math.floor(math.min(window * 2 ^ math.min(lockouts - 1, 32), max_lockout))
+        redis.call('SET', KEYS[1], '1', 'EX', duration)
+        redis.call('EXPIRE', KEYS[3], duration + max_lockout)
     end
 end
 
-return blocked and 1 or 0
+return 0
 """
 _apikey_lockout_script = redis.register_script(_APIKEY_LOCKOUT_SCRIPT)
 
@@ -236,30 +236,22 @@ def _get_client_ip() -> str:
     return str(client)
 
 
-def _get_apikey_failure_keys(name: str) -> list[str]:
-    """Get the Redis failure counter keys for the client IP and the submitted key name, existing or not."""
-    return [
-        f"apikey_failures_{hashlib.sha256(k.encode('utf-8', errors='replace')).hexdigest()}"
-        for k in (f"ip_{_get_client_ip()}", f"key_{name}")
-    ]
+def _get_apikey_lockout_keys() -> list[str]:
+    """Get the Redis lockout flag, failure counter and lockout counter keys for the client IP."""
+    ip_hash = hashlib.sha256(_get_client_ip().encode("utf-8", errors="replace")).hexdigest()
+    return [f"apikey_{kind}_{ip_hash}" for kind in ("lockout", "failures", "lockouts")]
 
 
-def _is_apikey_locked_out(name: str, failed: bool) -> bool:
-    """Check whether API key attempts are locked out, counting this attempt if it failed."""
+def _is_apikey_locked_out(failed: bool) -> bool:
+    """Check whether the client IP is locked out of API key authentication, counting this attempt if it failed."""
     lockout = config.auth.apikey_lockout
     if not lockout.enabled:
         return False
 
     return bool(
         _apikey_lockout_script(
-            keys=_get_apikey_failure_keys(name),
-            args=[
-                lockout.max_failures_per_ip,
-                lockout.max_failures_per_key,
-                lockout.window_seconds,
-                lockout.max_lockout_seconds,
-                int(failed),
-            ],
+            keys=_get_apikey_lockout_keys(),
+            args=[lockout.max_failures_per_ip, lockout.window_seconds, lockout.max_lockout_seconds, int(failed)],
         )
     )
 
@@ -275,7 +267,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
     Raises:
         AccessDeniedException: If API-key authentication is disabled, the key is invalid, or required identity
             headers are absent.
-        TooManyRequestsException: If the client or submitted key name is locked out after repeated failures.
+        TooManyRequestsException: If the client IP is locked out after repeated failures.
 
     Returns:
         The authenticated user and effective privileges.
@@ -289,8 +281,8 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
         secret_matches = hmac.compare_digest(_secret_digest(expected_secret), _secret_digest(apikey))
         failed = config_apikey is None or not secret_matches
 
-        # Locked-out clients get the same response and are counted the same whether or not the secret is right.
-        if _is_apikey_locked_out(name, failed=failed):
+        # Only the client IP is locked out, never the key name, so nobody can lock a key's legitimate users out.
+        if _is_apikey_locked_out(failed=failed):
             raise TooManyRequestsException("Too many failed API key attempts. Try again later.")
 
         if config_apikey is None or failed:
@@ -369,7 +361,7 @@ def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
     Raises:
         InvalidDataException: If the decoded value is not in ``key_name:key_secret`` format.
         AccessDeniedException: If the API key is invalid or cannot authenticate the request.
-        TooManyRequestsException: If the client or submitted key name is locked out after repeated failures.
+        TooManyRequestsException: If the client IP is locked out after repeated failures.
 
     Returns:
         The authenticated user and effective privileges.

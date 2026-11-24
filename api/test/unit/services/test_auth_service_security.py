@@ -166,24 +166,20 @@ def apikey_lockout(redis_connection):
         allow_apikeys=True,
         apikeys={key_name: APIKeyConf(secret="expected-secret")},
         apikey_lockout=APIKeyLockout(
-            max_failures_per_ip=3,
-            max_failures_per_key=3,
-            window_seconds=60,
-            max_lockout_seconds=300,
-            trusted_proxies=["127.0.0.1/32"],
+            max_failures_per_ip=3, window_seconds=60, max_lockout_seconds=300, trusted_proxies=["127.0.0.1/32"]
         ),
     )
     used_keys: set[str] = set()
-    get_keys = auth_service._get_apikey_failure_keys
+    get_keys = auth_service._get_apikey_lockout_keys
 
-    def _track_keys(name: str) -> list[str]:
-        keys = get_keys(name)
+    def _track_keys() -> list[str]:
+        keys = get_keys()
         used_keys.update(keys)
         return keys
 
     with (
         patch.object(config, "auth", auth_config),
-        patch.object(auth_service, "_get_apikey_failure_keys", side_effect=_track_keys),
+        patch.object(auth_service, "_get_apikey_lockout_keys", side_effect=_track_keys),
     ):
         yield SimpleNamespace(redis=redis_connection, key_name=key_name)
 
@@ -199,16 +195,16 @@ def _attempt_apikey(name: str, secret: str, forwarded_for: str):
         return auth_service.validate_apikey(name, secret)
 
 
-def _counters(lockout, name: str, client_ip: str) -> dict[str, tuple[int, int]]:
-    """Get the (count, ttl) of the IP and key name failure counters."""
+def _lockout_state(lockout, client_ip: str) -> SimpleNamespace:
     with Flask(__name__).test_request_context(
         headers={"X-Forwarded-For": client_ip}, environ_base={"REMOTE_ADDR": "127.0.0.1"}
     ):
-        ip_key, name_key = auth_service._get_apikey_failure_keys(name)
-    return {
-        label: (int(lockout.redis.get(key) or 0), lockout.redis.ttl(key))
-        for label, key in (("ip", ip_key), ("key", name_key))
-    }
+        lockout_key, failures_key, _ = auth_service._get_apikey_lockout_keys()
+    return SimpleNamespace(
+        lockout_key=lockout_key,
+        lockout_ttl=lockout.redis.ttl(lockout_key),
+        failures=int(lockout.redis.get(failures_key) or 0),
+    )
 
 
 def _unique_ip() -> str:
@@ -219,91 +215,54 @@ def _guess() -> str:
     return f"guess-{uuid.uuid4()}"
 
 
+def _fail_until_locked_out(client_ip: str, prefix: str = "") -> None:
+    for _ in range(3):
+        with pytest.raises(AccessDeniedException, match="^Invalid API key$"):
+            _attempt_apikey(_guess(), "wrong", f"{prefix}{client_ip}")
+
+
 def test_validate_apikey_locks_out_client_ip_even_with_spoofed_forwarded_for(apikey_lockout):
     client_ip = _unique_ip()
-    for attempt in range(3):
-        with pytest.raises(AccessDeniedException, match="Invalid API key"):
-            _attempt_apikey(_guess(), "wrong", f"203.0.113.{attempt}, {client_ip}")
+    _fail_until_locked_out(client_ip, prefix="203.0.113.1, ")
 
     with pytest.raises(TooManyRequestsException):
         _attempt_apikey(apikey_lockout.key_name, "expected-secret", f"198.51.100.1, {client_ip}")
-
-
-def test_validate_apikey_ip_lockout_backs_off_exponentially_up_to_cap(apikey_lockout):
-    client_ip = _unique_ip()
-    for _ in range(3):
-        with pytest.raises(AccessDeniedException):
-            _attempt_apikey(_guess(), "wrong", client_ip)
-
-    for expected_ttl in [120, 240, 300, 300]:
-        with pytest.raises(TooManyRequestsException):
-            _attempt_apikey(_guess(), "wrong", client_ip)
-        assert expected_ttl - 2 <= _counters(apikey_lockout, _guess(), client_ip)["ip"][1] <= expected_ttl
-
-
-@pytest.mark.parametrize("locked", ["ip", "key"])
-def test_validate_apikey_counts_locked_out_attempts_the_same_whatever_the_secret(apikey_lockout, locked):
-    name = apikey_lockout.key_name
-    right_ip, wrong_ip = _unique_ip(), _unique_ip()
-    for _ in range(3):
-        for ip in (right_ip, wrong_ip) if locked == "ip" else (_unique_ip(),):
-            with pytest.raises(AccessDeniedException):
-                _attempt_apikey(_guess() if locked == "ip" else name, "wrong", ip)
-
-    with pytest.raises(TooManyRequestsException):
-        _attempt_apikey(name, "expected-secret", right_ip)
-    with pytest.raises(TooManyRequestsException):
-        _attempt_apikey(name, "wrong", wrong_ip)
-
-    right, wrong = _counters(apikey_lockout, name, right_ip), _counters(apikey_lockout, name, wrong_ip)
-    assert right["ip"][0] == wrong["ip"][0]
-    assert abs(right["ip"][1] - wrong["ip"][1]) <= 1
-
-
-def test_validate_apikey_locks_out_unknown_key_name_across_clients(apikey_lockout):
-    unknown_name = _guess()
-    for _ in range(3):
-        with pytest.raises(AccessDeniedException, match="Invalid API key"):
-            _attempt_apikey(unknown_name, "wrong", _unique_ip())
-
-    with pytest.raises(TooManyRequestsException):
-        _attempt_apikey(unknown_name, "wrong", _unique_ip())
-
     assert _attempt_apikey(apikey_lockout.key_name, "expected-secret", _unique_ip()).user.uname == "analyst"
 
 
-def test_validate_apikey_key_name_lockout_is_not_extended_by_further_attempts(apikey_lockout):
-    name = apikey_lockout.key_name
-    for _ in range(3):
-        with pytest.raises(AccessDeniedException):
-            _attempt_apikey(name, "wrong", _unique_ip())
-    assert 55 <= _counters(apikey_lockout, name, _unique_ip())["key"][1] <= 60
-
-    with Flask(__name__).test_request_context():
-        name_key = auth_service._get_apikey_failure_keys(name)[1]
-    apikey_lockout.redis.expire(name_key, 5)
-
-    for _ in range(5):
-        with pytest.raises(TooManyRequestsException):
-            _attempt_apikey(name, "wrong", _unique_ip())
-
-    count, ttl = _counters(apikey_lockout, name, _unique_ip())["key"]
-    assert count == 3
-    assert ttl <= 5
-
-
-def test_validate_apikey_locked_out_ip_does_not_count_against_key_name(apikey_lockout):
-    name = apikey_lockout.key_name
+def test_validate_apikey_attempts_while_locked_out_are_not_counted_whatever_the_secret(apikey_lockout):
     client_ip = _unique_ip()
-    for _ in range(3):
-        with pytest.raises(AccessDeniedException):
-            _attempt_apikey(_guess(), "wrong", client_ip)
+    _fail_until_locked_out(client_ip)
+    before = _lockout_state(apikey_lockout, client_ip)
+    apikey_lockout.redis.expire(before.lockout_key, 5)
 
-    for _ in range(5):
+    for secret in ["wrong", "expected-secret"] * 5:
         with pytest.raises(TooManyRequestsException):
-            _attempt_apikey(name, "wrong", client_ip)
+            _attempt_apikey(apikey_lockout.key_name, secret, client_ip)
 
-    assert _counters(apikey_lockout, name, client_ip)["key"][0] == 0
+    after = _lockout_state(apikey_lockout, client_ip)
+    assert 58 <= before.lockout_ttl <= 60
+    assert after.lockout_ttl <= 5
+    assert after.failures == 0
+
+
+def test_validate_apikey_repeated_lockouts_back_off_exponentially_up_to_cap(apikey_lockout):
+    client_ip = _unique_ip()
+    for expected_ttl in [60, 120, 240, 300, 300]:
+        _fail_until_locked_out(client_ip)
+        state = _lockout_state(apikey_lockout, client_ip)
+        assert expected_ttl - 2 <= state.lockout_ttl <= expected_ttl
+        apikey_lockout.redis.delete(state.lockout_key)
+
+
+def test_validate_apikey_failures_from_many_clients_cannot_lock_out_a_key_name(apikey_lockout):
+    name = apikey_lockout.key_name
+    for _ in range(10):
+        client_ip = _unique_ip()
+        for _ in range(2):
+            with pytest.raises(AccessDeniedException):
+                _attempt_apikey(name, "wrong", client_ip)
+
     assert _attempt_apikey(name, "expected-secret", _unique_ip()).user.uname == "analyst"
 
 
