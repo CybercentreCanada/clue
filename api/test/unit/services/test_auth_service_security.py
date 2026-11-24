@@ -52,7 +52,7 @@ def _make_oidc(monkeypatch, **provider_overrides):
     app.config.update(TESTING=True, SECRET_KEY="local-test-only", SESSION_COOKIE_SECURE=True)
     app.register_blueprint(auth_api.auth_api)
     provider_config = _provider_config(**provider_overrides)
-    build_oauth({"local": provider_config}).init_app(app)
+    oidc_module.build_oauth({"local": provider_config}).init_app(app)
     with app.app_context():
         provider = app.extensions["authlib.integrations.flask_client"].create_client("local")
     signing_key = JsonWebKey.generate_key("RSA", 2048, is_private=True, options={"kid": "local-key"})
@@ -146,7 +146,7 @@ def assert_no_secrets(response, *secrets):
 
 
 def test_registration_maps_configured_iss_to_trusted_issuer_metadata():
-    kwargs = provider_client_kwargs("local", _provider_config())
+    kwargs = oidc_module.provider_client_kwargs("local", _provider_config())
 
     assert kwargs["issuer"] == ISSUER
     assert "iss" not in kwargs
@@ -158,7 +158,7 @@ def test_registration_maps_configured_iss_to_trusted_issuer_metadata():
 def test_registration_uses_the_configured_provider_timeout(monkeypatch):
     monkeypatch.setattr(config.auth.oauth, "provider_timeout_seconds", 3)
 
-    assert provider_client_kwargs("local", _provider_config())["client_kwargs"]["default_timeout"] == 3
+    assert oidc_module.provider_client_kwargs("local", _provider_config())["client_kwargs"]["default_timeout"] == 3
 
 
 @pytest.mark.parametrize(
@@ -176,7 +176,7 @@ def test_jwks_refresh_interval_cannot_exceed_max_age(overrides):
 
 def test_token_endpoint_requests_have_a_timeout(monkeypatch):
     app = Flask("clue_token_timeout")
-    build_oauth({"local": _provider_config()}).init_app(app)
+    oidc_module.build_oauth({"local": _provider_config()}).init_app(app)
     with app.app_context():
         provider = app.extensions["authlib.integrations.flask_client"].create_client("local")
     requests_sent = []
@@ -426,6 +426,31 @@ def test_oidc_provider_error_callback_is_controlled_and_does_not_exchange(oidc):
     assert response.status_code == 401
     assert not oidc.exchange.called
     assert "reflected" not in response.get_data(as_text=True)
+
+
+def test_oidc_provider_error_code_cannot_forge_log_lines(oidc, caplog):
+    params = begin_login(oidc)
+
+    response = callback(
+        oidc, {"provider": "local", "state": params["state"], "error": "access_denied\r\nForged log line"}
+    )
+
+    assert response.status_code == 401
+    assert "access_deniedForged log line" in caplog.text
+    assert not any("\n" in record.getMessage() or "\r" in record.getMessage() for record in caplog.records)
+
+
+@pytest.mark.parametrize("leeway, status", [(0, 401), (300, 200)])
+def test_oidc_callback_uses_the_configured_id_token_leeway(oidc, monkeypatch, leeway, status):
+    """Authlib passes leeway=120 to parse_id_token; the configured leeway must apply instead."""
+    monkeypatch.setattr(config.auth.oauth, "id_token_leeway_seconds", leeway)
+    params = begin_login(oidc)
+    now = int(time.time())
+    oidc.exchange.return_value = oidc.token(params["nonce"], exp=now - 60, iat=now - 600)
+
+    response = callback(oidc, {"provider": "local", "code": "synthetic-code", "state": params["state"]})
+
+    assert response.status_code == status
 
 
 def _forge_unsigned(oidc, nonce):

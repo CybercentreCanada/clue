@@ -234,16 +234,17 @@ class ClueOAuth2App(FlaskOAuth2App):
         nonce: str | None,
         claims_options: Any = None,  # noqa: ARG002
         claims_cls: Any = None,  # noqa: ARG002
-        leeway: int | None = None,
+        leeway: int | None = None,  # noqa: ARG002
     ) -> UserInfo | None:
         """Validate an ID token from a browser authorization-code callback.
 
-        The nonce bound to the authorization transaction is mandatory. Caller-supplied claim options and classes are
-        ignored so the policy cannot be weakened.
+        The nonce bound to the authorization transaction is mandatory. Caller-supplied claim options, classes and
+        leeway are ignored so the policy cannot be weakened; Authlib's ``authorize_access_token`` always passes a
+        120-second leeway, so the configured ``id_token_leeway_seconds`` is used instead.
         """
         if "id_token" not in token:
             return None
-        return self._validate_id_token(token, nonce=nonce, require_nonce=True, leeway=leeway)
+        return self._validate_id_token(token, nonce=nonce, require_nonce=True, leeway=None)
 
     def parse_refreshed_id_token(self, token: Mapping[str, Any], leeway: int | None = None) -> UserInfo:
         """Validate an ID token returned by a refresh-token grant.

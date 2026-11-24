@@ -129,12 +129,13 @@ def login(**_) -> dict[str, Any]:  # noqa: C901
 
         return authenticated_response(oauth_provider, token_data, identity_data)
     except (OAuthError, JoseError, JoserfcError) as err:
-        # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text.
+        # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text, and
+        # the code itself is copied from the callback query string.
         logger.warning(
             "OAuth/OIDC validation failure. (IP:%s) [%s: %s]",
             client_ip(),
             type(err).__name__,
-            getattr(err, "error", None),
+            sanitize_log_value(getattr(err, "error", None)),
         )
         return unauthorized(err="Authentication failed.")
     except AuthenticationException as err:
@@ -202,12 +203,13 @@ def refresh(**_) -> dict[str, Any]:  # noqa: C901
 
         return authenticated_response(body.provider, token_data, identity_data)
     except (OAuthError, JoseError, JoserfcError) as err:
-        # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text.
+        # Only the error class and code are logged: descriptions can contain provider- or attacker-supplied text, and
+        # the code itself comes from the token-endpoint response.
         logger.warning(
             "OAuth/OIDC validation failure. (IP:%s) [%s: %s]",
             client_ip(),
             type(err).__name__,
-            getattr(err, "error", None),
+            sanitize_log_value(getattr(err, "error", None)),
         )
         return unauthorized(err="Authentication failed.")
     except AuthenticationException as err:
