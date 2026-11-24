@@ -2,6 +2,7 @@ from http.client import HTTPException
 from sys import exc_info
 from traceback import format_tb
 from typing import Union
+from uuid import uuid4
 
 from flask import Blueprint, request
 from werkzeug.exceptions import BadRequest, Forbidden, InternalServerError, Unauthorized
@@ -106,7 +107,8 @@ def handle_500(e: InternalServerError):
     """Handles HTTP 500 Internal Server errors.
 
     If the original_exception of e is an AccessDeniedException or AuthenticationException, this redirects to the 403 or
-    401 error handlers, otherwise it logs it and returns a formatted error message.
+    401 error handlers, otherwise it logs it with a unique error ID. Outside of debug mode, only the exception class
+    name and the error ID are returned, so the full details can be retrieved from the server logs.
 
     Arguments:
         e: The error to handle.
@@ -122,12 +124,13 @@ def handle_500(e: InternalServerError):
 
     oe = e.original_exception or e
 
+    error_id = uuid4().hex
     trace = exc_info()[2]
-    log_with_traceback(trace, "Exception", is_exception=True)
+    log_with_traceback(trace, f"Exception [error_id={error_id}]", is_exception=True)
 
-    message = "An Internal Error has occurred."
     if config.api.debug:
-        message = "".join(["\n"] + format_tb(exc_info()[2]) + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]).rstrip(
-            "\n"
-        )
+        message = "".join(["\n"] + format_tb(trace) + [f"{oe.__class__.__name__}: {str(oe)}\n"]).rstrip("\n")
+    else:
+        # Exception messages may contain sensitive data, so only expose a reference to the server-side log entry
+        message = f"An internal error has occurred ({oe.__class__.__name__}). Reference: {error_id}"
     return internal_error(err=message)
