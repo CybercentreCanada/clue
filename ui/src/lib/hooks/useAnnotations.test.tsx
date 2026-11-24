@@ -109,3 +109,56 @@ test('useAnnotations', async () => {
 
   expect(annotation.textContent).toBe('value');
 });
+
+const COMMAND_LINE = 'dummy-cmd --flag=$VAR; dummy-a | dummy-b (x) [y] || dummy-c "quoted" .* end$';
+
+const CommandLineComponent = () => {
+  const [annotations] = useAnnotations('ip', COMMAND_LINE, 'TLP:WHITE', { skipEnrichment: true });
+
+  return (
+    <div id="wrapper">
+      {annotations.map(_annotation => (
+        <div id={_annotation.summary} key={_annotation.summary}>
+          {_annotation.value}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+test('useAnnotations treats the value literally rather than as a regular expression', async () => {
+  const database = await buildDatabase({ devMode: false, storageType: 'memory' });
+
+  const result = render(
+    <ClueConfigProvider config={{ configuration: {}, c12nDef: {} } as any}>
+      <ClueDatabaseProvider database={database}>
+        <ClueEnrichProvider skipConfigCall ready>
+          <CommandLineComponent />
+        </ClueEnrichProvider>
+      </ClueDatabaseProvider>
+    </ClueConfigProvider>
+  );
+
+  const buildSelector = (value: string, summary: string) => ({
+    id: uuid(),
+    type: 'ip',
+    value,
+    source: 'example',
+    classification: 'TLP:WHITE',
+    count: 1,
+    latency: 100,
+    annotations: [{ confidence: 0, type: 'context' as const, value, summary, quantity: 0, ubiquitous: false }]
+  });
+
+  await act(async () => {
+    await database.selectors.bulkInsert([
+      buildSelector(COMMAND_LINE, 'match'),
+      buildSelector('unrelated', 'unrelated'),
+      buildSelector('dummy-cmd --flag=$VAR', 'prefix')
+    ]);
+  });
+
+  expect(result.getByTestId('match')).toBeInTheDocument();
+  expect(result.queryByTestId('unrelated')).toBeNull();
+  expect(result.queryByTestId('prefix')).toBeNull();
+});
