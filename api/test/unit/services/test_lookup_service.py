@@ -328,7 +328,7 @@ def test_cwe_696_lookup_validation_errors_do_not_disclose_restricted_items(app, 
     assert restricted_marker not in caplog.text
     assert "assertion_error" in caplog.text
     assert "annotations" in caplog.text
-    assert all(record.exc_info is None for record in caplog.records)
+    assert not any(record.exc_info for record in caplog.records)
 
 
 @pytest.mark.parametrize("production", [False, True])
