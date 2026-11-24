@@ -23,6 +23,7 @@ from clue.common.exceptions import (
 )
 from clue.common.logging import get_logger, log_error
 from clue.common.logging.audit import audit
+from clue.common.timeouts import parse_timeout
 from clue.config import CLASSIFICATION as CLASSIFICATION
 from clue.config import DEBUG, config
 from clue.helper.headers import generate_headers
@@ -130,23 +131,6 @@ class ParsedParams(BaseModel):
     include_raw: bool
     exclude_unset: bool
     no_cache: bool
-
-
-def parse_timeout(timeout: float = 5.0) -> float:
-    """Gets the max_timeout value from the request object, otherwise uses the provided timeout.
-
-    Args:
-        timeout (float, optional): The timeout to use if no max_timeout is provided in the request. Defaults to 5.0.
-
-    Returns:
-        float: The parsed max_timeout value.
-    """
-    try:
-        max_timeout = request.args.get("max_timeout", timeout, type=float)
-    except (ValueError, TypeError):
-        max_timeout = timeout
-
-    return max_timeout
 
 
 def parse_query_params(request: Request, limit: int = 10, timeout: float = 5.0):

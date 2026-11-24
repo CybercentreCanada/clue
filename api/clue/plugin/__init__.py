@@ -910,6 +910,8 @@ class CluePlugin:
 
         try:
             params = Params.from_request()
+        except InvalidDataException as e:
+            return self.make_api_response(None, str(e), 400)
         except RuntimeError as e:
             self.logger.exception("Error on params parsing.")
 
@@ -1008,6 +1010,8 @@ class CluePlugin:
 
         try:
             params = Params.from_request()
+        except InvalidDataException as e:
+            return self.make_api_response(None, str(e), 400)
         except RuntimeError as e:
             return self.make_api_response(None, str(e), 504)
 

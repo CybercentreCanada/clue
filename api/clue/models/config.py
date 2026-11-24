@@ -553,6 +553,12 @@ class API(BaseModel):
         default=None,
     )
     external_sources: list[ExternalSource] = Field(description="List of external sources to query", default=[])
+    maximum_timeout_request: float = Field(
+        description="Maximum requested timeout in seconds for upstream requests",
+        default=60.0,
+        gt=0,
+        allow_inf_nan=False,
+    )
     registration_allowed_origins: list[str] = Field(
         description="Exact URL origins permitted for runtime external source registration", default=[]
     )

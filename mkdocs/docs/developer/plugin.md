@@ -128,6 +128,12 @@ If your plugin needs authenticated calls to external services, set `CLUE_ACCESS_
 
 ## Interacting with the central API
 
+The central API caps the `max_timeout` query parameter using
+`api.maximum_timeout_request` (default: 60 seconds). Plugins independently cap
+lookup timeouts with the `MAX_REQUEST_TIMEOUT` environment variable (default:
+60 seconds); `MAX_TIMEOUT` remains the default when no timeout is supplied.
+These limits are not total wall-clock deadlines for the entire request.
+
 ### Request Initiation
 
 Various client applications can make requests to the central API, which will in turn proxy requests to every relevant registered plugin.
