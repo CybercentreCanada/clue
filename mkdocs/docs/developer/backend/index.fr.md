@@ -272,6 +272,13 @@ auth:
       secret: "secret"
       roles: ["admin"]
       privileges: ["W"]
+  apikey_lockout: # Limitation des tentatives de clé API échouées (réponse 429)
+    enabled: true # Activer le verrouillage après des échecs répétés
+    max_failures_per_ip: 10 # Échecs permis par adresse IP client
+    max_failures_per_key: 50 # Échecs permis par nom de clé soumis avant un verrouillage fixe de window_seconds
+    window_seconds: 900 # Durée de rétention des échecs et durée initiale du verrouillage
+    max_lockout_seconds: 86400 # Durée maximale du verrouillage par IP, qui double à chaque tentative pendant le verrouillage
+    trusted_proxies: [] # Réseaux (CIDR) des mandataires dont les entrées X-Forwarded-For sont fiables (vide = adresse du pair)
 
   # Paramètres OAuth
   oauth:

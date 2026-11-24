@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import Any, Optional, Union
 
 from elasticapm.traces import capture_span
@@ -13,6 +14,7 @@ from clue.common.exceptions import (
     ClueException,
     ClueNotImplementedError,
     InvalidDataException,
+    TooManyRequestsException,
 )
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
@@ -169,6 +171,99 @@ def bearer_auth(data: str) -> AuthResult:
         raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
+# Atomically checks and updates both failure counters so concurrent requests can't slip past the limit.
+# KEYS: client IP counter, key name counter. ARGV: IP limit, key limit, window, max lockout, failed (0/1).
+# Every attempt made while locked out counts against the IP the same way, right secret or not, so the counters
+# can't be used to test guesses. The IP lockout doubles on each of those attempts. The key name lockout is a fixed
+# window that is only counted from IPs that aren't locked out and that blocked attempts don't extend.
+_APIKEY_LOCKOUT_SCRIPT = """
+local ip_limit, key_limit = tonumber(ARGV[1]), tonumber(ARGV[2])
+local window, max_lockout = tonumber(ARGV[3]), tonumber(ARGV[4])
+local ip_count = tonumber(redis.call('GET', KEYS[1]) or '0')
+local key_count = tonumber(redis.call('GET', KEYS[2]) or '0')
+local blocked = ip_count >= ip_limit or key_count >= key_limit
+
+if blocked or ARGV[5] == '1' then
+    ip_count = redis.call('INCR', KEYS[1])
+    local excess = math.min(math.max(ip_count - ip_limit, 0), 32)
+    redis.call('EXPIRE', KEYS[1], math.floor(math.min(window * 2 ^ excess, max_lockout)))
+end
+
+if not blocked and ARGV[5] == '1' then
+    key_count = redis.call('INCR', KEYS[2])
+    if key_count == 1 or key_count >= key_limit then
+        redis.call('EXPIRE', KEYS[2], window)
+    end
+end
+
+return blocked and 1 or 0
+"""
+_apikey_lockout_script = redis.register_script(_APIKEY_LOCKOUT_SCRIPT)
+
+# Unknown key names are compared against this so they take as long to reject as a wrong secret.
+_UNKNOWN_APIKEY_SECRET = generate_random_secret()
+
+
+def _secret_digest(secret: str) -> bytes:
+    return hashlib.sha256(secret.encode("utf-8", errors="replace")).digest()
+
+
+def _parse_ip(value: str | None) -> Optional[IPv4Address | IPv6Address]:
+    try:
+        return ip_address(value.strip()) if value else None
+    except ValueError:
+        return None
+
+
+def _get_client_ip() -> str:
+    """Resolve the client IP, only trusting X-Forwarded-For entries appended by configured trusted proxies.
+
+    Starting from the socket peer, each trusted hop is replaced by the entry it appended, right to left, until an
+    untrusted address is reached.
+    """
+    trusted = config.auth.apikey_lockout.trusted_proxies
+    client = _parse_ip(request.remote_addr)
+    if client is None:
+        return request.remote_addr or "unknown"
+
+    forwarded = request.headers.get("X-Forwarded-For", "").split(",")
+    while forwarded and any(client in network for network in trusted):
+        hop = _parse_ip(forwarded.pop())
+        if hop is None:
+            break
+        client = hop
+
+    return str(client)
+
+
+def _get_apikey_failure_keys(name: str) -> list[str]:
+    """Get the Redis failure counter keys for the client IP and the submitted key name, existing or not."""
+    return [
+        f"apikey_failures_{hashlib.sha256(k.encode('utf-8', errors='replace')).hexdigest()}"
+        for k in (f"ip_{_get_client_ip()}", f"key_{name}")
+    ]
+
+
+def _is_apikey_locked_out(name: str, failed: bool) -> bool:
+    """Check whether API key attempts are locked out, counting this attempt if it failed."""
+    lockout = config.auth.apikey_lockout
+    if not lockout.enabled:
+        return False
+
+    return bool(
+        _apikey_lockout_script(
+            keys=_get_apikey_failure_keys(name),
+            args=[
+                lockout.max_failures_per_ip,
+                lockout.max_failures_per_key,
+                lockout.window_seconds,
+                lockout.max_lockout_seconds,
+                int(failed),
+            ],
+        )
+    )
+
+
 @capture_span(span_type="authentication")
 def validate_apikey(name: str, apikey: str) -> AuthResult:
     """Authenticate a configured API key.
@@ -180,6 +275,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
     Raises:
         AccessDeniedException: If API-key authentication is disabled, the key is invalid, or required identity
             headers are absent.
+        TooManyRequestsException: If the client or submitted key name is locked out after repeated failures.
 
     Returns:
         The authenticated user and effective privileges.
@@ -189,10 +285,15 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
 
     if name and apikey:
         config_apikey = config.auth.apikeys.get(name, None)
-        if not config_apikey:
-            raise AccessDeniedException("API Key does not exist")
+        expected_secret = config_apikey.secret if config_apikey else _UNKNOWN_APIKEY_SECRET
+        secret_matches = hmac.compare_digest(_secret_digest(expected_secret), _secret_digest(apikey))
+        failed = config_apikey is None or not secret_matches
 
-        if not hmac.compare_digest(config_apikey.secret.encode("utf-8"), apikey.encode("utf-8")):
+        # Locked-out clients get the same response and are counted the same whether or not the secret is right.
+        if _is_apikey_locked_out(name, failed=failed):
+            raise TooManyRequestsException("Too many failed API key attempts. Try again later.")
+
+        if config_apikey is None or failed:
             raise AccessDeniedException("Invalid API key")
 
         uname = request.headers.get("X-USERID", None)
@@ -268,6 +369,7 @@ def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
     Raises:
         InvalidDataException: If the decoded value is not in ``key_name:key_secret`` format.
         AccessDeniedException: If the API key is invalid or cannot authenticate the request.
+        TooManyRequestsException: If the client or submitted key name is locked out after repeated failures.
 
     Returns:
         The authenticated user and effective privileges.

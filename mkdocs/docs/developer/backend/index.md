@@ -266,6 +266,13 @@ auth:
       secret: "secret"
       roles: ["admin"]
       privileges: ["W"]
+  apikey_lockout: # Throttle failed API key attempts (429 response)
+    enabled: true # Lock out after repeated failures
+    max_failures_per_ip: 10 # Failures allowed per client IP
+    max_failures_per_key: 50 # Failures allowed per submitted key name before a fixed window_seconds lockout
+    window_seconds: 900 # How long failures are remembered, and the initial lockout duration
+    max_lockout_seconds: 86400 # Cap for the per-IP lockout, which doubles on each attempt made while locked out
+    trusted_proxies: [] # Proxy networks (CIDRs) whose X-Forwarded-For entries are trusted (empty = socket peer address)
 
   # OAuth settings
   oauth:
