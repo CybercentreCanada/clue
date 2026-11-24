@@ -21,7 +21,6 @@ from clue.common.exceptions import AccessDeniedException, InvalidDataException
 from clue.config import config
 from clue.models.auth_user import APIKeyConf, AuthUser, UserRole
 from clue.models.config import ExternalSource, OAuth, OAuthProvider
-from clue.security.oidc import build_oauth, provider_client_kwargs
 
 ISSUER = "https://provider.invalid/realms/local"
 CLIENT_ID = "local-client"
