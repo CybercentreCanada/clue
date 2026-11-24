@@ -1,3 +1,6 @@
+import hashlib
+import hmac
+import json
 from typing import Any
 
 import requests
@@ -6,7 +9,7 @@ from requests import exceptions
 
 from clue.common.exceptions import AuthenticationException
 from clue.common.logging import get_logger
-from clue.config import CLASSIFICATION, DEBUG, cache, config
+from clue.config import CLASSIFICATION, DEBUG, config
 from clue.constants.env import DISABLE_CACHE
 from clue.constants.supported_types import SUPPORTED_TYPES, SupportedType
 from clue.helper.headers import generate_headers
@@ -52,7 +55,19 @@ def get_types_detection(user: dict[str, Any]) -> dict[str, SupportedType]:
     }
 
 
-@cache.memoize(timeout=CACHE_TIMEOUT)
+def _get_cache_key(url: str, access_token: str | None, obo_access_token: str | None) -> str:
+    """Return the cache key for a plugin's types, scoped to the credentials used to fetch them."""
+    data = json.dumps([url, access_token, obo_access_token]).encode("utf-8")
+    if config.api.type_cache_hmac_secret:
+        return hmac.new(
+            bytes.fromhex(config.api.type_cache_hmac_secret.get_secret_value()),
+            data,
+            hashlib.sha256,
+        ).hexdigest()
+
+    return hashlib.sha256(data).hexdigest()
+
+
 def get_supported_types(
     source_url: str, access_token: str | None = None, obo_access_token: str | None = None
 ) -> dict[str, str] | None:
@@ -61,13 +76,16 @@ def get_supported_types(
     Args:
         source_url (str): The url of the source.
         access_token (str | None, optional): An access token giving access to the source. Defaults to None.
+        obo_access_token (str | None, optional): An on-behalf-of access token for the source. Defaults to None.
 
     Returns:
-        Any: The supported types returned by the source.
+        dict[str, str] | None: The supported types returned by the source, or None if they could not be fetched.
     """
     url = f"{source_url}{'' if source_url.endswith('/') else '/'}types/"
+    cache_key = _get_cache_key(url, access_token, obo_access_token)
 
-    if not DISABLE_CACHE and (result := CACHE.get(url)):
+    # Do not refresh the TTL on hits so user access and plugin changes are re-validated once the cache expires
+    if not DISABLE_CACHE and (result := CACHE.get(cache_key, refresh_ttl=False)) is not None:
         logger.info("Cache hit for url %s", url)
         return result
 
@@ -109,7 +127,7 @@ def get_supported_types(
         try:
             types_result = rsp.json()["api_response"]
             logger.debug("Setting cache result for url %s", url)
-            CACHE.set(url, types_result)
+            CACHE.set(cache_key, types_result)
             return types_result
         except requests.exceptions.JSONDecodeError:
             logger.exception(f"Parsing error in OK response - unknown format\nRaw response: {rsp.text}")

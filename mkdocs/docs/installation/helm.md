@@ -83,6 +83,22 @@ kubectl create secret generic flask-secret-key -n clue --from-literal=key=<gener
 kubectl create secret generic clue-apikeys -n clue --from-literal=data={}
 ```
 
+#### Optional plugin type cache key secret
+
+The API caches plugin type metadata separately for each credential context. By default, it uses SHA-256 for cache
+keys. For additional protection against guessing credentials from exposed Redis keys, configure the optional
+`clue-types-cache-hmac` Secret. Its `key` value must be exactly 32 random bytes encoded as 64 hexadecimal characters.
+For example:
+
+```bash
+openssl rand -hex 32 | tr -d '\n' | kubectl create secret generic clue-types-cache-hmac -n clue --from-file=key=/dev/stdin
+```
+
+Keep the secret out of Git and restrict access to it and Redis. All API replicas sharing Redis must use the same secret.
+If the Secret is absent, Clue uses SHA-256 instead; neither method encrypts cached values. After creating or rotating
+the Secret, restart the API pods so they receive the new value. Rotating it causes cache misses until entries are
+repopulated. Configured secrets with an invalid format prevent the API from starting.
+
 ### 3. Creating your deployment-specific values file
 
 In order to have deployment specific values, you'll need to create a new values-\<deployment>.yaml file. This file
