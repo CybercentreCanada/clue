@@ -1,9 +1,10 @@
+import os
 from http.client import HTTPException
 from sys import exc_info
 from traceback import format_tb
 from typing import Union
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from werkzeug.exceptions import BadRequest, Forbidden, InternalServerError, Unauthorized
 
 from clue.api import bad_request, forbidden, internal_error, not_found, unauthorized
@@ -12,7 +13,7 @@ from clue.common.exceptions import (
     AuthenticationException,
     ClueException,
 )
-from clue.common.logging import get_logger, log_with_traceback
+from clue.common.logging import get_logger, log_error, log_with_traceback
 from clue.common.logging.audit import AUDIT
 from clue.config import config
 
@@ -106,7 +107,8 @@ def handle_500(e: InternalServerError):
     """Handles HTTP 500 Internal Server errors.
 
     If the original_exception of e is an AccessDeniedException or AuthenticationException, this redirects to the 403 or
-    401 error handlers, otherwise it logs it and returns a formatted error message.
+    401 error handlers, otherwise it logs it with a unique error ID. The first line of the exception and the error ID
+    are returned; the traceback is only included in debug mode and is otherwise available in the server logs.
 
     Arguments:
         e: The error to handle.
@@ -122,8 +124,15 @@ def handle_500(e: InternalServerError):
 
     oe = e.original_exception or e
 
-    trace = exc_info()[2]
-    log_with_traceback(trace, "Exception", is_exception=True)
+    user = g.get("user") or {}
+    query = request.query_string.decode(errors="replace")
+    log_msg = (
+        f"{user.get('uname', '(None)')} :: An internal error has occurred ({oe.__class__.__name__}) "
+        f"[{os.environ.get('CLUE_VERSION', '0.0.0.dev0')}] ({request.path}{f'?{query}' if query else ''})"
+    )
+    err_id = log_error(logger, log_msg, exc_info=True)
 
-    message = "".join(["\n"] + format_tb(exc_info()[2]) + ["%s: %s\n" % (oe.__class__.__name__, str(oe))]).rstrip("\n")
+    message = f"{oe.__class__.__name__}: {oe} (Error ID: {err_id})"
+    if config.api.debug:
+        message = "".join(["\n", *format_tb(oe.__traceback__), message])
     return internal_error(err=message)
