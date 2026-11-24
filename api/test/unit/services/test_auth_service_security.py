@@ -199,11 +199,14 @@ def _lockout_state(lockout, client_ip: str) -> SimpleNamespace:
     with Flask(__name__).test_request_context(
         headers={"X-Forwarded-For": client_ip}, environ_base={"REMOTE_ADDR": "127.0.0.1"}
     ):
-        lockout_key, failures_key, _ = auth_service._get_apikey_lockout_keys()
+        lockout_key, failures_key, history_key = auth_service._get_apikey_lockout_keys()
     return SimpleNamespace(
         lockout_key=lockout_key,
         lockout_ttl=lockout.redis.ttl(lockout_key),
         failures=int(lockout.redis.get(failures_key) or 0),
+        history_key=history_key,
+        history_ttl=lockout.redis.ttl(history_key),
+        lockouts=int(lockout.redis.get(history_key) or 0),
     )
 
 
@@ -253,6 +256,32 @@ def test_validate_apikey_repeated_lockouts_back_off_exponentially_up_to_cap(apik
         state = _lockout_state(apikey_lockout, client_ip)
         assert expected_ttl - 2 <= state.lockout_ttl <= expected_ttl
         apikey_lockout.redis.delete(state.lockout_key)
+
+
+def test_validate_apikey_lockout_history_expires_and_resets_backoff(apikey_lockout):
+    client_ip = _unique_ip()
+    _fail_until_locked_out(client_ip)
+    first = _lockout_state(apikey_lockout, client_ip)
+    assert 58 <= first.lockout_ttl <= 60
+    assert 358 <= first.history_ttl <= 360
+    assert first.lockouts == 1
+
+    apikey_lockout.redis.expireat(first.lockout_key, 0)
+    assert apikey_lockout.redis.get(first.history_key) is not None
+    _fail_until_locked_out(client_ip)
+    second = _lockout_state(apikey_lockout, client_ip)
+    assert 118 <= second.lockout_ttl <= 120
+    assert 418 <= second.history_ttl <= 420
+    assert second.lockouts == 2
+
+    apikey_lockout.redis.expireat(second.lockout_key, 0)
+    apikey_lockout.redis.expireat(second.history_key, 0)
+    assert apikey_lockout.redis.get(second.history_key) is None
+    _fail_until_locked_out(client_ip)
+    reset = _lockout_state(apikey_lockout, client_ip)
+    assert 58 <= reset.lockout_ttl <= 60
+    assert 358 <= reset.history_ttl <= 360
+    assert reset.lockouts == 1
 
 
 def test_validate_apikey_failures_from_many_clients_cannot_lock_out_a_key_name(apikey_lockout):
