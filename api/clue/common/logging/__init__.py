@@ -321,5 +321,8 @@ def log_error(
     if err:
         error.append(f"{err=}")
     error.append(f"{err_id}")
-    logger.error(" :: ".join(error), exc_info=exc_info)
+    if exc_info:
+        logger.error(" :: ".join(error), exc_info=True)
+    else:
+        logger.error(" :: ".join(error))
     return err_id
