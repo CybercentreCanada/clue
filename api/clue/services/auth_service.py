@@ -204,10 +204,6 @@ _apikey_lockout_script = redis.register_script(_APIKEY_LOCKOUT_SCRIPT)
 _UNKNOWN_APIKEY_SECRET = generate_random_secret()
 
 
-def _secret_digest(secret: str) -> bytes:
-    return hashlib.sha256(secret.encode("utf-8", errors="replace")).digest()
-
-
 def _parse_ip(value: str | None) -> Optional[IPv4Address | IPv6Address]:
     try:
         return ip_address(value.strip()) if value else None
@@ -278,7 +274,9 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
     if name and apikey:
         config_apikey = config.auth.apikeys.get(name, None)
         expected_secret = config_apikey.secret if config_apikey else _UNKNOWN_APIKEY_SECRET
-        secret_matches = hmac.compare_digest(_secret_digest(expected_secret), _secret_digest(apikey))
+        secret_matches = hmac.compare_digest(
+            expected_secret.encode("utf-8", errors="replace"), apikey.encode("utf-8", errors="replace")
+        )
         failed = config_apikey is None or not secret_matches
 
         # Only the client IP is locked out, never the key name, so nobody can lock a key's legitimate users out.

@@ -1,5 +1,4 @@
 import base64
-import hashlib
 import uuid
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -112,7 +111,7 @@ def test_validate_apikey_rejects_wrong_secret_and_unknown_name_identically(name)
         auth_service.validate_apikey(name, "provided-secret")
 
     compare_digest.assert_called_once()
-    assert compare_digest.call_args.args[1] == hashlib.sha256(b"provided-secret").digest()
+    assert compare_digest.call_args.args[1] == b"provided-secret"
 
 
 @pytest.mark.parametrize(
