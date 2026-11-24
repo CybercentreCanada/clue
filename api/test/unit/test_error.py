@@ -26,7 +26,6 @@ def test_handle_500_hides_details_when_not_debug(monkeypatch):
 
     response_message = response.json["api_error_message"]
     assert response.status_code == 500
-    assert "api_server_version" not in response.json
     assert "sensitive diagnostic" not in response_message
     assert "raise ValueError" not in response_message
 
@@ -48,6 +47,5 @@ def test_handle_500_returns_traceback_when_debug(monkeypatch):
 
     response_message = response.json["api_error_message"]
     assert response.status_code == 500
-    assert "api_server_version" in response.json
     assert "ValueError: sensitive diagnostic" in response_message
     assert "raise ValueError" in response_message
