@@ -107,8 +107,8 @@ def handle_500(e: InternalServerError):
     """Handles HTTP 500 Internal Server errors.
 
     If the original_exception of e is an AccessDeniedException or AuthenticationException, this redirects to the 403 or
-    401 error handlers, otherwise it logs it with a unique error ID. Outside of debug mode, only the exception class
-    name and the error ID are returned, so the full details can be retrieved from the server logs.
+    401 error handlers, otherwise it logs it with a unique error ID. The first line of the exception and the error ID
+    are returned; the traceback is only included in debug mode and is otherwise available in the server logs.
 
     Arguments:
         e: The error to handle.
@@ -124,18 +124,15 @@ def handle_500(e: InternalServerError):
 
     oe = e.original_exception or e
 
-    err_msg = f"An internal error has occurred ({oe.__class__.__name__})"
     user = g.get("user") or {}
     query = request.query_string.decode(errors="replace")
     log_msg = (
-        f"{user.get('uname', '(None)')} :: {err_msg} "
+        f"{user.get('uname', '(None)')} :: An internal error has occurred ({oe.__class__.__name__}) "
         f"[{os.environ.get('CLUE_VERSION', '0.0.0.dev0')}] ({request.path}{f'?{query}' if query else ''})"
     )
     err_id = log_error(logger, log_msg, exc_info=True)
 
+    message = f"{oe.__class__.__name__}: {oe} (Error ID: {err_id})"
     if config.api.debug:
-        message = "".join(["\n"] + format_tb(oe.__traceback__) + [f"{oe.__class__.__name__}: {str(oe)}\n"]).rstrip("\n")
-    else:
-        # Exception messages may contain sensitive data, so only expose a reference to the server-side log entry
-        message = f"{err_msg}. Error ID: {err_id}"
+        message = "".join(["\n", *format_tb(oe.__traceback__), message])
     return internal_error(err=message)

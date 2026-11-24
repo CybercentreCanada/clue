@@ -14,7 +14,7 @@ def _handle_500_with_value_error():
         return error.handle_500(InternalServerError(original_exception=exc))
 
 
-def test_handle_500_hides_details_when_not_debug(monkeypatch):
+def test_handle_500_hides_traceback_when_not_debug(monkeypatch):
     monkeypatch.setattr(error.config.api, "debug", False)
     monkeypatch.setenv("CLUE_VERSION", "1.2.3")
     logger_mock = MagicMock()
@@ -26,10 +26,9 @@ def test_handle_500_hides_details_when_not_debug(monkeypatch):
 
     response_message = response.json["api_error_message"]
     assert response.status_code == 500
-    assert "sensitive diagnostic" not in response_message
     assert "raise ValueError" not in response_message
 
-    match = re.fullmatch(r"An internal error has occurred \(ValueError\)\. Error ID: ([0-9a-f-]{36})", response_message)
+    match = re.fullmatch(r"ValueError: sensitive diagnostic \(Error ID: ([0-9a-f-]{36})\)", response_message)
     assert match is not None
     logger_mock.error.assert_called_once()
     log_call = logger_mock.error.call_args
@@ -47,5 +46,5 @@ def test_handle_500_returns_traceback_when_debug(monkeypatch):
 
     response_message = response.json["api_error_message"]
     assert response.status_code == 500
-    assert "ValueError: sensitive diagnostic" in response_message
     assert "raise ValueError" in response_message
+    assert re.search(r"ValueError: sensitive diagnostic \(Error ID: [0-9a-f-]{36}\)$", response_message)
