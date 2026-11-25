@@ -1423,6 +1423,7 @@
                 "id.token.as.detached.signature": "false",
                 "oauth2.device.authorization.grant.enabled": "false",
                 "oidc.ciba.grant.enabled": "false",
+                "pkce.code.challenge.method": "S256",
                 "require.pushed.authorization.requests": "false",
                 "saml.allow.ecp.flow": "false",
                 "saml.artifact.binding": "false",

@@ -5,10 +5,11 @@
 import time
 from collections.abc import Iterable
 from threading import Lock
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 import jwt
 import requests
+from jwt.algorithms import requires_cryptography
 from jwt.api_jwk import PyJWK
 
 from clue.common.exceptions import ClueKeyError, ClueValueError
@@ -25,9 +26,6 @@ _jwks_refresh_lock = Lock()
 _last_jwks_refresh_time: float | None = None
 # Last successfully fetched JWKS. Kept outside SimpleCache so cache pressure can never lock out known keys.
 _pinned_jwks: JWKSSnapshot | None = None
-# Keys whose provider was last fetched longer ago than this are never served, from the cache or the pin.
-MAX_PINNED_JWKS_STALE_SECONDS = 12 * 60 * 60
-JWKS_CACHE_TIMEOUT_SECONDS = 60 * 60 * 12
 
 
 def get_jwk(access_token: str) -> PyJWK:
@@ -97,12 +95,14 @@ def _fresh_only(snapshot: JWKSSnapshot, now: float | None = None) -> JWKSSnapsho
         now: Reference monotonic time. Defaults to `time.monotonic()` when omitted.
 
     Returns:
-        A new snapshot containing only providers fetched less than `MAX_PINNED_JWKS_STALE_SECONDS` before
+        A new snapshot containing only providers fetched less than `auth.oauth.jwks_max_age_seconds` before
         `now`, and the keys they own. Providers missing from `snapshot.timestamps` are treated as expired.
     """
     now = time.monotonic() if now is None else now
     fresh_providers = {
-        name for name, fetched_at in snapshot.timestamps.items() if now - fetched_at < MAX_PINNED_JWKS_STALE_SECONDS
+        name
+        for name, fetched_at in snapshot.timestamps.items()
+        if now - fetched_at < config.auth.oauth.jwks_max_age_seconds
     }
     jwks = {kid: jwk for kid, jwk in snapshot.jwks.items() if snapshot.providers.get(kid) in fresh_providers}
     return JWKSSnapshot(
@@ -146,6 +146,15 @@ def _known_jwks(cached_jwks: JWKSSnapshot | None) -> JWKSSnapshot:
     return _unexpired_pinned_jwks() or JWKSSnapshot({}, {}, {})
 
 
+def _snapshot_needs_refresh(snapshot: JWKSSnapshot, now: float) -> bool:
+    """Whether any configured provider's JWKS is due for revalidation."""
+    refresh_after = config.auth.oauth.jwks_refresh_cooldown_seconds
+    return any(
+        provider_data.jwks_uri and now - snapshot.timestamps.get(provider_name, float("-inf")) >= refresh_after
+        for provider_name, provider_data in config.auth.oauth.providers.items()
+    )
+
+
 def _is_valid_jwk(jwk: Any) -> bool:
     """Checks that an untrusted JWK entry is structurally usable.
 
@@ -183,7 +192,7 @@ def _fetch_provider_jwks(jwks_uri: str) -> list[dict[str, Any]]:
         ValueError: The payload is not a JSON object with a `keys` list, or every entry in a non-empty
             `keys` list is malformed.
     """
-    response = requests.get(jwks_uri, timeout=10)
+    response = requests.get(jwks_uri, timeout=config.auth.oauth.provider_timeout_seconds)
     response.raise_for_status()
     payload = response.json()
     if not isinstance(payload, dict) or not isinstance(payload.get("keys"), list):
@@ -234,7 +243,7 @@ def _carry_over_failed_providers(fresh: JWKSSnapshot, failed: Iterable[str]) -> 
     """Adds each failed provider's pinned keys, with their original fetch times, to a fresh snapshot.
 
     Expiry is not checked here: the caller runs `_fresh_only` on the result, so carried-over providers
-    cannot outlive `MAX_PINNED_JWKS_STALE_SECONDS` however many partial refreshes happen.
+    cannot outlive `auth.oauth.jwks_max_age_seconds` however many partial refreshes happen.
 
     Args:
         fresh: Snapshot of the providers that were fetched successfully. Its entries win on a `kid` clash.
@@ -259,8 +268,13 @@ def _get_jwks_snapshot(refresh: bool) -> JWKSSnapshot:
     global _last_jwks_refresh_time, _pinned_jwks
 
     cached_jwks: JWKSSnapshot | None = cache.get("get_jwks")
+    now = time.monotonic()
     if cached_jwks is not None and not refresh:
-        return _fresh_only(cached_jwks)
+        if not _snapshot_needs_refresh(cached_jwks, now) or (
+            _last_jwks_refresh_time is not None
+            and now - _last_jwks_refresh_time < config.auth.oauth.jwks_refresh_cooldown_seconds
+        ):
+            return _fresh_only(cached_jwks)
 
     # Nonblocking: a waiting thread would stall behind a slow provider (up to the request timeout), so
     # overlapping callers serve existing keys or fail fast instead.
@@ -272,6 +286,8 @@ def _get_jwks_snapshot(refresh: bool) -> JWKSSnapshot:
         # Another request may have updated the cache before we acquired the lock.
         cached_jwks = cache.get("get_jwks")
         now = time.monotonic()
+        if _pinned_jwks is None and cached_jwks is not None:
+            _pinned_jwks = _fresh_only(cached_jwks, now)
         if (
             _last_jwks_refresh_time is not None
             and now - _last_jwks_refresh_time < config.auth.oauth.jwks_refresh_cooldown_seconds
@@ -303,7 +319,8 @@ def _get_jwks_snapshot(refresh: bool) -> JWKSSnapshot:
         result = _fresh_only(_carry_over_failed_providers(fetched, failures), now=time.monotonic())
         # One assignment publishes keys and timestamps together, so readers never see mismatched generations.
         _pinned_jwks = result
-        cache.set("get_jwks", result, timeout=JWKS_CACHE_TIMEOUT_SECONDS)
+        # Keys older than the max age are filtered out on read, so keeping the entry longer would be useless.
+        cache.set("get_jwks", result, timeout=config.auth.oauth.jwks_max_age_seconds)
         return result
     finally:
         _jwks_refresh_lock.release()
@@ -357,9 +374,28 @@ def get_audience(oauth_provider: str) -> str:
     return audience
 
 
+def _signing_algorithms(access_token: str, key: str | PyJWK, algorithms: Optional[list[str]]) -> list[str]:
+    """Algorithms a token may be verified with: asymmetric only, and bound to the JWK when one is used.
+
+    The token header is never trusted on its own: with a JWK, only the key's algorithm (declared by the provider or
+    implied by its key type) is accepted, and PyJWT verifies with that algorithm whatever the header claims.
+    """
+    candidates: list[Any]
+    if isinstance(key, PyJWK):
+        candidates = [key.algorithm_name]
+    else:
+        candidates = algorithms or [jwt.get_unverified_header(access_token).get("alg")]
+
+    # requires_cryptography holds exactly pyjwt's asymmetric algorithms (no HS* or "none").
+    allowed = [alg for alg in candidates if alg in requires_cryptography and (not algorithms or alg in algorithms)]
+    if not allowed:
+        raise jwt.InvalidAlgorithmError("The token signing algorithm is not allowed.")
+    return allowed
+
+
 def decode(
     access_token: str,
-    key: Optional[str] = None,
+    key: Optional[str | PyJWK] = None,
     algorithms: Optional[list[str]] = None,
     audience: Optional[str] = None,
     validate_audience: bool = False,
@@ -367,21 +403,27 @@ def decode(
 ) -> dict[str, Any]:
     """Decode an access token into a JSON Web Token dict
 
+    Only asymmetric algorithms are accepted, and the ``exp`` claim is required.
+
     Args:
         access_token (str): The access token to decode
-        key (Optional[str], optional): The key used to sign the token. Defaults to None.
-        algorithms (Optional[list[str]], optional): The algorithm to use when decoding. Defaults to None.
+        key (Optional[str | PyJWK], optional): The key used to sign the token. Defaults to the provider JWK matching
+            the token's ``kid``.
+        algorithms (Optional[list[str]], optional): Restricts the accepted algorithms further. Defaults to None.
         audience (Optional[str], optional): The audience to check against, if validating the audience. Defaults to None.
         validate_audience (bool, optional): Should we validate the audience? Defaults to False.
+
+    Raises:
+        jwt.PyJWTError: The token is malformed, expired, or its signature, algorithm or audience is invalid.
 
     Returns:
         dict[str, Any]: The decoded JWT, in dict format
     """
     if not key:
-        key = get_jwk(access_token).key
+        key = get_jwk(access_token)
 
-    if not algorithms:
-        algorithms = [jwt.get_unverified_header(access_token).get("alg", "HS256")]
+    algorithms = _signing_algorithms(access_token, key, algorithms)
+    options = {"verify_aud": validate_audience, "require": ["exp"]}
 
     if validate_audience and not audience:
         audience = get_audience(get_provider(access_token))
@@ -389,12 +431,12 @@ def decode(
     try:
         return jwt.decode(
             jwt=access_token,
-            key=cast(str, key),
+            key=key,
             algorithms=algorithms,
             audience=audience,
-            options={"verify_aud": validate_audience},
+            options=options,  # type: ignore[arg-type]
             **kwargs,
-        )  # type: ignore
+        )
     except jwt.exceptions.InvalidAudienceError:
         logger.debug("Default audience did not match - checking additional audiences")
         if config.auth.oauth.other_audiences is not None:
@@ -404,12 +446,12 @@ def decode(
                 try:
                     return jwt.decode(
                         jwt=access_token,
-                        key=cast(str, key),
+                        key=key,
                         algorithms=algorithms,
                         audience=audience,
-                        options={"verify_aud": validate_audience},
+                        options=options,  # type: ignore[arg-type]
                         **kwargs,
-                    )  # type: ignore
+                    )
                 except jwt.InvalidAudienceError:
                     continue
 
@@ -450,7 +492,7 @@ def fetch_sa_token() -> Optional[str]:
                 "refresh_token": refresh_token,
                 "scope": provider.scope,
             },
-            timeout=30,
+            timeout=config.auth.oauth.provider_timeout_seconds,
         ).json()
     else:
         sa_jwt = requests.post(
@@ -463,7 +505,7 @@ def fetch_sa_token() -> Optional[str]:
                 "password": service_account.password,
                 "scope": provider.scope,
             },
-            timeout=30,
+            timeout=config.auth.oauth.provider_timeout_seconds,
         ).json()
 
     if "error" in sa_jwt:

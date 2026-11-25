@@ -19,6 +19,7 @@ auth:
         client_secret: 09RhSF7tp0ShDdDMCszqI4zk8HMroTTZ
         scope: "openid offline_access"
         jwks_uri: http://keycloak:8080/realms/HogwartsMini/protocol/openid-connect/certs
+        iss: http://keycloak:8080/realms/HogwartsMini
         required_groups:
           - clue_user
         role_map:
