@@ -20,6 +20,7 @@ from clue.common.logging import get_logger
 from clue.config import config, get_redis
 from clue.models.auth_user import AuthResult, AuthUser, Privilege, UserRole
 from clue.models.config import ExternalSource
+from clue.remote.datatypes.lockout import Lockout
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.obo import get_obo_token
 from clue.security.utils import generate_random_secret
@@ -171,34 +172,7 @@ def bearer_auth(data: str) -> AuthResult:
         raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
-# Atomically checks and updates the client IP's lockout state so concurrent requests can't slip past the limit.
-# KEYS: lockout flag, failure counter, lockout counter. ARGV: max failures, window, max lockout, failed (0/1).
-# While locked out, attempts are neither checked nor counted, so a lockout can't be extended (by retries or
-# otherwise) and can't be used to test guesses. Each repeated lockout of the same IP doubles in length.
-_APIKEY_LOCKOUT_SCRIPT = """
-if redis.call('EXISTS', KEYS[1]) == 1 then
-    return 1
-end
-
-if ARGV[4] == '1' then
-    local max_failures, window, max_lockout = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
-    local failures = redis.call('INCR', KEYS[2])
-    if failures == 1 then
-        redis.call('EXPIRE', KEYS[2], window)
-    end
-
-    if failures >= max_failures then
-        redis.call('DEL', KEYS[2])
-        local lockouts = redis.call('INCR', KEYS[3])
-        local duration = math.floor(math.min(window * 2 ^ math.min(lockouts - 1, 32), max_lockout))
-        redis.call('SET', KEYS[1], '1', 'EX', duration)
-        redis.call('EXPIRE', KEYS[3], duration + max_lockout)
-    end
-end
-
-return 0
-"""
-_apikey_lockout_script = redis.register_script(_APIKEY_LOCKOUT_SCRIPT)
+_apikey_lockout = Lockout("apikey", redis=redis)
 
 # Unknown key names are compared against this so they take as long to reject as a wrong secret.
 _UNKNOWN_APIKEY_SECRET = generate_random_secret()
@@ -232,23 +206,18 @@ def _get_client_ip() -> str:
     return str(client)
 
 
-def _get_apikey_lockout_keys() -> list[str]:
-    """Get the Redis lockout flag, failure counter and lockout counter keys for the client IP."""
-    ip_hash = hashlib.sha256(_get_client_ip().encode("utf-8", errors="replace")).hexdigest()
-    return [f"apikey_{kind}_{ip_hash}" for kind in ("lockout", "failures", "lockouts")]
-
-
 def _is_apikey_locked_out(failed: bool) -> bool:
     """Check whether the client IP is locked out of API key authentication, counting this attempt if it failed."""
     lockout = config.auth.apikey_lockout
     if not lockout.enabled:
         return False
 
-    return bool(
-        _apikey_lockout_script(
-            keys=_get_apikey_lockout_keys(),
-            args=[lockout.max_failures_per_ip, lockout.window_seconds, lockout.max_lockout_seconds, int(failed)],
-        )
+    return _apikey_lockout.check(
+        _get_client_ip(),
+        failed=failed,
+        max_failures=lockout.max_failures_per_ip,
+        window_seconds=lockout.window_seconds,
+        max_lockout_seconds=lockout.max_lockout_seconds,
     )
 
 

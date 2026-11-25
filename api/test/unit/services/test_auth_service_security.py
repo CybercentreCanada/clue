@@ -169,16 +169,16 @@ def apikey_lockout(redis_connection):
         ),
     )
     used_keys: set[str] = set()
-    get_keys = auth_service._get_apikey_lockout_keys
+    get_keys = auth_service._apikey_lockout.keys
 
-    def _track_keys() -> list[str]:
-        keys = get_keys()
+    def _track_keys(identifier: str) -> list[str]:
+        keys = get_keys(identifier)
         used_keys.update(keys)
         return keys
 
     with (
         patch.object(config, "auth", auth_config),
-        patch.object(auth_service, "_get_apikey_lockout_keys", side_effect=_track_keys),
+        patch.object(auth_service._apikey_lockout, "keys", side_effect=_track_keys),
     ):
         yield SimpleNamespace(redis=redis_connection, key_name=key_name)
 
@@ -195,10 +195,7 @@ def _attempt_apikey(name: str, secret: str, forwarded_for: str):
 
 
 def _lockout_state(lockout, client_ip: str) -> SimpleNamespace:
-    with Flask(__name__).test_request_context(
-        headers={"X-Forwarded-For": client_ip}, environ_base={"REMOTE_ADDR": "127.0.0.1"}
-    ):
-        lockout_key, failures_key, history_key = auth_service._get_apikey_lockout_keys()
+    lockout_key, failures_key, history_key = auth_service._apikey_lockout.keys(client_ip)
     return SimpleNamespace(
         lockout_key=lockout_key,
         lockout_ttl=lockout.redis.ttl(lockout_key),
