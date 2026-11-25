@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
+import redis
 from flask import Flask
 from pydantic import ValidationError
 
@@ -14,6 +15,7 @@ from clue.common.exceptions import AccessDeniedException, InvalidDataException, 
 from clue.config import config
 from clue.models.auth_user import APIKeyConf, AuthUser, UserRole
 from clue.models.config import APIKeyLockout, ExternalSource
+from clue.remote.datatypes.lockout import Lockout
 from clue.security import api_login
 
 
@@ -338,3 +340,21 @@ def test_check_obo_accepts_token_already_scoped_for_target():
 
     assert access_token is None
     assert error is None
+
+
+@pytest.mark.parametrize("failed,expected_calls", [(True, 1), (False, 2)])
+def test_lockout_only_retries_checks_that_do_not_count_a_failure(failed, expected_calls):
+    client = Mock()
+    script = client.register_script.return_value
+    script.side_effect = [redis.ConnectionError(), 0]
+    lockout = Lockout("test", redis=client)
+
+    if failed:
+        with pytest.raises(redis.ConnectionError):
+            lockout.check("203.0.113.9", failed=True, max_failures=3, window_seconds=60, max_lockout_seconds=300)
+    else:
+        assert not lockout.check(
+            "203.0.113.9", failed=False, max_failures=3, window_seconds=60, max_lockout_seconds=300
+        )
+
+    assert script.call_count == expected_calls

@@ -59,10 +59,9 @@ class Lockout(object):
         Returns:
             True if the identifier is locked out.
         """
-        return bool(
-            retry_call(
-                self.ls,
-                keys=self.keys(identifier),
-                args=[max_failures, window_seconds, max_lockout_seconds, int(failed)],
-            )
-        )
+        keys = self.keys(identifier)
+        args = [max_failures, window_seconds, max_lockout_seconds, int(failed)]
+
+        # Counting a failure isn't idempotent: if Redis applied the script but the reply was lost, a retry would count
+        # the same attempt again, so only read-only checks are retried.
+        return bool(retry_call(self.ls, keys=keys, args=args)) if not failed else bool(self.ls(keys=keys, args=args))
