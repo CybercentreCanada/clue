@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.3](https://github.com/CybercentreCanada/clue/compare/api-v1.7.2...api-v1.7.3) (2026-11-26)
+
+
+### Bug Fixes
+
+* **api:** block handle 500 to leak information about the active version of clue ([#137](https://github.com/CybercentreCanada/clue/issues/137)) ([9ccb616](https://github.com/CybercentreCanada/clue/commit/9ccb616d43b5ead31494aec715e2fd3e89e054b2))
+* **api:** removing key enumeration and bruteforce ([#153](https://github.com/CybercentreCanada/clue/issues/153)) ([cbbddbe](https://github.com/CybercentreCanada/clue/commit/cbbddbeb1ffdb1a3519b19a6e3095997150060a7))
+
 ## [1.7.2](https://github.com/CybercentreCanada/clue/compare/api-v1.7.1...api-v1.7.2) (2026-11-24)
 
 
