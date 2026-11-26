@@ -171,7 +171,7 @@ def apikey_lockout(redis_connection):
         ),
     )
     used_keys: set[str] = set()
-    get_keys = auth_service._apikey_lockout.keys
+    get_keys = auth_service._APIKEY_LOCKOUT.keys
 
     def _track_keys(identifier: str) -> list[str]:
         keys = get_keys(identifier)
@@ -180,7 +180,7 @@ def apikey_lockout(redis_connection):
 
     with (
         patch.object(config, "auth", auth_config),
-        patch.object(auth_service._apikey_lockout, "keys", side_effect=_track_keys),
+        patch.object(auth_service._APIKEY_LOCKOUT, "keys", side_effect=_track_keys),
     ):
         yield SimpleNamespace(redis=redis_connection, key_name=key_name)
 
@@ -197,7 +197,7 @@ def _attempt_apikey(name: str, secret: str, forwarded_for: str):
 
 
 def _lockout_state(lockout, client_ip: str) -> SimpleNamespace:
-    lockout_key, failures_key, history_key = auth_service._apikey_lockout.keys(client_ip)
+    lockout_key, failures_key, history_key = auth_service._APIKEY_LOCKOUT.keys(client_ip)
     return SimpleNamespace(
         lockout_key=lockout_key,
         lockout_ttl=lockout.redis.ttl(lockout_key),
@@ -256,7 +256,7 @@ def test_validate_apikey_repeated_lockouts_back_off_exponentially_up_to_cap(apik
         apikey_lockout.redis.delete(state.lockout_key)
 
 
-def test_validate_apikey_lockout_history_expires_and_resets_backoff(apikey_lockout):
+def test_validate_APIKEY_LOCKOUT_history_expires_and_resets_backoff(apikey_lockout):
     client_ip = _unique_ip()
     _fail_until_locked_out(client_ip)
     first = _lockout_state(apikey_lockout, client_ip)
