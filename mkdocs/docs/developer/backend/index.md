@@ -269,6 +269,12 @@ auth:
       secret: "secret"
       roles: ["admin"]
       privileges: ["W"]
+  apikey_lockout: # Throttle failed API key attempts (429 response)
+    enabled: true # Lock out after repeated failures
+    max_failures_per_ip: 10 # Failed attempts per client IP, within window_seconds, before it is locked out
+    window_seconds: 900 # Window in which failures are counted, and the first lockout duration
+    max_lockout_seconds: 86400 # Cap for the lockout, which doubles each time the same IP is locked out again
+    trusted_proxies: [] # Proxy networks (CIDRs) whose X-Forwarded-For entries are trusted (empty = socket peer address)
 
   # OAuth settings
   oauth:
@@ -286,6 +292,17 @@ auth:
   # Token propagation
   propagate_clue_key: true # Include Clue token in OBO requests
 ```
+
+API key lockouts apply to the client IP, not the key name. After `max_failures_per_ip` invalid credentials within
+`window_seconds` of the first failure, the IP is locked out; subsequent API key attempts return HTTP 429, even with
+valid credentials. Attempts during a lockout do not extend it. Each new lockout for that IP doubles the duration up to
+`max_lockout_seconds`; the lockout history expires after that much time without a new lockout, starting when the
+previous lockout ends. Clients sharing an IP also share its lockout.
+
+Configure `trusted_proxies` with only the networks of proxies that append to `X-Forwarded-For`. Without them, the
+socket peer is used, so clients behind a proxy can share its lockout. Trusting networks that include untrusted clients
+can allow them to spoof their IP. Per-IP lockouts do not prevent distributed attempts; verify any additional upstream
+protection separately.
 
 ##### Core Services Configuration
 

@@ -108,6 +108,10 @@ config:
       enabled: true
       providers: {} # This must be overridden
     allow_apikeys: true
+    apikey_lockout:
+      # This must be overridden with the ingress controller's pod network (e.g. 10.42.0.0/16), otherwise every
+      # API key client shares the ingress pod's IP for failed-attempt lockouts. Keep it as narrow as possible.
+      trusted_proxies: []
 
   core:
     redis:

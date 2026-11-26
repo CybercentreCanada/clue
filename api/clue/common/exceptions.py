@@ -133,6 +133,10 @@ class AccessDeniedException(ClueException):
     """Exception thrown when a resource cannot be accessed by a user"""
 
 
+class TooManyRequestsException(ClueException):
+    """Exception thrown when a client is temporarily blocked after too many attempts"""
+
+
 class InvalidDataException(ClueException):
     """Exception thrown when user-provided data is invalid"""
 

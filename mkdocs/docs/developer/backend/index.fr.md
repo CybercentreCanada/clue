@@ -275,6 +275,12 @@ auth:
       secret: "secret"
       roles: ["admin"]
       privileges: ["W"]
+  apikey_lockout: # Limitation des tentatives de clé API échouées (réponse 429)
+    enabled: true # Activer le verrouillage après des échecs répétés
+    max_failures_per_ip: 10 # Échecs permis par adresse IP client, dans window_seconds, avant le verrouillage
+    window_seconds: 900 # Fenêtre de comptage des échecs et durée du premier verrouillage
+    max_lockout_seconds: 86400 # Durée maximale du verrouillage, qui double à chaque nouveau verrouillage de la même IP
+    trusted_proxies: [] # Réseaux (CIDR) des mandataires dont les entrées X-Forwarded-For sont fiables (vide = adresse du pair)
 
   # Paramètres OAuth
   oauth:
@@ -292,6 +298,19 @@ auth:
   # Propagation de jeton
   propagate_clue_key: true # Inclure le jeton Clue dans les requêtes OBO
 ```
+
+Les verrouillages de clés API s'appliquent à l'adresse IP du client, et non au nom de la clé. Après
+`max_failures_per_ip` échecs d'authentification dans les `window_seconds` suivant le premier échec, l'IP est
+verrouillée ; les tentatives suivantes avec une clé API reçoivent une réponse HTTP 429, même avec des identifiants
+valides. Les tentatives pendant un verrouillage ne le prolongent pas. Chaque nouveau verrouillage de cette IP double
+sa durée jusqu'à `max_lockout_seconds` ; l'historique des verrouillages expire après cette durée sans nouveau
+verrouillage, à compter de la fin du précédent. Les clients partageant une IP partagent aussi son verrouillage.
+
+Configurez `trusted_proxies` avec uniquement les réseaux des mandataires qui ajoutent à `X-Forwarded-For`. Sans cette
+configuration, l'adresse du pair de la connexion est utilisée : les clients derrière un mandataire peuvent donc partager
+son verrouillage. Faire confiance à des réseaux contenant des clients non fiables peut leur permettre d'usurper leur
+adresse IP. Les verrouillages par IP n'empêchent pas les tentatives distribuées ; vérifiez séparément toute protection
+supplémentaire en amont.
 
 ##### Configuration des services principaux
 

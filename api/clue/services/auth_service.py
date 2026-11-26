@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import Any, Optional, Union
 
 from elasticapm.traces import capture_span
@@ -13,11 +14,13 @@ from clue.common.exceptions import (
     ClueException,
     ClueNotImplementedError,
     InvalidDataException,
+    TooManyRequestsException,
 )
 from clue.common.logging import get_logger
 from clue.config import config, get_redis
 from clue.models.auth_user import AuthResult, AuthUser, Privilege, UserRole
 from clue.models.config import ExternalSource
+from clue.remote.datatypes.lockout import Lockout
 from clue.remote.datatypes.set import ExpiringSet
 from clue.security.obo import get_obo_token
 from clue.security.utils import generate_random_secret
@@ -169,6 +172,55 @@ def bearer_auth(data: str) -> AuthResult:
         raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
+_APIKEY_LOCKOUT = Lockout("apikey", redis=redis)
+
+# Unknown key names are compared against this so they take as long to reject as a wrong secret.
+_UNKNOWN_APIKEY_SECRET = generate_random_secret()
+
+
+def _parse_ip(value: str | None) -> Optional[IPv4Address | IPv6Address]:
+    try:
+        return ip_address(value.strip()) if value else None
+    except ValueError:
+        return None
+
+
+def _get_client_ip() -> str:
+    """Resolve the client IP, only trusting X-Forwarded-For entries appended by configured trusted proxies.
+
+    Starting from the socket peer, each trusted hop is replaced by the entry it appended, right to left, until an
+    untrusted address is reached.
+    """
+    trusted = config.auth.apikey_lockout.trusted_proxies
+    client = _parse_ip(request.remote_addr)
+    if client is None:
+        return request.remote_addr or "unknown"
+
+    forwarded = request.headers.get("X-Forwarded-For", "").split(",")
+    while forwarded and any(client in network for network in trusted):
+        hop = _parse_ip(forwarded.pop())
+        if hop is None:
+            break
+        client = hop
+
+    return str(client)
+
+
+def _is_apikey_locked_out(failed: bool) -> bool:
+    """Check whether the client IP is locked out of API key authentication, counting this attempt if it failed."""
+    lockout = config.auth.apikey_lockout
+    if not lockout.enabled:
+        return False
+
+    return _APIKEY_LOCKOUT.check(
+        _get_client_ip(),
+        failed=failed,
+        max_failures=lockout.max_failures_per_ip,
+        window_seconds=lockout.window_seconds,
+        max_lockout_seconds=lockout.max_lockout_seconds,
+    )
+
+
 @capture_span(span_type="authentication")
 def validate_apikey(name: str, apikey: str) -> AuthResult:
     """Authenticate a configured API key.
@@ -180,6 +232,7 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
     Raises:
         AccessDeniedException: If API-key authentication is disabled, the key is invalid, or required identity
             headers are absent.
+        TooManyRequestsException: If the client IP is locked out after repeated failures.
 
     Returns:
         The authenticated user and effective privileges.
@@ -189,10 +242,17 @@ def validate_apikey(name: str, apikey: str) -> AuthResult:
 
     if name and apikey:
         config_apikey = config.auth.apikeys.get(name, None)
-        if not config_apikey:
-            raise AccessDeniedException("API Key does not exist")
+        expected_secret = config_apikey.secret if config_apikey else _UNKNOWN_APIKEY_SECRET
+        secret_matches = hmac.compare_digest(
+            expected_secret.encode("utf-8", errors="replace"), apikey.encode("utf-8", errors="replace")
+        )
+        failed = config_apikey is None or not secret_matches
 
-        if not hmac.compare_digest(config_apikey.secret.encode("utf-8"), apikey.encode("utf-8")):
+        # Only the client IP is locked out, never the key name, so nobody can lock a key's legitimate users out.
+        if _is_apikey_locked_out(failed=failed):
+            raise TooManyRequestsException("Too many failed API key attempts. Try again later.")
+
+        if config_apikey is None or failed:
             raise AccessDeniedException("Invalid API key")
 
         uname = request.headers.get("X-USERID", None)
@@ -268,6 +328,7 @@ def basic_auth(data: str, is_base64: bool = True) -> AuthResult:
     Raises:
         InvalidDataException: If the decoded value is not in ``key_name:key_secret`` format.
         AccessDeniedException: If the API key is invalid or cannot authenticate the request.
+        TooManyRequestsException: If the client IP is locked out after repeated failures.
 
     Returns:
         The authenticated user and effective privileges.

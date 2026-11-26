@@ -8,7 +8,7 @@ from jwt import ExpiredSignatureError
 from prometheus_client import Counter
 
 import clue.services.auth_service as auth_service
-from clue.api import bad_request, forbidden, internal_error, not_found, unauthorized
+from clue.api import bad_request, forbidden, internal_error, not_found, too_many_requests, unauthorized
 from clue.common.exceptions import (
     AccessDeniedException,
     AuthenticationException,
@@ -17,6 +17,7 @@ from clue.common.exceptions import (
     ClueRuntimeError,
     InvalidDataException,
     NotFoundException,
+    TooManyRequestsException,
 )
 from clue.common.forge import APP_NAME
 from clue.config import AUDIT, config
@@ -158,6 +159,9 @@ class api_login(object):  # noqa: N801
             except AccessDeniedException as e:
                 FAILED_ATTEMPTS.labels("403").inc()
                 return forbidden(err=e.message)
+            except TooManyRequestsException as e:
+                FAILED_ATTEMPTS.labels("429").inc()
+                return too_many_requests(err=e.message)
             except NotFoundException:
                 FAILED_ATTEMPTS.labels("404").inc()
                 return not_found()

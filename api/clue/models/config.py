@@ -13,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     HttpUrl,
+    IPvAnyNetwork,
     SecretStr,
     TypeAdapter,
     ValidationInfo,
@@ -213,9 +214,31 @@ class ServiceAccount(BaseModel):
         return self
 
 
+class APIKeyLockout(BaseModel):
+    enabled: bool = Field(default=True, description="Throttle repeated failed API key authentication attempts?")
+    max_failures_per_ip: int = Field(
+        default=10, ge=1, description="Failed API key attempts allowed per client IP before it is locked out"
+    )
+    window_seconds: int = Field(
+        default=900, ge=1, description="Window in which failed attempts are counted, and the first lockout duration"
+    )
+    max_lockout_seconds: int = Field(
+        default=86400,
+        ge=1,
+        description="Upper bound for the lockout duration, which doubles with each repeated lockout of the same IP. "
+        "Repeated lockouts are forgotten after this long without a new one.",
+    )
+    trusted_proxies: list[IPvAnyNetwork] = Field(
+        default=[],
+        description="Networks of the reverse proxies in front of Clue. X-Forwarded-For entries are only trusted when "
+        "appended by a peer in these networks; when empty, the client IP is the socket peer address.",
+    )
+
+
 class Auth(BaseModel):
     allow_apikeys: bool = Field(description="Allow API keys?", default=False)
     apikeys: dict[str, APIKeyConf] = Field(default={}, description="API keys available in the system")
+    apikey_lockout: APIKeyLockout = APIKeyLockout()
     propagate_clue_key: bool = Field(
         default=True, description="Should clue include the root clue token in requests when OBO is used?"
     )
