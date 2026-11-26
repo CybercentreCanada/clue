@@ -172,7 +172,7 @@ def bearer_auth(data: str) -> AuthResult:
         raise InvalidDataException("Not a valid authentication type for this endpoint.")
 
 
-_apikey_lockout = Lockout("apikey", redis=redis)
+_APIKEY_LOCKOUT = Lockout("apikey", redis=redis)
 
 # Unknown key names are compared against this so they take as long to reject as a wrong secret.
 _UNKNOWN_APIKEY_SECRET = generate_random_secret()
@@ -212,7 +212,7 @@ def _is_apikey_locked_out(failed: bool) -> bool:
     if not lockout.enabled:
         return False
 
-    return _apikey_lockout.check(
+    return _APIKEY_LOCKOUT.check(
         _get_client_ip(),
         failed=failed,
         max_failures=lockout.max_failures_per_ip,
